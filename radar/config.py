@@ -1,5 +1,6 @@
 """Settings, read once from environment variables."""
 import os
+from urllib.parse import quote
 from dataclasses import dataclass, field
 
 DEFAULT_QUERY = "(@Pocket_Dragons_ OR from:Pocket_Dragons_) -is:reply -is:retweet"
@@ -12,10 +13,26 @@ def _db_url(raw: str) -> str:
     SQLAlchemy 2.1 maps a bare postgresql:// URL to psycopg 3, which is not installed.
     """
     raw = raw.strip()
-    for prefix in ("postgres://", "postgresql://"):
+    for prefix in ("postgres://", "postgresql://", "postgresql+psycopg2://"):
         if raw.startswith(prefix):
-            return "postgresql+psycopg2://" + raw[len(prefix):]
+            return "postgresql+psycopg2://" + _encode_password(raw[len(prefix):])
     return raw
+
+
+def _encode_password(rest: str) -> str:
+    """Percent-encode the password so symbols like @ / # ? in it cannot break the URL.
+
+    The host part never contains '@', so the last '@' always separates login from host.
+    """
+    if "@" not in rest:
+        return rest
+    login, host = rest.rsplit("@", 1)
+    if ":" not in login:
+        return rest
+    user, password = login.split(":", 1)
+    if "%" in password:  # already encoded
+        return rest
+    return f"{user}:{quote(password, safe='')}@{host}"
 
 
 def _bool(name: str, default: str = "0") -> bool:
