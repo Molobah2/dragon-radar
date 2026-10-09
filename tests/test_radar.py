@@ -284,3 +284,13 @@ def test_scheduler_needs_flag_and_token(cfg, Session):
     cfg.run_scheduler = True
     cfg.x_bearer_token = ""
     assert scheduler.start(cfg, Session) is False
+
+
+def test_database_url_uses_installed_driver():
+    from radar.config import _db_url
+    assert _db_url("postgres://u:p@h:5432/db") == "postgresql+psycopg2://u:p@h:5432/db"
+    assert _db_url(" postgresql://u:p@h:5432/postgres ") == "postgresql+psycopg2://u:p@h:5432/postgres"
+    assert _db_url("postgresql+psycopg2://x") == "postgresql+psycopg2://x"
+    assert _db_url("sqlite:///radar.db") == "sqlite:///radar.db"
+    from sqlalchemy import create_engine
+    assert create_engine(_db_url("postgresql://u:p@localhost:1/db")).dialect.driver == "psycopg2"

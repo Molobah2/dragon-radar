@@ -7,9 +7,14 @@ DEFAULT_BLOCKLIST = "claim your airdrop,connect your wallet,free mint now,dm me 
 
 
 def _db_url(raw: str) -> str:
-    # Supabase and Railway hand out postgres:// URLs; SQLAlchemy wants postgresql://
-    if raw.startswith("postgres://"):
-        return "postgresql://" + raw[len("postgres://"):]
+    """Point plain Postgres URLs at the psycopg2 driver we install.
+
+    SQLAlchemy 2.1 maps a bare postgresql:// URL to psycopg 3, which is not installed.
+    """
+    raw = raw.strip()
+    for prefix in ("postgres://", "postgresql://"):
+        if raw.startswith(prefix):
+            return "postgresql+psycopg2://" + raw[len(prefix):]
     return raw
 
 
