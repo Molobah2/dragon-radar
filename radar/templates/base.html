@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}{{ cfg.site_name }}{% endblock %}</title>
+  <meta name="description" content="Every post that tags Pocket Dragons on X, in one organised feed. Unofficial community tool.">
+  <meta name="theme-color" content="#8fd3ff">
+  <link rel="icon" href="{{ url_for('static', filename='mark.svg') }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <div class="scene" aria-hidden="true"><canvas id="meadow"></canvas><div class="veil"></div></div>
+  {% block intro %}{% endblock %}
+  <div class="site" id="site">
+    <div class="shell"><div class="wrap">
+      <header class="bar">
+        <a class="brand" href="{{ url_for('feed') }}" style="text-decoration:none">
+          <span class="brand-mark"><img src="{{ url_for('static', filename='mark.svg') }}" alt="" width="26" height="26"></span>
+          {{ cfg.site_name }}
+        </a>
+        {% block header_right %}{% endblock %}
+      </header>
+      {% block main %}{% endblock %}
+      <footer>
+        <span>Unofficial community tool. Not affiliated with or endorsed by Pocket Dragons. Posts are shown through X's official embeds.</span>
+        <strong>Built by Jon Wynn</strong>
+      </footer>
+    </div></div>
+  </div>
+  <script src="{{ url_for('static', filename='meadow.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

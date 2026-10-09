@@ -1,0 +1,42 @@
+# Collects new posts every 20 minutes and keeps the free Render site awake.
+# Secrets (repo Settings > Secrets and variables > Actions > Secrets): X_BEARER_TOKEN, DATABASE_URL
+# Variable (same page > Variables): SITE_URL, e.g. https://dragon-radar.onrender.com
+name: collect
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"   # collector (GitHub may start scheduled runs a few minutes late)
+    - cron: "*/10 * * * *"   # keep-awake ping
+  workflow_dispatch: {}
+
+concurrency:
+  group: collect-${{ github.event.schedule || 'manual' }}
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    if: github.event.schedule == '*/20 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Collect posts
+        run: python -m radar.collect
+        env:
+          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MONTHLY_SPEND_LIMIT_USD: "20"
+
+  keep-awake:
+    if: github.event.schedule == '*/10 * * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping the site
+        if: ${{ vars.SITE_URL != '' }}
+        run: curl -fsS --max-time 90 "${{ vars.SITE_URL }}/healthz" || true

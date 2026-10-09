@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block intro %}
+<div class="intro" id="intro">
+  <div class="intro-card">
+    <div class="intro-title">{{ cfg.site_name }}</div>
+    <div class="intro-sub">Every post that tags Pocket Dragons, in one sunny place</div>
+    <button class="skip" id="skip" type="button">
+      <svg viewBox="0 0 18 18" aria-hidden="true"><circle class="track" cx="9" cy="9" r="7" fill="none" stroke-width="3"/><circle class="bar" cx="9" cy="9" r="7" fill="none" stroke-width="3" stroke-linecap="round"/></svg>
+      Skip intro
+    </button>
+  </div>
+</div>
+{% endblock %}
+{% block header_right %}{% if cfg.demo_mode %}<span class="sample-flag">Demo data</span>{% endif %}{% endblock %}
+{% block main %}
+  <section class="hero">
+    <div class="hero-main">
+      <span class="eyebrow"><span class="live"></span>Live from X · @{{ cfg.team_handle }}{% if updated %} · updated <time datetime="{{ updated }}" data-rel>{{ updated }}</time>{% endif %}</span>
+      <h1>Every post that tags <span class="pop">Pocket Dragons.</span></h1>
+      <p class="lede">Tap a post to open it on X. It hops out of your list, so you only ever see what is new.</p>
+    </div>
+    <div class="tally">
+      <div class="chip hot"><b id="left">0</b><span>waiting for you</span></div>
+      <div class="chip sun"><b id="fresh">0</b><span>new since your last visit</span></div>
+    </div>
+  </section>
+
+  <form class="rail" method="get" action="{{ url_for('feed') }}" id="filters" aria-label="Filters">
+    <div class="group" role="radiogroup" aria-label="Date range">
+      {% for key, label in [("today","Today"),("yesterday","Yesterday"),("7d","7 days")] %}
+        <button class="tab" type="submit" name="range" value="{{ key }}" aria-pressed="{{ 'true' if filters.range == key else 'false' }}">{{ label }}</button>
+      {% endfor %}
+    </div>
+    <div class="right">
+      <input type="hidden" name="range" value="{{ filters.range }}" disabled id="range-keep">
+      <div class="group" role="radiogroup" aria-label="Who posted">
+        {% for key, label in [("all","Everyone"),("team","Team"),("community","Community")] %}
+          <button class="tab" type="submit" name="who" value="{{ key }}" aria-pressed="{{ 'true' if filters.who == key else 'false' }}">{{ label }}</button>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="who" value="{{ filters.who }}" disabled id="who-keep">
+      <label class="switch"><input type="hidden" name="quotes" value="0"><input type="checkbox" name="quotes" value="1" id="quotes" {% if filters.quotes == "1" %}checked{% endif %}>Quotes</label>
+      <label class="switch"><input type="checkbox" id="showOpened">Show opened</label>
+    </div>
+  </form>
+
+  <div class="layout" id="feed">
+    <main>
+      <div class="trail" id="trail" aria-live="polite"></div>
+      <button id="more" class="btn btn-soft more" type="button" hidden>Load more</button>
+      <div class="empty" id="empty" hidden>
+        <h2>All caught up</h2>
+        <p>No unopened posts here. Fresh ones land every 20 minutes.</p>
+      </div>
+    </main>
+    <aside class="side">
+      <div class="panel">
+        <h3>Your day so far</h3>
+        <p id="progress-text">Nothing opened yet in this range.</p>
+        <div class="meter"><i id="meter"></i></div>
+        <div class="meter-label"><span id="m-done">0 opened</span><span id="m-total">0 posts</span></div>
+      </div>
+      <div class="panel how">
+        <h3>How it works</h3>
+        <ol class="steps">
+          <li>New posts that tag the account land every 20 minutes.</li>
+          <li>Open one on X and join in however you like.</li>
+          <li>It leaves your list, so only new posts wait for you.</li>
+        </ol>
+      </div>
+      <button class="btn btn-soft replay" id="replay" type="button">Watch the meadow again</button>
+    </aside>
+  </div>
+{% endblock %}
+{% block scripts %}
+  <script id="radar-data" type="application/json">{{ {"posts": items, "demo": cfg.demo_mode, "intro_ms": 5000} | tojson }}</script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  {% if not cfg.demo_mode %}<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>{% endif %}
+{% endblock %}

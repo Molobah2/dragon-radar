@@ -1,0 +1,25 @@
+# Render blueprint: one free web service. Posts are collected by GitHub Actions, not here.
+services:
+  - type: web
+    name: dragon-radar
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn "radar.web:create_app()" --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 60
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: RUN_SCHEDULER
+        value: "0"
+      - key: MONTHLY_SPEND_LIMIT_USD
+        value: "20"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: X_BEARER_TOKEN
+        sync: false

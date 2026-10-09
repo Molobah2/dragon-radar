@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block body_class %}ready static-page{% endblock %}
+{% block title %}Admin sign in · {{ cfg.site_name }}{% endblock %}
+{% block main %}
+  <section class="panel narrow">
+    <h1>Admin</h1>
+    <form method="post">
+      <label class="field">Password
+        <input type="password" name="password" autocomplete="current-password" required autofocus>
+      </label>
+      {% if error %}<p class="error">{{ error }}</p>{% endif %}
+      <button class="btn btn-go" type="submit">Sign in</button>
+    </form>
+  </section>
+{% endblock %}
