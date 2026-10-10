@@ -3,7 +3,7 @@
 <div class="intro" id="intro">
   <div class="intro-card">
     <div class="intro-title">{{ cfg.site_name }}</div>
-    <div class="intro-sub">Every post that tags Pocket Dragons, in one sunny place</div>
+    <div class="intro-sub">blinky remembers his friends</div>
     <button class="skip" id="skip" type="button">
       <svg viewBox="0 0 18 18" aria-hidden="true"><circle class="track" cx="9" cy="9" r="7" fill="none" stroke-width="3"/><circle class="bar" cx="9" cy="9" r="7" fill="none" stroke-width="3" stroke-linecap="round"/></svg>
       Skip intro
@@ -15,9 +15,8 @@
 {% block main %}
   <section class="hero">
     <div class="hero-main">
-      <span class="eyebrow"><span class="live"></span>Live from X · @{{ cfg.team_handle }}{% if updated %} · updated <time datetime="{{ updated }}" data-rel>{{ updated }}</time>{% endif %}</span>
-      <h1>Every post that tags <span class="pop">Pocket Dragons.</span></h1>
-      <p class="lede">Tap a post to open it on X. It hops out of your list, so you only ever see what is new.</p>
+      <h1>Something stirs<br>in the <span class="pop">Hatchery.</span></h1>
+      <p class="lede">Every whisper that calls the dragons lands here. Open one and it fades from your sight.</p>
     </div>
     <div class="tally">
       <div class="chip hot"><b id="left">0</b><span>waiting for you</span></div>
