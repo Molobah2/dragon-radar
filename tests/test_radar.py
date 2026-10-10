@@ -184,7 +184,9 @@ def test_resolve_range_7d_and_custom_and_bad_input():
     _, start, end = resolve_range({"range": "custom", "from": "2026-10-07", "to": "2026-10-05"}, tz, now, 7)
     assert (start, end) == (datetime(2026, 10, 5), datetime(2026, 10, 8))
     key, _, _ = resolve_range({"range": "custom", "from": "nope"}, tz, now, 7)
-    assert key == "today"
+    assert key == "24h"
+    key, start, end = resolve_range({}, tz, now, 7)
+    assert key == "24h" and start == now - timedelta(hours=24)
 
 
 @pytest.fixture

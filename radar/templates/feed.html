@@ -27,7 +27,7 @@
 
   <form class="rail" method="get" action="{{ url_for('feed') }}" id="filters" aria-label="Filters">
     <div class="group" role="radiogroup" aria-label="Date range">
-      {% for key, label in [("today","Today"),("yesterday","Yesterday"),("7d","7 days")] %}
+      {% for key, label in [("24h","Last 24h"),("today","Today"),("yesterday","Yesterday"),("7d","7 days")] %}
         <button class="tab" type="submit" name="range" value="{{ key }}" aria-pressed="{{ 'true' if filters.range == key else 'false' }}">{{ label }}</button>
       {% endfor %}
     </div>
@@ -40,9 +40,17 @@
       </div>
       <input type="hidden" name="who" value="{{ filters.who }}" disabled id="who-keep">
       <label class="switch"><input type="hidden" name="quotes" value="0"><input type="checkbox" name="quotes" value="1" id="quotes" {% if filters.quotes == "1" %}checked{% endif %}>Quotes</label>
+      <label class="switch"><input type="checkbox" id="showMedia">Media</label>
       <label class="switch"><input type="checkbox" id="showOpened">Show opened</label>
     </div>
   </form>
+
+  <div class="progress-strip">
+    <strong>Your day so far</strong>
+    <span id="progress-text">Nothing opened yet in this range.</span>
+    <div class="meter"><i id="meter"></i></div>
+    <span class="meter-label"><span id="m-done">0 opened</span> · <span id="m-total">0 posts</span></span>
+  </div>
 
   <div class="layout" id="feed">
     <main>

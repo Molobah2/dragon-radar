@@ -4,7 +4,7 @@
   const posts = data.posts || [];
   const DEMO = !!data.demo;
   const INTRO_MS = data.intro_ms || 5000;
-  const BATCH = 10;
+  const BATCH = 12;
   const KEEP_DAYS = 30;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = (id) => document.getElementById(id);
@@ -25,6 +25,10 @@
   setTimeout(() => store.set("radar:lastVisit", Date.now()), 5000);
 
   let showOpened = !!store.get("radar:showOpened", false);
+  // Photos and link previews make embeds very tall, so they are hidden unless the visitor turns Media on
+  const showMedia = !!store.get("radar:showMedia", false);
+  $("showMedia").checked = showMedia;
+  $("showMedia").addEventListener("change", (e) => { store.set("radar:showMedia", e.target.checked); location.reload(); });
   $("showOpened").checked = showOpened;
   const unavailable = new Set();
   let shown = BATCH;
@@ -111,7 +115,7 @@
     }
     const tw = await waitForTwitter();
     if (!tw) { box.replaceChildren(el("p", { class: "embed-fail" }, "Could not load this post here. Use Open on X.")); return; }
-    const result = await tw.widgets.createTweet(p.id, box, { theme: "light", dnt: true, conversation: "none", align: "center" });
+    const result = await tw.widgets.createTweet(p.id, box, { theme: "light", dnt: true, conversation: "none", align: "center", cards: showMedia ? "visible" : "hidden" });
     box.querySelector(".embed-loading")?.remove();
     if (!result) { unavailable.add(p.id); card.remove(); render(); }   // deleted, protected or withheld on X
   }
@@ -185,7 +189,7 @@
 
   // ---------- filters: keep the other choices when one changes ----------
   const params = new URLSearchParams(location.search);
-  const current = { range: params.get("range") || "today", who: params.get("who") || "all", quotes: $("quotes").checked ? "1" : "0" };
+  const current = { range: params.get("range") || "24h", who: params.get("who") || "all", quotes: $("quotes").checked ? "1" : "0" };
   function go(change) { const q = new URLSearchParams({ ...current, ...change }); location.search = q.toString(); }
   document.querySelectorAll('#filters button[name="range"]').forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); go({ range: b.value }); }));
   document.querySelectorAll('#filters button[name="who"]').forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); go({ who: b.value }); }));

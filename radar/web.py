@@ -30,7 +30,9 @@ def local_day_bounds(day: date, tz: ZoneInfo) -> tuple[datetime, datetime]:
 def resolve_range(args, tz: ZoneInfo, now_utc: datetime, max_days: int) -> tuple[str, datetime, datetime]:
     """Turn ?range=today|yesterday|7d|custom (&from=&to=) into a UTC window."""
     today = now_utc.replace(tzinfo=timezone.utc).astimezone(tz).date()
-    key = args.get("range", "today")
+    key = args.get("range", "24h")
+    if key == "24h":
+        return key, now_utc - timedelta(hours=24), now_utc + timedelta(minutes=5)
     if key == "yesterday":
         start, end = local_day_bounds(today - timedelta(days=1), tz)
     elif key == "7d":
@@ -41,7 +43,7 @@ def resolve_range(args, tz: ZoneInfo, now_utc: datetime, max_days: int) -> tuple
             d_from = date.fromisoformat(args.get("from", ""))
             d_to = date.fromisoformat(args.get("to", "")) if args.get("to") else d_from
         except ValueError:
-            return resolve_range({"range": "today"}, tz, now_utc, max_days)
+            return resolve_range({"range": "24h"}, tz, now_utc, max_days)
         if d_to < d_from:
             d_from, d_to = d_to, d_from
         # Recent search only reaches 7 days back, older custom ranges would just be empty

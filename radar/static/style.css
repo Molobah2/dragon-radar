@@ -107,8 +107,17 @@ body.ready h1 .pop { animation: wiggle 1.4s 1.2s ease-in-out; }
 .switch input:checked::after { transform: translateX(16px); }
 
 /* feed */
-.layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; align-items: start; }
-.trail { display: grid; gap: 16px; perspective: 1400px; min-width: 0; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+/* Posts sit in a grid: 3 columns on laptops, 2 on tablets, 1 on phones */
+.trail { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; align-items: start; perspective: 1400px; min-width: 0; }
+.trail > .hour { grid-column: 1 / -1; }
+.trail > .post { padding: 14px 14px 12px; gap: 10px; }
+.progress-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 18px; margin: -10px 0 22px; border-radius: 999px;
+  background: var(--glass-strong); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 16px 34px -24px rgba(29, 36, 51, .45); font-weight: 700; }
+.progress-strip strong { font-family: var(--font-display); font-weight: 600; font-size: 17px; }
+.progress-strip #progress-text { color: var(--ink-soft); font-size: 14px; }
+.progress-strip .meter { flex: 1 1 160px; margin: 0; }
+.progress-strip .meter-label { margin: 0; font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
 .hour { justify-self: start; font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink);
   background: var(--glass-strong); padding: 6px 12px; border-radius: 999px; margin-top: 8px; box-shadow: 0 6px 14px -8px rgba(29, 36, 51, .35); }
 .hour b { color: var(--coral-deep); }
@@ -155,7 +164,8 @@ time { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); f
 .btn-soft:hover { background: rgba(29, 36, 51, .12); }
 .btn svg { width: 14px; height: 14px; }
 
-aside.side { position: sticky; top: 96px; display: grid; gap: 14px; }
+aside.side { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+@media (max-width: 760px) { aside.side { grid-template-columns: 1fr; } .progress-strip { border-radius: 22px; } }
 .panel { border-radius: var(--r); padding: 20px; background: var(--glass-strong); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 20px 40px -28px rgba(29, 36, 51, .45); }
 .panel h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 21px; font-weight: 600; }
 .panel p { margin: 0; color: var(--ink-soft); font-size: 15px; font-weight: 600; }
