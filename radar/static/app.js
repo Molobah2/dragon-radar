@@ -162,7 +162,8 @@
     let last = null, i = 0;
     for (const p of list) {
       const b = bucket(p);
-      if (b !== last) { frag.append(el("div", { class: "hour", html: b })); last = b; }
+      // Time headings would break the grid into ragged rows; each card shows its own time instead
+      last = b;
       let card = cards.get(p.id);
       if (!card) { card = makeCard(p, i); cards.set(p.id, card); }
       card.classList.remove("leaving");
