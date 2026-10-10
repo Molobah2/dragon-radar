@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from .config import Config
 from .directory import note_user
-from .db import BlockedAuthor, CollectorRun, Post, get_setting, month_spend, set_setting, utcnow
+from .db import SIDE_RUNS, BlockedAuthor, CollectorRun, Post, get_setting, month_spend, set_setting, utcnow
 from .xapi import RateLimited, XApiError, XClient
 
 log = logging.getLogger("radar.collector")
@@ -54,12 +54,12 @@ def capped_collection(s: Session, client: XClient, cfg: Config, run: CollectorRu
     """
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     read_today = s.scalar(select(func.coalesce(func.sum(CollectorRun.posts_returned), 0))
-                          .where(CollectorRun.started_at >= day_start, CollectorRun.status != "keeper_lookup")) or 0
+                          .where(CollectorRun.started_at >= day_start, CollectorRun.status.not_in(SIDE_RUNS))) or 0
     if read_today + CAP_PAGE > cfg.daily_post_cap:
         run.status = "skipped_daily_cap"
         return
     gap = timedelta(hours=24 * CAP_PAGE / cfg.daily_post_cap)
-    last = s.scalar(select(CollectorRun.started_at).where(CollectorRun.posts_returned > 0, CollectorRun.status != "keeper_lookup")
+    last = s.scalar(select(CollectorRun.started_at).where(CollectorRun.posts_returned > 0, CollectorRun.status == "ok")
                     .order_by(CollectorRun.started_at.desc()).limit(1))
     if last and now - last < gap - timedelta(minutes=5) and not cfg.force_collect:
         run.status = "waiting"

@@ -15,7 +15,7 @@ from sqlalchemy import func, select
 from .collector import run_collection
 from .config import Config
 from .directory import has_dragon_tag, note_user
-from .db import (BlockedAuthor, CollectorRun, Keeper, Post, get_setting, make_session_factory, month_spend,
+from .db import (SIDE_RUNS, BlockedAuthor, CollectorRun, Keeper, Post, get_setting, make_session_factory, month_spend,
                  set_setting, utcnow)
 
 FEED_LIMIT = 1000
@@ -382,7 +382,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         if not cfg.x_bearer_token:
             return {"started": False, "reason": "no token"}, 503
         with Session() as s:
-            last = s.scalar(select(CollectorRun.started_at).where(CollectorRun.status != "keeper_lookup")
+            last = s.scalar(select(CollectorRun.started_at).where(CollectorRun.status.not_in(SIDE_RUNS))
                             .order_by(CollectorRun.started_at.desc()).limit(1))
         if last and utcnow() - last < timedelta(minutes=10):
             return {"started": False, "reason": "too soon"}, 200

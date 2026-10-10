@@ -500,3 +500,12 @@ def test_directory_add_checks_name_and_limits(cfg, Session, monkeypatch):
     c.post("/api/keepers/add", json={"handle": "zed"})
     assert "3 handles" in c.post("/api/keepers/add", json={"handle": "yan"}).get_json()["message"]
     assert [k["username"] for k in c.get("/api/keepers").get_json()["keepers"]] == ["dee"]
+
+
+def test_cron_is_not_blocked_by_a_directory_check(cfg, Session):
+    cfg.x_bearer_token = "t"
+    with Session() as s:
+        s.add(CollectorRun(started_at=utcnow(), status="directory_add"))
+        s.commit()
+    r = create_app(cfg).test_client().post("/cron/collect")
+    assert r.get_json().get("reason") != "too soon"

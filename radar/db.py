@@ -58,6 +58,10 @@ class BlockedAuthor(Base):
     blocked_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+# Run rows that are not scheduled collections (card lookups, directory checks)
+SIDE_RUNS = ("keeper_lookup", "directory_add")
+
+
 class CollectorRun(Base):
     __tablename__ = "collector_runs"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
