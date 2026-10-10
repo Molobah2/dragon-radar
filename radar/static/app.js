@@ -2,6 +2,8 @@
   "use strict";
   const data = JSON.parse(document.getElementById("radar-data").textContent);
   const posts = data.posts || [];
+  const pinnedPosts = data.pinned || [];
+  const pinnedIds = new Set(pinnedPosts.map((p) => p.id));
   const INTRO_MS = data.intro_ms || 5000;
   const BATCH = 12;
   const KEEP_DAYS = 30;
@@ -46,7 +48,7 @@
   $("needsLove").checked = needsLove;
   const visible = () => pool().filter((p) => (showOpened || !opened[p.id]) && (!needsLove || !p.opens));
   const HOT_MIN = 2, HOT_MAX = 4;
-  const hotList = () => needsLove ? [] : visible().filter((p) => p.opens >= HOT_MIN)
+  const hotList = () => needsLove ? [] : visible().filter((p) => p.opens >= HOT_MIN && !pinnedIds.has(p.id))
     .sort((a, b) => b.opens - a.opens || Date.parse(b.t) - Date.parse(a.t)).slice(0, HOT_MAX);
 
   // ---------- counts ----------
@@ -96,13 +98,13 @@
     if (opened[id]) return;
     opened[id] = Date.now();
     save();
-    const post = posts.find((x) => x.id === id);
+    const post = posts.find((x) => x.id === id) || pinnedPosts.find((x) => x.id === id);
     if (post) { post.opens = (post.opens || 0) + 1; }
     try { fetch(`/api/open/${id}`, { method: "POST", keepalive: true }); } catch (e) {}
     window.meadow && window.meadow.cheer();
     counts(true);
     if (!card) return;
-    if (showOpened) { card.classList.add("opened"); setFoot(card, id); return; }
+    if (showOpened || pinnedIds.has(id)) { card.classList.add("opened"); setFoot(card, id); return; }
     setTimeout(() => { card.classList.add("leaving"); setTimeout(render, 700); }, 200);
   }
   function undo(id) { delete opened[id]; save(); render(); }
@@ -174,10 +176,12 @@
   }
   function render() {
     const trail = $("trail");
+    $("pinned").hidden = !pinnedPosts.length;
+    $("pinned-trail").replaceChildren(...pinnedPosts.map((p, i) => placeCard(p, i)));
     const hot = hotList(), hotIds = new Set(hot.map((p) => p.id));
     $("hot").hidden = !hot.length;
     $("hot-trail").replaceChildren(...hot.map((p, i) => placeCard(p, i)));
-    const rest = visible().filter((p) => !hotIds.has(p.id));
+    const rest = visible().filter((p) => !hotIds.has(p.id) && !pinnedIds.has(p.id));
     const list = rest.slice(0, shown);
     const frag = document.createDocumentFragment();
     let i = 0;
@@ -190,7 +194,7 @@
       frag.append(card); i++;
     }
     trail.replaceChildren(frag);
-    $("empty").hidden = list.length + hot.length > 0;
+    $("empty").hidden = list.length + hot.length + pinnedPosts.length > 0;
     $("more").hidden = rest.length <= shown;
     counts();
   }

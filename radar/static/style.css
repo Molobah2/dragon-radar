@@ -289,3 +289,4 @@ body.static-page #meadow { filter: blur(14px) saturate(1.15) brightness(1.04); t
 .hot-title { display: flex; align-items: baseline; gap: 10px; margin: 0 0 10px 4px; font-family: var(--font-display); font-weight: 600; font-size: 20px; color: var(--ink); text-shadow: 0 1px 0 rgba(255, 255, 255, .6); }
 .hot-title span { font-family: var(--font-mono); font-size: 12px; font-weight: 400; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .05em; }
 .hot .post { box-shadow: 0 0 0 3px rgba(255, 122, 89, .55), 0 24px 44px -26px rgba(29, 36, 51, .45); }
+.pinned-row .post { box-shadow: 0 0 0 3px rgba(255, 210, 63, .7), 0 24px 44px -26px rgba(29, 36, 51, .45); }

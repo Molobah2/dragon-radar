@@ -17,7 +17,8 @@ from .config import Config
 from .db import (BlockedAuthor, CollectorRun, Post, get_setting, make_session_factory, month_spend,
                  set_setting, utcnow)
 
-FEED_LIMIT = 1000  # IDs only, a few KB; the browser renders them in small batches
+FEED_LIMIT = 1000
+PINNED = 2  # newest team posts kept at the top  # IDs only, a few KB; the browser renders them in small batches
 
 
 def local_day_bounds(day: date, tz: ZoneInfo) -> tuple[datetime, datetime]:
@@ -90,30 +91,35 @@ def create_app(cfg: Config | None = None) -> Flask:
         q = q.order_by(Post.created_at.desc()).limit(FEED_LIMIT)
         with Session() as s:
             posts = s.scalars(q).all()
-        # Team posts from the last 24 hours are pinned on top; everything else is newest first
-        pin_after = utcnow() - timedelta(hours=24)
-        posts.sort(key=lambda p: not (p.is_team and p.created_at >= pin_after))
+        # The two newest team posts are always pinned, whatever range or filter is picked
+        with Session() as s:
+            pinned = s.scalars(select(Post).where(Post.is_team.is_(True), Post.hidden.is_(False),
+                                                  Post.text.is_not(None), Post.author_username.is_not(None))
+                               .order_by(Post.created_at.desc()).limit(PINNED)).all()
         with Session() as s:
             last_run = s.scalar(select(CollectorRun).where(CollectorRun.status.in_(["ok", "page_limit"]))
                                 .order_by(CollectorRun.started_at.desc()).limit(1))
-        items = [{"id": p.id, "t": p.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        def item(p):
+            return {"id": p.id, "t": p.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
                   "team": p.is_team, "quote": p.is_quote, "text": p.text, "name": p.author_name or p.author_username,
                   "user": p.author_username, "avatar": p.author_avatar, "media": p.has_media,
-                  "opens": p.opens or 0} for p in posts]
+                    "opens": p.opens or 0}
+        items = [item(p) for p in posts]
+        pinned_items = [item(p) for p in pinned]
         filters = {"range": key, "who": who, "quotes": "1" if quotes else "0",
                    "from": args.get("from", ""), "to": args.get("to", "")}
         updated = last_run.finished_at.strftime("%Y-%m-%dT%H:%M:%SZ") if last_run and last_run.finished_at else None
-        return items, filters, updated
+        return items, pinned_items, filters, updated
 
     @app.get("/")
     def feed():
-        items, filters, updated = feed_query(request.args)
-        return render_template("feed.html", cfg=cfg, items=items, filters=filters, updated=updated)
+        items, pinned_items, filters, updated = feed_query(request.args)
+        return render_template("feed.html", cfg=cfg, items=items, pinned=pinned_items, filters=filters, updated=updated)
 
     @app.get("/api/posts")
     def api_posts():
-        items, filters, updated = feed_query(request.args)
-        return jsonify({"posts": items, "filters": filters, "updated": updated})
+        items, pinned_items, filters, updated = feed_query(request.args)
+        return jsonify({"posts": items, "pinned": pinned_items, "filters": filters, "updated": updated})
 
     # Anonymous open counter. Nothing about the visitor is stored. The browser only
     # sends this the first time it opens a post, and the same address can bump

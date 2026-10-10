@@ -74,6 +74,22 @@ def capped_collection(s: Session, client: XClient, cfg: Config, run: CollectorRu
     run.status = "ok"
 
 
+def collect_team(s: Session, client: XClient, cfg: Config, run: CollectorRun, now: datetime) -> None:
+    """Testing mode only reads 10 posts at a time, which can miss team posts. This keeps
+    the team's own posts complete so the two newest can always be pinned. Only new
+    team posts are returned (and billed) after the first run."""
+    team_id = resolve_team_id(s, client, cfg, run)
+    since_id = get_setting(s, "team_newest_id") or None
+    start = (now - timedelta(days=6, hours=23)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    data = client.search_recent(f"from:{cfg.team_handle} -is:reply -is:retweet", since_id=since_id,
+                                start_time=None if since_id else start, max_results=10)
+    newest = (data.get("meta") or {}).get("newest_id")
+    if data.get("data"):
+        store_posts(s, data, run, cfg, team_id, set(), [], now)
+    if newest:
+        set_setting(s, "team_newest_id", newest)
+
+
 def store_posts(s, data, run, cfg, team_id, blocked_authors, words, now) -> None:
     posts = data.get("data", []) or []
     users = {u["id"]: u for u in (data.get("includes", {}) or {}).get("users", []) or []}
@@ -155,6 +171,7 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
     if cfg.daily_post_cap > 0:
         try:
             capped_collection(s, client, cfg, run, now)
+            collect_team(s, client, cfg, run, now)
             tidy_up(s, client, cfg, run, now)
         except XApiError as e:
             run.status = "rate_limited" if isinstance(e, RateLimited) else "error"

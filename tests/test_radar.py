@@ -86,6 +86,7 @@ def test_first_run_uses_backfill_window_and_stores_posts(cfg, Session):
 def test_default_query_excludes_replies_and_reposts():
     q = Config().search_query
     assert "-is:reply" in q and "-is:retweet" in q and "@Pocket_Dragons_" in q
+    assert "is:verified" in q
 
 
 def test_second_run_uses_since_id_and_dedupes(cfg, Session):
@@ -256,18 +257,41 @@ def test_admin_disabled_without_password(cfg, Session):
     assert app.test_client().get("/admin").status_code == 404
 
 
-def test_only_recent_team_posts_are_pinned(cfg, Session):
+def test_two_newest_team_posts_are_always_pinned(cfg, Session):
     now = utcnow()
     with Session() as s:
         s.add_all([
-            Post(id="old-team", author_username="u", text="hello", author_id="t", created_at=now - timedelta(hours=30), is_team=True),
-            Post(id="new-community", author_username="u", text="hello", author_id="c", created_at=now - timedelta(hours=1)),
-            Post(id="new-team", author_username="u", text="hello", author_id="t", created_at=now - timedelta(hours=2), is_team=True),
+            Post(id="team-old", author_username="u", text="hello", author_id="t", created_at=now - timedelta(days=5), is_team=True),
+            Post(id="team-mid", author_username="u", text="hello", author_id="t", created_at=now - timedelta(days=3), is_team=True),
+            Post(id="team-new", author_username="u", text="hello", author_id="t", created_at=now - timedelta(hours=30), is_team=True),
+            Post(id="community", author_username="u", text="hello", author_id="c", created_at=now - timedelta(hours=1)),
         ])
         s.commit()
     app = create_app(cfg)
-    got = ids(app.test_client().get("/api/posts?range=7d"))
-    assert got == ["new-team", "new-community", "old-team"]
+    data = app.test_client().get("/api/posts?range=24h").get_json()
+    assert [p["id"] for p in data["pinned"]] == ["team-new", "team-mid"]
+    assert [p["id"] for p in data["posts"]] == ["community"]
+
+
+def test_team_posts_are_collected_separately_in_testing_mode(cfg, Session):
+    cfg.daily_post_cap = 50
+    cfg.team_user_id = TEAM_ID
+    now = utcnow()
+    created = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+    class Fake(FakeClient):
+        def search_recent(self, query, since_id=None, start_time=None, next_token=None, max_results=100):
+            self.calls.append({"query": query, "since_id": since_id})
+            if query.startswith("from:"):
+                return {"data": [post("t1", author=TEAM_ID, created=created)], "meta": {"newest_id": "t1"}}
+            return {"data": [], "meta": {}}
+
+    client = Fake([])
+    with Session() as s:
+        run_collection(s, client, cfg, now=now)
+        assert s.get(Post, "t1").is_team
+        assert get_setting(s, "team_newest_id") == "t1"
+    assert client.calls[-1]["query"].startswith("from:Pocket_Dragons_")
 
 
 def test_scheduler_due_logic(cfg, Session):
@@ -322,6 +346,8 @@ def test_daily_cap_spreads_reads():
     class Fake:
         calls = []
         def search_recent(self, q, since_id=None, start_time=None, next_token=None, max_results=100):
+            if q.startswith("from:"):
+                return {"meta": {}}
             self.calls.append(max_results)
             n = len(self.calls)
             return {"data": [{"id": f"{n}{i:03d}", "author_id": "9", "created_at": "2026-10-10T01:00:00.000Z",

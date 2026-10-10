@@ -70,6 +70,10 @@
 
   <div class="layout" id="feed">
     <main>
+      <section class="hot pinned-row" id="pinned" hidden>
+        <h2 class="hot-title">Pinned <span>latest from the team</span></h2>
+        <div class="trail" id="pinned-trail"></div>
+      </section>
       <section class="hot" id="hot" hidden>
         <h2 class="hot-title">Hot now <span>most opened by Keepers</span></h2>
         <div class="trail" id="hot-trail"></div>
@@ -95,6 +99,6 @@
   </div>
 {% endblock %}
 {% block scripts %}
-  <script id="radar-data" type="application/json">{{ {"posts": items, "demo": cfg.demo_mode, "intro_ms": 5000} | tojson }}</script>
+  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "demo": cfg.demo_mode, "intro_ms": 5000} | tojson }}</script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 {% endblock %}
