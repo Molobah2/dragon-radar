@@ -145,6 +145,53 @@ def create_app(cfg: Config | None = None) -> Flask:
             s.commit()
             return {"counted": True, "opens": post.opens}
 
+    # Keeper card lookup. Uses only posts already in our database, so it costs nothing on X.
+    @app.get("/api/keeper/<handle>")
+    def api_keeper(handle):
+        handle = handle.strip().lstrip("@")
+        if not handle or len(handle) > 15 or not all(c.isalnum() or c == "_" for c in handle):
+            return {"found": False}
+        since = utcnow() - timedelta(days=7)
+        with Session() as s:
+            rows = s.scalars(select(Post).where(func.lower(Post.author_username) == handle.lower(),
+                                                Post.hidden.is_(False))
+                             .order_by(Post.created_at.desc())).all()
+        if not rows:
+            return {"found": False, "handle": handle}
+        latest = rows[0]
+        return {"found": True, "handle": latest.author_username, "name": latest.author_name or latest.author_username,
+                "avatar": f"/api/avatar/{latest.author_username}" if latest.author_avatar else None,
+                "posts_week": sum(1 for p in rows if p.created_at >= since),
+                "reached": sum(p.opens or 0 for p in rows)}
+
+    # Avatars are fetched through the site so the card image can be saved (browsers block
+    # saving a canvas that drew an image from another site). Only X's image host is allowed.
+    avatar_cache: dict[str, tuple[float, bytes, str]] = {}
+
+    @app.get("/api/avatar/<handle>")
+    def api_avatar(handle):
+        import requests
+        key = handle.lower()
+        hit = avatar_cache.get(key)
+        if hit and datetime.now().timestamp() - hit[0] < 86400:
+            return hit[1], 200, {"Content-Type": hit[2], "Cache-Control": "public, max-age=86400"}
+        with Session() as s:
+            url = s.scalar(select(Post.author_avatar).where(func.lower(Post.author_username) == key,
+                                                            Post.author_avatar.is_not(None)).limit(1))
+        if not url or not url.startswith("https://pbs.twimg.com/"):
+            abort(404)
+        try:
+            r = requests.get(url, timeout=8)
+        except requests.RequestException:
+            abort(404)
+        if r.status_code != 200 or len(r.content) > 500_000:
+            abort(404)
+        ctype = r.headers.get("Content-Type", "image/jpeg")
+        if len(avatar_cache) > 2000:
+            avatar_cache.clear()
+        avatar_cache[key] = (datetime.now().timestamp(), r.content, ctype)
+        return r.content, 200, {"Content-Type": ctype, "Cache-Control": "public, max-age=86400"}
+
     @app.get("/healthz")
     def healthz():
         return {"ok": True}

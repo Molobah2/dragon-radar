@@ -410,3 +410,19 @@ def test_open_counter_counts_once_per_address(cfg, Session):
     assert c.post("/api/open/42", headers={"X-Forwarded-For": "9.9.9.9"}).get_json()["opens"] == 2
     assert c.post("/api/open/abc").status_code == 400
     assert c.get("/api/posts?range=24h").get_json()["posts"][0]["opens"] == 2
+
+
+def test_keeper_lookup_uses_stored_posts_only(cfg, Session):
+    app = create_app(cfg)
+    now = utcnow()
+    with Session() as s:
+        s.add_all([
+            Post(id="1", author_id="a", author_username="Ann_X", author_name="Ann", text="t", created_at=now, opens=3),
+            Post(id="2", author_id="a", author_username="Ann_X", author_name="Ann", text="t", created_at=now - timedelta(days=9), opens=2),
+        ])
+        s.commit()
+    c = app.test_client()
+    got = c.get("/api/keeper/@ann_x").get_json()
+    assert got["found"] and got["name"] == "Ann" and got["posts_week"] == 1 and got["reached"] == 5
+    assert c.get("/api/keeper/nobody").get_json()["found"] is False
+    assert c.get("/api/keeper/bad%20name").get_json()["found"] is False
