@@ -58,8 +58,8 @@ class Config:
     recheck_deleted: bool = field(default_factory=lambda: os.environ.get("RECHECK_DELETED", "1") != "0")
     force_collect: bool = field(default_factory=lambda: _bool("FORCE_COLLECT"))
     # Live Keeper card lookups on X: most posts read per lookup, and a daily spend cap for them
-    keeper_max_posts: int = field(default_factory=lambda: int(os.environ.get("KEEPER_MAX_POSTS", "25")))
-    keeper_daily_budget_usd: float = field(default_factory=lambda: float(os.environ.get("KEEPER_DAILY_BUDGET_USD", "1.0")))
+    keeper_max_posts: int = field(default_factory=lambda: int(os.environ.get("KEEPER_MAX_POSTS", "40")))
+    keeper_daily_budget_usd: float = field(default_factory=lambda: float(os.environ.get("KEEPER_DAILY_BUDGET_USD", "1.5")))
     keeper_cache_hours: int = field(default_factory=lambda: int(os.environ.get("KEEPER_CACHE_HOURS", "6")))
     max_pages_per_run: int = field(default_factory=lambda: int(os.environ.get("MAX_PAGES_PER_RUN", "10")))
     first_run_backfill_hours: int = field(default_factory=lambda: int(os.environ.get("FIRST_RUN_BACKFILL_HOURS", "24")))

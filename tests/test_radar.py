@@ -424,19 +424,22 @@ def test_keeper_lookup_asks_x_and_caches(cfg, Session, monkeypatch):
             return {"id": "7", "name": "Ann", "username": "Ann_X", "profile_image_url": "https://pbs.twimg.com/a_normal.jpg"}
         def search_recent(self, q, **kw):
             calls.append(q)
-            return {"data": [{"id": "1", "public_metrics": {"like_count": 4, "reply_count": 1, "retweet_count": 2, "quote_count": 0}},
-                             {"id": "2", "public_metrics": {"like_count": 3}}], "meta": {}}
+            return {"data": [{"id": "1", "text": "Uptober is for dragons", "public_metrics": {"like_count": 4, "reply_count": 1, "retweet_count": 2, "quote_count": 0}},
+                             {"id": "2", "text": "recap with @pocket_dragons_", "public_metrics": {"like_count": 3}},
+                             {"id": "3", "text": "gm friends", "public_metrics": {"like_count": 50}},
+                             {"id": "4", "text": "so good https://t.co/x", "entities": {"urls": [{"expanded_url": "https://x.com/Pocket_Dragons_/status/9"}]}, "public_metrics": {"like_count": 1}}], "meta": {}}
     monkeypatch.setattr(xapi, "XClient", Fake)
     cfg.x_bearer_token = "t"
     c = create_app(cfg).test_client()
     got = c.get("/api/keeper/@ann_x").get_json()
-    assert got["found"] and got["name"] == "Ann" and got["posts_week"] == "2" and got["love"] == 10
+    assert got["found"] and got["name"] == "Ann" and got["posts_week"] == "3" and got["love"] == 11
     assert "from:Ann_X" in calls[1] and "-is:retweet" in calls[1]
+    assert got["posts_read"] == 4
     c.get("/api/keeper/ann_x")
     assert len(calls) == 2  # second time comes from the cache
     with Session() as s:
         run = s.scalars(select(CollectorRun).where(CollectorRun.status == "keeper_lookup")).one()
-        assert round(run.est_cost_usd, 3) == 0.02
+        assert round(run.est_cost_usd, 3) == 0.03
     assert c.get("/api/keeper/bad%20name").get_json()["found"] is False
 
 

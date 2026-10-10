@@ -59,6 +59,17 @@ def resolve_range(args, tz: ZoneInfo, now_utc: datetime, max_days: int) -> tuple
     return key, start, end
 
 
+DRAGON_WORDS = ("pocket dragons", "pocketdragons", "pocket_dragons", "dragon", "blinky", "hatchery", "hatchling",
+                "keeper", "ember chamber", "\U0001F409", "\U0001F432", "\U0001F95A")
+
+
+def about_dragons(text: str, team_handle: str = "Pocket_Dragons_") -> bool:
+    """A post counts as being about Pocket Dragons if it tags the team or uses the project's words."""
+    t = (text or "").lower()
+    return (f"@{team_handle.lower()}" in t or f"/{team_handle.lower()}/status/" in t
+            or any(w in t for w in DRAGON_WORDS))
+
+
 def create_app(cfg: Config | None = None) -> Flask:
     cfg = cfg or Config()
     app = Flask(__name__)
@@ -195,20 +206,28 @@ def create_app(cfg: Config | None = None) -> Flask:
             if not profile:
                 card = {"found": False, "handle": handle, "note": f"@{handle} does not seem to exist on X."}
             else:
-                q = (f'from:{profile["username"]} (@{cfg.team_handle} OR "pocket dragons" OR #PocketDragons) '
-                     "-is:retweet -is:reply")
+                # Read all of their own posts from the last 7 days, then keep the ones about the
+                # dragons. Matching here (not in X's search) catches "dragons", Blinky, the Hatchery
+                # and so on, not only posts that spell out the project name.
+                q = f'from:{profile["username"]} -is:retweet -is:reply'
                 data = client.search_recent(q, start_time=(now - timedelta(days=6, hours=23)).strftime("%Y-%m-%dT%H:%M:%SZ"),
                                             max_results=max(10, cfg.keeper_max_posts))
-                posts = (data.get("data") or [])[:cfg.keeper_max_posts]
-                run.posts_returned = len(posts)
-                run.est_cost_usd += len(posts) * cfg.cost_per_post_usd
+                read_posts = (data.get("data") or [])[:cfg.keeper_max_posts]
+                run.posts_returned = len(read_posts)
+                run.est_cost_usd += len(read_posts) * cfg.cost_per_post_usd
                 more = bool((data.get("meta") or {}).get("next_token"))
+                def post_text(p):
+                    # Include link targets so quote posts of the team's posts count too
+                    urls = " ".join(u.get("expanded_url", "") for u in ((p.get("entities") or {}).get("urls") or []))
+                    return f'{p.get("text", "")} {urls}'
+                posts = [p for p in read_posts if about_dragons(post_text(p), cfg.team_handle)]
                 love = sum(sum((p.get("public_metrics") or {}).get(k, 0) for k in
                                ("like_count", "reply_count", "retweet_count", "quote_count")) for p in posts)
                 avatar = (profile.get("profile_image_url") or "").replace("_normal.", "_bigger.")
                 card = {"found": True, "handle": profile["username"], "name": profile.get("name") or profile["username"],
                         "avatar": f"/api/avatar/{profile['username']}" if avatar else None,
-                        "avatar_url": avatar, "posts_week": f"{len(posts)}{'+' if more else ''}", "love": love}
+                        "avatar_url": avatar, "posts_week": f"{len(posts)}{'+' if more else ''}", "love": love,
+                        "posts_read": len(read_posts)}
             run.finished_at = utcnow()
             with Session() as s:
                 s.add(run)

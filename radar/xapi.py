@@ -36,7 +36,7 @@ class XClient:
         params = {
             "query": query,
             "max_results": max(10, min(100, max_results)),
-            "tweet.fields": "created_at,author_id,referenced_tweets,attachments,public_metrics",
+            "tweet.fields": "created_at,author_id,referenced_tweets,attachments,public_metrics,entities",
             "expansions": "author_id",
             "user.fields": "name,username,profile_image_url",
         }
