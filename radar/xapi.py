@@ -31,12 +31,12 @@ class XClient:
         return r.json()
 
     def search_recent(self, query: str, since_id: str | None = None, start_time: str | None = None,
-                      next_token: str | None = None) -> dict:
+                      next_token: str | None = None, max_results: int = 100) -> dict:
         # No expansions: X's pricing page does not say whether expanded user
         # objects are billed as user reads, so we only ask for post fields.
         params = {
             "query": query,
-            "max_results": 100,
+            "max_results": max(10, min(100, max_results)),
             "tweet.fields": "created_at,author_id,referenced_tweets",
         }
         if since_id:

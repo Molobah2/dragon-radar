@@ -5,7 +5,7 @@ Run on a schedule (GitHub Actions, every 20 minutes):  python -m radar.collect
 import logging
 from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .config import Config
@@ -43,6 +43,58 @@ def resolve_team_id(s: Session, client: XClient, cfg: Config, run: CollectorRun)
     return team_id
 
 
+CAP_PAGE = 10  # smallest page X allows
+
+
+def capped_collection(s: Session, client: XClient, cfg: Config, run: CollectorRun, now: datetime) -> None:
+    """Testing mode: read the newest 10 posts a few times a day, never more than the daily cap.
+
+    Posts between snapshots are skipped on purpose; the bookmark is not used.
+    """
+    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    read_today = s.scalar(select(func.coalesce(func.sum(CollectorRun.posts_returned), 0))
+                          .where(CollectorRun.started_at >= day_start)) or 0
+    if read_today + CAP_PAGE > cfg.daily_post_cap:
+        run.status = "skipped_daily_cap"
+        return
+    gap = timedelta(hours=24 * CAP_PAGE / cfg.daily_post_cap)
+    last = s.scalar(select(CollectorRun.started_at).where(CollectorRun.posts_returned > 0)
+                    .order_by(CollectorRun.started_at.desc()).limit(1))
+    if last and now - last < gap - timedelta(minutes=5):
+        run.status = "waiting"
+        return
+    team_id = resolve_team_id(s, client, cfg, run)
+    blocked_authors = set(s.scalars(select(BlockedAuthor.author_id)))
+    words = blocklist(s, cfg)
+    start = now - timedelta(hours=cfg.first_run_backfill_hours)
+    data = client.search_recent(cfg.search_query, start_time=start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                max_results=CAP_PAGE)
+    run.pages = 1
+    store_posts(s, data.get("data", []) or [], run, cfg, team_id, blocked_authors, words, now)
+    run.status = "ok"
+
+
+def store_posts(s, posts, run, cfg, team_id, blocked_authors, words, now) -> None:
+    run.posts_returned += len(posts)
+    run.est_cost_usd += len(posts) * cfg.cost_per_post_usd
+    for p in posts:
+        if p["author_id"] in blocked_authors or is_blocked_text(p.get("text", ""), words):
+            run.posts_skipped += 1
+            continue
+        if s.get(Post, p["id"]) is not None:
+            continue
+        refs = p.get("referenced_tweets") or []
+        s.add(Post(
+            id=p["id"],
+            author_id=p["author_id"],
+            created_at=parse_x_time(p["created_at"]),
+            is_quote=any(r.get("type") == "quoted" for r in refs),
+            is_team=(p["author_id"] == team_id),
+            collected_at=now,
+        ))
+        run.posts_new += 1
+
+
 def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | None = None) -> CollectorRun:
     now = now or utcnow()
     run = CollectorRun(started_at=now)
@@ -55,6 +107,17 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
         run.finished_at = utcnow()
         s.commit()
         log.warning("Monthly spend limit reached (%.2f of %.2f USD). Skipping.", spent, cfg.monthly_spend_limit_usd)
+        return run
+
+    if cfg.daily_post_cap > 0:
+        try:
+            capped_collection(s, client, cfg, run, now)
+        except XApiError as e:
+            run.status = "rate_limited" if isinstance(e, RateLimited) else "error"
+            run.error = str(e)[:2000]
+        run.finished_at = utcnow()
+        s.commit()
+        log.info("Capped run: %s, %d returned, %d new", run.status, run.posts_returned, run.posts_new)
         return run
 
     # A previous run may have stopped mid-way (page limit, budget, rate limit). Resume
@@ -85,26 +148,7 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
             if newest_id is None and meta.get("newest_id"):
                 newest_id = meta["newest_id"]
 
-            posts = data.get("data", []) or []
-            run.posts_returned += len(posts)
-            run.est_cost_usd += len(posts) * cfg.cost_per_post_usd
-
-            for p in posts:
-                if p["author_id"] in blocked_authors or is_blocked_text(p.get("text", ""), words):
-                    run.posts_skipped += 1
-                    continue
-                if s.get(Post, p["id"]) is not None:
-                    continue
-                refs = p.get("referenced_tweets") or []
-                s.add(Post(
-                    id=p["id"],
-                    author_id=p["author_id"],
-                    created_at=parse_x_time(p["created_at"]),
-                    is_quote=any(r.get("type") == "quoted" for r in refs),
-                    is_team=(p["author_id"] == team_id),
-                    collected_at=now,
-                ))
-                run.posts_new += 1
+            store_posts(s, data.get("data", []) or [], run, cfg, team_id, blocked_authors, words, now)
 
             next_token = meta.get("next_token")
             if not next_token:

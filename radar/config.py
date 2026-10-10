@@ -51,6 +51,9 @@ class Config:
     monthly_spend_limit_usd: float = field(default_factory=lambda: float(os.environ.get("MONTHLY_SPEND_LIMIT_USD", "50")))
     cost_per_post_usd: float = field(default_factory=lambda: float(os.environ.get("COST_PER_POST_USD", "0.005")))
     cost_per_user_usd: float = field(default_factory=lambda: float(os.environ.get("COST_PER_USER_USD", "0.010")))
+    # Testing mode: read at most this many posts per UTC day (0 = no cap). Reads are
+    # spread out as one page of 10 newest posts every few hours.
+    daily_post_cap: int = field(default_factory=lambda: int(os.environ.get("DAILY_POST_CAP", "0")))
     max_pages_per_run: int = field(default_factory=lambda: int(os.environ.get("MAX_PAGES_PER_RUN", "10")))
     first_run_backfill_hours: int = field(default_factory=lambda: int(os.environ.get("FIRST_RUN_BACKFILL_HOURS", "24")))
     feed_days: int = field(default_factory=lambda: int(os.environ.get("FEED_DAYS", "7")))

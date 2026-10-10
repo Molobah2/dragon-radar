@@ -161,7 +161,10 @@ def create_app(cfg: Config | None = None) -> Flask:
             keywords = get_setting(s, "block_keywords", cfg.default_blocklist)
             last_ok = s.scalar(select(CollectorRun.finished_at).where(CollectorRun.status.in_(["ok", "page_limit"]))
                                .order_by(CollectorRun.started_at.desc()).limit(1))
-        stale = last_ok is None or (now - last_ok) > timedelta(minutes=cfg.stale_after_minutes)
+        stale_after = cfg.stale_after_minutes
+        if cfg.daily_post_cap > 0:  # testing mode only reads every few hours
+            stale_after += int(24 * 60 * 10 / cfg.daily_post_cap)
+        stale = last_ok is None or (now - last_ok) > timedelta(minutes=stale_after)
         return render_template("admin.html", cfg=cfg, runs=runs, spend=spend, total_posts=total_posts,
                                hidden=hidden, blocked=blocked, keywords=keywords, stale=stale,
                                last_ok=last_ok, csrf=session.get("csrf"))

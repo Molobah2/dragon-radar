@@ -296,3 +296,41 @@ def test_database_url_uses_installed_driver():
     assert _db_url("sqlite:///radar.db") == "sqlite:///radar.db"
     from sqlalchemy import create_engine
     assert create_engine(_db_url("postgresql://u:p@localhost:1/db")).dialect.driver == "psycopg2"
+
+
+def test_database_url_with_symbols_in_password():
+    from sqlalchemy.engine import make_url
+    from radar.config import _db_url
+    for pw in ["ab@cd", "a/b#c?d", "plain123", "ends@", "p:w"]:
+        url = make_url(_db_url(f"postgresql://postgres.ref:{pw}@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"))
+        assert url.password == pw
+        assert url.host == "aws-0-eu-west-1.pooler.supabase.com"
+        assert url.username == "postgres.ref" and url.port == 5432 and url.database == "postgres"
+
+
+def test_daily_cap_spreads_reads():
+    from datetime import datetime, timedelta
+    from radar.collector import run_collection
+    from radar.config import Config
+    from radar.db import make_session_factory
+
+    class Fake:
+        calls = []
+        def search_recent(self, q, since_id=None, start_time=None, next_token=None, max_results=100):
+            self.calls.append(max_results)
+            n = len(self.calls)
+            return {"data": [{"id": f"{n}{i:03d}", "author_id": "9", "created_at": "2026-10-10T01:00:00.000Z",
+                              "text": "hi"} for i in range(max_results)], "meta": {"next_token": "x"}}
+        def user_id_for(self, u):
+            return "1"
+
+    cfg = Config(database_url="sqlite://", team_user_id="1", daily_post_cap=50, monthly_spend_limit_usd=20)
+    S = make_session_factory(cfg.database_url)
+    fake = Fake()
+    t = datetime(2026, 10, 10, 0, 10)
+    statuses = []
+    for i in range(72):  # every 20 minutes for one day
+        with S() as s:
+            statuses.append(run_collection(s, fake, cfg, now=t + timedelta(minutes=20 * i)).status)
+    assert fake.calls == [10] * 5
+    assert statuses.count("ok") == 5

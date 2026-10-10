@@ -31,6 +31,7 @@ jobs:
           X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           MONTHLY_SPEND_LIMIT_USD: "20"
+          DAILY_POST_CAP: "50"   # testing: newest 10 posts about every 5 hours. Set "0" for full collection.
 
   keep-awake:
     if: github.event.schedule == '*/10 * * * *'
