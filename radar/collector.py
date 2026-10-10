@@ -60,7 +60,7 @@ def capped_collection(s: Session, client: XClient, cfg: Config, run: CollectorRu
     gap = timedelta(hours=24 * CAP_PAGE / cfg.daily_post_cap)
     last = s.scalar(select(CollectorRun.started_at).where(CollectorRun.posts_returned > 0)
                     .order_by(CollectorRun.started_at.desc()).limit(1))
-    if last and now - last < gap - timedelta(minutes=5):
+    if last and now - last < gap - timedelta(minutes=5) and not cfg.force_collect:
         run.status = "waiting"
         return
     team_id = resolve_team_id(s, client, cfg, run)
@@ -70,13 +70,17 @@ def capped_collection(s: Session, client: XClient, cfg: Config, run: CollectorRu
     data = client.search_recent(cfg.search_query, start_time=start.strftime("%Y-%m-%dT%H:%M:%SZ"),
                                 max_results=CAP_PAGE)
     run.pages = 1
-    store_posts(s, data.get("data", []) or [], run, cfg, team_id, blocked_authors, words, now)
+    store_posts(s, data, run, cfg, team_id, blocked_authors, words, now)
     run.status = "ok"
 
 
-def store_posts(s, posts, run, cfg, team_id, blocked_authors, words, now) -> None:
+def store_posts(s, data, run, cfg, team_id, blocked_authors, words, now) -> None:
+    posts = data.get("data", []) or []
+    users = {u["id"]: u for u in (data.get("includes", {}) or {}).get("users", []) or []}
     run.posts_returned += len(posts)
-    run.est_cost_usd += len(posts) * cfg.cost_per_post_usd
+    run.users_returned += len(users)
+    # Assume expanded authors are billed as user reads, to stay on the safe side
+    run.est_cost_usd += len(posts) * cfg.cost_per_post_usd + len(users) * cfg.cost_per_user_usd
     for p in posts:
         if p["author_id"] in blocked_authors or is_blocked_text(p.get("text", ""), words):
             run.posts_skipped += 1
@@ -84,6 +88,8 @@ def store_posts(s, posts, run, cfg, team_id, blocked_authors, words, now) -> Non
         if s.get(Post, p["id"]) is not None:
             continue
         refs = p.get("referenced_tweets") or []
+        u = users.get(p["author_id"], {})
+        avatar = (u.get("profile_image_url") or "").replace("_normal.", "_bigger.")
         s.add(Post(
             id=p["id"],
             author_id=p["author_id"],
@@ -91,8 +97,38 @@ def store_posts(s, posts, run, cfg, team_id, blocked_authors, words, now) -> Non
             is_quote=any(r.get("type") == "quoted" for r in refs),
             is_team=(p["author_id"] == team_id),
             collected_at=now,
+            text=(p.get("text") or "")[:1200],
+            author_name=(u.get("name") or "")[:100] or None,
+            author_username=(u.get("username") or "")[:32] or None,
+            author_avatar=avatar[:400] or None,
+            has_media=bool((p.get("attachments") or {}).get("media_keys")),
         ))
         run.posts_new += 1
+
+
+def tidy_up(s: Session, client: XClient, cfg: Config, run: CollectorRun, now: datetime) -> None:
+    """Clear stored text once posts leave the feed, and once a day hide recent posts deleted on X."""
+    old = now - timedelta(days=cfg.feed_days + 1)
+    for post in s.scalars(select(Post).where(Post.created_at < old, Post.text.is_not(None))):
+        post.text = post.author_name = post.author_avatar = None
+    if not cfg.recheck_deleted:
+        return
+    last = get_setting(s, "last_recheck")
+    if last and now - datetime.fromisoformat(last) < timedelta(hours=23):
+        return
+    recent = s.scalars(select(Post).where(Post.created_at >= now - timedelta(hours=24), Post.hidden.is_(False),
+                                          Post.text.is_not(None))).all()
+    if spent_ok := (month_spend(s, now) + len(recent) * cfg.cost_per_post_usd <= cfg.monthly_spend_limit_usd):
+        for i in range(0, len(recent), 100):
+            chunk = recent[i:i + 100]
+            alive = client.existing_ids([p.id for p in chunk])
+            run.est_cost_usd += len(alive) * cfg.cost_per_post_usd
+            for p in chunk:
+                if p.id not in alive:
+                    p.hidden = True
+                    p.text = p.author_name = p.author_avatar = None
+    if spent_ok:
+        set_setting(s, "last_recheck", now.isoformat())
 
 
 def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | None = None) -> CollectorRun:
@@ -112,6 +148,7 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
     if cfg.daily_post_cap > 0:
         try:
             capped_collection(s, client, cfg, run, now)
+            tidy_up(s, client, cfg, run, now)
         except XApiError as e:
             run.status = "rate_limited" if isinstance(e, RateLimited) else "error"
             run.error = str(e)[:2000]
@@ -148,7 +185,7 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
             if newest_id is None and meta.get("newest_id"):
                 newest_id = meta["newest_id"]
 
-            store_posts(s, data.get("data", []) or [], run, cfg, team_id, blocked_authors, words, now)
+            store_posts(s, data, run, cfg, team_id, blocked_authors, words, now)
 
             next_token = meta.get("next_token")
             if not next_token:
@@ -168,6 +205,7 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
             set_setting(s, "resume_token", next_token or "")
             set_setting(s, "resume_newest_id", newest_id or "")
         run.status = status
+        tidy_up(s, client, cfg, run, now)
     except RateLimited as e:
         # Keep our place; the next scheduled run picks up from here.
         set_setting(s, "resume_token", next_token or "")

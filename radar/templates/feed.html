@@ -40,7 +40,6 @@
       </div>
       <input type="hidden" name="who" value="{{ filters.who }}" disabled id="who-keep">
       <label class="switch"><input type="hidden" name="quotes" value="0"><input type="checkbox" name="quotes" value="1" id="quotes" {% if filters.quotes == "1" %}checked{% endif %}>Quotes</label>
-      <label class="switch"><input type="checkbox" id="showMedia">Media</label>
       <label class="switch"><input type="checkbox" id="showOpened">Show opened</label>
     </div>
   </form>
@@ -77,5 +76,4 @@
 {% block scripts %}
   <script id="radar-data" type="application/json">{{ {"posts": items, "demo": cfg.demo_mode, "intro_ms": 5000} | tojson }}</script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
-  {% if not cfg.demo_mode %}<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>{% endif %}
 {% endblock %}

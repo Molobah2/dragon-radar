@@ -32,12 +32,13 @@ class XClient:
 
     def search_recent(self, query: str, since_id: str | None = None, start_time: str | None = None,
                       next_token: str | None = None, max_results: int = 100) -> dict:
-        # No expansions: X's pricing page does not say whether expanded user
-        # objects are billed as user reads, so we only ask for post fields.
+        # Author name, handle and avatar come along so the site can draw its own cards.
         params = {
             "query": query,
             "max_results": max(10, min(100, max_results)),
-            "tweet.fields": "created_at,author_id,referenced_tweets",
+            "tweet.fields": "created_at,author_id,referenced_tweets,attachments",
+            "expansions": "author_id",
+            "user.fields": "name,username,profile_image_url",
         }
         if since_id:
             params["since_id"] = since_id
@@ -46,6 +47,11 @@ class XClient:
         if next_token:
             params["next_token"] = next_token
         return self._get("/tweets/search/recent", params)
+
+    def existing_ids(self, ids: list[str]) -> set[str]:
+        """Which of these post ids still exist and are visible on X (max 100 per call)."""
+        data = self._get("/tweets", {"ids": ",".join(ids), "tweet.fields": "id"})
+        return {p["id"] for p in data.get("data", []) or []}
 
     def user_id_for(self, username: str) -> str:
         data = self._get(f"/users/by/username/{username}", {})

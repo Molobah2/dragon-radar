@@ -29,7 +29,7 @@ class FakeClient:
         self.calls = []
         self.fail_at = fail_at
 
-    def search_recent(self, query, since_id=None, start_time=None, next_token=None):
+    def search_recent(self, query, since_id=None, start_time=None, next_token=None, max_results=100):
         self.calls.append({"query": query, "since_id": since_id, "start_time": start_time, "next_token": next_token})
         if self.fail_at is not None and len(self.calls) - 1 == self.fail_at:
             raise RateLimited(429, "Too Many Requests")
@@ -37,6 +37,9 @@ class FakeClient:
 
     def user_id_for(self, username):
         return TEAM_ID
+
+    def existing_ids(self, ids):
+        return set(ids) - getattr(self, "deleted", set())
 
 
 @pytest.fixture
@@ -50,6 +53,8 @@ def cfg(tmp_path):
     c.admin_password = "pw"
     c.secret_key = "test"
     c.demo_mode = False
+    c.recheck_deleted = False
+    c.daily_post_cap = 0
     return c
 
 
@@ -194,11 +199,11 @@ def client(cfg, Session):
     now = utcnow()
     with Session() as s:
         s.add_all([
-            Post(id="1", author_id="a", created_at=now - timedelta(minutes=5), is_team=True),
-            Post(id="2", author_id="b", created_at=now - timedelta(minutes=10)),
-            Post(id="3", author_id="c", created_at=now - timedelta(minutes=15), is_quote=True),
-            Post(id="4", author_id="d", created_at=now - timedelta(minutes=20), hidden=True),
-            Post(id="5", author_id="blocked", created_at=now - timedelta(minutes=25)),
+            Post(id="1", author_username="u", text="hello", author_id="a", created_at=now - timedelta(minutes=5), is_team=True),
+            Post(id="2", author_username="u", text="hello", author_id="b", created_at=now - timedelta(minutes=10)),
+            Post(id="3", author_username="u", text="hello", author_id="c", created_at=now - timedelta(minutes=15), is_quote=True),
+            Post(id="4", author_username="u", text="hello", author_id="d", created_at=now - timedelta(minutes=20), hidden=True),
+            Post(id="5", author_username="u", text="hello", author_id="blocked", created_at=now - timedelta(minutes=25)),
         ])
         s.add(BlockedAuthor(author_id="blocked"))
         s.commit()
@@ -225,7 +230,7 @@ def test_feed_page_renders(client):
     assert r.status_code == 200
     html = r.get_data(as_text=True)
     assert "Unofficial community tool" in html
-    assert "platform.twitter.com/widgets.js" in html
+    assert "platform.twitter.com/widgets.js" not in html
 
 
 def test_admin_requires_login_and_csrf(client):
@@ -255,9 +260,9 @@ def test_only_recent_team_posts_are_pinned(cfg, Session):
     now = utcnow()
     with Session() as s:
         s.add_all([
-            Post(id="old-team", author_id="t", created_at=now - timedelta(hours=30), is_team=True),
-            Post(id="new-community", author_id="c", created_at=now - timedelta(hours=1)),
-            Post(id="new-team", author_id="t", created_at=now - timedelta(hours=2), is_team=True),
+            Post(id="old-team", author_username="u", text="hello", author_id="t", created_at=now - timedelta(hours=30), is_team=True),
+            Post(id="new-community", author_username="u", text="hello", author_id="c", created_at=now - timedelta(hours=1)),
+            Post(id="new-team", author_username="u", text="hello", author_id="t", created_at=now - timedelta(hours=2), is_team=True),
         ])
         s.commit()
     app = create_app(cfg)
@@ -323,6 +328,8 @@ def test_daily_cap_spreads_reads():
                               "text": "hi"} for i in range(max_results)], "meta": {"next_token": "x"}}
         def user_id_for(self, u):
             return "1"
+        def existing_ids(self, ids):
+            return set(ids)
 
     cfg = Config(database_url="sqlite://", team_user_id="1", daily_post_cap=50, monthly_spend_limit_usd=20)
     S = make_session_factory(cfg.database_url)
@@ -334,3 +341,23 @@ def test_daily_cap_spreads_reads():
             statuses.append(run_collection(s, fake, cfg, now=t + timedelta(minutes=20 * i)).status)
     assert fake.calls == [10] * 5
     assert statuses.count("ok") == 5
+
+
+def test_cards_get_author_details_and_deleted_posts_are_hidden(cfg, Session):
+    cfg.recheck_deleted = True
+    now = utcnow()
+    created = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    page = {"data": [post("10", author="7", created=created, text="a &amp; b"),
+                     post("11", author="8", created=created)],
+            "includes": {"users": [{"id": "7", "name": "Ann", "username": "ann",
+                                    "profile_image_url": "https://pbs.twimg.com/a_normal.jpg"}]},
+            "meta": {"newest_id": "11"}}
+    client = FakeClient([page])
+    client.deleted = {"11"}
+    with Session() as s:
+        run_collection(s, client, cfg, now=now)
+        a, b = s.get(Post, "10"), s.get(Post, "11")
+        assert (a.author_name, a.author_username, a.author_avatar) == ("Ann", "ann", "https://pbs.twimg.com/a_bigger.jpg")
+        assert a.text == "a &amp; b" and not a.hidden
+        assert b.hidden and b.text is None
+        assert get_setting(s, "last_recheck")

@@ -75,7 +75,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         # The form sends a hidden "0" then the checkbox "1"; the last value wins
         quote_vals = args.getlist("quotes") if hasattr(args, "getlist") else [args.get("quotes", "1")]
         quotes = (quote_vals[-1] if quote_vals else "1") != "0"
-        q = (select(Post).where(Post.hidden.is_(False), Post.created_at >= start, Post.created_at < end)
+        q = (select(Post).where(Post.hidden.is_(False), Post.created_at >= start, Post.created_at < end,
+                                Post.author_username.is_not(None), Post.text.is_not(None))
              .where(Post.author_id.not_in(select(BlockedAuthor.author_id))))
         if who == "team":
             q = q.where(Post.is_team.is_(True))
@@ -95,7 +96,8 @@ def create_app(cfg: Config | None = None) -> Flask:
             last_run = s.scalar(select(CollectorRun).where(CollectorRun.status.in_(["ok", "page_limit"]))
                                 .order_by(CollectorRun.started_at.desc()).limit(1))
         items = [{"id": p.id, "t": p.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                  "team": p.is_team, "quote": p.is_quote} for p in posts]
+                  "team": p.is_team, "quote": p.is_quote, "text": p.text, "name": p.author_name or p.author_username,
+                  "user": p.author_username, "avatar": p.author_avatar, "media": p.has_media} for p in posts]
         filters = {"range": key, "who": who, "quotes": "1" if quotes else "0",
                    "from": args.get("from", ""), "to": args.get("to", "")}
         updated = last_run.finished_at.strftime("%Y-%m-%dT%H:%M:%SZ") if last_run and last_run.finished_at else None

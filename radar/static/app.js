@@ -2,7 +2,6 @@
   "use strict";
   const data = JSON.parse(document.getElementById("radar-data").textContent);
   const posts = data.posts || [];
-  const DEMO = !!data.demo;
   const INTRO_MS = data.intro_ms || 5000;
   const BATCH = 12;
   const KEEP_DAYS = 30;
@@ -25,10 +24,6 @@
   setTimeout(() => store.set("radar:lastVisit", Date.now()), 5000);
 
   let showOpened = !!store.get("radar:showOpened", false);
-  // Photos and link previews make embeds very tall, so they are hidden unless the visitor turns Media on
-  const showMedia = !!store.get("radar:showMedia", false);
-  $("showMedia").checked = showMedia;
-  $("showMedia").addEventListener("change", (e) => { store.set("radar:showMedia", e.target.checked); location.reload(); });
   $("showOpened").checked = showOpened;
   const unavailable = new Set();
   let shown = BATCH;
@@ -36,17 +31,6 @@
   // ---------- helpers ----------
   const now = Date.now(), HOUR = 36e5;
   const ago = (iso) => { const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000); if (s < 60) return "just now"; if (s < 3600) return `${Math.floor(s / 60)}m ago`; if (s < 86400) return `${Math.floor(s / 3600)}h ago`; return `${Math.floor(s / 86400)}d ago`; };
-  const startOfDay = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
-  const pinned = (p) => p.team && Date.parse(p.t) >= now - 24 * HOUR;
-  function bucket(p) {
-    if (pinned(p)) return "Pinned <b>team</b>";
-    const t = Date.parse(p.t), h = (now - t) / HOUR;
-    if (h < 1) return "Last hour";
-    if (h < 6) return "Earlier today";
-    if (startOfDay(t) === startOfDay(now)) return "Today";
-    if (startOfDay(t) === startOfDay(now) - 864e5) return "Yesterday";
-    return new Date(t).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
-  }
   const el = (tag, attrs = {}, ...kids) => {
     const n = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
@@ -93,40 +77,15 @@
         : el("button", { class: "btn btn-soft", type: "button", onclick: () => markOpened(id, card) }, "Done")));
   }
 
-  // ---------- X embeds ----------
-  let twttrReady = null;
-  function waitForTwitter() {
-    if (!twttrReady) twttrReady = new Promise((resolve) => {
-      const started = Date.now();
-      (function check() {
-        if (window.twttr && window.twttr.widgets && window.twttr.widgets.createTweet) return resolve(window.twttr);
-        if (Date.now() - started > 15000) return resolve(null);
-        setTimeout(check, 250);
-      })();
-    });
-    return twttrReady;
+  // ---------- post text ----------
+  const decoder = document.createElement("textarea");
+  function cleanText(raw) {
+    decoder.innerHTML = raw || "";                 // X sends &amp; style entities
+    let text = decoder.value, links = 0;
+    text = text.replace(/https:\/\/t\.co\/\S+/g, () => { links++; return ""; }).replace(/[ \t]+\n/g, "\n").trim();
+    return { text, links };
   }
-  async function loadEmbed(card, p) {
-    const box = card.querySelector(".embed");
-    if (DEMO) {
-      box.replaceChildren(el("div", { class: "demo-post" }, el("div", { class: "demo-line w60" }), el("div", { class: "demo-line w90" }),
-        el("div", { class: "demo-line w75" }), el("span", { class: "demo-label" }, `Demo post ${p.id}`)));
-      return;
-    }
-    const tw = await waitForTwitter();
-    if (!tw) { box.replaceChildren(el("p", { class: "embed-fail" }, "Could not load this post here. Use Open on X.")); return; }
-    const result = await tw.widgets.createTweet(p.id, box, { theme: "light", dnt: true, conversation: "none", align: "center", cards: showMedia ? "visible" : "hidden" });
-    box.querySelector(".embed-loading")?.remove();
-    if (!result) { unavailable.add(p.id); card.remove(); render(); }   // deleted, protected or withheld on X
-  }
-  const io = new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      io.unobserve(e.target);
-      const p = posts.find((x) => x.id === e.target.dataset.id);
-      if (p) loadEmbed(e.target, p);
-    }
-  }, { rootMargin: "900px 0px" });
+  const xLogo = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.2 2.3h3.4l-7.4 8.4 8.7 11.5h-6.8l-5.3-7-6.1 7H1.3l7.9-9L.9 2.3h7l4.8 6.4 5.5-6.4Zm-1.2 17.9h1.9L7.1 4.2H5.1l11.9 16Z"/></svg>';
 
   // ---------- card tilt ----------
   function tilt(card) {
@@ -143,27 +102,35 @@
   // ---------- render (keeps already-loaded embeds in place) ----------
   const cards = new Map();
   function makeCard(p, i) {
-    const tags = [];
-    if (p.team) tags.push(el("span", { class: "tag team" }, "Team"));
-    if (p.quote) tags.push(el("span", { class: "tag" }, "Quote"));
+    const url = `https://x.com/${p.user}/status/${p.id}`;
+    const { text, links } = cleanText(p.text);
+    const chips = [];
+    if (p.team) chips.push(el("span", { class: "tag team" }, "Team"));
+    if (p.quote) chips.push(el("span", { class: "tag" }, "Quote"));
+    if (p.media) chips.push(el("span", { class: "tag media" }, "Photo or video"));
+    else if (links) chips.push(el("span", { class: "tag media" }, "Link"));
+    const avatar = p.avatar
+      ? el("img", { class: "avatar", src: p.avatar, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })
+      : el("span", { class: "avatar blank" }, (p.name || "?").slice(0, 1));
     const card = el("article", { class: "post" + (p.team ? " team" : ""), "data-id": p.id },
-      el("div", { class: "card-head" }, ...tags, el("time", { datetime: p.t }, ago(p.t))),
-      el("div", { class: "embed" }, el("div", { class: "embed-loading" }, el("span"), el("span"), el("span"))),
+      el("header", { class: "card-head" }, avatar,
+        el("a", { class: "who", href: `https://x.com/${p.user}`, target: "_blank", rel: "noopener" },
+          el("b", { class: "name" }, p.name || p.user), el("span", { class: "handle" }, `@${p.user}`)),
+        el("a", { class: "xmark", href: url, target: "_blank", rel: "noopener", title: "View on X", html: xLogo })),
+      el("a", { class: "text", href: url, target: "_blank", rel: "noopener", onclick: () => markOpened(p.id, card) },
+        text || "(no text)"),
+      el("div", { class: "meta" }, ...chips, el("time", { datetime: p.t, title: new Date(p.t).toLocaleString() }, ago(p.t))),
       el("div", { class: "foot" }));
     card.style.setProperty("--i", i % BATCH);
     tilt(card);
-    io.observe(card);
     return card;
   }
   function render() {
     const trail = $("trail");
     const list = visible().slice(0, shown);
     const frag = document.createDocumentFragment();
-    let last = null, i = 0;
+    let i = 0;
     for (const p of list) {
-      const b = bucket(p);
-      // Time headings would break the grid into ragged rows; each card shows its own time instead
-      last = b;
       let card = cards.get(p.id);
       if (!card) { card = makeCard(p, i); cards.set(p.id, card); }
       card.classList.remove("leaving");
@@ -179,14 +146,6 @@
   $("more").addEventListener("click", () => { shown += BATCH; render(); });
   new IntersectionObserver((e) => { if (e[0].isIntersecting && !$("more").hidden) { shown += BATCH; render(); } }, { rootMargin: "500px 0px" }).observe($("more"));
   $("showOpened").addEventListener("change", (e) => { showOpened = e.target.checked; store.set("radar:showOpened", showOpened); render(); });
-
-  // Clicks inside X's embed happen in its own frame. When focus moves into a card's
-  // iframe, count that as opening the post. Moving back over the page re-arms it.
-  window.addEventListener("blur", () => setTimeout(() => {
-    const a = document.activeElement;
-    if (a && a.tagName === "IFRAME") { const c = a.closest(".post"); if (c) markOpened(c.dataset.id, c); }
-  }, 0));
-  document.addEventListener("pointerover", () => { const a = document.activeElement; if (a && a.tagName === "IFRAME") a.blur(); });
 
   // ---------- filters: keep the other choices when one changes ----------
   const params = new URLSearchParams(location.search);

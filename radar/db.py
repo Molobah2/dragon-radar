@@ -1,8 +1,8 @@
-"""Database models. Only post IDs and light metadata are stored, never post text.
+"""Database models.
 
-X's developer policy requires displayed posts to match the live version on X.
-The site shows every post through X's official embed, so nothing stored here
-can go stale.
+Post text and author details are kept only while a post can appear in the feed.
+X's developer policy asks that deleted posts disappear, so the collector re-checks
+recent posts once a day and clears text older than the feed window.
 """
 from datetime import datetime, timezone
 
@@ -28,6 +28,11 @@ class Post(Base):
     is_team: Mapped[bool] = mapped_column(Boolean, default=False)
     hidden: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     collected_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    author_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    author_username: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    author_avatar: Mapped[str | None] = mapped_column(String(400), nullable=True)
+    has_media: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class BlockedAuthor(Base):

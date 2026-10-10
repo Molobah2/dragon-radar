@@ -54,6 +54,9 @@ class Config:
     # Testing mode: read at most this many posts per UTC day (0 = no cap). Reads are
     # spread out as one page of 10 newest posts every few hours.
     daily_post_cap: int = field(default_factory=lambda: int(os.environ.get("DAILY_POST_CAP", "0")))
+    # Re-check posts from the last day for deletions once a day (0 = off)
+    recheck_deleted: bool = field(default_factory=lambda: os.environ.get("RECHECK_DELETED", "1") != "0")
+    force_collect: bool = field(default_factory=lambda: _bool("FORCE_COLLECT"))
     max_pages_per_run: int = field(default_factory=lambda: int(os.environ.get("MAX_PAGES_PER_RUN", "10")))
     first_run_backfill_hours: int = field(default_factory=lambda: int(os.environ.get("FIRST_RUN_BACKFILL_HOURS", "24")))
     feed_days: int = field(default_factory=lambda: int(os.environ.get("FEED_DAYS", "7")))

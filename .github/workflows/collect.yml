@@ -7,7 +7,12 @@ on:
   schedule:
     - cron: "*/20 * * * *"   # collector (GitHub may start scheduled runs a few minutes late)
     - cron: "*/10 * * * *"   # keep-awake ping
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Collect now even if the last grab was recent (daily cap still applies)"
+        type: boolean
+        default: false
 
 concurrency:
   group: collect-${{ github.event.schedule || 'manual' }}
@@ -31,6 +36,7 @@ jobs:
           X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           MONTHLY_SPEND_LIMIT_USD: "20"
+          FORCE_COLLECT: ${{ inputs.force && '1' || '0' }}
           DAILY_POST_CAP: "50"   # testing: newest 10 posts about every 5 hours. Set "0" for full collection.
 
   keep-awake:
