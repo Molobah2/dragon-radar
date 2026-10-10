@@ -36,7 +36,7 @@ class XClient:
         params = {
             "query": query,
             "max_results": max(10, min(100, max_results)),
-            "tweet.fields": "created_at,author_id,referenced_tweets,attachments",
+            "tweet.fields": "created_at,author_id,referenced_tweets,attachments,public_metrics",
             "expansions": "author_id",
             "user.fields": "name,username,profile_image_url",
         }
@@ -52,6 +52,16 @@ class XClient:
         """Which of these post ids still exist and are visible on X (max 100 per call)."""
         data = self._get("/tweets", {"ids": ",".join(ids), "tweet.fields": "id"})
         return {p["id"] for p in data.get("data", []) or []}
+
+    def user_profile(self, username: str) -> dict | None:
+        """Name, handle and picture for one account, or None if it does not exist."""
+        try:
+            data = self._get(f"/users/by/username/{username}", {"user.fields": "name,username,profile_image_url"})
+        except XApiError as e:
+            if e.status in (400, 404):
+                return None
+            raise
+        return data.get("data")
 
     def user_id_for(self, username: str) -> str:
         data = self._get(f"/users/by/username/{username}", {})

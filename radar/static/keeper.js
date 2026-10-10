@@ -160,8 +160,9 @@
     tile(ctx, HX, t1, TW, TH, "Opened today", String(st.today), "#3b82f6");
     tile(ctx, HX + TW + 20, t1, TW, TH, "Day streak", `${st.streak} ${st.streak === 1 ? "day" : "days"}`, "#2fae5b");
     tile(ctx, HX + 2 * (TW + 20), t1, TW, TH, "All time", String(st.total), "#f2557a", "posts opened");
-    tile(ctx, HX, t2, TW, TH, "Posts this week", found ? String(who.posts_week) : "?", "#ff7a3d", found ? "tagging the dragons" : "add your handle");
-    tile(ctx, HX + TW + 20, t2, TW, TH, "Keepers reached", found ? String(who.reached) : "?", "#8a6bff", found ? "opens on your posts" : "add your handle");
+    tile(ctx, HX, t2, TW, TH, "Posts this week", found ? String(who.posts_week) : "?", "#ff7a3d", found ? "about the dragons" : "add your handle");
+    const love = found && who.love !== null && who.love !== undefined;
+    tile(ctx, HX + TW + 20, t2, TW, TH, "Love received", love ? String(who.love) : "?", "#8a6bff", love ? "likes, replies, reposts" : "add your handle");
     tile(ctx, HX + 2 * (TW + 20), t2, TW, TH, "Forged", new Date().toLocaleDateString(undefined, { day: "numeric", month: "short" }), "#0ea5b7", "card date");
 
     // Bottom strip
@@ -201,8 +202,8 @@
     await draw(canvas, who);
     stage("card");
     const st = stats();
-    $("keeper-found").textContent = handle && !(who && who.found)
-      ? `No posts from @${handle} on the radar yet. Tag the dragons and your posts will show up here.` : "";
+    $("keeper-found").textContent = who && who.note ? who.note
+      : handle && who && who.found && who.posts_week === "0" ? `No posts about Pocket Dragons from @${who.handle} in the last 7 days yet.` : "";
     $("keeper-save").onclick = () => canvas.toBlob((b) => {
       const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "keeper-card.png"; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);

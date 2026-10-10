@@ -148,21 +148,75 @@ def create_app(cfg: Config | None = None) -> Flask:
     # Keeper card lookup. Uses only posts already in our database, so it costs nothing on X.
     @app.get("/api/keeper/<handle>")
     def api_keeper(handle):
+        """Looks the person up on X: their profile plus their own posts about Pocket Dragons
+        from the last 7 days (X's recent search window). Cached per handle and capped per day."""
+        import json
         handle = handle.strip().lstrip("@")
         if not handle or len(handle) > 15 or not all(c.isalnum() or c == "_" for c in handle):
             return {"found": False}
-        since = utcnow() - timedelta(days=7)
+        key, now = f"keeper:{handle.lower()}", utcnow()
         with Session() as s:
-            rows = s.scalars(select(Post).where(func.lower(Post.author_username) == handle.lower(),
-                                                Post.hidden.is_(False))
-                             .order_by(Post.created_at.desc())).all()
-        if not rows:
-            return {"found": False, "handle": handle}
-        latest = rows[0]
-        return {"found": True, "handle": latest.author_username, "name": latest.author_name or latest.author_username,
-                "avatar": f"/api/avatar/{latest.author_username}" if latest.author_avatar else None,
-                "posts_week": sum(1 for p in rows if p.created_at >= since),
-                "reached": sum(p.opens or 0 for p in rows)}
+            cached = get_setting(s, key)
+        if cached:
+            data = json.loads(cached)
+            if now - datetime.fromisoformat(data["at"]) < timedelta(hours=cfg.keeper_cache_hours):
+                return data["card"]
+
+        def from_radar(note):
+            # Fallback when X can't be asked: whatever the radar already saw
+            with Session() as s:
+                rows = s.scalars(select(Post).where(func.lower(Post.author_username) == handle.lower(),
+                                                    Post.hidden.is_(False)).order_by(Post.created_at.desc())).all()
+            if not rows:
+                return {"found": False, "handle": handle, "note": note}
+            p0 = rows[0]
+            return {"found": True, "handle": p0.author_username, "name": p0.author_name or p0.author_username,
+                    "avatar": f"/api/avatar/{p0.author_username}" if p0.author_avatar else None,
+                    "posts_week": str(sum(1 for p in rows if p.created_at >= now - timedelta(days=7))),
+                    "love": None, "note": note}
+
+        if not cfg.x_bearer_token:
+            return from_radar("Live lookup is off right now.")
+        day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        worst = cfg.cost_per_user_usd + cfg.keeper_max_posts * cfg.cost_per_post_usd
+        with Session() as s:
+            spent_today = s.scalar(select(func.coalesce(func.sum(CollectorRun.est_cost_usd), 0.0))
+                                   .where(CollectorRun.status == "keeper_lookup", CollectorRun.started_at >= day_start)) or 0
+            spent_month = month_spend(s, now)
+        if spent_today + worst > cfg.keeper_daily_budget_usd or spent_month + worst > cfg.monthly_spend_limit_usd:
+            return from_radar("Blinky is resting. Live lookups are full for today, try again tomorrow.")
+
+        from .xapi import XClient, XApiError
+        client = XClient(cfg.x_bearer_token)
+        run = CollectorRun(started_at=now, status="keeper_lookup")
+        try:
+            profile = client.user_profile(handle)
+            run.users_returned, run.est_cost_usd = 1, cfg.cost_per_user_usd
+            if not profile:
+                card = {"found": False, "handle": handle, "note": f"@{handle} does not seem to exist on X."}
+            else:
+                q = (f'from:{profile["username"]} (@{cfg.team_handle} OR "pocket dragons" OR #PocketDragons) '
+                     "-is:retweet -is:reply")
+                data = client.search_recent(q, start_time=(now - timedelta(days=6, hours=23)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                            max_results=max(10, cfg.keeper_max_posts))
+                posts = (data.get("data") or [])[:cfg.keeper_max_posts]
+                run.posts_returned = len(posts)
+                run.est_cost_usd += len(posts) * cfg.cost_per_post_usd
+                more = bool((data.get("meta") or {}).get("next_token"))
+                love = sum(sum((p.get("public_metrics") or {}).get(k, 0) for k in
+                               ("like_count", "reply_count", "retweet_count", "quote_count")) for p in posts)
+                avatar = (profile.get("profile_image_url") or "").replace("_normal.", "_bigger.")
+                card = {"found": True, "handle": profile["username"], "name": profile.get("name") or profile["username"],
+                        "avatar": f"/api/avatar/{profile['username']}" if avatar else None,
+                        "avatar_url": avatar, "posts_week": f"{len(posts)}{'+' if more else ''}", "love": love}
+            run.finished_at = utcnow()
+            with Session() as s:
+                s.add(run)
+                set_setting(s, key, json.dumps({"at": now.isoformat(), "card": card}))
+                s.commit()
+            return card
+        except XApiError:
+            return from_radar("X did not answer just now, showing what the radar has seen.")
 
     # Avatars are fetched through the site so the card image can be saved (browsers block
     # saving a canvas that drew an image from another site). Only X's image host is allowed.
@@ -178,6 +232,10 @@ def create_app(cfg: Config | None = None) -> Flask:
         with Session() as s:
             url = s.scalar(select(Post.author_avatar).where(func.lower(Post.author_username) == key,
                                                             Post.author_avatar.is_not(None)).limit(1))
+            cached = get_setting(s, f"keeper:{key}")
+        if not url and cached:
+            import json
+            url = (json.loads(cached).get("card") or {}).get("avatar_url")
         if not url or not url.startswith("https://pbs.twimg.com/"):
             abort(404)
         try:
@@ -216,7 +274,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         if not cfg.x_bearer_token:
             return {"started": False, "reason": "no token"}, 503
         with Session() as s:
-            last = s.scalar(select(CollectorRun.started_at).order_by(CollectorRun.started_at.desc()).limit(1))
+            last = s.scalar(select(CollectorRun.started_at).where(CollectorRun.status != "keeper_lookup")
+                            .order_by(CollectorRun.started_at.desc()).limit(1))
         if last and utcnow() - last < timedelta(minutes=10):
             return {"started": False, "reason": "too soon"}, 200
         if not collect_lock.acquire(blocking=False):

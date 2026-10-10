@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy import func, select
 from werkzeug.datastructures import MultiDict
 
@@ -412,17 +413,35 @@ def test_open_counter_counts_once_per_address(cfg, Session):
     assert c.get("/api/posts?range=24h").get_json()["posts"][0]["opens"] == 2
 
 
-def test_keeper_lookup_uses_stored_posts_only(cfg, Session):
-    app = create_app(cfg)
-    now = utcnow()
-    with Session() as s:
-        s.add_all([
-            Post(id="1", author_id="a", author_username="Ann_X", author_name="Ann", text="t", created_at=now, opens=3),
-            Post(id="2", author_id="a", author_username="Ann_X", author_name="Ann", text="t", created_at=now - timedelta(days=9), opens=2),
-        ])
-        s.commit()
-    c = app.test_client()
+def test_keeper_lookup_asks_x_and_caches(cfg, Session, monkeypatch):
+    from radar import xapi
+    calls = []
+
+    class Fake:
+        def __init__(self, token): pass
+        def user_profile(self, u):
+            calls.append("user")
+            return {"id": "7", "name": "Ann", "username": "Ann_X", "profile_image_url": "https://pbs.twimg.com/a_normal.jpg"}
+        def search_recent(self, q, **kw):
+            calls.append(q)
+            return {"data": [{"id": "1", "public_metrics": {"like_count": 4, "reply_count": 1, "retweet_count": 2, "quote_count": 0}},
+                             {"id": "2", "public_metrics": {"like_count": 3}}], "meta": {}}
+    monkeypatch.setattr(xapi, "XClient", Fake)
+    cfg.x_bearer_token = "t"
+    c = create_app(cfg).test_client()
     got = c.get("/api/keeper/@ann_x").get_json()
-    assert got["found"] and got["name"] == "Ann" and got["posts_week"] == 1 and got["reached"] == 5
-    assert c.get("/api/keeper/nobody").get_json()["found"] is False
+    assert got["found"] and got["name"] == "Ann" and got["posts_week"] == "2" and got["love"] == 10
+    assert "from:Ann_X" in calls[1] and "-is:retweet" in calls[1]
+    c.get("/api/keeper/ann_x")
+    assert len(calls) == 2  # second time comes from the cache
+    with Session() as s:
+        run = s.scalars(select(CollectorRun).where(CollectorRun.status == "keeper_lookup")).one()
+        assert round(run.est_cost_usd, 3) == 0.02
     assert c.get("/api/keeper/bad%20name").get_json()["found"] is False
+
+
+def test_keeper_lookup_respects_daily_budget(cfg, Session):
+    cfg.x_bearer_token = "t"
+    cfg.keeper_daily_budget_usd = 0.0
+    got = create_app(cfg).test_client().get("/api/keeper/someone").get_json()
+    assert got["found"] is False and "resting" in got["note"]

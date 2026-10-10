@@ -53,12 +53,12 @@ def capped_collection(s: Session, client: XClient, cfg: Config, run: CollectorRu
     """
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     read_today = s.scalar(select(func.coalesce(func.sum(CollectorRun.posts_returned), 0))
-                          .where(CollectorRun.started_at >= day_start)) or 0
+                          .where(CollectorRun.started_at >= day_start, CollectorRun.status != "keeper_lookup")) or 0
     if read_today + CAP_PAGE > cfg.daily_post_cap:
         run.status = "skipped_daily_cap"
         return
     gap = timedelta(hours=24 * CAP_PAGE / cfg.daily_post_cap)
-    last = s.scalar(select(CollectorRun.started_at).where(CollectorRun.posts_returned > 0)
+    last = s.scalar(select(CollectorRun.started_at).where(CollectorRun.posts_returned > 0, CollectorRun.status != "keeper_lookup")
                     .order_by(CollectorRun.started_at.desc()).limit(1))
     if last and now - last < gap - timedelta(minutes=5) and not cfg.force_collect:
         run.status = "waiting"
