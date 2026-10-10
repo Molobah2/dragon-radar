@@ -497,8 +497,9 @@ def test_directory_add_checks_name_and_limits(cfg, Session, monkeypatch):
     assert c.post("/api/keepers/add", json={"handle": "@dee"}).get_json()["ok"] is True
     got = c.post("/api/keepers/add", json={"handle": "eve"}).get_json()
     assert got["ok"] is False and "display name" in got["message"]
-    c.post("/api/keepers/add", json={"handle": "zed"})
-    assert "3 handles" in c.post("/api/keepers/add", json={"handle": "yan"}).get_json()["message"]
+    for h in ["zed", "a1", "a2", "a3", "a4", "a5", "a6", "a7"]:
+        c.post("/api/keepers/add", json={"handle": h})
+    assert "10 handles" in c.post("/api/keepers/add", json={"handle": "yan"}).get_json()["message"]
     assert [k["username"] for k in c.get("/api/keepers").get_json()["keepers"]] == ["dee"]
 
 

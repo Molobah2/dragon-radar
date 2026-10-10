@@ -319,8 +319,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         ip = (request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0]).strip()
         now_ts = datetime.now().timestamp()
         recent = [t for t in add_seen.get(ip, []) if now_ts - t < 86400]
-        if len(recent) >= 3:
-            return {"ok": False, "message": "You can add up to 3 handles a day. Come back tomorrow."}
+        if len(recent) >= 10:
+            return {"ok": False, "message": "You can add up to 10 handles a day. Come back tomorrow."}
         now, key = utcnow(), handle.lower()
         with Session() as s:
             k = s.get(Keeper, key)
