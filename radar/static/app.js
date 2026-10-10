@@ -56,6 +56,36 @@
     $("progress-text").textContent = !all.length ? "No posts in this range yet." : done === all.length ? "All caught up. Nice." : done ? `${all.length - done} still waiting in this range.` : "Nothing opened yet in this range.";
   }
 
+  // ---------- community pulse (from the posts already on the page, costs nothing) ----------
+  function pulse() {
+    const list = posts, range = (new URLSearchParams(location.search).get("range")) || "24h";
+    $("p-posts").textContent = list.length;
+    $("p-people").textContent = new Set(list.map((p) => p.user)).size;
+    $("p-team").textContent = list.filter((p) => p.team).length;
+    $("p-quotes").textContent = list.length ? `${Math.round((list.filter((p) => p.quote).length / list.length) * 100)}%` : "0%";
+    $("pulse-range").textContent = { "24h": "Last 24 hours", today: "Today", yesterday: "Yesterday", "7d": "Last 7 days" }[range] || "This range";
+    const times = list.map((p) => Date.parse(p.t));
+    const daily = range === "7d";
+    const slot = daily ? 864e5 : 36e5, n = daily ? 7 : 24;
+    let end;
+    if (range === "24h" || !times.length) end = Date.now();
+    else if (daily) { const d = new Date(); d.setHours(0, 0, 0, 0); end = d.getTime() + 864e5; }
+    else { const d = new Date(Math.max(...times)); d.setHours(0, 0, 0, 0); end = d.getTime() + 864e5; }
+    const start = end - n * slot, counts = new Array(n).fill(0);
+    for (const t of times) { const i = Math.floor((t - start) / slot); if (i >= 0 && i < n) counts[i]++; }
+    const max = Math.max(1, ...counts), peak = counts.indexOf(Math.max(...counts));
+    const label = (ms) => daily ? new Date(ms).toLocaleDateString(undefined, { weekday: "short" })
+      : new Date(ms).toLocaleTimeString(undefined, { hour: "numeric" });
+    $("p-bars").replaceChildren(...counts.map((c, i) => {
+      const bar = el("i", { class: c ? (i === peak ? "peak" : "") : "zero", title: `${label(start + i * slot)}: ${c} post${c === 1 ? "" : "s"}` });
+      bar.style.height = `${Math.max(4, Math.round((c / max) * 70))}px`;
+      return bar;
+    }));
+    $("p-start").textContent = label(start);
+    $("p-end").textContent = range === "24h" ? "now" : label(end - slot);
+    $("p-peak").textContent = counts[peak] ? `Busiest: ${label(start + peak * slot)} (${counts[peak]})` : "Quiet so far";
+  }
+
   // ---------- opening ----------
   function markOpened(id, card) {
     if (opened[id]) return;
@@ -177,6 +207,7 @@
   document.addEventListener("keydown", (e) => { if (!revealed && (e.key === "Escape" || e.key === "Enter")) reveal(); });
 
   render();
+  pulse();
   let seenIntro = false;
   try { seenIntro = sessionStorage.getItem("radar:intro") === "1"; sessionStorage.setItem("radar:intro", "1"); } catch (e) {}
   if (reduce || seenIntro) reveal(); else timer = setTimeout(reveal, INTRO_MS);

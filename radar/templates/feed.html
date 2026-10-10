@@ -51,6 +51,23 @@
     <span class="meter-label"><span id="m-done">0 opened</span> · <span id="m-total">0 posts</span></span>
   </div>
 
+  <section class="pulse" id="pulse" aria-label="Community pulse">
+    <div class="pulse-head">
+      <strong>Community pulse</strong>
+      <span id="pulse-range">Last 24 hours</span>
+    </div>
+    <div class="pulse-stats">
+      <div class="stat"><b id="p-posts">0</b><span>posts</span></div>
+      <div class="stat"><b id="p-people">0</b><span>people posting</span></div>
+      <div class="stat"><b id="p-team">0</b><span>team posts</span></div>
+      <div class="stat"><b id="p-quotes">0%</b><span>quote posts</span></div>
+    </div>
+    <div class="pulse-chart">
+      <div class="bars" id="p-bars" role="img" aria-label="Posts over time"></div>
+      <div class="bars-foot"><span id="p-start"></span><span id="p-peak"></span><span id="p-end"></span></div>
+    </div>
+  </section>
+
   <div class="layout" id="feed">
     <main>
       <div class="trail" id="trail" aria-live="polite"></div>
