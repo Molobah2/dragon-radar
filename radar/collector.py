@@ -153,8 +153,37 @@ def refresh_team(s: Session, client: XClient, cfg: Config, run: CollectorRun, no
     set_setting(s, "team_profiles_at", now.isoformat())
 
 
+def backfill_text(s: Session, cfg: Config, now: datetime, limit: int = 120) -> int:
+    """Fill in posts we saved without text (the first big collection) using X's free oEmbed.
+    A batch per run so it never slows a collection down much."""
+    from . import oembed
+    import requests
+    since = now - timedelta(days=cfg.feed_days)
+    rows = s.scalars(select(Post).where(Post.text.is_(None), Post.hidden.is_(False), Post.created_at >= since)
+                     .order_by(Post.created_at.desc()).limit(limit)).all()
+    filled = 0
+    with requests.Session() as http:
+        for p in rows:
+            got = oembed.fetch(p.id, http)
+            if got is None:
+                break          # X busy, try again next run
+            if not got:
+                p.hidden = True  # deleted or protected
+                continue
+            p.text = (got["text"] or "")[:1200]
+            p.author_name = (got["name"] or "")[:100] or None
+            p.author_username = (got["username"] or "")[:32] or None
+            p.has_media = got["media"]
+            filled += 1
+    return filled
+
+
 def tidy_up(s: Session, client: XClient, cfg: Config, run: CollectorRun, now: datetime) -> None:
     """Clear stored text once posts leave the feed, and once a day hide recent posts deleted on X."""
+    try:
+        backfill_text(s, cfg, now)
+    except Exception:  # noqa: BLE001  never let the free backfill break a collection
+        log.exception("Text backfill failed")
     try:
         refresh_team(s, client, cfg, run, now)
     except XApiError:

@@ -530,3 +530,25 @@ def test_directory_add_never_pays_twice_for_the_same_handle(cfg, Session, monkey
     for h in ["dee", "@DEE", "dee", "ghost", "ghost", "eve", "Eve"]:
         c.post("/api/keepers/add", json={"handle": h})
     assert calls == ["dee", "ghost", "eve"]
+
+
+def test_oembed_parse_keeps_text_and_spots_media():
+    from radar import oembed
+    got = oembed.parse({"author_name": "Ann 🐉", "author_url": "https://twitter.com/ann_x",
+                        "html": '<blockquote class="twitter-tweet"><p lang="en" dir="ltr">gm <a href="https://twitter.com/Pocket_Dragons_">@Pocket_Dragons_</a> &amp; friends<br>egg day <a href="https://t.co/x">pic.twitter.com/abc</a></p>&mdash; Ann</blockquote>'})
+    assert got == {"name": "Ann 🐉", "username": "ann_x", "text": "gm @Pocket_Dragons_ & friends\negg day", "media": True}
+
+
+def test_backfill_fills_textless_posts_and_hides_deleted(cfg, Session, monkeypatch):
+    from radar import collector, oembed
+    now = utcnow()
+    with Session() as s:
+        s.add_all([Post(id="1", author_id="a", created_at=now - timedelta(hours=20)),
+                   Post(id="2", author_id="b", created_at=now - timedelta(hours=20))])
+        s.commit()
+    monkeypatch.setattr(oembed, "fetch", lambda pid, http=None: {} if pid == "2" else
+                        {"name": "Ann", "username": "ann", "text": "hi dragons", "media": False})
+    with Session() as s:
+        assert collector.backfill_text(s, cfg, now) == 1
+        s.commit()
+        assert s.get(Post, "1").text == "hi dragons" and s.get(Post, "2").hidden
