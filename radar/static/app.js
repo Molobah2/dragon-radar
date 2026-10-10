@@ -179,7 +179,9 @@
     const list = data.newcomers || [];
     $("welcome").hidden = !list.length;
     if (!list.length) return;
-    const greet = "Welcome to the hatchery, Keeper \u{1F409}";
+    // a few different openers so nobody ends up posting identical replies (X dislikes copy paste)
+    const greets = ["Welcome to the hatchery \u{1F409}", "Glad you found the dragons, welcome Keeper", "Welcome in! Which egg did you get?",
+      "Good to see you in the hatchery \u{1F95A}", "Welcome Keeper, see you at the next AMA", "A new Keeper! Welcome \u{1F525}"];
     $("welcome-row").replaceChildren(...list.map((n, i) => {
       const avatar = n.avatar
         ? el("img", { class: "avatar", src: n.avatar, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })
@@ -188,7 +190,7 @@
         el("a", { class: "newbie-who", href: `https://x.com/${n.user}/status/${n.id}`, target: "_blank", rel: "noopener" },
           avatar, el("span", { class: "newbie-text" }, el("b", {}, n.name || n.user),
             el("small", {}, (n.hatchery ? "Ancient Hatchery \u00b7 " : "first post \u00b7 ") + ago(n.t)))),
-        el("a", { class: "btn btn-go newbie-hi", href: `https://x.com/intent/post?in_reply_to=${n.id}&text=${encodeURIComponent(greet)}`,
+        el("a", { class: "btn btn-go newbie-hi", href: `https://x.com/intent/post?in_reply_to=${n.id}&text=${encodeURIComponent(greets[(i + Math.floor(Math.random() * greets.length)) % greets.length])}`,
           target: "_blank", rel: "noopener" }, "Say hi"));
       card.style.setProperty("--i", i);
       return card;

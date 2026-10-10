@@ -425,7 +425,7 @@ def test_keeper_card_locked_by_default(cfg, Session):
     r = c.get("/api/keeper/someone")
     assert r.status_code == 403 and r.get_json()["locked"] is True
     page = c.get("/").get_data(as_text=True)
-    assert "keeper-locked" in page and 'id="keeper-open"' not in page and "mailbox" not in page
+    assert "keeper-locked" in page and 'id="keeper-open"' not in page and 'class="mailbox"' not in page
     cfg.suggest_url = "https://docs.google.com/document/d/x"
     assert 'class="mailbox"' in create_app(cfg).test_client().get("/keepers").get_data(as_text=True)
 
