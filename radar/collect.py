@@ -15,7 +15,7 @@ def main() -> int:
     with Session() as s:
         run = run_collection(s, XClient(cfg.x_bearer_token), cfg)
     # Non-zero exit makes failed runs visible in the GitHub Actions run history.
-    return 0 if run.status in {"ok", "page_limit", "skipped_budget", "stopped_budget"} else 1
+    return 0 if run.status in {"ok", "page_limit", "skipped_budget", "stopped_budget", "waiting", "skipped_daily_cap"} else 1
 
 
 if __name__ == "__main__":

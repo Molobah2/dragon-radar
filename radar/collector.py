@@ -85,11 +85,18 @@ def store_posts(s, data, run, cfg, team_id, blocked_authors, words, now) -> None
         if p["author_id"] in blocked_authors or is_blocked_text(p.get("text", ""), words):
             run.posts_skipped += 1
             continue
-        if s.get(Post, p["id"]) is not None:
-            continue
         refs = p.get("referenced_tweets") or []
         u = users.get(p["author_id"], {})
         avatar = (u.get("profile_image_url") or "").replace("_normal.", "_bigger.")
+        existing = s.get(Post, p["id"])
+        if existing is not None:
+            if existing.text is None and not existing.hidden:  # stored before cards had text
+                existing.text = (p.get("text") or "")[:1200]
+                existing.author_name = (u.get("name") or "")[:100] or None
+                existing.author_username = (u.get("username") or "")[:32] or None
+                existing.author_avatar = avatar[:400] or None
+                existing.has_media = bool((p.get("attachments") or {}).get("media_keys"))
+            continue
         s.add(Post(
             id=p["id"],
             author_id=p["author_id"],
