@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Keepers · {{ cfg.site_name }}{% endblock %}
 {% block body_class %}ready static-page{% endblock %}
-{% block header_right %}<a class="btn btn-soft" href="{{ url_for('feed') }}"><span class="wide-only">Back to the </span>radar</a>{% endblock %}
+{% block header_right %}<a class="btn btn-soft" data-i18n-html="back" href="{{ url_for('feed') }}"><span class="wide-only">Back to the </span>radar</a>{% endblock %}
 {% block main %}
   <section class="hero keepers-hero">
     <div class="hero-main">
-      <h1>Every dragon<br>knows <span class="pop">its own.</span></h1>
+      <h1 data-i18n-html="h1Keepers">Every dragon<br>knows <span class="pop">its own.</span></h1>
       <p class="lede">Blue tick Keepers who wear the 🐉 in their name. Open a profile, follow who you vibe with.</p>
     </div>
     <div class="tally">

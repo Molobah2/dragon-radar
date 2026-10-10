@@ -29,6 +29,10 @@
           {{ cfg.site_name }}
         </a>
         <div class="bar-right">
+          <label class="lang-pick" title="Language">
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 10h15M10 2.5c2.2 2.3 3.2 4.8 3.2 7.5s-1 5.2-3.2 7.5c-2.2-2.3-3.2-4.8-3.2-7.5s1-5.2 3.2-7.5z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+            <select id="lang-select" aria-label="Language"></select>
+          </label>
           <button class="sky-pill" id="sky-pill" type="button" aria-pressed="false" title="Play a full day in the meadow">
             <i class="sky-dot" aria-hidden="true"></i><span id="sky-label">Day</span><b id="sky-time">--:--</b><span class="sky-hint">Play a day</span>
           </button>
@@ -57,6 +61,7 @@
     <span class="mailbox-tip">Suggestions</span>
   </a>
   {% endif %}
+  <script src="{{ url_for('static', filename='i18n.js') }}"></script>
   {% if cfg.scene_base %}<script src="{{ url_for('static', filename='scene.js') }}"></script>{% endif %}
   <script src="{{ url_for('static', filename='meadow.js') }}"></script>
   {% block scripts %}{% endblock %}

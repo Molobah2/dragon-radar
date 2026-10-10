@@ -451,3 +451,17 @@ body.dark-sky .mailbox-tip { background: #fff; color: var(--ink); }
 body.dark-sky .photo { background: #121842; }
 @media (max-aspect-ratio: 4/5) { .ph, .ph.clip { background-position: 26% 60%; object-position: 26% 60%; } }
 @media (prefers-reduced-motion: reduce) { .photo.sharp-on .ph.sharp { animation: none; } }
+
+/* ---------- language picker ---------- */
+.lang-pick { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 999px; cursor: pointer;
+  background: var(--glass-strong); color: var(--ink); box-shadow: 0 6px 16px -8px rgba(29, 36, 51, .4); transition: background .6s, color .6s; }
+.lang-pick select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 800; font-size: 13px;
+  cursor: pointer; padding: 0 2px; max-width: 9.5em; }
+.lang-pick select:focus-visible { outline: none; }
+.lang-pick:focus-within { outline: 3px solid var(--plum); outline-offset: 2px; }
+.lang-pick option { color: #1d2433; }
+body.dark-sky .lang-pick { background: rgba(20, 26, 69, .72); color: #f2f4ff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.tag.tr-link { text-decoration: none; background: rgba(58, 168, 240, .14); color: #1f6fae; }
+.tag.tr-link:hover { background: rgba(58, 168, 240, .24); }
+@media (max-width: 560px) { .lang-pick select { max-width: 5.2em; } .lang-pick { padding: 7px 8px; } }
+html[lang="ko"] h1, html[lang="zh"] h1, html[lang="ko"] .lede { word-break: keep-all; }

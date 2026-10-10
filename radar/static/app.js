@@ -150,6 +150,10 @@
     if (p.quote) chips.push(el("span", { class: "tag" }, "Quote"));
     if (p.media) chips.push(el("span", { class: "tag media" }, "Media"));
     else if (links) chips.push(el("span", { class: "tag media" }, "Link"));
+    // read the post in your own language (opens Google Translate, nothing is sent from here)
+    if (window.radarLang && window.radarLang !== "en" && p.text)
+      chips.push(el("a", { class: "tag tr-link", href: `https://translate.google.com/?sl=auto&tl=${window.radarTranslateCode}&text=${encodeURIComponent(p.text.slice(0, 1500))}&op=translate`,
+        target: "_blank", rel: "noopener" }, "Translate"));
     const avatar = p.avatar
       ? el("img", { class: "avatar", src: p.avatar, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })
       : el("span", { class: "avatar blank" }, (p.name || "?").slice(0, 1));
