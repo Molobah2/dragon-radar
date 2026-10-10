@@ -6,7 +6,7 @@ Tap a post, it opens on X and leaves your list. No sign in, no points, no tracki
 ## How it works
 
 - `radar/collector.py` runs every 20 minutes. It calls X's recent search for
-  `((@Pocket_Dragons_ is:verified) OR from:Pocket_Dragons_) -is:reply -is:retweet`, so only original posts and quote posts from verified accounts (plus the team account) come in.
+  `((@Pocket_Dragons_ OR "pocket dragons" OR "ancient hatchery") is:verified OR from:Pocket_Dragons_) -is:reply -is:retweet`, so original posts and quote posts from verified accounts that tag the account or say "Pocket Dragons" or "Ancient Hatchery" come in, plus the team account.
   It stores post IDs and light metadata, never post text.
 - `radar/web.py` serves the feed. Each post is drawn with X's official embed, which keeps it current
   (live counts, deleted posts disappear), as X's developer policy requires.

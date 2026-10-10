@@ -91,6 +91,7 @@ def test_default_query_excludes_replies_and_reposts():
     q = Config().search_query
     assert "-is:reply" in q and "-is:retweet" in q and "@Pocket_Dragons_" in q
     assert "is:verified" in q
+    assert '"pocket dragons"' in q and '"ancient hatchery"' in q
 
 
 def test_second_run_uses_since_id_and_dedupes(cfg, Session):

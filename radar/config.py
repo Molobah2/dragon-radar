@@ -3,7 +3,7 @@ import os
 from urllib.parse import quote
 from dataclasses import dataclass, field
 
-DEFAULT_QUERY = "((@Pocket_Dragons_ is:verified) OR from:Pocket_Dragons_) -is:reply -is:retweet"
+DEFAULT_QUERY = '((@Pocket_Dragons_ OR "pocket dragons" OR "ancient hatchery") is:verified OR from:Pocket_Dragons_) -is:reply -is:retweet'
 DEFAULT_BLOCKLIST = "claim your airdrop,connect your wallet,free mint now,dm me to claim"
 
 
