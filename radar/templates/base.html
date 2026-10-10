@@ -13,7 +13,13 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="{% block body_class %}{% endblock %}">
-  <div class="scene" aria-hidden="true"><canvas id="meadow"></canvas><div class="veil"></div></div>
+  {% if cfg.scene_base %}
+  <link rel="preconnect" href="{{ cfg.scene_base }}" crossorigin>
+  <script>window.RADAR_SCENE = {{ {"base": cfg.scene_base, "folder": cfg.scene_folder,
+    "video": cfg.scene_video_map} | tojson }};
+    document.documentElement.classList.add("photo-mode");</script>
+  {% endif %}
+  <div class="scene" aria-hidden="true">{% if cfg.scene_base %}<div class="photo" id="photo"></div>{% endif %}<canvas id="meadow"></canvas><div class="veil"></div></div>
   {% block intro %}{% endblock %}
   <div class="site" id="site">
     <div class="shell"><div class="wrap">
@@ -51,6 +57,7 @@
     <span class="mailbox-tip">Suggestions</span>
   </a>
   {% endif %}
+  {% if cfg.scene_base %}<script src="{{ url_for('static', filename='scene.js') }}"></script>{% endif %}
   <script src="{{ url_for('static', filename='meadow.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>

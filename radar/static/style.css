@@ -431,3 +431,23 @@ body.dark-sky .mailbox-tip { background: #fff; color: var(--ink); }
 .faq-link { display: block; margin-top: 12px; font-size: 13px; font-weight: 800; color: var(--plum); text-decoration: none; }
 .faq-link:hover { text-decoration: underline; }
 .faq { scroll-margin-top: 90px; }
+
+/* ---------- realistic meadow (photo mode) ----------
+   Layers: soft pre-blurred renders (always), sharp renders + video (only while the clear scene is on screen),
+   then the particle canvas. No live CSS blur anywhere, so scrolling stays smooth. */
+.photo { position: absolute; inset: 0; overflow: hidden; background: #8fd3ff; }
+.ph { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; background-position: 32% 58%;
+  opacity: 0; transition: opacity 1.4s ease; will-change: opacity; }
+.ph.soft { inset: -3%; width: 106%; height: 106%; }
+.photo:not(.sharp-on) .ph.sharp { opacity: 0 !important; transition: opacity 1.6s cubic-bezier(.4, 0, .2, 1); }
+.ph.clip { object-fit: cover; object-position: 32% 58%; opacity: 0; transition: opacity .9s ease; }
+.ph.clip.on { opacity: 1; }
+.photo:not(.sharp-on) .ph.clip { opacity: 0; transition: opacity 1.6s cubic-bezier(.4, 0, .2, 1); }
+/* a slow push-in while the clear scene is showing, for the renders without a video */
+.photo.sharp-on .ph.sharp { animation: drift 14s ease-out both; }
+@keyframes drift { from { transform: scale(1.06); } to { transform: scale(1); } }
+.photo-mode #meadow { inset: 0; width: 100%; height: 100%; filter: none !important; transform: none !important; }
+.photo-mode body.ready .veil, html.photo-mode body.ready .veil { opacity: .55; }
+body.dark-sky .photo { background: #121842; }
+@media (max-aspect-ratio: 4/5) { .ph, .ph.clip { background-position: 26% 60%; object-position: 26% 60%; } }
+@media (prefers-reduced-motion: reduce) { .photo.sharp-on .ph.sharp { animation: none; } }

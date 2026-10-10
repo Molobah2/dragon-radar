@@ -62,6 +62,10 @@ class Config:
     discord_channel_ids: str = field(default_factory=lambda: os.environ.get("DISCORD_CHANNEL_IDS", "").strip())
     discord_require_verified: bool = field(default_factory=lambda: _bool("DISCORD_REQUIRE_VERIFIED", "1"))
     discord_max_per_run: int = field(default_factory=lambda: int(os.environ.get("DISCORD_MAX_PER_RUN", "60")))
+    # Realistic meadow renders on a Cloudinary CDN (empty base = the hand drawn canvas meadow)
+    scene_base: str = field(default_factory=lambda: os.environ.get("SCENE_BASE", "https://res.cloudinary.com/gosbi0oh").rstrip("/"))
+    scene_folder: str = field(default_factory=lambda: os.environ.get("SCENE_FOLDER", "dragon-radar"))
+    scene_videos: str = field(default_factory=lambda: os.environ.get("SCENE_VIDEOS", ""))  # e.g. "day:meadow-day-loop,night:meadow-night-loop"
     # Keeper card is locked until this is switched on (no lookups, button shows as coming soon)
     keeper_card_open: bool = field(default_factory=lambda: _bool("KEEPER_CARD_OPEN"))
     # Where the mailbox button leads (a Google Doc or Form for suggestions); the mailbox hides when empty
@@ -84,3 +88,11 @@ class Config:
     demo_mode: bool = field(default_factory=lambda: _bool("DEMO_MODE"))
     run_scheduler: bool = field(default_factory=lambda: _bool("RUN_SCHEDULER"))
     collect_every_minutes: int = field(default_factory=lambda: int(os.environ.get("COLLECT_EVERY_MINUTES", "20")))
+
+
+def _scene_video_map(self) -> dict:
+    """SCENE_VIDEOS "day:meadow-day-loop,night:meadow-night-loop" -> {"day": "meadow-day-loop", ...}"""
+    return {k.strip(): v.strip() for k, v in (p.split(":", 1) for p in self.scene_videos.split(",") if ":" in p)}
+
+
+Config.scene_video_map = property(_scene_video_map)

@@ -11,6 +11,10 @@
     const canvas = $("meadow"), ctx = canvas.getContext("2d");
     if (!ctx) return null;
     let W = 0, H = 0, dpr = 1, horizon = 0, lowRes = false;
+    // Photo mode: the realistic meadow lives in image/video layers behind this canvas, which then only
+    // draws light particles (fireflies, floating pollen, shooting stars) on a transparent background.
+    const PHOTO = !!(window.RADAR_SCENE && window.RADAR_SCENE.base);
+    let motes = [];
     let blades = [], flowers = [], clouds = [], hills = [], stars = [], bugs = [];
     const rnd = (a, b) => a + Math.random() * (b - a);
 
@@ -79,6 +83,8 @@
       clouds = Array.from({ length: 6 }, (_, i) => ({ x: rnd(-200, W), y: rnd(H * 0.06, H * 0.32), s: rnd(0.7, 1.5), v: rnd(6, 16) }));
       stars = Array.from({ length: Math.round(150 * (0.5 + density * 0.5)) }, () => ({ x: rnd(0, W), y: Math.pow(Math.random(), 1.5) * horizon * 0.95,
         r: rnd(0.5, 1.7), ph: rnd(0, 6.28), sp: rnd(0.8, 2.6) }));
+      motes = Array.from({ length: Math.round(26 * (0.5 + density)) }, () => ({ x: rnd(0, W), y: rnd(H * 0.2, H), r: rnd(1, 2.6),
+        vx: rnd(4, 14), vy: rnd(-6, -2), ph: rnd(0, 6.28) }));
       bugs = Array.from({ length: Math.round(22 * (0.5 + density)) }, () => ({ x: rnd(0, W), y: rnd(horizon + 10, H - 20), ph: rnd(0, 6.28), sp: rnd(0.3, 0.8), ax: rnd(20, 60), ay: rnd(10, 30) }));
       hills = [
         { base: horizon - 10, amp: 38, f: 0.004, ph: 1.2, c1: "#9fdc8a", c2: "#7cc96c" },
@@ -337,7 +343,8 @@
     }
     function burst() {
       const cols = ["#ffd23f", "#ff8fb1", "#b49cff", "#ffffff", "#ff7a59"];
-      for (let i = 0; i < 26; i++) sparkles.push({ x: dragon.x, y: dragon.y - 70, vx: rnd(-220, 220), vy: rnd(-380, -120), life: 1.1, c: cols[i % 5], r: rnd(3, 6) });
+      const bx = PHOTO ? W * 0.3 : dragon.x, by = PHOTO ? H * 0.5 : dragon.y - 70;
+      for (let i = 0; i < 26; i++) sparkles.push({ x: bx, y: by, vx: rnd(-220, 220), vy: rnd(-380, -120), life: 1.1, c: cols[i % 5], r: rnd(3, 6) });
     }
 
     let last = performance.now(), acc = 0;
@@ -349,6 +356,7 @@
       update(lowRes ? 1 / 24 : dt, t);
       const wind = Math.sin(t * 0.4) * 0.6 + Math.sin(t * 1.3) * 0.25;
       hour = clockHour(nowMs); sky = palette(hour); syncPage(nowMs);
+      if (PHOTO) { photoFrame(t, lowRes ? 1 / 24 : dt); if (!reduce) requestAnimationFrame(frame); return; }
       drawSky(t, lowRes ? 1 / 24 : dt);
       clouds.forEach((c) => cloud(c, lowRes ? 1 / 24 : dt));
       drawHills();
@@ -370,6 +378,46 @@
       if (!reduce) requestAnimationFrame(frame);
     }
 
+    function photoFrame(t, dt) {
+      ctx.clearRect(0, 0, W, H);
+      // sunlit pollen drifting on the breeze, fading out as night comes
+      const day = 1 - sky.dark;
+      if (day > 0.05) {
+        ctx.save(); ctx.globalCompositeOperation = "lighter";
+        const warm = sky.tint[3] > 0.05 ? "255,200,140" : "255,250,220";
+        for (const m of motes) {
+          m.x += m.vx * dt; m.y += m.vy * dt + Math.sin(t * 0.8 + m.ph) * 0.15;
+          if (m.x > W + 10) m.x = -10; if (m.y < H * 0.1) m.y = H + 5;
+          const a = day * (0.25 + 0.35 * Math.max(0, Math.sin(t * 1.2 + m.ph)));
+          const g = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r * 4);
+          g.addColorStop(0, `rgba(${warm},${a})`); g.addColorStop(1, `rgba(${warm},0)`);
+          ctx.fillStyle = g; ctx.fillRect(m.x - m.r * 4, m.y - m.r * 4, m.r * 8, m.r * 8);
+        }
+        ctx.restore();
+      }
+      // shooting stars and fireflies after dark (reuses the drawn scene's helpers)
+      if (sky.dark > 0.8) {
+        shooting.next -= dt;
+        if (shooting.next <= 0 && shooting.life <= 0)
+          Object.assign(shooting, { life: 1, x: rnd(W * 0.1, W * 0.7), y: rnd(10, H * 0.25), vx: rnd(420, 620), vy: rnd(120, 220), next: rnd(7, 16) });
+        if (shooting.life > 0) {
+          shooting.life -= dt * 1.4; shooting.x += shooting.vx * dt; shooting.y += shooting.vy * dt;
+          const tail = ctx.createLinearGradient(shooting.x, shooting.y, shooting.x - shooting.vx * 0.18, shooting.y - shooting.vy * 0.18);
+          tail.addColorStop(0, "rgba(255,255,255,0.95)"); tail.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.globalAlpha = Math.max(0, shooting.life); ctx.strokeStyle = tail; ctx.lineWidth = 2; ctx.lineCap = "round";
+          ctx.beginPath(); ctx.moveTo(shooting.x, shooting.y); ctx.lineTo(shooting.x - shooting.vx * 0.18, shooting.y - shooting.vy * 0.18); ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+      }
+      fly.t += dt;
+      fly.x = W * 0.5 + Math.sin(fly.t * 0.55) * W * 0.3; fly.y = H * 0.7 + Math.sin(fly.t * 1.3) * 40;
+      fireflies(t);
+      for (const s of sparkles) { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 200 * dt; s.life -= dt; }
+      while (sparkles.length && sparkles[0].life <= 0) sparkles.shift();
+      for (const s of sparkles) { ctx.globalAlpha = Math.max(0, Math.min(1, s.life * 2)); ctx.fillStyle = s.c; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); }
+      ctx.globalAlpha = 1;
+    }
+
     // let the page around the canvas know what time it is (a few times a second is plenty)
     let lastSync = -1e9, lastDark = null;
     const meta = document.querySelector('meta[name="theme-color"]');
@@ -380,6 +428,7 @@
     }
     function syncPage(nowMs) {
       if (nowMs - lastSync < 250) return; lastSync = nowMs;
+      if (PHOTO && window.radarScene) window.radarScene.update(hour);
       const darkSky = sky.dark > 0.5;
       if (darkSky !== lastDark) { lastDark = darkSky; document.body.classList.toggle("dark-sky", darkSky); }
       if (meta) meta.setAttribute("content", rgb(sky.mid).replace(/rgba\((\d+),(\d+),(\d+),1\)/, (_, r, g, b) => "#" + [r, g, b].map((v) => (+v).toString(16).padStart(2, "0")).join("")));
