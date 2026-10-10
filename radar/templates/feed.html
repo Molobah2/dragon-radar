@@ -94,11 +94,26 @@
           <li>It leaves your list, so only new posts wait for you.</li>
         </ol>
       </div>
-      <button class="btn btn-soft replay" id="replay" type="button">Watch the meadow again</button>
+      <div class="side-actions">
+        <button class="btn btn-go keeper-btn" id="keeper-open" type="button">My Keeper card</button>
+        <button class="btn btn-soft replay" id="replay" type="button">Watch the meadow again</button>
+      </div>
     </aside>
   </div>
 {% endblock %}
 {% block scripts %}
+  <div class="keeper-modal" id="keeper" hidden role="dialog" aria-modal="true" aria-label="My Keeper card">
+    <div class="keeper-box">
+      <canvas id="keeper-canvas" width="2000" height="1000"></canvas>
+      <p class="keeper-note">Your stats live only in this browser. Save the image, then attach it to your post.</p>
+      <div class="keeper-actions">
+        <button class="btn btn-go" id="keeper-save" type="button">Save image</button>
+        <a class="btn btn-soft" id="keeper-post" href="#" target="_blank" rel="noopener">Post on X</a>
+        <button class="btn btn-soft" id="keeper-close" type="button">Close</button>
+      </div>
+    </div>
+  </div>
   <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "demo": cfg.demo_mode, "intro_ms": 5000} | tojson }}</script>
+  <script src="{{ url_for('static', filename='keeper.js') }}"></script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 {% endblock %}

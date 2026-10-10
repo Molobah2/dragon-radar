@@ -98,6 +98,7 @@
     if (opened[id]) return;
     opened[id] = Date.now();
     save();
+    window.keeperBump && window.keeperBump();
     const post = posts.find((x) => x.id === id) || pinnedPosts.find((x) => x.id === id);
     if (post) { post.opens = (post.opens || 0) + 1; }
     try { fetch(`/api/open/${id}`, { method: "POST", keepalive: true }); } catch (e) {}

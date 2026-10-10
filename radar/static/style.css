@@ -1,3 +1,5 @@
+@font-face { font-family: "FredokaCard"; font-weight: 600; font-display: swap; src: url("fonts/fredoka-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "FredokaCard"; font-weight: 700; font-display: swap; src: url("fonts/fredoka-latin-700-normal.woff2") format("woff2"); }
 [hidden] { display: none !important; }
 
 /* Layout: a living meadow (sun, clouds, swaying grass, a baby dragon at play) plays clear for 5 seconds as an opening scene,
@@ -165,6 +167,7 @@ time { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); f
 .btn svg { width: 14px; height: 14px; }
 
 aside.side { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.side-actions { display: grid; gap: 10px; }
 @media (max-width: 760px) { aside.side { grid-template-columns: 1fr; } .progress-strip { border-radius: 22px; } }
 .panel { border-radius: var(--r); padding: 20px; background: var(--glass-strong); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 20px 40px -28px rgba(29, 36, 51, .45); }
 .panel h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 21px; font-weight: 600; }
@@ -290,3 +293,15 @@ body.static-page #meadow { filter: blur(14px) saturate(1.15) brightness(1.04); t
 .hot-title span { font-family: var(--font-mono); font-size: 12px; font-weight: 400; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .05em; }
 .hot .post { box-shadow: 0 0 0 3px rgba(255, 122, 89, .55), 0 24px 44px -26px rgba(29, 36, 51, .45); }
 .pinned-row .post { box-shadow: 0 0 0 3px rgba(255, 210, 63, .7), 0 24px 44px -26px rgba(29, 36, 51, .45); }
+
+/* ---------- my keeper card ---------- */
+.keeper-btn { justify-content: center; }
+body.modal-open { overflow: hidden; }
+.keeper-modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px;
+  background: rgba(6, 8, 28, .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.keeper-modal[hidden] { display: none; }
+.keeper-box { width: min(1000px, 100%); display: grid; gap: 14px; }
+.keeper-box canvas { width: 100%; height: auto; aspect-ratio: 2 / 1; border-radius: 18px; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .7); background: #0a0e2e; }
+.keeper-note { margin: 0; color: #e7e4ff; font-weight: 700; font-size: 14px; text-align: center; }
+.keeper-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.keeper-actions .btn-soft { background: rgba(255, 255, 255, .92); color: var(--ink); }
