@@ -163,6 +163,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         """Looks the person up on X: their profile plus their own posts about Pocket Dragons
         from the last 7 days (X's recent search window). Cached per handle and capped per day."""
         import json
+        if not cfg.keeper_card_open:
+            return {"found": False, "locked": True}, 403
         handle = handle.strip().lstrip("@")
         if not handle or len(handle) > 15 or not all(c.isalnum() or c == "_" for c in handle):
             return {"found": False}

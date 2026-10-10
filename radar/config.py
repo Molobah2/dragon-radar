@@ -57,6 +57,10 @@ class Config:
     # Re-check posts from the last day for deletions once a day (0 = off)
     recheck_deleted: bool = field(default_factory=lambda: os.environ.get("RECHECK_DELETED", "1") != "0")
     force_collect: bool = field(default_factory=lambda: _bool("FORCE_COLLECT"))
+    # Keeper card is locked until this is switched on (no lookups, button shows as coming soon)
+    keeper_card_open: bool = field(default_factory=lambda: _bool("KEEPER_CARD_OPEN"))
+    # Where the mailbox button leads (a Google Doc or Form for suggestions); the mailbox hides when empty
+    suggest_url: str = field(default_factory=lambda: os.environ.get("SUGGEST_URL", "").strip())
     # Live Keeper card lookups on X: most posts read per lookup, and a daily spend cap for them
     keeper_max_posts: int = field(default_factory=lambda: int(os.environ.get("KEEPER_MAX_POSTS", "40")))
     keeper_daily_budget_usd: float = field(default_factory=lambda: float(os.environ.get("KEEPER_DAILY_BUDGET_USD", "1.5")))

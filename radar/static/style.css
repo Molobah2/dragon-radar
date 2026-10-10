@@ -373,3 +373,33 @@ body.dark-sky .sky-pill { background: rgba(20, 26, 69, .72); color: #f2f4ff; bac
 body.dark-sky .sky-hint { color: rgba(242, 244, 255, .7); border-color: rgba(242, 244, 255, .2); }
 @media (max-width: 560px) { .sky-hint, #sky-label { display: none; } .sky-pill { padding: 7px 10px; } .brand { font-size: 19px; } .bar-right { gap: 8px; } }
 @media (max-width: 480px) { .bar-right .btn { padding: 8px 12px; font-size: 13px; } .wide-only { display: none; } .bar-right .btn { text-transform: capitalize; } }
+
+/* ---------- locked Keeper card ---------- */
+.keeper-locked { background: rgba(29, 36, 51, .08); color: var(--ink-soft); cursor: not-allowed; box-shadow: none; gap: 8px; }
+.keeper-locked span { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; opacity: .8; }
+.keeper-locked:hover { transform: none; }
+
+/* ---------- suggestion mailbox: always within reach, bottom right ---------- */
+.mailbox { position: fixed; right: calc(18px + env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 20;
+  width: 64px; height: 64px; border-radius: 22px; display: grid; place-items: center; text-decoration: none;
+  background: var(--glass-strong); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 14px 30px -14px rgba(29, 36, 51, .55), inset 0 0 0 1px rgba(255, 255, 255, .7);
+  opacity: 0; transform: translateY(12px); visibility: hidden;
+  transition: opacity .6s .8s, transform .6s .8s cubic-bezier(.2, .8, .2, 1), visibility 0s .8s, box-shadow .25s, background .6s; }
+body.ready .mailbox { opacity: 1; transform: none; visibility: visible; }
+.mailbox:hover { transform: translateY(-3px); box-shadow: 0 20px 36px -16px rgba(29, 36, 51, .6), inset 0 0 0 1px rgba(255, 255, 255, .7); transition-delay: 0s; }
+.mailbox-flag { transform-origin: 47.5px 34px; transform: rotate(80deg); transition: transform .45s cubic-bezier(.3, 1.5, .5, 1); }
+.mailbox:hover .mailbox-flag, .mailbox:focus-visible .mailbox-flag { transform: rotate(0deg); }
+.mailbox-letter { transform: translateY(6px); opacity: 0; transition: transform .4s cubic-bezier(.2, .8, .2, 1), opacity .3s; }
+.mailbox:hover .mailbox-letter, .mailbox:focus-visible .mailbox-letter { transform: translateY(-4px); opacity: 1; }
+.mailbox-tip { position: absolute; right: calc(100% + 10px); white-space: nowrap; padding: 7px 12px; border-radius: 999px; font-weight: 800; font-size: 13px;
+  background: var(--ink); color: #fff; opacity: 0; transform: translateX(6px); pointer-events: none; transition: opacity .25s, transform .25s; }
+.mailbox:hover .mailbox-tip, .mailbox:focus-visible .mailbox-tip { opacity: 1; transform: none; }
+body.dark-sky .mailbox { background: rgba(20, 26, 69, .72); box-shadow: 0 14px 30px -14px rgba(0, 0, 0, .7), inset 0 0 0 1px rgba(255, 255, 255, .15); }
+@media (max-width: 560px) { .mailbox { width: 56px; height: 56px; border-radius: 18px; } .mailbox svg { width: 38px; height: 38px; } }
+@media (prefers-reduced-motion: reduce) { .mailbox, .mailbox-flag, .mailbox-letter { transition: none; } }
+/* side buttons sit on the scene, so give them their own glass that follows the sky */
+.side-actions .btn-soft, .keeper-locked { background: var(--glass-strong); box-shadow: 0 10px 24px -16px rgba(29, 36, 51, .5); transition: background .6s, color .6s, transform .2s; }
+body.dark-sky .side-actions .btn-soft, body.dark-sky .keeper-locked { background: rgba(20, 26, 69, .72); color: #f2f4ff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+body.dark-sky .mailbox-tip { background: #fff; color: var(--ink); }
+.mailbox svg { width: 48px; height: 48px; }

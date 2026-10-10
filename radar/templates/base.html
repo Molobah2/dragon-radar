@@ -36,6 +36,20 @@
       </footer>
     </div></div>
   </div>
+  {% if cfg.suggest_url %}
+  <a class="mailbox" href="{{ cfg.suggest_url }}" target="_blank" rel="noopener" aria-label="Send a suggestion">
+    <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+      <rect x="29" y="38" width="6" height="22" rx="2" fill="#7a5a3a"/>
+      <path d="M12 26a14 14 0 0 1 28 0v16H12z" fill="#ff7a59"/>
+      <path d="M26 12h14a14 14 0 0 1 14 14v16H40V26a14 14 0 0 0-14-14z" fill="#e8563a"/>
+      <path d="M12 42h42v4a2 2 0 0 1-2 2H14a2 2 0 0 1-2-2z" fill="#c2412b"/>
+      <ellipse cx="26" cy="27" rx="9" ry="9.5" fill="#1d2433" opacity=".18"/>
+      <g class="mailbox-flag"><rect x="46" y="14" width="3" height="20" rx="1.5" fill="#1d2433"/><path d="M49 14h10l-3 4 3 4H49z" fill="#ffd23f"/></g>
+      <g class="mailbox-letter"><rect x="16" y="20" width="18" height="12" rx="2" fill="#fff"/><path d="M16.5 21l8.5 6 8.5-6" fill="none" stroke="#b49cff" stroke-width="2" stroke-linejoin="round"/></g>
+    </svg>
+    <span class="mailbox-tip">Suggestions</span>
+  </a>
+  {% endif %}
   <script src="{{ url_for('static', filename='meadow.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>

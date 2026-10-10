@@ -419,8 +419,20 @@ def test_open_counter_counts_once_per_address(cfg, Session):
     assert c.get("/api/posts?range=24h").get_json()["posts"][0]["opens"] == 2
 
 
+def test_keeper_card_locked_by_default(cfg, Session):
+    cfg.x_bearer_token = "t"
+    c = create_app(cfg).test_client()
+    r = c.get("/api/keeper/someone")
+    assert r.status_code == 403 and r.get_json()["locked"] is True
+    page = c.get("/").get_data(as_text=True)
+    assert "keeper-locked" in page and 'id="keeper-open"' not in page and "mailbox" not in page
+    cfg.suggest_url = "https://docs.google.com/document/d/x"
+    assert 'class="mailbox"' in create_app(cfg).test_client().get("/keepers").get_data(as_text=True)
+
+
 def test_keeper_lookup_asks_x_and_caches(cfg, Session, monkeypatch):
     from radar import xapi
+    cfg.keeper_card_open = True
     calls = []
 
     class Fake:
@@ -451,6 +463,7 @@ def test_keeper_lookup_asks_x_and_caches(cfg, Session, monkeypatch):
 
 def test_keeper_lookup_respects_daily_budget(cfg, Session):
     cfg.x_bearer_token = "t"
+    cfg.keeper_card_open = True
     cfg.keeper_daily_budget_usd = 0.0
     got = create_app(cfg).test_client().get("/api/keeper/someone").get_json()
     assert got["found"] is False and "resting" in got["note"]

@@ -95,7 +95,14 @@
         </ol>
       </div>
       <div class="side-actions">
+        {% if cfg.keeper_card_open %}
         <button class="btn btn-go keeper-btn" id="keeper-open" type="button">My Keeper card</button>
+        {% else %}
+        <button class="btn keeper-btn keeper-locked" type="button" disabled aria-disabled="true">
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><rect x="4" y="9" width="12" height="9" rx="2.5" fill="currentColor"/><path d="M6.5 9V6.8a3.5 3.5 0 0 1 7 0V9" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          Keeper card <span>locked for now</span>
+        </button>
+        {% endif %}
         <a class="btn btn-soft keeper-btn" href="{{ url_for('keepers_page') }}">Find Keepers to follow</a>
         <button class="btn btn-soft replay" id="replay" type="button">Watch the meadow again</button>
       </div>
@@ -103,6 +110,7 @@
   </div>
 {% endblock %}
 {% block scripts %}
+  {% if cfg.keeper_card_open %}
   <div class="keeper-modal" id="keeper" hidden role="dialog" aria-modal="true" aria-label="My Keeper card">
     <div class="keeper-box">
       <section class="keeper-ask" id="keeper-ask">
@@ -131,6 +139,7 @@
     </div>
   </div>
   </div>
+  {% endif %}
   <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "demo": cfg.demo_mode, "intro_ms": 5000} | tojson }}</script>
   <script src="{{ url_for('static', filename='keeper.js') }}"></script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
