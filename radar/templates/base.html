@@ -22,7 +22,12 @@
           <span class="brand-mark"><img src="{{ url_for('static', filename='mark.svg') }}" alt="" width="26" height="26"></span>
           {{ cfg.site_name }}
         </a>
-        {% block header_right %}{% endblock %}
+        <div class="bar-right">
+          <button class="sky-pill" id="sky-pill" type="button" aria-pressed="false" title="Play a full day in the meadow">
+            <i class="sky-dot" aria-hidden="true"></i><span id="sky-label">Day</span><b id="sky-time">--:--</b><span class="sky-hint">Play a day</span>
+          </button>
+          {% block header_right %}{% endblock %}
+        </div>
       </header>
       {% block main %}{% endblock %}
       <footer>

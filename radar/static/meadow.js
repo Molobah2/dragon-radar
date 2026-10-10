@@ -11,8 +11,46 @@
     const canvas = $("meadow"), ctx = canvas.getContext("2d");
     if (!ctx) return null;
     let W = 0, H = 0, dpr = 1, horizon = 0, lowRes = false;
-    let blades = [], flowers = [], clouds = [], hills = [];
+    let blades = [], flowers = [], clouds = [], hills = [], stars = [], bugs = [];
     const rnd = (a, b) => a + Math.random() * (b - a);
+
+    // ---------- day and night: the sky follows the visitor's own clock ----------
+    // hour, sky top, sky middle, sky low, ground tint [r,g,b,a], darkness (0 day, 1 night)
+    const KEYS = [
+      [0, "#060a22", "#121842", "#262b5e", [8, 12, 40, .6], 1],
+      [4.8, "#0b1033", "#20275a", "#3a3b78", [10, 14, 46, .56], 1],
+      [5.8, "#2a3c8c", "#8a6cac", "#f5a688", [70, 40, 90, .3], .6],
+      [6.7, "#4a88d8", "#f8b88c", "#ffe2a8", [255, 150, 90, .12], .15],
+      [8, "#3aa8f0", "#8fd3ff", "#dff4ff", [0, 0, 0, 0], 0],
+      [16.6, "#3aa8f0", "#8fd3ff", "#dff4ff", [0, 0, 0, 0], 0],
+      [17.8, "#4b80d2", "#ffa878", "#ffd69c", [255, 130, 70, .15], .15],
+      [18.6, "#2b3984", "#a1589a", "#ff906c", [90, 40, 90, .3], .55],
+      [19.6, "#0e153e", "#262b64", "#473c7c", [12, 16, 48, .54], .9],
+      [24, "#060a22", "#121842", "#262b5e", [8, 12, 40, .6], 1],
+    ];
+    const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const KEYS_RGB = KEYS.map((k) => [k[0], hex(k[1]), hex(k[2]), hex(k[3]), k[4], k[5]]);
+    const mix = (a, b, f) => a.map((v, i) => v + (b[i] - v) * f);
+    const rgb = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+    function palette(h) {
+      let i = 0; while (i < KEYS_RGB.length - 2 && KEYS_RGB[i + 1][0] <= h) i++;
+      const A = KEYS_RGB[i], B = KEYS_RGB[i + 1];
+      let f = (h - A[0]) / (B[0] - A[0]); f = f * f * (3 - 2 * f);   // smooth step between keys
+      return { top: mix(A[1], B[1], f), mid: mix(A[2], B[2], f), low: mix(A[3], B[3], f), tint: mix(A[4], B[4], f), dark: A[5] + (B[5] - A[5]) * f };
+    }
+    const LAPSE_S = 24;                                   // a full day in 24 seconds when someone presses play
+    const forced = parseFloat(new URLSearchParams(location.search).get("hour"));
+    let lapse = null, onLapse = null, sky = palette(12), hour = 12;
+    function clockHour(nowMs) {
+      if (lapse) {
+        const e = (nowMs - lapse.start) / 1000;
+        if (e < LAPSE_S) return (lapse.from + (e / LAPSE_S) * 24) % 24;
+        lapse = null; onLapse && onLapse(false);
+      }
+      if (!isNaN(forced)) return ((forced % 24) + 24) % 24;
+      const d = new Date();
+      return d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
+    }
 
     function resize() {
       const r = canvas.getBoundingClientRect();
@@ -39,6 +77,9 @@
           c: ["#ffffff", "#ffd23f", "#ff8fb1", "#b49cff", "#ff7a59"][Math.floor(Math.random() * 5)], depth };
       }).sort((a, b) => a.y - b.y);
       clouds = Array.from({ length: 6 }, (_, i) => ({ x: rnd(-200, W), y: rnd(H * 0.06, H * 0.32), s: rnd(0.7, 1.5), v: rnd(6, 16) }));
+      stars = Array.from({ length: Math.round(150 * (0.5 + density * 0.5)) }, () => ({ x: rnd(0, W), y: Math.pow(Math.random(), 1.5) * horizon * 0.95,
+        r: rnd(0.5, 1.7), ph: rnd(0, 6.28), sp: rnd(0.8, 2.6) }));
+      bugs = Array.from({ length: Math.round(22 * (0.5 + density)) }, () => ({ x: rnd(0, W), y: rnd(horizon + 10, H - 20), ph: rnd(0, 6.28), sp: rnd(0.3, 0.8), ax: rnd(20, 60), ay: rnd(10, 30) }));
       hills = [
         { base: horizon - 10, amp: 38, f: 0.004, ph: 1.2, c1: "#9fdc8a", c2: "#7cc96c" },
         { base: horizon + 20, amp: 30, f: 0.006, ph: 3.1, c1: "#79cf62", c2: "#5cbd52" },
@@ -51,30 +92,95 @@
     const fly = { x: 0, y: 0, t: 0 };
     const sparkles = [];
 
-    function sky(t) {
+    const shooting = { life: 0, x: 0, y: 0, vx: 0, vy: 0, next: 6 };
+    function drawSky(t, dt) {
       const g = ctx.createLinearGradient(0, 0, 0, horizon + 60);
-      g.addColorStop(0, "#3aa8f0"); g.addColorStop(0.55, "#8fd3ff"); g.addColorStop(1, "#dff4ff");
+      g.addColorStop(0, rgb(sky.top)); g.addColorStop(0.55, rgb(sky.mid)); g.addColorStop(1, rgb(sky.low));
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      // sun
-      const sx = W * 0.82, sy = H * 0.16, sr = Math.min(W, H) * 0.07;
-      const glow = ctx.createRadialGradient(sx, sy, sr * 0.4, sx, sy, sr * 5);
-      glow.addColorStop(0, "rgba(255,240,170,0.9)"); glow.addColorStop(0.3, "rgba(255,230,140,0.35)"); glow.addColorStop(1, "rgba(255,230,140,0)");
-      ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
-      ctx.save(); ctx.translate(sx, sy); ctx.rotate(t * 0.05);
-      ctx.fillStyle = "rgba(255,236,150,0.28)";
-      for (let i = 0; i < 12; i++) { ctx.rotate(Math.PI / 6); ctx.beginPath(); ctx.moveTo(sr * 1.1, -sr * 0.12); ctx.lineTo(sr * 2.4, 0); ctx.lineTo(sr * 1.1, sr * 0.12); ctx.fill(); }
+      // stars fade in as the light goes
+      if (sky.dark > 0.05) {
+        ctx.fillStyle = "#fff";
+        for (const st of stars) {
+          ctx.globalAlpha = sky.dark * (0.45 + 0.55 * Math.sin(t * st.sp + st.ph) ** 2);
+          ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2); ctx.fill();
+        }
+        // now and then a shooting star on a dark night
+        shooting.next -= dt;
+        if (sky.dark > 0.8 && shooting.next <= 0 && shooting.life <= 0) {
+          Object.assign(shooting, { life: 1, x: rnd(W * 0.15, W * 0.8), y: rnd(10, horizon * 0.35), vx: rnd(420, 620), vy: rnd(120, 220), next: rnd(7, 16) });
+        }
+        if (shooting.life > 0) {
+          shooting.life -= dt * 1.4; shooting.x += shooting.vx * dt; shooting.y += shooting.vy * dt;
+          const tail = ctx.createLinearGradient(shooting.x, shooting.y, shooting.x - shooting.vx * 0.18, shooting.y - shooting.vy * 0.18);
+          tail.addColorStop(0, "rgba(255,255,255,0.95)"); tail.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.globalAlpha = Math.max(0, shooting.life) * sky.dark; ctx.strokeStyle = tail; ctx.lineWidth = 2; ctx.lineCap = "round";
+          ctx.beginPath(); ctx.moveTo(shooting.x, shooting.y); ctx.lineTo(shooting.x - shooting.vx * 0.18, shooting.y - shooting.vy * 0.18); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+      const arc = (p) => [W * (0.06 + 0.88 * p), horizon + 30 - Math.sin(Math.PI * p) * horizon * 0.78];
+      const R = Math.min(W, H) * 0.07;
+      // the sun rises at six and sets at six, warming as it nears the hills
+      const sp = (hour - 6) / 12;
+      if (sp > -0.06 && sp < 1.06) {
+        const [sx, sy] = arc(sp), low = 1 - Math.max(0, Math.sin(Math.PI * Math.min(1, Math.max(0, sp))));
+        const warm = Math.min(1, low * 1.3);
+        const core = mix([255, 224, 102], [255, 138, 76], warm), halo = mix([255, 236, 160], [255, 150, 90], warm);
+        const glow = ctx.createRadialGradient(sx, sy, R * 0.4, sx, sy, R * (5 + warm * 3));
+        glow.addColorStop(0, rgb(halo, 0.9)); glow.addColorStop(0.3, rgb(halo, 0.35)); glow.addColorStop(1, rgb(halo, 0));
+        ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+        ctx.save(); ctx.translate(sx, sy); ctx.rotate(t * 0.05);
+        ctx.fillStyle = rgb(halo, 0.28 * (1 - warm));
+        for (let i = 0; i < 12; i++) { ctx.rotate(Math.PI / 6); ctx.beginPath(); ctx.moveTo(R * 1.1, -R * 0.12); ctx.lineTo(R * 2.4, 0); ctx.lineTo(R * 1.1, R * 0.12); ctx.fill(); }
+        ctx.restore();
+        ctx.fillStyle = rgb(mix([255, 243, 176], [255, 196, 140], warm)); ctx.beginPath(); ctx.arc(sx, sy, R, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = rgb(core); ctx.beginPath(); ctx.arc(sx, sy, R * 0.82, 0, Math.PI * 2); ctx.fill();
+      }
+      // the moon takes the night shift
+      const mp = (((hour - 18) % 24) + 24) % 24 / 12;
+      if (mp > -0.06 && mp < 1.06) {
+        const [mx, my] = arc(mp), r = R * 0.78;
+        const glow = ctx.createRadialGradient(mx, my, r * 0.6, mx, my, r * 6);
+        glow.addColorStop(0, "rgba(210,220,255,0.45)"); glow.addColorStop(1, "rgba(210,220,255,0)");
+        ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+        const mg = ctx.createRadialGradient(mx - r * 0.3, my - r * 0.3, r * 0.1, mx, my, r);
+        mg.addColorStop(0, "#fffdf3"); mg.addColorStop(1, "#dcdcf2");
+        ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(160,160,200,0.35)";
+        [[-0.3, -0.2, 0.22], [0.25, 0.15, 0.16], [-0.05, 0.4, 0.12], [0.35, -0.35, 0.1]].forEach(([a, b, c]) => { ctx.beginPath(); ctx.arc(mx + a * r, my + b * r, c * r, 0, Math.PI * 2); ctx.fill(); });
+      }
+    }
+    function nightTint() {
+      // shade everything below the far hill line so the land darkens while the sky keeps its own light
+      if (sky.tint[3] <= 0.005) return;
+      const h = hills[0];
+      ctx.save(); ctx.beginPath(); ctx.moveTo(0, H);
+      for (let x = 0; x <= W + 20; x += 20) ctx.lineTo(x, h.base - 40 + Math.sin(x * h.f + h.ph) * h.amp + Math.sin(x * h.f * 2.3 + h.ph) * h.amp * 0.3);
+      ctx.lineTo(W, H); ctx.closePath(); ctx.clip();
+      ctx.fillStyle = rgb(sky.tint, sky.tint[3]); ctx.fillRect(0, 0, W, H);
       ctx.restore();
-      ctx.fillStyle = "#fff3b0"; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#ffe066"; ctx.beginPath(); ctx.arc(sx, sy, sr * 0.82, 0, Math.PI * 2); ctx.fill();
+    }
+    function fireflies(t) {
+      if (sky.dark < 0.2) return;
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      const pts = bugs.map((b) => [b.x + Math.sin(t * b.sp + b.ph) * b.ax, b.y + Math.cos(t * b.sp * 1.3 + b.ph) * b.ay, 0.35 + 0.65 * Math.max(0, Math.sin(t * 2 * b.sp + b.ph))]);
+      pts.push([fly.x, fly.y, 1]);                     // after dark the dragon chases a firefly instead of the butterfly
+      for (const [x, y, a] of pts) {
+        const al = a * Math.min(1, (sky.dark - 0.2) * 1.6);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, 14);
+        g.addColorStop(0, `rgba(240,255,150,${al})`); g.addColorStop(0.25, `rgba(200,255,90,${al * 0.5})`); g.addColorStop(1, "rgba(200,255,90,0)");
+        ctx.fillStyle = g; ctx.fillRect(x - 14, y - 14, 28, 28);
+      }
+      ctx.restore();
     }
     function cloud(c, dt) {
       c.x += c.v * dt; if (c.x - 200 * c.s > W) c.x = -260 * c.s;
       ctx.save(); ctx.translate(c.x, c.y); ctx.scale(c.s, c.s);
-      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.fillStyle = rgb(mix([255, 255, 255], sky.mid, 0.12 + sky.dark * 0.55), 0.95 - sky.dark * 0.45);
       ctx.beginPath();
       [[0, 0, 34], [36, -14, 42], [80, -2, 34], [112, 8, 24], [52, 12, 32], [18, 14, 26]].forEach(([x, y, r]) => { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2); });
       ctx.fill();
-      ctx.fillStyle = "rgba(170,210,240,0.35)"; ctx.beginPath(); ctx.ellipse(56, 30, 70, 10, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = rgb(mix([170, 210, 240], sky.top, sky.dark * 0.6), 0.35); ctx.beginPath(); ctx.ellipse(56, 30, 70, 10, 0, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
     function drawHills() {
@@ -114,8 +220,9 @@
       ctx.fillStyle = "#ffcf33"; ctx.beginPath(); ctx.arc(cx, cy, f.s * 0.45, 0, Math.PI * 2); ctx.fill();
     }
     function butterfly(t) {
+      if (sky.dark > 0.85) return;
       const flap = Math.abs(Math.sin(t * 18)) * 0.9 + 0.1;
-      ctx.save(); ctx.translate(fly.x, fly.y);
+      ctx.save(); ctx.translate(fly.x, fly.y); ctx.globalAlpha = 1 - sky.dark / 0.85;
       ctx.fillStyle = "#b49cff";
       ctx.beginPath(); ctx.ellipse(-6 * flap, -2, 7 * flap, 9, -0.4, 0, Math.PI * 2); ctx.ellipse(6 * flap, -2, 7 * flap, 9, 0.4, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = "#ff8fb1";
@@ -241,7 +348,8 @@
       if (lowRes) { acc += dt; if (acc < 1 / 24) { if (!reduce) requestAnimationFrame(frame); return; } acc = 0; }
       update(lowRes ? 1 / 24 : dt, t);
       const wind = Math.sin(t * 0.4) * 0.6 + Math.sin(t * 1.3) * 0.25;
-      sky(t);
+      hour = clockHour(nowMs); sky = palette(hour); syncPage(nowMs);
+      drawSky(t, lowRes ? 1 / 24 : dt);
       clouds.forEach((c) => cloud(c, lowRes ? 1 / 24 : dt));
       drawHills();
       const dragonDepthY = dragon.groundY;
@@ -254,10 +362,32 @@
       }
       while (fi < flowers.length) flower(flowers[fi++], t);
       if (!drawn) drawDragon(t);
+      nightTint();
       butterfly(t);
+      fireflies(t);
       for (const s of sparkles) { ctx.globalAlpha = Math.max(0, Math.min(1, s.life * 2)); ctx.fillStyle = s.c; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); }
       ctx.globalAlpha = 1;
       if (!reduce) requestAnimationFrame(frame);
+    }
+
+    // let the page around the canvas know what time it is (a few times a second is plenty)
+    let lastSync = -1e9, lastDark = null;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    function phaseName() {
+      if (sky.dark > 0.75) return "Night";
+      if (sky.dark > 0.08 || sky.tint[3] > 0.06) return hour < 12 ? "Dawn" : "Dusk";
+      return "Day";
+    }
+    function syncPage(nowMs) {
+      if (nowMs - lastSync < 250) return; lastSync = nowMs;
+      const darkSky = sky.dark > 0.5;
+      if (darkSky !== lastDark) { lastDark = darkSky; document.body.classList.toggle("dark-sky", darkSky); }
+      if (meta) meta.setAttribute("content", rgb(sky.mid).replace(/rgba\((\d+),(\d+),(\d+),1\)/, (_, r, g, b) => "#" + [r, g, b].map((v) => (+v).toString(16).padStart(2, "0")).join("")));
+      const hh = Math.floor(hour), mm = Math.floor((hour - hh) * 60);
+      const label = document.getElementById("sky-label"), time = document.getElementById("sky-time"), pill = document.getElementById("sky-pill");
+      if (label) label.textContent = phaseName();
+      if (time) time.textContent = String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+      if (pill) pill.dataset.phase = phaseName().toLowerCase();
     }
 
     function place() {
@@ -268,10 +398,16 @@
     window.addEventListener("resize", () => { resize(); place(); if (reduce) frame(performance.now()); });
     resize(); place();
     requestAnimationFrame(frame);
+    if (reduce) setInterval(() => frame(performance.now()), 60000);   // still moves with the clock, just without animation
 
     return {
       cheer() { dragon.cheer = 0.6; burst(); },
       setLowRes(v) { lowRes = v; resize(); place(); if (reduce) frame(performance.now()); },
+      playDay(cb) {
+        if (reduce || lapse) return false;
+        onLapse = cb; lapse = { start: performance.now(), from: hour }; cb && cb(true);
+        return true;
+      },
     };
   }
 
@@ -279,4 +415,6 @@
   const m = buildMeadow();
   window.meadow = m;
   if (m && document.body.classList.contains("static-page")) m.setLowRes(true);
+  const pill = $("sky-pill");
+  if (m && pill) pill.addEventListener("click", () => m.playDay((on) => { document.body.classList.toggle("lapse", on); pill.setAttribute("aria-pressed", on ? "true" : "false"); }));
 })();

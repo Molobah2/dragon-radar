@@ -343,3 +343,33 @@ body.modal-open { overflow: hidden; }
 .kp-rules { text-align: center; color: var(--ink-soft); font-weight: 700; font-size: 14px; margin: 0 0 20px; }
 .kp-team { grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); }
 .kp-card .meta { justify-content: flex-start; }
+
+/* ---------- day and night ----------
+   The meadow follows each visitor's own clock. Text that sits straight on the scene flips to a light ink once the sky is dark. */
+body { transition: background-color 1.2s; }
+body.dark-sky { background: #141a45; --on-sky: #f2f4ff; --on-sky-soft: rgba(242, 244, 255, .78); }
+.brand, footer, .hot-title { color: var(--on-sky, var(--ink)); transition: color 1.2s, text-shadow 1.2s; }
+.hot-title span, .kp-rules { color: var(--on-sky-soft, var(--ink-soft)); transition: color 1.2s; }
+body.dark-sky .hot-title { text-shadow: 0 1px 8px rgba(6, 10, 34, .6); }
+body.dark-sky .intro-title { color: #fff; text-shadow: 0 0 2px rgba(6, 10, 34, .6), 0 0 22px rgba(6, 10, 34, .7); }
+body.ready.dark-sky .veil { opacity: .2; }
+body.ready.lapse #meadow { filter: blur(3px) saturate(1.1); transform: scale(1.01); }
+
+.bar-right { display: flex; align-items: center; gap: 10px; }
+.sky-pill { border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 10px; border-radius: 999px;
+  background: var(--glass-strong); color: var(--ink); font-weight: 800; font-size: 13px; box-shadow: 0 6px 16px -8px rgba(29, 36, 51, .4);
+  transition: background .6s, color .6s, transform .2s cubic-bezier(.3, 1.5, .5, 1); }
+.sky-pill:hover { transform: translateY(-1px); }
+.sky-pill b { font-family: var(--font-mono); font-weight: 700; font-size: 12px; opacity: .7; font-variant-numeric: tabular-nums; }
+.sky-hint { font-size: 12px; font-weight: 700; color: var(--ink-soft); padding-left: 8px; border-left: 1px solid var(--line); transition: color .6s; }
+.sky-pill[aria-pressed="true"] .sky-hint { display: none; }
+.bar-right .btn-soft { white-space: nowrap; background: var(--glass-strong); box-shadow: 0 6px 16px -8px rgba(29, 36, 51, .4); transition: background .6s, color .6s; }
+body.dark-sky .bar-right .btn-soft { background: rgba(20, 26, 69, .72); color: #f2f4ff; }
+.sky-dot { width: 14px; height: 14px; border-radius: 50%; flex: none; background: #ffd23f; box-shadow: 0 0 0 3px rgba(255, 210, 63, .3), 0 0 10px rgba(255, 190, 40, .7);
+  transition: background .8s, box-shadow .8s; }
+.sky-pill[data-phase="dawn"] .sky-dot, .sky-pill[data-phase="dusk"] .sky-dot { background: #ff9a5a; box-shadow: 0 0 0 3px rgba(255, 154, 90, .3), 0 0 10px rgba(255, 120, 60, .7); }
+.sky-pill[data-phase="night"] .sky-dot { background: transparent; box-shadow: inset -4px -2px 0 0 #f4f1ff, 0 0 10px rgba(210, 220, 255, .5); }
+body.dark-sky .sky-pill { background: rgba(20, 26, 69, .72); color: #f2f4ff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+body.dark-sky .sky-hint { color: rgba(242, 244, 255, .7); border-color: rgba(242, 244, 255, .2); }
+@media (max-width: 560px) { .sky-hint, #sky-label { display: none; } .sky-pill { padding: 7px 10px; } .brand { font-size: 19px; } .bar-right { gap: 8px; } }
+@media (max-width: 480px) { .bar-right .btn { padding: 8px 12px; font-size: 13px; } .wide-only { display: none; } .bar-right .btn { text-transform: capitalize; } }
