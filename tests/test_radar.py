@@ -361,3 +361,13 @@ def test_cards_get_author_details_and_deleted_posts_are_hidden(cfg, Session):
         assert a.text == "a &amp; b" and not a.hidden
         assert b.hidden and b.text is None
         assert get_setting(s, "last_recheck")
+
+
+def test_cron_collect_ignores_calls_that_come_too_soon(cfg, Session):
+    cfg.x_bearer_token = "t"
+    app = create_app(cfg)
+    with Session() as s:
+        s.add(CollectorRun(started_at=utcnow(), status="ok"))
+        s.commit()
+    r = app.test_client().post("/cron/collect")
+    assert r.status_code == 200 and r.get_json()["reason"] == "too soon"

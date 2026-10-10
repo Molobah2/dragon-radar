@@ -1,12 +1,9 @@
-# Collects new posts every 20 minutes and keeps the free Render site awake.
+# Manual collection runs. Scheduled collection is a Supabase cron job that calls /cron/collect.
 # Secrets (repo Settings > Secrets and variables > Actions > Secrets): X_BEARER_TOKEN, DATABASE_URL
 # Variable (same page > Variables): SITE_URL, e.g. https://dragon-radar.onrender.com
 name: collect
 
 on:
-  schedule:
-    - cron: "*/20 * * * *"   # collector (GitHub may start scheduled runs a few minutes late)
-    - cron: "*/10 * * * *"   # keep-awake ping
   workflow_dispatch:
     inputs:
       force:
@@ -20,7 +17,9 @@ concurrency:
 
 jobs:
   collect:
-    if: github.event.schedule == '*/20 * * * *' || github.event_name == 'workflow_dispatch'
+    # Scheduled collection now runs from a Supabase cron job calling /cron/collect.
+    # This workflow stays for manual runs only.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -38,12 +37,3 @@ jobs:
           MONTHLY_SPEND_LIMIT_USD: "20"
           FORCE_COLLECT: ${{ inputs.force && '1' || '0' }}
           DAILY_POST_CAP: "50"   # testing: newest 10 posts about every 5 hours. Set "0" for full collection.
-
-  keep-awake:
-    if: github.event.schedule == '*/10 * * * *'
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - name: Ping the site
-        if: ${{ vars.SITE_URL != '' }}
-        run: curl -fsS --max-time 90 "${{ vars.SITE_URL }}/healthz" || true

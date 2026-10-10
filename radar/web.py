@@ -5,6 +5,7 @@ Production:   gunicorn "radar.web:create_app()"
 """
 import hmac
 import secrets
+import threading
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -116,6 +117,34 @@ def create_app(cfg: Config | None = None) -> Flask:
     @app.get("/healthz")
     def healthz():
         return {"ok": True}
+
+    # Called every 20 minutes by a Supabase cron job. No secret needed: the collector
+    # already enforces the daily cap, the spacing between grabs and the spend limit,
+    # and this route ignores calls that come sooner than 10 minutes after the last run.
+    collect_lock = threading.Lock()
+
+    def collect_in_background():
+        from .xapi import XClient
+        try:
+            with Session() as s:
+                run_collection(s, XClient(cfg.x_bearer_token), cfg)
+        except Exception:  # noqa: BLE001  the run row already records errors
+            app.logger.exception("Background collection failed")
+        finally:
+            collect_lock.release()
+
+    @app.post("/cron/collect")
+    def cron_collect():
+        if not cfg.x_bearer_token:
+            return {"started": False, "reason": "no token"}, 503
+        with Session() as s:
+            last = s.scalar(select(CollectorRun.started_at).order_by(CollectorRun.started_at.desc()).limit(1))
+        if last and utcnow() - last < timedelta(minutes=10):
+            return {"started": False, "reason": "too soon"}, 200
+        if not collect_lock.acquire(blocking=False):
+            return {"started": False, "reason": "already running"}, 200
+        threading.Thread(target=collect_in_background, daemon=True).start()
+        return {"started": True}, 202
 
     # ---------- admin ----------
 
