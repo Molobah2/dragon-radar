@@ -19,6 +19,7 @@ from .db import (SIDE_RUNS, BlockedAuthor, CollectorRun, Keeper, Post, get_setti
                  set_setting, utcnow)
 
 FEED_LIMIT = 1000
+NEWCOMERS = 12  # first time posters shown in the welcome row
 PINNED = 2  # newest team posts kept at the top  # IDs only, a few KB; the browser renders them in small batches
 
 
@@ -111,6 +112,15 @@ def create_app(cfg: Config | None = None) -> Flask:
         with Session() as s:
             last_run = s.scalar(select(CollectorRun).where(CollectorRun.status.in_(["ok", "page_limit"]))
                                 .order_by(CollectorRun.started_at.desc()).limit(1))
+        # Welcome row: people whose very first post on the radar landed in the last 7 days
+        with Session() as s:
+            first = (select(Post.author_id, func.min(Post.created_at).label("first"))
+                     .where(Post.hidden.is_(False)).group_by(Post.author_id).subquery())
+            fresh = s.scalars(select(Post).join(first, (Post.author_id == first.c.author_id) & (Post.created_at == first.c.first))
+                              .where(first.c.first >= utcnow() - timedelta(days=7), Post.is_team.is_(False),
+                                     Post.text.is_not(None), Post.author_username.is_not(None),
+                                     Post.author_id.not_in(select(BlockedAuthor.author_id)))
+                              .order_by(Post.created_at.desc()).limit(NEWCOMERS)).all()
         def item(p):
             return {"id": p.id, "t": p.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
                   "team": p.is_team, "quote": p.is_quote, "text": p.text, "name": p.author_name or p.author_username,
@@ -118,20 +128,24 @@ def create_app(cfg: Config | None = None) -> Flask:
                     "opens": p.opens or 0}
         items = [item(p) for p in posts]
         pinned_items = [item(p) for p in pinned]
+        newcomers = [{"id": p.id, "t": p.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"), "name": p.author_name or p.author_username,
+                      "user": p.author_username, "avatar": p.author_avatar,
+                      "hatchery": "ancient hatchery" in (p.text or "").lower()} for p in fresh]
         filters = {"range": key, "who": who, "quotes": "1" if quotes else "0",
                    "from": args.get("from", ""), "to": args.get("to", "")}
         updated = last_run.finished_at.strftime("%Y-%m-%dT%H:%M:%SZ") if last_run and last_run.finished_at else None
-        return items, pinned_items, filters, updated
+        return items, pinned_items, filters, updated, newcomers
 
     @app.get("/")
     def feed():
-        items, pinned_items, filters, updated = feed_query(request.args)
-        return render_template("feed.html", cfg=cfg, items=items, pinned=pinned_items, filters=filters, updated=updated)
+        items, pinned_items, filters, updated, newcomers = feed_query(request.args)
+        return render_template("feed.html", cfg=cfg, items=items, pinned=pinned_items, filters=filters, updated=updated,
+                               newcomers=newcomers)
 
     @app.get("/api/posts")
     def api_posts():
-        items, pinned_items, filters, updated = feed_query(request.args)
-        return jsonify({"posts": items, "pinned": pinned_items, "filters": filters, "updated": updated})
+        items, pinned_items, filters, updated, newcomers = feed_query(request.args)
+        return jsonify({"posts": items, "pinned": pinned_items, "filters": filters, "updated": updated, "newcomers": newcomers})
 
     # Anonymous open counter. Nothing about the visitor is stored. The browser only
     # sends this the first time it opens a post, and the same address can bump

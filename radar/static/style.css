@@ -403,3 +403,14 @@ body.dark-sky .mailbox { background: rgba(20, 26, 69, .72); box-shadow: 0 14px 3
 body.dark-sky .side-actions .btn-soft, body.dark-sky .keeper-locked { background: rgba(20, 26, 69, .72); color: #f2f4ff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 body.dark-sky .mailbox-tip { background: #fff; color: var(--ink); }
 .mailbox svg { width: 48px; height: 48px; }
+
+/* ---------- New in the hatchery: a sideways strip of first time posters ---------- */
+.welcome-row { display: flex; gap: 12px; overflow-x: auto; padding: 4px 4px 14px; scroll-snap-type: x proximity; scrollbar-width: thin; }
+.newbie { flex: 0 0 auto; scroll-snap-align: start; display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 12px; border-radius: 20px;
+  background: rgba(255, 255, 255, .94); box-shadow: 0 12px 26px -18px rgba(29, 36, 51, .5); border: 1px solid rgba(29, 36, 51, .06);
+  animation: enter .5s calc(var(--i, 0) * 60ms) cubic-bezier(.2, .8, .2, 1) both; }
+.newbie-who { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); min-width: 0; }
+.newbie-text { display: grid; line-height: 1.2; }
+.newbie-text b { font-size: 14px; max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.newbie-text small { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.newbie-hi { padding: 7px 14px; font-size: 13px; box-shadow: 0 3px 0 var(--coral-deep); }

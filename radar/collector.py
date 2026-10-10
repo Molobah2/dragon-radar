@@ -178,6 +178,15 @@ def backfill_text(s: Session, cfg: Config, now: datetime, limit: int = 120) -> i
     return filled
 
 
+def share_channel(s: Session, client: XClient, cfg: Config, run: CollectorRun, now: datetime) -> None:
+    """Posts people shared in the Discord share channel, read for free. Never breaks a collection."""
+    from .discord_share import collect_discord
+    try:
+        collect_discord(s, cfg, run, now, client=client)
+    except Exception:  # noqa: BLE001
+        log.exception("Discord share channel collection failed")
+
+
 def tidy_up(s: Session, client: XClient, cfg: Config, run: CollectorRun, now: datetime) -> None:
     """Clear stored text once posts leave the feed, and once a day hide recent posts deleted on X."""
     try:
@@ -215,6 +224,7 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
     now = now or utcnow()
     run = CollectorRun(started_at=now)
     s.add(run)
+    share_channel(s, client, cfg, run, now)   # free, so it runs even when the paid budget is spent
 
     spent = month_spend(s, now)
     page_cost = 100 * cfg.cost_per_post_usd  # worst case for one page

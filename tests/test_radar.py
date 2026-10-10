@@ -566,3 +566,89 @@ def test_backfill_fills_textless_posts_and_hides_deleted(cfg, Session, monkeypat
         assert collector.backfill_text(s, cfg, now) == 1
         s.commit()
         assert s.get(Post, "1").text == "hi dragons" and s.get(Post, "2").hidden
+
+
+# ---------- Discord share channel (free collection) ----------
+class FakeResp:
+    def __init__(self, status, payload):
+        self.status_code, self._p = status, payload
+
+    def json(self):
+        return self._p
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise RuntimeError(self.status_code)
+
+
+class FakeHttp:
+    """Answers Discord channel reads and oEmbed lookups."""
+
+    def __init__(self, messages, oembeds):
+        self.messages, self.oembeds, self.calls = messages, oembeds, []
+
+    def get(self, url, params=None, headers=None, timeout=None):
+        self.calls.append(url)
+        if "discord.com" in url:
+            msgs, self.messages = self.messages, []
+            return FakeResp(200, msgs)
+        pid = params["url"].rsplit("/", 1)[-1]
+        o = self.oembeds.get(pid)
+        if o is None:
+            return FakeResp(404, {})
+        return FakeResp(200, {"author_name": o[0], "author_url": f"https://twitter.com/{o[1]}",
+                              "html": f"<blockquote><p>{o[2]}</p></blockquote>"})
+
+    def close(self):
+        pass
+
+
+def x_id(when):
+    from radar.discord_share import X_EPOCH_MS
+    from datetime import timezone
+    ms = int(when.replace(tzinfo=timezone.utc).timestamp() * 1000)
+    return str((ms - X_EPOCH_MS) << 22)
+
+
+def test_discord_share_channel_reads_links_free_and_checks_blue_tick_once(cfg, Session):
+    from radar.discord_share import collect_discord, post_ids_in
+    from radar.db import AuthorCheck
+    now = utcnow()
+    a, b, c = x_id(now - timedelta(hours=2)), x_id(now - timedelta(hours=1)), x_id(now - timedelta(days=20))
+    assert post_ids_in(f"look https://x.com/ann/status/{a}?s=20 and https://fxtwitter.com/bob/status/{b}") == [a, b]
+    cfg.discord_bot_token, cfg.discord_channel_ids = "tok", "123"
+    http = FakeHttp([{"id": "900", "content": f"https://x.com/ann/status/{a}"},
+                     {"id": "901", "content": f"https://twitter.com/bob/status/{b} https://x.com/old/status/{c}"}],
+                    {a: ("Ann 🐉", "ann", "hatching in the Ancient Hatchery"), b: ("Bob", "bob", "gm dragons")})
+    client = FakeClient([])
+    client.team = [{"id": "11", "username": "ann", "name": "Ann 🐉", "verified": True, "verified_type": "blue"},
+                   {"id": "12", "username": "bob", "name": "Bob", "verified": False}]
+    with Session() as s:
+        run = CollectorRun(started_at=now); s.add(run)
+        assert collect_discord(s, cfg, run, now, client=client, http=http) == 1   # bob has no blue tick
+        s.commit()
+        got = s.get(Post, a)
+        assert got.author_username == "ann" and got.author_id == "11" and abs((got.created_at - (now - timedelta(hours=2))).total_seconds()) < 2
+        assert s.get(Post, c) is None                                  # older than the feed window
+        assert {k.key for k in s.scalars(select(AuthorCheck))} == {"ann", "bob"}
+        assert round(run.est_cost_usd, 3) == round(2 * cfg.cost_per_user_usd, 3)
+        assert get_setting(s, "discord_after:123") == "901"
+    # the same author again costs nothing: the check is cached
+    d = x_id(now - timedelta(minutes=30))
+    http2 = FakeHttp([{"id": "902", "content": f"https://x.com/ann/status/{d}"}], {d: ("Ann 🐉", "ann", "another one")})
+    with Session() as s:
+        run = CollectorRun(started_at=now); s.add(run)
+        assert collect_discord(s, cfg, run, now, client=client, http=http2) == 1
+        assert run.est_cost_usd == 0
+
+
+def test_welcome_row_lists_first_time_posters(cfg, Session):
+    now = utcnow()
+    with Session() as s:
+        s.add(Post(id="1", author_id="old", created_at=now - timedelta(days=20), author_username="vet", text="old"))
+        s.add(Post(id="2", author_id="old", created_at=now - timedelta(hours=3), author_username="vet", text="again"))
+        s.add(Post(id="3", author_id="new", created_at=now - timedelta(hours=2), author_username="fresh",
+                   author_name="Fresh", text="found the Ancient Hatchery"))
+        s.commit()
+    data = create_app(cfg).test_client().get("/api/posts").get_json()
+    assert [n["user"] for n in data["newcomers"]] == ["fresh"] and data["newcomers"][0]["hatchery"] is True

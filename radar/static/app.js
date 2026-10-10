@@ -174,6 +174,27 @@
     setFoot(card, p.id);
     return card;
   }
+  // ---------- welcome row: first time posters, one tap to greet them ----------
+  function renderWelcome() {
+    const list = data.newcomers || [];
+    $("welcome").hidden = !list.length;
+    if (!list.length) return;
+    const greet = "Welcome to the hatchery, Keeper \u{1F409}";
+    $("welcome-row").replaceChildren(...list.map((n, i) => {
+      const avatar = n.avatar
+        ? el("img", { class: "avatar", src: n.avatar, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })
+        : el("span", { class: "avatar blank" }, (n.name || "?").slice(0, 1));
+      const card = el("div", { class: "newbie" },
+        el("a", { class: "newbie-who", href: `https://x.com/${n.user}/status/${n.id}`, target: "_blank", rel: "noopener" },
+          avatar, el("span", { class: "newbie-text" }, el("b", {}, n.name || n.user),
+            el("small", {}, (n.hatchery ? "Ancient Hatchery \u00b7 " : "first post \u00b7 ") + ago(n.t)))),
+        el("a", { class: "btn btn-go newbie-hi", href: `https://x.com/intent/post?in_reply_to=${n.id}&text=${encodeURIComponent(greet)}`,
+          target: "_blank", rel: "noopener" }, "Say hi"));
+      card.style.setProperty("--i", i);
+      return card;
+    }));
+  }
+
   function render() {
     const trail = $("trail");
     $("pinned").hidden = !pinnedPosts.length;
@@ -233,6 +254,7 @@
   document.addEventListener("keydown", (e) => { if (!revealed && (e.key === "Escape" || e.key === "Enter")) reveal(); });
 
   render();
+  renderWelcome();
   pulse();
   let seenIntro = false;
   try { seenIntro = sessionStorage.getItem("radar:intro") === "1"; sessionStorage.setItem("radar:intro", "1"); } catch (e) {}

@@ -74,6 +74,10 @@
         <h2 class="hot-title">Pinned <span>latest from the team</span></h2>
         <div class="trail" id="pinned-trail"></div>
       </section>
+      <section class="hot welcome" id="welcome" hidden>
+        <h2 class="hot-title">New in the hatchery <span>first posts this week, say hi</span></h2>
+        <div class="welcome-row" id="welcome-row"></div>
+      </section>
       <section class="hot" id="hot" hidden>
         <h2 class="hot-title">Hot now <span>most opened by Keepers</span></h2>
         <div class="trail" id="hot-trail"></div>
@@ -140,7 +144,7 @@
   </div>
   </div>
   {% endif %}
-  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "demo": cfg.demo_mode, "intro_ms": 5000} | tojson }}</script>
+  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000} | tojson }}</script>
   <script src="{{ url_for('static', filename='keeper.js') }}"></script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 {% endblock %}

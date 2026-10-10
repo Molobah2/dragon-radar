@@ -52,6 +52,18 @@ class Keeper(Base):
     source: Mapped[str] = mapped_column(String(16), default="radar")
 
 
+class AuthorCheck(Base):
+    """One time profile checks for authors found through the Discord share channel (blue tick rule)."""
+    __tablename__ = "author_checks"
+    key: Mapped[str] = mapped_column(String(32), primary_key=True)          # lower-case handle
+    user_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    username: Mapped[str] = mapped_column(String(32), default="")
+    name: Mapped[str] = mapped_column(String(100), default="")
+    avatar: Mapped[str | None] = mapped_column(String(400), nullable=True)
+    verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class BlockedAuthor(Base):
     __tablename__ = "blocked_authors"
     author_id: Mapped[str] = mapped_column(String(32), primary_key=True)
