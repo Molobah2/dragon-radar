@@ -65,6 +65,7 @@ class Config:
     # Realistic meadow renders on a Cloudinary CDN (empty base = the hand drawn canvas meadow)
     scene_base: str = field(default_factory=lambda: os.environ.get("SCENE_BASE", "https://res.cloudinary.com/gosbi0oh").rstrip("/"))
     scene_folder: str = field(default_factory=lambda: os.environ.get("SCENE_FOLDER", "dragon-radar"))
+    scene_version: str = field(default_factory=lambda: os.environ.get("SCENE_VERSION", "2").strip())
     scene_videos: str = field(default_factory=lambda: os.environ.get("SCENE_VIDEOS", ""))  # e.g. "day:meadow-day-loop,night:meadow-night-loop"
     # Keeper card is locked until this is switched on (no lookups, button shows as coming soon)
     keeper_card_open: bool = field(default_factory=lambda: _bool("KEEPER_CARD_OPEN"))

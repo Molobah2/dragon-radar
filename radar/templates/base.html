@@ -15,7 +15,7 @@
 <body class="{% block body_class %}{% endblock %}">
   {% if cfg.scene_base %}
   <link rel="preconnect" href="{{ cfg.scene_base }}" crossorigin>
-  <script>window.RADAR_SCENE = {{ {"base": cfg.scene_base, "folder": cfg.scene_folder,
+  <script>window.RADAR_SCENE = {{ {"base": cfg.scene_base, "folder": cfg.scene_folder, "ver": cfg.scene_version,
     "video": cfg.scene_video_map} | tojson }};
     document.documentElement.classList.add("photo-mode");</script>
   {% endif %}

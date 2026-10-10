@@ -19,7 +19,8 @@
   const mid = conn.effectiveType === "3g";                                     // video and images, but smaller
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const sharpW = Math.min(2560, Math.ceil(Math.max(screen.width, screen.height) * dpr / 320) * 320) || 1920;
-  const img = (ph, t) => `${cfg.base}/image/upload/${t}/f_auto/q_auto${t.includes("e_blur") ? ":eco" : ""}/${cfg.folder}/meadow-${ph}`;
+  const ver = cfg.ver ? `v${cfg.ver}/` : "";   // bump SCENE_VERSION after replacing art so every cache refreshes
+  const img = (ph, t) => `${cfg.base}/image/upload/${t}/f_auto/q_auto${t.includes("e_blur") ? ":eco" : ""}/${ver}${cfg.folder}/meadow-${ph}`;
   const SOFT = (ph) => img(ph, "c_scale,w_640/e_blur:1400");
   const SHARP = (ph) => img(ph, `c_scale,w_${lean || mid ? Math.min(1280, sharpW) : sharpW}`);
 
@@ -64,7 +65,7 @@
   }
   function syncVideo() {
     if (wantClip()) {
-      const src = `${cfg.base}/video/upload/c_scale,w_${Math.min(mid ? 1280 : 1600, sharpW)}/f_auto:video/q_auto/${cfg.folder}/${cfg.video[current]}`;
+      const src = `${cfg.base}/video/upload/c_scale,w_${Math.min(mid ? 1280 : 1600, sharpW)}/f_auto:video/q_auto/${ver}${cfg.folder}/${cfg.video[current]}`;
       if (video.dataset.src !== src) { video.dataset.src = src; video.src = src; video.classList.remove("on"); }
       const p = video.play(); if (p && p.catch) p.catch(() => {});
     } else {
