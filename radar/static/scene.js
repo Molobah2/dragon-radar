@@ -15,12 +15,13 @@
   const KEYS = [[0, "night"], [4.9, "night"], [5.9, "dawn"], [7.3, "day"], [16.7, "day"], [18.0, "dusk"], [19.4, "night"], [24, "night"]];
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const conn = navigator.connection || {};
-  const lean = !!conn.saveData || /(^|-)2g$|3g/.test(conn.effectiveType || "");
+  const lean = !!conn.saveData || /2g$/.test(conn.effectiveType || "");       // skip the video entirely
+  const mid = conn.effectiveType === "3g";                                     // video and images, but smaller
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const sharpW = Math.min(2560, Math.ceil(Math.max(screen.width, screen.height) * dpr / 320) * 320) || 1920;
   const img = (ph, t) => `${cfg.base}/image/upload/${t}/f_auto/q_auto${t.includes("e_blur") ? ":eco" : ""}/${cfg.folder}/meadow-${ph}`;
   const SOFT = (ph) => img(ph, "c_scale,w_640/e_blur:1400");
-  const SHARP = (ph) => img(ph, `c_scale,w_${lean ? 1280 : sharpW}`);
+  const SHARP = (ph) => img(ph, `c_scale,w_${lean || mid ? Math.min(1280, sharpW) : sharpW}`);
 
   const layers = {};
   for (const ph of PHASES) {
@@ -63,7 +64,7 @@
   }
   function syncVideo() {
     if (wantClip()) {
-      const src = `${cfg.base}/video/upload/c_scale,w_${Math.min(1600, sharpW)}/f_auto:video/q_auto/${cfg.folder}/${cfg.video[current]}`;
+      const src = `${cfg.base}/video/upload/c_scale,w_${Math.min(mid ? 1280 : 1600, sharpW)}/f_auto:video/q_auto/${cfg.folder}/${cfg.video[current]}`;
       if (video.dataset.src !== src) { video.dataset.src = src; video.src = src; video.classList.remove("on"); }
       const p = video.play(); if (p && p.catch) p.catch(() => {});
     } else {
