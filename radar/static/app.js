@@ -106,7 +106,7 @@
     counts(true);
     if (!card) return;
     if (showOpened || pinnedIds.has(id)) { card.classList.add("opened"); setFoot(card, id); return; }
-    setTimeout(() => { card.classList.add("leaving"); setTimeout(render, 700); }, 200);
+    setTimeout(() => { card.classList.add("leaving"); setTimeout(render, 360); }, 120);
   }
   function undo(id) { delete opened[id]; save(); render(); }
   function setFoot(card, id) {
@@ -164,7 +164,6 @@
         p.opens ? `${p.opens} Keeper${p.opens === 1 ? "" : "s"}` : "Needs love"), el("time", { datetime: p.t, title: new Date(p.t).toLocaleString() }, ago(p.t))),
       el("div", { class: "foot" }));
     card.style.setProperty("--i", i % BATCH);
-    tilt(card);
     return card;
   }
   function placeCard(p, i) {
