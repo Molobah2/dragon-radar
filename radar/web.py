@@ -98,7 +98,8 @@ def create_app(cfg: Config | None = None) -> Flask:
                                 .order_by(CollectorRun.started_at.desc()).limit(1))
         items = [{"id": p.id, "t": p.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
                   "team": p.is_team, "quote": p.is_quote, "text": p.text, "name": p.author_name or p.author_username,
-                  "user": p.author_username, "avatar": p.author_avatar, "media": p.has_media} for p in posts]
+                  "user": p.author_username, "avatar": p.author_avatar, "media": p.has_media,
+                  "opens": p.opens or 0} for p in posts]
         filters = {"range": key, "who": who, "quotes": "1" if quotes else "0",
                    "from": args.get("from", ""), "to": args.get("to", "")}
         updated = last_run.finished_at.strftime("%Y-%m-%dT%H:%M:%SZ") if last_run and last_run.finished_at else None
@@ -113,6 +114,30 @@ def create_app(cfg: Config | None = None) -> Flask:
     def api_posts():
         items, filters, updated = feed_query(request.args)
         return jsonify({"posts": items, "filters": filters, "updated": updated})
+
+    # Anonymous open counter. Nothing about the visitor is stored. The browser only
+    # sends this the first time it opens a post, and the same address can bump
+    # a post once a day, so refreshing or scripting the button barely moves it.
+    seen_opens: dict[tuple[str, str], float] = {}
+
+    @app.post("/api/open/<post_id>")
+    def api_open(post_id):
+        if not post_id.isdigit() or len(post_id) > 32:
+            abort(400)
+        ip = (request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0]).strip()
+        key, now_ts = (ip, post_id), datetime.now().timestamp()
+        if now_ts - seen_opens.get(key, 0) < 86400:
+            return {"counted": False}
+        if len(seen_opens) > 50000:
+            seen_opens.clear()
+        seen_opens[key] = now_ts
+        with Session() as s:
+            post = s.get(Post, post_id)
+            if post is None or post.hidden:
+                return {"counted": False}
+            post.opens = (post.opens or 0) + 1
+            s.commit()
+            return {"counted": True, "opens": post.opens}
 
     @app.get("/healthz")
     def healthz():

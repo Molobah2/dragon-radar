@@ -42,7 +42,12 @@
   };
   const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 11L11 5M6 5h5v5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const pool = () => posts.filter((p) => !unavailable.has(p.id));
-  const visible = () => pool().filter((p) => showOpened || !opened[p.id]);
+  let needsLove = !!store.get("radar:needsLove", false);
+  $("needsLove").checked = needsLove;
+  const visible = () => pool().filter((p) => (showOpened || !opened[p.id]) && (!needsLove || !p.opens));
+  const HOT_MIN = 2, HOT_MAX = 4;
+  const hotList = () => needsLove ? [] : visible().filter((p) => p.opens >= HOT_MIN)
+    .sort((a, b) => b.opens - a.opens || Date.parse(b.t) - Date.parse(a.t)).slice(0, HOT_MAX);
 
   // ---------- counts ----------
   function counts(bump) {
@@ -91,6 +96,9 @@
     if (opened[id]) return;
     opened[id] = Date.now();
     save();
+    const post = posts.find((x) => x.id === id);
+    if (post) { post.opens = (post.opens || 0) + 1; }
+    try { fetch(`/api/open/${id}`, { method: "POST", keepalive: true }); } catch (e) {}
     window.meadow && window.meadow.cheer();
     counts(true);
     if (!card) return;
@@ -137,7 +145,7 @@
     const chips = [];
     if (p.team) chips.push(el("span", { class: "tag team" }, "Team"));
     if (p.quote) chips.push(el("span", { class: "tag" }, "Quote"));
-    if (p.media) chips.push(el("span", { class: "tag media" }, "Photo or video"));
+    if (p.media) chips.push(el("span", { class: "tag media" }, "Media"));
     else if (links) chips.push(el("span", { class: "tag media" }, "Link"));
     const avatar = p.avatar
       ? el("img", { class: "avatar", src: p.avatar, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })
@@ -149,15 +157,28 @@
         el("a", { class: "xmark", href: url, target: "_blank", rel: "noopener", title: "View on X", html: xLogo })),
       el("a", { class: "text", href: url, target: "_blank", rel: "noopener", onclick: () => markOpened(p.id, card) },
         text || "(no text)"),
-      el("div", { class: "meta" }, ...chips, el("time", { datetime: p.t, title: new Date(p.t).toLocaleString() }, ago(p.t))),
+      el("div", { class: "meta" }, ...chips, el("span", { class: "reach" + (p.opens ? "" : " none"), title: "Visitors who opened this post" },
+        p.opens ? `${p.opens} Keeper${p.opens === 1 ? "" : "s"}` : "Needs love"), el("time", { datetime: p.t, title: new Date(p.t).toLocaleString() }, ago(p.t))),
       el("div", { class: "foot" }));
     card.style.setProperty("--i", i % BATCH);
     tilt(card);
     return card;
   }
+  function placeCard(p, i) {
+    let card = cards.get(p.id);
+    if (!card) { card = makeCard(p, i); cards.set(p.id, card); }
+    card.classList.remove("leaving");
+    card.classList.toggle("opened", !!opened[p.id]);
+    setFoot(card, p.id);
+    return card;
+  }
   function render() {
     const trail = $("trail");
-    const list = visible().slice(0, shown);
+    const hot = hotList(), hotIds = new Set(hot.map((p) => p.id));
+    $("hot").hidden = !hot.length;
+    $("hot-trail").replaceChildren(...hot.map((p, i) => placeCard(p, i)));
+    const rest = visible().filter((p) => !hotIds.has(p.id));
+    const list = rest.slice(0, shown);
     const frag = document.createDocumentFragment();
     let i = 0;
     for (const p of list) {
@@ -169,12 +190,13 @@
       frag.append(card); i++;
     }
     trail.replaceChildren(frag);
-    $("empty").hidden = list.length > 0;
-    $("more").hidden = visible().length <= shown;
+    $("empty").hidden = list.length + hot.length > 0;
+    $("more").hidden = rest.length <= shown;
     counts();
   }
   $("more").addEventListener("click", () => { shown += BATCH; render(); });
   new IntersectionObserver((e) => { if (e[0].isIntersecting && !$("more").hidden) { shown += BATCH; render(); } }, { rootMargin: "500px 0px" }).observe($("more"));
+  $("needsLove").addEventListener("change", (e) => { needsLove = e.target.checked; store.set("radar:needsLove", needsLove); render(); });
   $("showOpened").addEventListener("change", (e) => { showOpened = e.target.checked; store.set("radar:showOpened", showOpened); render(); });
 
   // ---------- filters: keep the other choices when one changes ----------

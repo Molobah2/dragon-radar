@@ -33,6 +33,7 @@ class Post(Base):
     author_username: Mapped[str | None] = mapped_column(String(32), nullable=True)
     author_avatar: Mapped[str | None] = mapped_column(String(400), nullable=True)
     has_media: Mapped[bool] = mapped_column(Boolean, default=False)
+    opens: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # anonymous, how many visitors opened it
 
 
 class BlockedAuthor(Base):

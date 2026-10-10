@@ -371,3 +371,16 @@ def test_cron_collect_ignores_calls_that_come_too_soon(cfg, Session):
         s.commit()
     r = app.test_client().post("/cron/collect")
     assert r.status_code == 200 and r.get_json()["reason"] == "too soon"
+
+
+def test_open_counter_counts_once_per_address(cfg, Session):
+    app = create_app(cfg)
+    with Session() as s:
+        s.add(Post(id="42", author_id="a", author_username="u", text="hi", created_at=utcnow()))
+        s.commit()
+    c = app.test_client()
+    assert c.post("/api/open/42").get_json() == {"counted": True, "opens": 1}
+    assert c.post("/api/open/42").get_json() == {"counted": False}
+    assert c.post("/api/open/42", headers={"X-Forwarded-For": "9.9.9.9"}).get_json()["opens"] == 2
+    assert c.post("/api/open/abc").status_code == 400
+    assert c.get("/api/posts?range=24h").get_json()["posts"][0]["opens"] == 2
