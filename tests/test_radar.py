@@ -510,3 +510,23 @@ def test_cron_is_not_blocked_by_a_directory_check(cfg, Session):
         s.commit()
     r = create_app(cfg).test_client().post("/cron/collect")
     assert r.get_json().get("reason") != "too soon"
+
+
+
+def test_directory_add_never_pays_twice_for_the_same_handle(cfg, Session, monkeypatch):
+    from radar import xapi
+    calls = []
+
+    class Fake:
+        def __init__(self, token): pass
+        def user_profile(self, u):
+            calls.append(u)
+            if u == "ghost":
+                return None
+            return {"id": "5", "username": u, "name": u + " \U0001F409" if u == "dee" else u, "verified": True, "verified_type": "blue"}
+    monkeypatch.setattr(xapi, "XClient", Fake)
+    cfg.x_bearer_token = "t"
+    c = create_app(cfg).test_client()
+    for h in ["dee", "@DEE", "dee", "ghost", "ghost", "eve", "Eve"]:
+        c.post("/api/keepers/add", json={"handle": h})
+    assert calls == ["dee", "ghost", "eve"]

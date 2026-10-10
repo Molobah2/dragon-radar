@@ -309,6 +309,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         return jsonify({"team": team, "keepers": keepers})
 
     add_seen: dict[str, list[float]] = {}
+    add_inflight: set[str] = set()
 
     @app.post("/api/keepers/add")
     def api_keepers_add():
@@ -324,10 +325,11 @@ def create_app(cfg: Config | None = None) -> Flask:
         now, key = utcnow(), handle.lower()
         with Session() as s:
             k = s.get(Keeper, key)
-            if k and k.tagged and k.verified and now - k.last_checked < timedelta(days=1):
+            # Already listed: answer for free. Only re-check X once the listing is a month old.
+            if k and k.tagged and k.verified and now - k.last_checked < timedelta(days=30):
                 return {"ok": True, "message": f"@{k.username} is already in the directory."}
             if get_setting(s, f"dirno:{key}") and now - datetime.fromisoformat(get_setting(s, f"dirno:{key}")) < timedelta(days=1):
-                return {"ok": False, "message": f"@{handle} was checked today and did not qualify yet. Try again tomorrow."}
+                return {"ok": False, "message": f"@{handle} was checked today and did not qualify. Try again tomorrow."}
             day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
             checks = s.scalar(select(func.count()).select_from(CollectorRun)
                               .where(CollectorRun.status == "directory_add", CollectorRun.started_at >= day_start)) or 0
@@ -336,15 +338,21 @@ def create_app(cfg: Config | None = None) -> Flask:
         if not cfg.x_bearer_token:
             return {"ok": False, "message": "Adding is switched off right now."}
         from .xapi import XClient, XApiError
+        if key in add_inflight:  # same handle submitted twice at once: only one check goes to X
+            return {"ok": False, "message": f"@{handle} is being checked right now. Give it a second."}
         add_seen[ip] = recent + [now_ts]
+        add_inflight.add(key)
         try:
             profile = XClient(cfg.x_bearer_token).user_profile(handle)
         except XApiError:
             return {"ok": False, "message": "X did not answer just now. Try again in a bit."}
+        finally:
+            add_inflight.discard(key)
         with Session() as s:
             s.add(CollectorRun(started_at=now, finished_at=utcnow(), status="directory_add",
                                users_returned=1, est_cost_usd=cfg.cost_per_user_usd))
             if not profile:
+                set_setting(s, f"dirno:{key}", now.isoformat())  # do not pay to look up a typo twice
                 s.commit()
                 return {"ok": False, "message": f"@{handle} does not seem to exist on X."}
             k = note_user(s, profile, "added", now=now)
