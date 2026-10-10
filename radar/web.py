@@ -14,7 +14,8 @@ from sqlalchemy import func, select
 
 from .collector import run_collection
 from .config import Config
-from .db import (BlockedAuthor, CollectorRun, Post, get_setting, make_session_factory, month_spend,
+from .directory import has_dragon_tag, note_user
+from .db import (BlockedAuthor, CollectorRun, Keeper, Post, get_setting, make_session_factory, month_spend,
                  set_setting, utcnow)
 
 FEED_LIMIT = 1000
@@ -223,6 +224,11 @@ def create_app(cfg: Config | None = None) -> Flask:
                 posts = [p for p in read_posts if about_dragons(post_text(p), cfg.team_handle)]
                 love = sum(sum((p.get("public_metrics") or {}).get(k, 0) for k in
                                ("like_count", "reply_count", "retweet_count", "quote_count")) for p in posts)
+                latest = max((p.get("created_at", "") for p in posts), default="")
+                with Session() as s2:
+                    note_user(s2, profile, "card", about_dragons=bool(posts),
+                              post_time=datetime.strptime(latest[:19], "%Y-%m-%dT%H:%M:%S") if latest else None, now=now)
+                    s2.commit()
                 avatar = (profile.get("profile_image_url") or "").replace("_normal.", "_bigger.")
                 card = {"found": True, "handle": profile["username"], "name": profile.get("name") or profile["username"],
                         "avatar": f"/api/avatar/{profile['username']}" if avatar else None,
@@ -252,6 +258,13 @@ def create_app(cfg: Config | None = None) -> Flask:
             url = s.scalar(select(Post.author_avatar).where(func.lower(Post.author_username) == key,
                                                             Post.author_avatar.is_not(None)).limit(1))
             cached = get_setting(s, f"keeper:{key}")
+            kp = s.get(Keeper, key)
+            team = get_setting(s, "team_profiles")
+        if not url and kp and kp.avatar:
+            url = kp.avatar
+        if not url and team:
+            import json
+            url = next((t.get("avatar") for t in json.loads(team) if t["username"].lower() == key), None)
         if not url and cached:
             import json
             url = (json.loads(cached).get("card") or {}).get("avatar_url")
@@ -268,6 +281,82 @@ def create_app(cfg: Config | None = None) -> Flask:
             avatar_cache.clear()
         avatar_cache[key] = (datetime.now().timestamp(), r.content, ctype)
         return r.content, 200, {"Content-Type": ctype, "Cache-Control": "public, max-age=86400"}
+
+    # ---------- follow directory ----------
+    @app.get("/keepers")
+    def keepers_page():
+        return render_template("keepers.html", cfg=cfg)
+
+    @app.get("/api/keepers")
+    def api_keepers():
+        import json
+        now = utcnow()
+        with Session() as s:
+            team = json.loads(get_setting(s, "team_profiles") or "[]")
+            rows = s.scalars(select(Keeper).where(Keeper.tagged.is_(True), Keeper.verified.is_(True),
+                                                  Keeper.last_checked >= now - timedelta(days=45))).all()
+        team_keys = {t["username"].lower() for t in team}
+        if not team:  # before the first refresh, still pin the accounts by handle
+            team = [{"username": h.strip(), "name": h.strip(), "avatar": None, "role": r.strip()}
+                    for h, r in (a.split(":", 1) for a in cfg.team_accounts.split(",") if a.strip())]
+            team_keys = {t["username"].lower() for t in team}
+        for t in team:
+            t["avatar"] = f"/api/avatar/{t['username']}" if t.get("avatar") else None
+        fmt = lambda d: d.strftime("%Y-%m-%dT%H:%M:%SZ") if d else None  # noqa: E731
+        keepers = [{"username": k.username, "name": k.name, "avatar": f"/api/avatar/{k.username}" if k.avatar else None,
+                    "last_post": fmt(k.last_post_at), "since": fmt(k.first_seen)}
+                   for k in rows if k.key not in team_keys]
+        return jsonify({"team": team, "keepers": keepers})
+
+    add_seen: dict[str, list[float]] = {}
+
+    @app.post("/api/keepers/add")
+    def api_keepers_add():
+        import json
+        handle = (request.get_json(silent=True) or {}).get("handle", "").strip().lstrip("@")
+        if not handle or len(handle) > 15 or not all(c.isalnum() or c == "_" for c in handle):
+            return {"ok": False, "message": "That does not look like an X handle."}
+        ip = (request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0]).strip()
+        now_ts = datetime.now().timestamp()
+        recent = [t for t in add_seen.get(ip, []) if now_ts - t < 86400]
+        if len(recent) >= 3:
+            return {"ok": False, "message": "You can add up to 3 handles a day. Come back tomorrow."}
+        now, key = utcnow(), handle.lower()
+        with Session() as s:
+            k = s.get(Keeper, key)
+            if k and k.tagged and k.verified and now - k.last_checked < timedelta(days=1):
+                return {"ok": True, "message": f"@{k.username} is already in the directory."}
+            if get_setting(s, f"dirno:{key}") and now - datetime.fromisoformat(get_setting(s, f"dirno:{key}")) < timedelta(days=1):
+                return {"ok": False, "message": f"@{handle} was checked today and did not qualify yet. Try again tomorrow."}
+            day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            checks = s.scalar(select(func.count()).select_from(CollectorRun)
+                              .where(CollectorRun.status == "directory_add", CollectorRun.started_at >= day_start)) or 0
+            if checks >= cfg.directory_adds_per_day or month_spend(s, now) + cfg.cost_per_user_usd > cfg.monthly_spend_limit_usd:
+                return {"ok": False, "message": "Blinky has checked enough Keepers for today. Try again tomorrow."}
+        if not cfg.x_bearer_token:
+            return {"ok": False, "message": "Adding is switched off right now."}
+        from .xapi import XClient, XApiError
+        add_seen[ip] = recent + [now_ts]
+        try:
+            profile = XClient(cfg.x_bearer_token).user_profile(handle)
+        except XApiError:
+            return {"ok": False, "message": "X did not answer just now. Try again in a bit."}
+        with Session() as s:
+            s.add(CollectorRun(started_at=now, finished_at=utcnow(), status="directory_add",
+                               users_returned=1, est_cost_usd=cfg.cost_per_user_usd))
+            if not profile:
+                s.commit()
+                return {"ok": False, "message": f"@{handle} does not seem to exist on X."}
+            k = note_user(s, profile, "added", now=now)
+            if k is None or not (k.tagged and k.verified):
+                set_setting(s, f"dirno:{key}", now.isoformat())
+                s.commit()
+                need = [] if profile.get("verified") and profile.get("verified_type") == "blue" else ["a blue tick"]
+                if not has_dragon_tag(profile.get("name")):
+                    need.append("the \U0001F409 in your display name")
+                return {"ok": False, "message": f"@{profile['username']} needs {' and '.join(need)} to join."}
+            s.commit()
+            return {"ok": True, "message": f"Welcome to the meadow, @{profile['username']}."}
 
     @app.get("/healthz")
     def healthz():

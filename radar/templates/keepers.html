@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Keepers · {{ cfg.site_name }}{% endblock %}
+{% block body_class %}ready static-page{% endblock %}
+{% block header_right %}<a class="btn btn-soft" href="{{ url_for('feed') }}">Back to the radar</a>{% endblock %}
+{% block main %}
+  <section class="hero keepers-hero">
+    <div class="hero-main">
+      <h1>Every dragon<br>knows <span class="pop">its own.</span></h1>
+      <p class="lede">Blue tick Keepers who wear the 🐉 in their name. Open a profile, follow who you vibe with.</p>
+    </div>
+    <div class="tally">
+      <div class="chip hot"><b id="k-count">0</b><span>Keepers found</span></div>
+      <div class="chip sun"><b id="k-left">0</b><span>not followed yet</span></div>
+    </div>
+  </section>
+
+  <section class="kp-block">
+    <h2 class="hot-title">The Hatchery team <span>pinned</span></h2>
+    <div class="kp-grid kp-team" id="k-team"></div>
+  </section>
+
+  <form class="rail" id="k-filters" onsubmit="return false">
+    <div class="group" role="radiogroup" aria-label="Show">
+      <button class="tab" type="button" data-show="all" aria-pressed="true">Everyone</button>
+      <button class="tab" type="button" data-show="active" aria-pressed="false">Active this week</button>
+      <button class="tab" type="button" data-show="new" aria-pressed="false">New this week</button>
+    </div>
+    <div class="right">
+      <input class="kp-search" id="k-search" type="search" placeholder="Search a name or @handle" autocomplete="off">
+      <label class="switch"><input type="checkbox" id="k-hide">Hide followed</label>
+    </div>
+  </form>
+
+  <p class="kp-note" id="k-note" hidden></p>
+  <section class="kp-grid" id="k-list" aria-live="polite"></section>
+  <div class="empty" id="k-empty" hidden><h2>No Keepers here yet</h2><p>As more 🐉 Keepers tag the dragons, they appear here on their own.</p></div>
+
+  <section class="panel kp-add">
+    <div>
+      <h3>Wear the 🐉 and not listed?</h3>
+      <p>Put 🐉 in your X display name, keep your blue tick, and add yourself. Remove the 🐉 any time and you leave the list.</p>
+    </div>
+    <div class="keeper-row">
+      <input id="k-handle" type="text" placeholder="@yourhandle" maxlength="16" autocomplete="off" spellcheck="false">
+      <button class="btn btn-go" id="k-add" type="button">Add me</button>
+    </div>
+    <p class="kp-msg" id="k-msg"></p>
+  </section>
+
+  <p class="kp-rules">This is a directory, not a follow train. Nobody is owed a follow back, and the site never follows anyone for you.</p>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='keepers.js') }}"></script>{% endblock %}

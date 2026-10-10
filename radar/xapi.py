@@ -38,7 +38,7 @@ class XClient:
             "max_results": max(10, min(100, max_results)),
             "tweet.fields": "created_at,author_id,referenced_tweets,attachments,public_metrics,entities",
             "expansions": "author_id",
-            "user.fields": "name,username,profile_image_url",
+            "user.fields": "name,username,profile_image_url,verified,verified_type",
         }
         if since_id:
             params["since_id"] = since_id
@@ -56,12 +56,17 @@ class XClient:
     def user_profile(self, username: str) -> dict | None:
         """Name, handle and picture for one account, or None if it does not exist."""
         try:
-            data = self._get(f"/users/by/username/{username}", {"user.fields": "name,username,profile_image_url"})
+            data = self._get(f"/users/by/username/{username}", {"user.fields": "name,username,profile_image_url,verified,verified_type"})
         except XApiError as e:
             if e.status in (400, 404):
                 return None
             raise
         return data.get("data")
+
+    def users_by_usernames(self, usernames: list[str]) -> list[dict]:
+        """Up to 100 profiles in one call (billed per user returned)."""
+        data = self._get("/users/by", {"usernames": ",".join(usernames), "user.fields": "name,username,profile_image_url,verified,verified_type"})
+        return data.get("data") or []
 
     def user_id_for(self, username: str) -> str:
         data = self._get(f"/users/by/username/{username}", {})

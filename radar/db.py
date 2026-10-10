@@ -36,6 +36,22 @@ class Post(Base):
     opens: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # anonymous, how many visitors opened it
 
 
+class Keeper(Base):
+    """A verified account with the dragon tag in its display name, for the follow directory."""
+    __tablename__ = "keepers"
+    key: Mapped[str] = mapped_column(String(32), primary_key=True)          # lower-case handle
+    user_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    username: Mapped[str] = mapped_column(String(32))
+    name: Mapped[str] = mapped_column(String(100), default="")
+    avatar: Mapped[str | None] = mapped_column(String(400), nullable=True)
+    verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    tagged: Mapped[bool] = mapped_column(Boolean, default=False)            # dragon emoji in name right now
+    first_seen: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    last_checked: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    last_post_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # last post about the dragons
+    source: Mapped[str] = mapped_column(String(16), default="radar")
+
+
 class BlockedAuthor(Base):
     __tablename__ = "blocked_authors"
     author_id: Mapped[str] = mapped_column(String(32), primary_key=True)

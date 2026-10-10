@@ -42,6 +42,9 @@ class FakeClient:
     def existing_ids(self, ids):
         return set(ids) - getattr(self, "deleted", set())
 
+    def users_by_usernames(self, names):
+        return getattr(self, "team", [])
+
 
 @pytest.fixture
 def cfg(tmp_path):
@@ -357,6 +360,8 @@ def test_daily_cap_spreads_reads():
             return "1"
         def existing_ids(self, ids):
             return set(ids)
+        def users_by_usernames(self, names):
+            return []
 
     cfg = Config(database_url="sqlite://", team_user_id="1", daily_post_cap=50, monthly_spend_limit_usd=20)
     S = make_session_factory(cfg.database_url)
@@ -448,3 +453,50 @@ def test_keeper_lookup_respects_daily_budget(cfg, Session):
     cfg.keeper_daily_budget_usd = 0.0
     got = create_app(cfg).test_client().get("/api/keeper/someone").get_json()
     assert got["found"] is False and "resting" in got["note"]
+
+
+def test_directory_lists_only_verified_dragon_names_and_pins_team(cfg, Session):
+    now = utcnow()
+    created = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    page = {"data": [post("21", author="1", created=created), post("22", author="2", created=created),
+                     post("23", author="3", created=created)],
+            "includes": {"users": [
+                {"id": "1", "username": "ann", "name": "Ann \U0001F409", "verified": True, "verified_type": "blue"},
+                {"id": "2", "username": "bob", "name": "Bob \U0001F409", "verified": False},
+                {"id": "3", "username": "cat", "name": "Cat", "verified": True, "verified_type": "blue"},
+                {"id": "4", "username": "dan", "name": "Dan \U0001F409", "verified": True, "verified_type": "business"},
+                {"id": "5", "username": "eli", "name": "Eli \U0001F432", "verified": True, "verified_type": "blue"}]},
+            "meta": {"newest_id": "23"}}
+    client = FakeClient([page])
+    client.team = [{"id": "9", "username": "Pocket_Dragons_", "name": "Pocket Dragons", "profile_image_url": "https://pbs.twimg.com/p_normal.jpg"}]
+    with Session() as s:
+        run_collection(s, client, cfg, now=now)
+    c = create_app(cfg).test_client()
+    data = c.get("/api/keepers").get_json()
+    assert [k["username"] for k in data["keepers"]] == ["ann"]
+    assert data["team"][0]["username"] == "Pocket_Dragons_" and data["team"][0]["role"] == "Official"
+    assert len(data["team"]) == 5
+    # Ann removes the dragon from her name: she drops off on the next post we see
+    page2 = {"data": [post("24", author="1", created=created)],
+             "includes": {"users": [{"id": "1", "username": "ann", "name": "Ann", "verified": True, "verified_type": "blue"}]}, "meta": {"newest_id": "24"}}
+    with Session() as s:
+        run_collection(s, FakeClient([page2]), cfg, now=now + timedelta(minutes=30))
+    assert c.get("/api/keepers").get_json()["keepers"] == []
+
+
+def test_directory_add_checks_name_and_limits(cfg, Session, monkeypatch):
+    from radar import xapi
+
+    class Fake:
+        def __init__(self, token): pass
+        def user_profile(self, u):
+            return {"id": "5", "username": u, "name": "Dee \U0001F409" if u == "dee" else "Eve", "verified": True, "verified_type": "blue"}
+    monkeypatch.setattr(xapi, "XClient", Fake)
+    cfg.x_bearer_token = "t"
+    c = create_app(cfg).test_client()
+    assert c.post("/api/keepers/add", json={"handle": "@dee"}).get_json()["ok"] is True
+    got = c.post("/api/keepers/add", json={"handle": "eve"}).get_json()
+    assert got["ok"] is False and "display name" in got["message"]
+    c.post("/api/keepers/add", json={"handle": "zed"})
+    assert "3 handles" in c.post("/api/keepers/add", json={"handle": "yan"}).get_json()["message"]
+    assert [k["username"] for k in c.get("/api/keepers").get_json()["keepers"]] == ["dee"]

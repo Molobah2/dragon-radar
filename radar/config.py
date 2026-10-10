@@ -61,6 +61,10 @@ class Config:
     keeper_max_posts: int = field(default_factory=lambda: int(os.environ.get("KEEPER_MAX_POSTS", "40")))
     keeper_daily_budget_usd: float = field(default_factory=lambda: float(os.environ.get("KEEPER_DAILY_BUDGET_USD", "1.5")))
     keeper_cache_hours: int = field(default_factory=lambda: int(os.environ.get("KEEPER_CACHE_HOURS", "6")))
+    # Follow directory: pinned accounts (handle:role) and the daily cap on "add me" checks
+    team_accounts: str = field(default_factory=lambda: os.environ.get("TEAM_ACCOUNTS",
+        "Pocket_Dragons_:Official,djsamwithers:Product,TradingJoker:Engineering,HeartyOfDaCards:Community,plooshGWIN:3D Art"))
+    directory_adds_per_day: int = field(default_factory=lambda: int(os.environ.get("DIRECTORY_ADDS_PER_DAY", "30")))
     max_pages_per_run: int = field(default_factory=lambda: int(os.environ.get("MAX_PAGES_PER_RUN", "10")))
     first_run_backfill_hours: int = field(default_factory=lambda: int(os.environ.get("FIRST_RUN_BACKFILL_HOURS", "24")))
     feed_days: int = field(default_factory=lambda: int(os.environ.get("FEED_DAYS", "7")))

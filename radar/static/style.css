@@ -325,3 +325,24 @@ body.modal-open { overflow: hidden; }
 .keeper-note { margin: 0; color: #e7e4ff; font-weight: 700; font-size: 14px; text-align: center; }
 .keeper-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .keeper-actions .btn-soft { background: rgba(255, 255, 255, .92); color: var(--ink); }
+
+/* ---------- keeper directory ---------- */
+.kp-block { margin-bottom: 22px; }
+.kp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 14px; margin-bottom: 18px; }
+.kp-card { padding: 14px; gap: 12px; grid-template-rows: auto auto auto; }
+.kp-card .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.kp-card .btn { padding: 8px 14px; font-size: 13.5px; }
+.kp-when { font-size: 13px; font-weight: 700; color: var(--leaf); }
+.kp-when.quiet { color: var(--ink-soft); }
+.kp-search { border: 2px solid #e3e7f2; border-radius: 999px; padding: 8px 14px; font: 700 14px var(--font-body); min-width: 0; width: min(260px, 100%); outline: none; background: #fff; }
+.kp-search:focus { border-color: var(--plum); }
+.kp-note { background: #fff3c4; color: #7a5600; font-weight: 800; padding: 10px 16px; border-radius: 16px; margin: 0 0 14px; }
+.kp-add { display: grid; gap: 10px; margin: 8px 0 14px; }
+.kp-add h3 { margin: 0 0 4px; }
+.kp-add p { margin: 0; color: var(--ink-soft); font-weight: 600; }
+.kp-msg { min-height: 1.4em; font-weight: 800; }
+.kp-msg.ok { color: var(--leaf); }
+.kp-msg.no { color: var(--coral-deep); }
+.kp-rules { text-align: center; color: var(--ink-soft); font-weight: 700; font-size: 14px; margin: 0 0 20px; }
+.kp-team { grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); }
+.kp-card .meta { justify-content: flex-start; }

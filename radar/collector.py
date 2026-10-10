@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .config import Config
+from .directory import note_user
 from .db import BlockedAuthor, CollectorRun, Post, get_setting, month_spend, set_setting, utcnow
 from .xapi import RateLimited, XApiError, XClient
 
@@ -103,6 +104,8 @@ def store_posts(s, data, run, cfg, team_id, blocked_authors, words, now) -> None
             continue
         refs = p.get("referenced_tweets") or []
         u = users.get(p["author_id"], {})
+        if u:  # every collected post tags the dragons, so its author counts as active
+            note_user(s, u, "radar", post_time=parse_x_time(p["created_at"]), about_dragons=True, now=now)
         avatar = (u.get("profile_image_url") or "").replace("_normal.", "_bigger.")
         existing = s.get(Post, p["id"])
         if existing is not None:
@@ -129,8 +132,33 @@ def store_posts(s, data, run, cfg, team_id, blocked_authors, words, now) -> None
         run.posts_new += 1
 
 
+def refresh_team(s: Session, client: XClient, cfg: Config, run: CollectorRun, now: datetime) -> None:
+    """Pinned team profiles for the follow page, refreshed once a week (5 user reads)."""
+    import json
+    last = get_setting(s, "team_profiles_at")
+    if last and now - datetime.fromisoformat(last) < timedelta(days=7):
+        return
+    pairs = [a.split(":", 1) for a in cfg.team_accounts.split(",") if a.strip()]
+    users = client.users_by_usernames([h.strip() for h, _ in pairs])
+    run.users_returned += len(users)
+    run.est_cost_usd += len(users) * cfg.cost_per_user_usd
+    by = {u["username"].lower(): u for u in users}
+    team = []
+    for h, role in pairs:
+        u = by.get(h.strip().lower())
+        team.append({"username": u["username"] if u else h.strip(), "name": (u or {}).get("name") or h.strip(),
+                     "avatar": ((u or {}).get("profile_image_url") or "").replace("_normal.", "_bigger.") or None,
+                     "role": role.strip()})
+    set_setting(s, "team_profiles", json.dumps(team))
+    set_setting(s, "team_profiles_at", now.isoformat())
+
+
 def tidy_up(s: Session, client: XClient, cfg: Config, run: CollectorRun, now: datetime) -> None:
     """Clear stored text once posts leave the feed, and once a day hide recent posts deleted on X."""
+    try:
+        refresh_team(s, client, cfg, run, now)
+    except XApiError:
+        log.warning("Team profile refresh failed, will retry next run")
     old = now - timedelta(days=cfg.feed_days + 1)
     for post in s.scalars(select(Post).where(Post.created_at < old, Post.text.is_not(None))):
         post.text = post.author_name = post.author_avatar = None
