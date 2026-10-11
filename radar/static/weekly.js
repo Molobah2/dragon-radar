@@ -67,14 +67,17 @@
       const label = `${p.opens} ${p.opens === 1 ? "Keeper" : "Keepers"}`;
       ctx.font = `800 13px ${B}`; const lw = ctx.measureText(label).width;
       const px = r.x1 - 16 - lw;
-      ctx.fillStyle = "#c2410c"; ctx.fillText(label, px, r.y0 + 20);
+      ctx.fillStyle = "#c2410c"; ctx.fillText(label, px, r.y0 + 21);
       // who
       const left = r.x0 + 18;
-      ctx.font = `800 16px ${B}`; const name = fit(p.name || p.user, 200); engraved(name, left, r.y0 + 20, INK);
+      ctx.font = `700 20px ${D}`; const name = fit(p.name || p.user, 240);
+      ctx.fillStyle = "rgba(255,248,230,.9)"; ctx.fillText(name, left, r.y0 + 22.5);
+      ctx.fillStyle = "#24120a"; ctx.fillText(name, left, r.y0 + 21);
+      ctx.lineWidth = 0.6; ctx.strokeStyle = "#24120a"; ctx.strokeText(name, left, r.y0 + 21);   // a touch heavier than the font's boldest
       const nw = ctx.measureText(name).width;
-      ctx.font = `700 12.5px ${B}`; engraved(fit("@" + p.user, Math.max(40, px - left - nw - 22)), left + nw + 8, r.y0 + 20, INK_SOFT);
+      ctx.font = `700 12px ${B}`; engraved(fit("@" + p.user, Math.max(40, px - left - nw - 22)), left + nw + 8, r.y0 + 21, INK_SOFT);
       // what
-      ctx.font = `600 13.5px ${B}`; engraved(fit(clean(p.text), r.x1 - left - 18), left, r.y0 + 38, "#4a3420");
+      ctx.font = `600 13px ${B}`; engraved(fit(clean(p.text), r.x1 - left - 18), left, r.y0 + 39, "#4a3420");
     });
     // address, small and quiet on the ground under the board
     ctx.textAlign = "center"; ctx.font = `800 15px ${B}`;
