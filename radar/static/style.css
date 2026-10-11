@@ -465,3 +465,10 @@ body.dark-sky .lang-pick { background: rgba(20, 26, 69, .72); color: #f2f4ff; ba
 .tag.tr-link:hover { background: rgba(58, 168, 240, .24); }
 @media (max-width: 560px) { .lang-pick select { max-width: 5.2em; } .lang-pick { padding: 7px 8px; } }
 html[lang="ko"] h1, html[lang="zh"] h1, html[lang="ko"] .lede { word-break: keep-all; }
+
+/* ---------- pdtools crumb: home / tool ---------- */
+.crumbs { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.crumbs .hub-word { opacity: .78; font-weight: 600; }
+.crumb-sep { color: var(--on-sky-soft, var(--ink-soft)); font-weight: 700; opacity: .6; }
+.brand.crumb { font-size: 20px; }
+@media (max-width: 560px) { .crumbs .hub-word, .crumb-sep { display: none; } .brand.crumb { font-size: 17px; } .crumbs { gap: 8px; } }

@@ -112,7 +112,7 @@ def collect_discord(s, cfg, run, now: datetime, client=None, http=None) -> int:
         handles = {g["username"].lower(): g["username"] for _, g in found}
         checks = {c.key: c for c in s.scalars(select(AuthorCheck).where(AuthorCheck.key.in_(list(handles))))}
         stale = [h for h in handles if h not in checks or now - checks[h].checked_at > timedelta(days=RECHECK_DAYS)]
-        if stale and client is not None:
+        if cfg.discord_require_verified and stale and client is not None:
             cost = len(stale) * cfg.cost_per_user_usd
             if month_spend(s, now) + run.est_cost_usd + cost <= cfg.monthly_spend_limit_usd:
                 for i in range(0, len(stale), 100):
@@ -134,7 +134,7 @@ def collect_discord(s, cfg, run, now: datetime, client=None, http=None) -> int:
                         if u:
                             note_user(s, u, "discord", now=now)
 
-        # 4. store the posts that pass the same rules as the paid search
+        # 4. store the posts (blue tick rule only when switched on; cached profiles still give a picture)
         blocked = set(s.scalars(select(BlockedAuthor.author_id)))
         words = blocklist(s, cfg)
         team = cfg.team_handle.lower()

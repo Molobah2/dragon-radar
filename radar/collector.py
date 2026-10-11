@@ -235,6 +235,18 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
         log.warning("Monthly spend limit reached (%.2f of %.2f USD). Skipping.", spent, cfg.monthly_spend_limit_usd)
         return run
 
+    if not cfg.x_search:
+        # Paid search switched off: the free Discord share channel (above) is the only source.
+        # Only the free text backfill runs; nothing else here calls the paid X API.
+        try:
+            backfill_text(s, cfg, now)
+        except Exception:  # noqa: BLE001
+            log.exception("Text backfill failed")
+        run.status = "ok"
+        run.finished_at = utcnow()
+        s.commit()
+        return run
+
     if cfg.daily_post_cap > 0:
         try:
             capped_collection(s, client, cfg, run, now)

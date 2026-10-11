@@ -136,7 +136,29 @@ def create_app(cfg: Config | None = None) -> Flask:
         updated = last_run.finished_at.strftime("%Y-%m-%dT%H:%M:%SZ") if last_run and last_run.finished_at else None
         return items, pinned_items, filters, updated, newcomers
 
+    # Old addresses (the onrender.com host, the pre-pdtools paths) land on the new ones.
+    # Cron, API and health checks are left alone so schedulers keep working on any host.
+    @app.before_request
+    def canonical():
+        host = (request.host or "").split(":")[0].lower()
+        p = request.path
+        if not cfg.canonical_host or host == cfg.canonical_host or host in ("localhost", "127.0.0.1"):
+            return None
+        if p.startswith(("/cron", "/api", "/healthz", "/admin", "/static")):
+            return None
+        target = {"/": "/friends", "/keepers": "/friends/keepers"}.get(p, p)
+        qs = request.query_string.decode()
+        return redirect(f"https://{cfg.canonical_host}{target}" + (f"?{qs}" if qs else ""), code=301)
+
     @app.get("/")
+    def hub():
+        return render_template("hub.html", cfg=cfg)
+
+    @app.get("/keepers")
+    def keepers_old():
+        return redirect(url_for("keepers_page"), code=301)
+
+    @app.get("/friends")
     def feed():
         items, pinned_items, filters, updated, newcomers = feed_query(request.args)
         return render_template("feed.html", cfg=cfg, items=items, pinned=pinned_items, filters=filters, updated=updated,
@@ -299,7 +321,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         return r.content, 200, {"Content-Type": ctype, "Cache-Control": "public, max-age=86400"}
 
     # ---------- follow directory ----------
-    @app.get("/keepers")
+    @app.get("/friends/keepers")
     def keepers_page():
         return render_template("keepers.html", cfg=cfg)
 

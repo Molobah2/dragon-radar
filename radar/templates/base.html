@@ -24,10 +24,14 @@
   <div class="site" id="site">
     <div class="shell"><div class="wrap">
       <header class="bar">
-        <a class="brand" href="{{ url_for('feed') }}" style="text-decoration:none">
-          <span class="brand-mark"><img src="{{ url_for('static', filename='mark.svg') }}" alt="" width="26" height="26"></span>
-          {{ cfg.site_name }}
-        </a>
+        <nav class="crumbs" aria-label="Site">
+          <a class="brand" href="{{ url_for('hub') }}" style="text-decoration:none" title="All {{ cfg.hub_name }}">
+            <span class="brand-mark"><img src="{{ url_for('static', filename='mark.svg') }}" alt="" width="26" height="26"></span>
+            <span class="hub-word">{{ cfg.hub_name }}</span>
+          </a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <a class="brand crumb" href="{{ url_for('feed') }}" style="text-decoration:none">{{ cfg.site_name }}</a>
+        </nav>
         <div class="bar-right">
           <label class="lang-pick" title="Language">
             <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 10h15M10 2.5c2.2 2.3 3.2 4.8 3.2 7.5s-1 5.2-3.2 7.5c-2.2-2.3-3.2-4.8-3.2-7.5s1-5.2 3.2-7.5z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>

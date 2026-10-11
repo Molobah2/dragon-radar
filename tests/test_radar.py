@@ -232,7 +232,7 @@ def test_feed_api_filters(client):
 
 
 def test_feed_page_renders(client):
-    r = client.get("/")
+    r = client.get("/friends")
     assert r.status_code == 200
     html = r.get_data(as_text=True)
     assert "Unofficial community tool" in html
@@ -424,10 +424,10 @@ def test_keeper_card_locked_by_default(cfg, Session):
     c = create_app(cfg).test_client()
     r = c.get("/api/keeper/someone")
     assert r.status_code == 403 and r.get_json()["locked"] is True
-    page = c.get("/").get_data(as_text=True)
+    page = c.get("/friends").get_data(as_text=True)
     assert "keeper-locked" in page and 'id="keeper-open"' not in page and 'class="mailbox"' not in page
     cfg.suggest_url = "https://docs.google.com/document/d/x"
-    assert 'class="mailbox"' in create_app(cfg).test_client().get("/keepers").get_data(as_text=True)
+    assert 'class="mailbox"' in create_app(cfg).test_client().get("/friends/keepers").get_data(as_text=True)
 
 
 def test_keeper_lookup_asks_x_and_caches(cfg, Session, monkeypatch):
@@ -617,6 +617,7 @@ def test_discord_share_channel_reads_links_free_and_checks_blue_tick_once(cfg, S
     a, b, c = x_id(now - timedelta(hours=2)), x_id(now - timedelta(hours=1)), x_id(now - timedelta(days=20))
     assert post_ids_in(f"look https://x.com/ann/status/{a}?s=20 and https://fxtwitter.com/bob/status/{b}") == [a, b]
     cfg.discord_bot_token, cfg.discord_channel_ids = "tok", "123"
+    cfg.discord_require_verified = True
     http = FakeHttp([{"id": "900", "content": f"https://x.com/ann/status/{a}"},
                      {"id": "901", "content": f"https://twitter.com/bob/status/{b} https://x.com/old/status/{c}"}],
                     {a: ("Ann 🐉", "ann", "hatching in the Ancient Hatchery"), b: ("Bob", "bob", "gm dragons")})
@@ -652,3 +653,42 @@ def test_welcome_row_lists_first_time_posters(cfg, Session):
         s.commit()
     data = create_app(cfg).test_client().get("/api/posts").get_json()
     assert [n["user"] for n in data["newcomers"]] == ["fresh"] and data["newcomers"][0]["hatchery"] is True
+
+
+def test_discord_free_mode_takes_every_post_without_paid_checks(cfg, Session):
+    from radar.discord_share import collect_discord
+    now = utcnow()
+    a, b = x_id(now - timedelta(hours=2)), x_id(now - timedelta(hours=1))
+    cfg.discord_bot_token, cfg.discord_channel_ids = "tok", "123"
+    http = FakeHttp([{"id": "900", "content": f"https://x.com/ann/status/{a} https://x.com/bob/status/{b}"}],
+                    {a: ("Ann", "ann", "gm dragons"), b: ("Bob", "bob", "no blue tick here")})
+    client = FakeClient([])
+    client.users_by_usernames = lambda names: (_ for _ in ()).throw(AssertionError("paid call"))
+    with Session() as s:
+        run = CollectorRun(started_at=now); s.add(run)
+        assert collect_discord(s, cfg, run, now, client=client, http=http) == 2
+        assert run.est_cost_usd == 0 and s.get(Post, b).author_id == "u:bob"
+
+
+def test_x_search_off_makes_no_paid_calls(cfg, Session):
+    cfg.x_search = False
+    cfg.daily_post_cap = 100
+    client = FakeClient([])
+    client.search_recent = lambda *a, **k: (_ for _ in ()).throw(AssertionError("paid search"))
+    with Session() as s:
+        run = run_collection(s, client, cfg)
+        assert run.status == "ok" and run.est_cost_usd == 0
+
+
+def test_hub_tool_paths_and_old_host_redirect(cfg, Session):
+    c = create_app(cfg).test_client()
+    hub = c.get("/").get_data(as_text=True)
+    assert 'href="/friends"' in hub and "Blinky" in hub
+    assert c.get("/friends").status_code == 200 and c.get("/friends/keepers").status_code == 200
+    assert c.get("/keepers").headers["Location"].endswith("/friends/keepers")
+    cfg.canonical_host = "pdtools.xyz"
+    c = create_app(cfg).test_client()
+    r = c.get("/?range=7d", base_url="https://dragon-radar.onrender.com")
+    assert r.status_code == 301 and r.headers["Location"] == "https://pdtools.xyz/friends?range=7d"
+    assert c.post("/cron/collect", base_url="https://dragon-radar.onrender.com").status_code != 301
+    assert c.get("/friends", base_url="https://pdtools.xyz").status_code == 200

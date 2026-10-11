@@ -41,7 +41,12 @@ def _bool(name: str, default: str = "0") -> bool:
 
 @dataclass
 class Config:
-    site_name: str = field(default_factory=lambda: os.environ.get("SITE_NAME", "Dragon Radar"))
+    hub_name: str = field(default_factory=lambda: os.environ.get("HUB_NAME", "pdtools"))
+    # Main web address; requests to any other host (like the old onrender.com address) are sent here
+    canonical_host: str = field(default_factory=lambda: os.environ.get("CANONICAL_HOST", "").strip().lower())
+    # Paid X search on/off. Off = posts come only from the free Discord share channel
+    x_search: bool = field(default_factory=lambda: _bool("X_SEARCH", "1"))
+    site_name: str = field(default_factory=lambda: os.environ.get("SITE_NAME", "Blinky's Friends"))
     x_bearer_token: str = field(default_factory=lambda: os.environ.get("X_BEARER_TOKEN", ""))
     database_url: str = field(default_factory=lambda: _db_url(os.environ.get("DATABASE_URL", "sqlite:///radar.db")))
     search_query: str = field(default_factory=lambda: os.environ.get("SEARCH_QUERY", DEFAULT_QUERY))
@@ -60,7 +65,7 @@ class Config:
     # Free collection from the Discord share channel: bot token, channel ids (comma separated)
     discord_bot_token: str = field(default_factory=lambda: os.environ.get("DISCORD_BOT_TOKEN", "").strip())
     discord_channel_ids: str = field(default_factory=lambda: os.environ.get("DISCORD_CHANNEL_IDS", "").strip())
-    discord_require_verified: bool = field(default_factory=lambda: _bool("DISCORD_REQUIRE_VERIFIED", "1"))
+    discord_require_verified: bool = field(default_factory=lambda: _bool("DISCORD_REQUIRE_VERIFIED", "0"))
     discord_max_per_run: int = field(default_factory=lambda: int(os.environ.get("DISCORD_MAX_PER_RUN", "60")))
     # Realistic meadow renders on a Cloudinary CDN (empty base = the hand drawn canvas meadow)
     scene_base: str = field(default_factory=lambda: os.environ.get("SCENE_BASE", "https://res.cloudinary.com/gosbi0oh").rstrip("/"))

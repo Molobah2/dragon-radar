@@ -171,7 +171,7 @@
     ctx.textAlign = "left"; ctx.textBaseline = "middle";
     ctx.font = `700 34px ${F}`; ctx.fillStyle = "#1f2440";
     ctx.fillText("Keep the meadow warm. Open a post, say hi, come back tomorrow.", IX + 32, BY + 60);
-    ctx.font = `700 28px ${F}`; ctx.fillStyle = "#2fae5b"; ctx.fillText("dragon radar", IX + 32, BY + 128);
+    ctx.font = `700 28px ${F}`; ctx.fillStyle = "#2fae5b"; ctx.fillText("pdtools.xyz", IX + 32, BY + 128);
     ctx.textAlign = "right"; ctx.fillStyle = "#1f2440"; ctx.fillText("Jon Wynn", X + CW - 36 - 32, BY + 128);
 
     bubble(ctx, 1320, 120, 470, 90, "blinky remembers his friends");
@@ -208,7 +208,7 @@
       const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "keeper-card.png"; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     }, "image/png");
-    const text = `blinky remembers his friends. ${st.streak} day streak on Dragon Radar 🐉`;
+    const text = `blinky remembers his friends. ${st.streak} day streak on pdtools.xyz 🐉`;
     $("keeper-post").href = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(location.origin)}`;
   }
   function show() {
