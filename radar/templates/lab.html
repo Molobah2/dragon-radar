@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_ico.html" import ico with context %}
+{% block title %}v2 lab · {{ cfg.hub_name }}{% endblock %}
+{% block body_class %}ready static-page{% endblock %}
+{% block header_right %}<a class="btn btn-soft" href="{{ url_for('hub') }}">Home</a>{% endblock %}
+{% block main %}
+<section class="panel lab">
+  <h2>v2 lab</h2>
+  {% if v2_private %}
+  <p>Preview is on for this device only. Visitors still see the normal site. Tools being built for v2 show up here and in their usual places while preview is on.</p>
+  {% else %}
+  <p>v2 is public. Everything below is live for everyone.</p>
+  {% endif %}
+  <ul class="lab-list">
+    {% for t in lab_tools %}
+    <li><a href="{{ t.url }}"><b>{{ t.name }}</b><span>{{ t.note }}</span></a></li>
+    {% else %}
+    <li class="lab-empty">No v2 tools yet. The first one will appear here as soon as it is added.</li>
+    {% endfor %}
+  </ul>
+  <p class="lab-help">To turn preview off on this device, tap <b>Turn off</b> at the bottom left. To turn it on again later, open your secret preview link.</p>
+</section>
+<style>
+  .lab { padding: 26px; margin-bottom: 26px; }
+  .lab h2 { margin: 0 0 8px; font-family: var(--font-display); font-size: 30px; }
+  .lab p { margin: 0 0 14px; color: var(--ink-soft); font-weight: 600; }
+  .lab-list { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; }
+  .lab-list a { display: grid; gap: 2px; padding: 14px 16px; border-radius: 18px; background: rgba(255, 255, 255, .7); text-decoration: none; color: var(--ink); }
+  .lab-list span { color: var(--ink-soft); font-weight: 600; font-size: 14px; }
+  .lab-empty { padding: 14px 16px; border-radius: 18px; background: rgba(255, 255, 255, .5); font-weight: 700; color: var(--ink-soft); }
+  .lab-help { font-size: 14px; }
+</style>
+{% endblock %}

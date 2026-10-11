@@ -1,0 +1,16 @@
+{% if v2_private %}
+<div class="v2-pill" role="status">
+  <a href="{{ url_for('lab') }}"><b>v2 preview</b> <span>only you can see this</span></a>
+  <a class="v2-off" href="{{ url_for('preview_on', key='off') }}" aria-label="Turn preview off">Turn off</a>
+</div>
+<style>
+  .v2-pill { position: fixed; z-index: 60; left: 12px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 2px;
+    padding: 4px; border-radius: 999px; background: rgba(20, 16, 40, .88); color: #fff; font: 700 13px "Nunito", system-ui, sans-serif;
+    box-shadow: 0 10px 26px -10px rgba(0, 0, 0, .7); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .v2-pill a { color: inherit; text-decoration: none; padding: 7px 12px; border-radius: 999px; }
+  .v2-pill b { color: #ffcf4d; }
+  .v2-pill span { opacity: .75; font-weight: 600; }
+  .v2-pill .v2-off { background: rgba(255, 255, 255, .14); }
+  @media (max-width: 760px) { .v2-pill { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); } .v2-pill span { display: none; } }
+</style>
+{% endif %}

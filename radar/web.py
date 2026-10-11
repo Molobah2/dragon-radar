@@ -12,7 +12,10 @@ import threading
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from flask import Flask, Response, abort, jsonify, redirect, render_template, request, session, url_for
+import hashlib
+from functools import wraps
+
+from flask import Flask, Response, abort, g, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import func, select
 
 from .collector import run_collection
@@ -96,12 +99,63 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     @app.context_processor
     def _assets():
-        return {"asset": lambda filename: url_for("static", filename=filename, v=version), "asset_version": version}
+        return {"asset": lambda filename: url_for("static", filename=filename, v=version), "asset_version": version,
+                "v2": getattr(g, "v2", False), "v2_private": getattr(g, "v2", False) and not cfg.v2_public}
+
+    # v2 tools in progress: add {"name", "url", "note"} here as each one is built
+    LAB_TOOLS: list[dict] = []
+
+    # ---- v2 preview ------------------------------------------------------------------------------------
+    PREVIEW_COOKIE = "pd_v2"
+
+    def preview_token() -> str:
+        # tied to the key, so changing PREVIEW_KEY on Render switches every old preview device off
+        return hashlib.sha256(f"pdtools-v2:{cfg.preview_key}".encode()).hexdigest()[:40]
+
+    @app.before_request
+    def _v2_flag():
+        cookie = request.cookies.get(PREVIEW_COOKIE, "")
+        g.v2 = cfg.v2_public or bool(cfg.preview_key and cookie and hmac.compare_digest(cookie, preview_token()))
+
+    def v2_only(view):
+        """Pages and APIs that belong to v2: invisible (404) to anyone without the preview turned on."""
+        @wraps(view)
+        def inner(*a, **k):
+            if not g.get("v2"):
+                abort(404)
+            return view(*a, **k)
+        return inner
+    app.extensions["radar"]["v2_only"] = v2_only
+
+    @app.get("/preview/<key>")
+    def preview_on(key):
+        if key == "off":
+            resp = redirect(url_for("hub"))
+            resp.delete_cookie(PREVIEW_COOKIE, path="/")
+            return resp
+        if not cfg.preview_key or not hmac.compare_digest(key.encode(), cfg.preview_key.encode()):
+            abort(404)
+        resp = redirect(url_for("lab"))
+        resp.set_cookie(PREVIEW_COOKIE, preview_token(), max_age=180 * 86400, path="/",
+                        secure=request.is_secure or request.headers.get("X-Forwarded-Proto") == "https",
+                        httponly=True, samesite="Lax")
+        return resp
+
+    @app.get("/lab")
+    @v2_only
+    def lab():
+        return render_template("lab.html", cfg=cfg, lab_tools=LAB_TOOLS)
 
     @app.after_request
     def _cache_headers(resp):
         if request.path.startswith("/static/") and request.args.get("v") == version and resp.status_code == 200:
             resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif resp.mimetype == "text/html":
+            resp.headers.add("Vary", "Cookie")    # a preview page is never handed to someone else
+            if getattr(g, "v2", False) and not cfg.v2_public:
+                resp.headers["Cache-Control"] = "private, no-store"
+        if cfg.noindex or request.path.startswith(("/preview", "/lab")):
+            resp.headers["X-Robots-Tag"] = "noindex, nofollow"
         return resp
 
     def feed_query(args):

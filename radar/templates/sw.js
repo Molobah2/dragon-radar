@@ -55,6 +55,7 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/admin") || url.pathname.startsWith("/cron")) return;
+  if (url.pathname.startsWith("/preview") || url.pathname.startsWith("/lab")) return;   // v2 preview pages are never kept offline
   if (url.pathname.startsWith("/static/audio/") || req.headers.has("range")) return;
   if (req.mode === "navigate") { e.respondWith(page(req)); return; }
   if (url.pathname.startsWith("/static/") && url.searchParams.get("v") === VERSION) { e.respondWith(asset(req)); return; }

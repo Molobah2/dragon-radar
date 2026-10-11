@@ -848,3 +848,43 @@ def test_tester_ratings(cfg, Session):
         f = s.query(Feedback).one()
         assert f.rating == 4 and f.device == "phone"
     assert 'id="rate"' in c.get("/friends").get_data(as_text=True)
+
+
+def test_v2_preview_is_private_until_launch(cfg, Session):
+    cfg.preview_key = "secret-preview-phrase-123"
+    c = create_app(cfg).test_client()
+    # the public sees nothing of v2
+    assert c.get("/lab").status_code == 404
+    assert "v2-pill" not in c.get("/").get_data(as_text=True)
+    assert c.get("/preview/wrong-key").status_code == 404
+    # the secret link turns it on for this browser only
+    r = c.get("/preview/secret-preview-phrase-123")
+    assert r.status_code == 302 and r.headers["Location"].endswith("/lab")
+    assert "pd_v2=" in r.headers.get("Set-Cookie", "") and "HttpOnly" in r.headers["Set-Cookie"]
+    lab = c.get("/lab")
+    assert lab.status_code == 200 and "v2 lab" in lab.get_data(as_text=True)
+    assert lab.headers["X-Robots-Tag"].startswith("noindex")
+    hub = c.get("/")
+    assert "v2-pill" in hub.get_data(as_text=True) and hub.headers["Cache-Control"] == "private, no-store"
+    assert "v2-pill" in c.get("/friends").get_data(as_text=True)
+    # a different visitor still sees the normal site
+    other = create_app(cfg).test_client()
+    assert other.get("/lab").status_code == 404
+    # turning it off works, and a changed key switches old devices off
+    c.get("/preview/off")
+    assert c.get("/lab").status_code == 404
+    c.get("/preview/secret-preview-phrase-123")
+    cfg.preview_key = "a-new-key-456789"
+    assert c.get("/lab").status_code == 404
+
+
+def test_v2_launch_switch_and_noindex(cfg, Session):
+    cfg.preview_key = ""
+    c = create_app(cfg).test_client()
+    assert c.get("/preview/anything").status_code == 404      # no key set: preview cannot be turned on
+    cfg.v2_public = True
+    c2 = create_app(cfg).test_client()
+    assert c2.get("/lab").status_code == 200 and "v2-pill" not in c2.get("/").get_data(as_text=True)
+    cfg.noindex = True
+    r = create_app(cfg).test_client().get("/")
+    assert 'name="robots" content="noindex' in r.get_data(as_text=True) and r.headers["X-Robots-Tag"].startswith("noindex")

@@ -58,3 +58,12 @@ A red banner shows if no run has finished in the last hour.
 - Embeds and the click detection inside them could not be tested from the build environment,
   which cannot reach X's embed servers. Test on a phone and a laptop after deploying.
 - Whether excluding `-is:reply` misses anything you want: compare a day of results with X search.
+
+## v2 preview (tools that are not public yet)
+
+* Set `PREVIEW_KEY` on Render to a long secret phrase. Opening `https://pdtools.xyz/preview/<that phrase>` once turns
+  v2 on for that device only (a small "v2 preview" pill shows at the bottom left). `/preview/off` turns it off.
+  Changing `PREVIEW_KEY` switches every preview device off.
+* New v2 pages use the `v2_only` guard (`app.extensions["radar"]["v2_only"]`) so they answer 404 to the public,
+  and new bits inside existing pages sit inside `{% if v2 %} ... {% endif %}`. List them in `LAB_TOOLS` for `/lab`.
+* Launch day: set `V2_PUBLIC=1` on Render. Everything behind the flag goes live for everyone at once.

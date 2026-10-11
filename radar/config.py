@@ -42,6 +42,12 @@ def _bool(name: str, default: str = "0") -> bool:
 @dataclass
 class Config:
     offline_cache: bool = field(default_factory=lambda: _bool("OFFLINE_CACHE", "1"))
+    # v2 preview: tools still being built are hidden from the public. Opening /preview/<PREVIEW_KEY> once
+    # turns them on for that device only. V2_PUBLIC=1 is the launch switch that shows them to everyone.
+    preview_key: str = field(default_factory=lambda: os.environ.get("PREVIEW_KEY", "").strip())
+    v2_public: bool = field(default_factory=lambda: _bool("V2_PUBLIC", "0"))
+    # test copies of the site ask search engines to stay away
+    noindex: bool = field(default_factory=lambda: _bool("NOINDEX", "0"))
     author_x: str = field(default_factory=lambda: os.environ.get("AUTHOR_X", "jonwynnx").lstrip("@"))
     hub_name: str = field(default_factory=lambda: os.environ.get("HUB_NAME", "pdtools"))
     # Main web address; requests to any other host (like the old onrender.com address) are sent here
