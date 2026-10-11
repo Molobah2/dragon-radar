@@ -117,6 +117,7 @@
         {% endif %}
         <button class="btn btn-soft keeper-btn" id="weekly-open" type="button">{{ ico("crown", 20) }}This week's top posts</button>
         <button class="btn btn-soft keeper-btn" id="progress-open" type="button">{{ ico("hourglass", 20) }}My progress</button>
+        {% if v2 %}<button class="btn btn-soft keeper-btn" data-myweek type="button">{{ ico("crown", 20) }}My week card</button>{% endif %}
         <a class="btn btn-soft keeper-btn" href="{{ url_for('keepers_page') }}">Find Keepers to follow</a>
         <button class="btn btn-soft replay" id="replay" type="button">Watch the meadow again</button>
       </div>
@@ -157,10 +158,37 @@
         <label class="switch"><input type="checkbox" id="team-alerts">Alert me when the team posts</label>
         <p>Works while pdtools is open in a tab, even in the background. Your browser will ask first.</p>
       </div>
+      {% if v2 %}<div class="pg-block">
+        <b>My week card</b>
+        <p>A card of the Keepers you supported this week, ready to share on X.</p>
+        <button class="btn btn-go" data-myweek type="button">Make my card</button>
+      </div>{% endif %}
       <p class="kp-msg" id="pg-msg"></p>
       <div class="sheet-actions"><button class="btn btn-soft" id="progress-close" type="button">Close</button></div>
     </div>
   </div>
+  {% if v2 %}
+  <div class="sheet-wrap" id="myweek" hidden>
+    <div class="sheet sheet-wide" role="dialog" aria-modal="true" aria-labelledby="myweek-title">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <h3 id="myweek-title">My week card</h3>
+      <p class="sheet-sub">The Keepers you supported in the last 7 days. Pick your dragon, the time of day and a style, then share it.</p>
+      <canvas id="myweek-canvas" class="share-canvas" width="2400" height="1350" data-base="{{ cfg.scene_base }}"></canvas>
+      <div class="mw-pick">
+        <div class="mw-row"><b>Your dragon</b><div class="mw-eggs" id="mw-eggs" role="group" aria-label="Pick your egg"></div></div>
+        <div class="mw-row"><b>Time of day</b><div class="mw-times" id="mw-times" role="group" aria-label="Time of day"></div></div>
+        <div class="mw-row"><b>Card style</b><div class="mw-designs" id="mw-designs" role="group" aria-label="Card style"></div></div>
+      </div>
+      <p class="kp-msg" id="myweek-msg"></p>
+      <div class="sheet-actions">
+        <button class="btn btn-go" id="myweek-share" type="button" hidden>Share</button>
+        <button class="btn btn-go" id="myweek-save" type="button">Save image</button>
+        <a class="btn btn-soft" id="myweek-post" href="#" target="_blank" rel="noopener">Post on X</a>
+        <button class="btn btn-soft" id="myweek-close" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
   <div class="sheet-wrap" id="weekly" hidden>
     <div class="sheet sheet-wide" role="dialog" aria-modal="true" aria-labelledby="weekly-title">
       <div class="sheet-grip" aria-hidden="true"></div>
@@ -210,4 +238,7 @@
   <script src="{{ asset('keeper.js') }}"></script>
   <script src="{{ asset('app.js') }}"></script>
   <script src="{{ asset('weekly.js') }}" defer></script>
+  {% if v2 %}<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Press+Start+2P&display=swap">
+  <script src="{{ asset('cards-data.js') }}" defer></script>
+  <script src="{{ asset('myweek.js') }}" defer></script>{% endif %}
 {% endblock %}

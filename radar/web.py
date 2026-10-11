@@ -103,7 +103,9 @@ def create_app(cfg: Config | None = None) -> Flask:
                 "v2": getattr(g, "v2", False), "v2_private": getattr(g, "v2", False) and not cfg.v2_public}
 
     # v2 tools in progress: add {"name", "url", "note"} here as each one is built
-    LAB_TOOLS: list[dict] = []
+    LAB_TOOLS: list[dict] = [
+        {"name": "My week card", "url": "/friends#myweek", "note": "Blinky's Friends, side menu or My progress: a card of the Keepers you supported this week, to share on X."},
+    ]
 
     # ---- v2 preview ------------------------------------------------------------------------------------
     PREVIEW_COOKIE = "pd_v2"

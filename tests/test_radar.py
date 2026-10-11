@@ -930,3 +930,15 @@ def test_preview_devices_are_not_counted(cfg, Session):
     c.get("/preview/secret-preview-phrase-123")
     r = c.post("/api/hit", data=json.dumps({"vid": "e" * 32, "path": "/"}), content_type="text/plain")
     assert r.get_json()["counted"] is False
+
+
+def test_my_week_card_is_v2_only(cfg, Session):
+    cfg.preview_key = "secret-preview-phrase-123"
+    c = create_app(cfg).test_client()
+    public = c.get("/friends").get_data(as_text=True)
+    assert "myweek.js" not in public and 'id="myweek"' not in public and "cards-data.js" not in public
+    c.get("/preview/secret-preview-phrase-123")
+    page = c.get("/friends").get_data(as_text=True)
+    assert "myweek.js" in page and 'id="myweek-canvas"' in page and page.count("data-myweek") == 2
+    assert "cards-data.js" in page and 'id="mw-eggs"' in page and 'id="mw-times"' in page and 'id="mw-designs"' in page
+    assert "My week card" in c.get("/lab").get_data(as_text=True)

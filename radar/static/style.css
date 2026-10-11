@@ -763,7 +763,7 @@ body.sheet-open { overflow: hidden; }
 .goal.done { color: #166534; background: linear-gradient(180deg, #ecfdf3, #d1fadf); box-shadow: inset 0 0 0 1px rgba(22, 101, 52, .25); }
 .goal.done .goal-egg { background: #ffb347; }
 .sheet-wide { width: min(720px, 100%); }
-#weekly-canvas { width: 100%; height: auto; border-radius: 16px; display: block; margin-bottom: 8px; box-shadow: 0 12px 30px -16px rgba(0, 0, 0, .5); }
+#weekly-canvas, #myweek-canvas { width: 100%; height: auto; border-radius: 16px; display: block; margin-bottom: 8px; box-shadow: 0 12px 30px -16px rgba(0, 0, 0, .5); }
 .progress-strip .streak, .progress-strip .goal { margin-left: 0; }
 
 /* ---------- v1 rating card ---------- */
@@ -804,3 +804,23 @@ body.sheet-open { overflow: hidden; }
   .rail .toggles { justify-self: stretch; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding-top: 4px; }
   .rail .switch { flex-direction: column; gap: 5px; padding: 6px 2px; font-size: 12.5px; text-align: center; white-space: nowrap; }
 }
+
+/* ---------- my week card: pickers (built for thumbs first) ---------- */
+#myweek-canvas { transition: opacity .25s; }
+#myweek-canvas.busy { opacity: .82; }
+.mw-pick { display: grid; gap: 10px; margin: 4px 0 6px; }
+.mw-row { display: grid; gap: 6px; min-width: 0; }
+.mw-row > b { font: 800 12px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.mw-eggs, .mw-designs { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.mw-egg { flex: none; scroll-snap-align: start; display: grid; justify-items: center; gap: 4px; width: 58px; padding: 6px 2px; border: 2px solid transparent; border-radius: 14px; background: rgba(29, 36, 51, .05); cursor: pointer; font: 800 11px var(--font-body); color: var(--ink); }
+.mw-egg i { width: 26px; height: 34px; border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%; background:
+  radial-gradient(circle at 34% 30%, var(--spot) 0 3px, transparent 4px), radial-gradient(circle at 64% 52%, var(--spot) 0 4px, transparent 5px),
+  radial-gradient(circle at 40% 72%, var(--spot) 0 3px, transparent 4px), var(--body);
+  box-shadow: inset -4px -6px 10px rgba(0, 0, 0, .18), inset 3px 4px 6px rgba(255, 255, 255, .35), 0 3px 6px rgba(0, 0, 0, .18); }
+.mw-egg[aria-pressed="true"], .mw-design[aria-pressed="true"] { border-color: #f0a020; background: rgba(240, 160, 32, .14); }
+.mw-times { display: flex; gap: 6px; flex-wrap: wrap; }
+.mw-design { flex: none; scroll-snap-align: start; position: relative; width: 132px; padding: 4px; border: 2px solid transparent; border-radius: 14px; background: rgba(29, 36, 51, .05); cursor: pointer; text-align: left; }
+.mw-design img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; }
+.mw-design span { display: block; padding: 4px 2px 0; font: 800 12px var(--font-body); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mw-design i { position: absolute; top: 8px; left: 8px; font: 800 10px var(--font-body); font-style: normal; color: #fff; background: rgba(0, 0, 0, .55); padding: 1px 6px; border-radius: 999px; }
+@media (max-width: 560px) { .mw-design { width: 112px; } .mw-egg { width: 54px; } }
