@@ -3,6 +3,7 @@
 Run locally:  flask --app "radar.web:create_app()" run
 Production:   gunicorn "radar.web:create_app()"
 """
+import mimetypes
 import hmac
 import os
 import secrets
@@ -23,6 +24,8 @@ from .db import (SIDE_RUNS, BlockedAuthor, CollectorRun, Keeper, Post, get_setti
 FEED_LIMIT = 1000
 NEWCOMERS = 12  # first time posters shown in the welcome row
 PINNED = 4  # newest team posts kept at the top  # IDs only, a few KB; the browser renders them in small batches
+
+mimetypes.add_type("application/manifest+json", ".webmanifest")
 
 
 def local_day_bounds(day: date, tz: ZoneInfo) -> tuple[datetime, datetime]:

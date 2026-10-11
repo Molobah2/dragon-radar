@@ -1,2 +1,20 @@
-{% if cfg.scene_base %}<link rel="icon" href="{{ cfg.logo(64, 'png') }}" type="image/png">
-  <link rel="apple-touch-icon" href="{{ cfg.logo(180, 'png') }}">{% endif %}
+<link rel="icon" href="{{ asset('brand/badge-64.png') }}" type="image/png" sizes="64x64">
+  <link rel="icon" href="{{ asset('brand/badge-32.png') }}" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="{{ asset('brand/badge-180.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  {% set share_title = og_title | default("PD Tools · free community tools for Pocket Dragons Keepers") %}
+  {% set share_desc = og_desc | default("Every Pocket Dragons post the community shares, Keepers to follow and handy helpers, all in one place. Free, unofficial and made by a fellow Keeper.") %}
+  {% set share_img = "https://pdtools.xyz" ~ url_for('static', filename='brand/share.jpg') %}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PD Tools">
+  <meta property="og:title" content="{{ share_title }}">
+  <meta property="og:description" content="{{ share_desc }}">
+  <meta property="og:url" content="https://pdtools.xyz{{ request.path }}">
+  <meta property="og:image" content="{{ share_img }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PD Tools logo: Blinky in a builder hat with a hammer">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ share_title }}">
+  <meta name="twitter:description" content="{{ share_desc }}">
+  <meta name="twitter:image" content="{{ share_img }}">

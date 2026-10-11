@@ -27,8 +27,8 @@
       <header class="bar">
         <nav class="crumbs" aria-label="Site">
           <a class="brand" href="{{ url_for('hub') }}" style="text-decoration:none" title="All {{ cfg.hub_name }}">
-            {% if cfg.scene_base %}<img class="brand-mark" src="{{ cfg.logo(96) }}" alt="" width="40" height="40">{% endif %}
-            <span class="hub-word">{{ cfg.hub_name }}</span>
+            <img class="brand-logo" src="{{ asset('brand/pdtools-logo.webp') }}" alt="PD Tools" width="136" height="45">
+            <img class="brand-mark" src="{{ asset('brand/badge-96.webp') }}" alt="PD Tools" width="40" height="40">
           </a>
           <span class="crumb-sep" aria-hidden="true">/</span>
           <a class="brand crumb" href="{{ url_for('feed') }}" style="text-decoration:none">{{ cfg.site_name }}</a>
@@ -77,7 +77,7 @@
   </div>
   {% set here = request.path %}
   <nav class="tabbar" aria-label="Sections">
-    <a href="{{ url_for('hub') }}" class="tab-i">{% if cfg.scene_base %}<img src="{{ cfg.logo(64) }}" alt="" width="26" height="26" class="tb-logo">{% endif %}<span>Home</span></a>
+    <a href="{{ url_for('hub') }}" class="tab-i"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="26" height="26" class="tb-logo"><span>Home</span></a>
     <a href="{{ url_for('feed') }}" class="tab-i{% if here == '/friends' %} on{% endif %}"{% if here == '/friends' %} aria-current="page"{% endif %}>{{ ico("chat", 26) }}<span>Feed</span></a>
     <a href="{{ url_for('keepers_page') }}" class="tab-i{% if here == '/friends/keepers' %} on{% endif %}"{% if here == '/friends/keepers' %} aria-current="page"{% endif %}>{{ ico("shield", 26) }}<span>Keepers</span></a>
     <a href="{{ url_for('feed') }}#progress" class="tab-i" id="tab-progress">{{ ico("hourglass", 26) }}<span>Progress</span></a>

@@ -65,6 +65,10 @@ body.ready .site { opacity: 1; transform: none; visibility: visible; }
 .brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--ink); }
 .brand-mark { width: 40px; height: 40px; border-radius: 50%; display: block; flex: none; filter: drop-shadow(0 6px 12px rgba(29, 36, 51, .3)); transition: transform .4s cubic-bezier(.2, .8, .2, 1); }
 .brand:hover .brand-mark { transform: rotate(-8deg) scale(1.06); }
+.brand-logo { height: 45px; width: auto; display: block; flex: none; filter: drop-shadow(0 6px 14px rgba(29, 36, 51, .3)); transition: transform .4s cubic-bezier(.2, .8, .2, 1); }
+.brand:hover .brand-logo { transform: scale(1.04) rotate(-1.5deg); }
+.crumbs .brand-mark { display: none; }
+@media (max-width: 560px) { .crumbs .brand-logo { display: none; } .crumbs .brand-mark { display: block; } }
 .sample-flag { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink); background: var(--sun);
   padding: 7px 12px; border-radius: 999px; box-shadow: 0 6px 16px -8px rgba(29, 36, 51, .4); white-space: nowrap; }
 

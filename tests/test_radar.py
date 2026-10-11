@@ -702,9 +702,21 @@ def test_hub_forest_scene_and_badge_logo(cfg, Session):
     c = create_app(cfg).test_client()
     hub = c.get("/").get_data(as_text=True)
     assert 'id="forest"' in hub and "forest.js" in hub and '"loop": "hut-loop"' in hub
-    assert "r_max" in hub and "pdtools-badge" in hub and 'rel="apple-touch-icon"' in hub
+    assert "brand/pdtools-logo.webp" in hub and 'alt="PD Tools"' in hub and 'rel="apple-touch-icon"' in hub
     feed = c.get("/friends").get_data(as_text=True)
-    assert "mark.svg" not in hub and "mark.svg" not in feed and 'class="brand-mark"' in feed
+    assert "mark.svg" not in hub and "mark.svg" not in feed and 'class="brand-mark"' in feed and 'class="brand-logo"' in feed
+
+
+def test_share_card_and_app_manifest(cfg, Session):
+    c = create_app(cfg).test_client()
+    for path in ("/", "/friends", "/friends/keepers"):
+        html = c.get(path).get_data(as_text=True)
+        assert 'property="og:image" content="https://pdtools.xyz/static/brand/share.jpg"' in html
+        assert 'name="twitter:card" content="summary_large_image"' in html and 'rel="manifest"' in html
+    m = c.get("/static/manifest.webmanifest")
+    assert m.status_code == 200 and m.json["name"] == "PD Tools"
+    for f in ("brand/share.jpg", "brand/badge-180.png", "brand/badge-192.png", "brand/badge-96.webp", "brand/pdtools-logo.webp"):
+        assert c.get("/static/" + f).status_code == 200
 
 
 def test_premium_icons_and_mailbox(cfg, Session):

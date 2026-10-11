@@ -1,0 +1,13 @@
+{
+  "name": "PD Tools",
+  "short_name": "PD Tools",
+  "description": "Free community tools for Pocket Dragons Keepers",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#16301e",
+  "theme_color": "#16301e",
+  "icons": [
+    { "src": "/static/brand/badge-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/static/brand/badge-180.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
