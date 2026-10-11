@@ -262,10 +262,12 @@ def test_admin_disabled_without_password(cfg, Session):
     assert app.test_client().get("/admin").status_code == 404
 
 
-def test_two_newest_team_posts_are_always_pinned(cfg, Session):
+def test_four_newest_team_posts_are_always_pinned(cfg, Session):
     now = utcnow()
     with Session() as s:
         s.add_all([
+            Post(id="team-oldest", author_username="u", text="hello", author_id="t", created_at=now - timedelta(days=6), is_team=True),
+            Post(id="team-older", author_username="u", text="hello", author_id="t", created_at=now - timedelta(days=5, hours=12), is_team=True),
             Post(id="team-old", author_username="u", text="hello", author_id="t", created_at=now - timedelta(days=5), is_team=True),
             Post(id="team-mid", author_username="u", text="hello", author_id="t", created_at=now - timedelta(days=3), is_team=True),
             Post(id="team-new", author_username="u", text="hello", author_id="t", created_at=now - timedelta(hours=30), is_team=True),
@@ -274,7 +276,7 @@ def test_two_newest_team_posts_are_always_pinned(cfg, Session):
         s.commit()
     app = create_app(cfg)
     data = app.test_client().get("/api/posts?range=24h").get_json()
-    assert [p["id"] for p in data["pinned"]] == ["team-new", "team-mid"]
+    assert [p["id"] for p in data["pinned"]] == ["team-new", "team-mid", "team-old", "team-older"]
     assert [p["id"] for p in data["posts"]] == ["community"]
 
 
@@ -672,6 +674,7 @@ def test_discord_free_mode_takes_every_post_without_paid_checks(cfg, Session):
 
 def test_x_search_off_makes_no_paid_calls(cfg, Session):
     cfg.x_search = False
+    cfg.team_x = False
     cfg.daily_post_cap = 100
     client = FakeClient([])
     client.search_recent = lambda *a, **k: (_ for _ in ()).throw(AssertionError("paid search"))
@@ -714,3 +717,21 @@ def test_premium_icons_and_mailbox(cfg, Session):
     assert feed.count('class="ico') >= 10 and "e_background_removal" in feed
     assert 'class="mb-clip"' in feed and "mailbox-hover" in feed and "mailbox.js" in feed and "<svg viewBox=\"0 0 64 64\"" not in feed
     assert keepers.count('class="ico') >= 4 and 'class="ico egg"' in hub
+
+
+def test_x_search_off_still_reads_only_team_posts(cfg, Session):
+    cfg.x_search = False
+    cfg.team_x = True
+    cfg.team_user_id = "team1"
+    queries = []
+    client = FakeClient([])
+    def search(q, **k):
+        queries.append(q)
+        return {"data": [{"id": "1840000000000000000", "author_id": "team1", "created_at": "2026-10-10T10:00:00.000Z", "text": "hi"}],
+                "includes": {"users": [{"id": "team1", "username": "Pocket_Dragons_", "name": "Pocket Dragons"}]},
+                "meta": {"newest_id": "1840000000000000000"}}
+    client.search_recent = search
+    with Session() as s:
+        run = run_collection(s, client, cfg)
+        assert run.status == "ok" and len(queries) == 1 and queries[0].startswith("from:Pocket_Dragons_")
+        assert s.get(Post, "1840000000000000000").is_team

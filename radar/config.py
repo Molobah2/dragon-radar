@@ -46,6 +46,8 @@ class Config:
     canonical_host: str = field(default_factory=lambda: os.environ.get("CANONICAL_HOST", "").strip().lower())
     # Paid X search on/off. Off = posts come only from the free Discord share channel
     x_search: bool = field(default_factory=lambda: _bool("X_SEARCH", "1"))
+    # With paid search off, still read the team's own new posts from X (a few cents a month)
+    team_x: bool = field(default_factory=lambda: _bool("TEAM_X", "1"))
     site_name: str = field(default_factory=lambda: os.environ.get("SITE_NAME", "Blinky's Friends"))
     x_bearer_token: str = field(default_factory=lambda: os.environ.get("X_BEARER_TOKEN", ""))
     database_url: str = field(default_factory=lambda: _db_url(os.environ.get("DATABASE_URL", "sqlite:///radar.db")))

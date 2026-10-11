@@ -20,7 +20,7 @@ from .db import (SIDE_RUNS, BlockedAuthor, CollectorRun, Keeper, Post, get_setti
 
 FEED_LIMIT = 1000
 NEWCOMERS = 12  # first time posters shown in the welcome row
-PINNED = 2  # newest team posts kept at the top  # IDs only, a few KB; the browser renders them in small batches
+PINNED = 4  # newest team posts kept at the top  # IDs only, a few KB; the browser renders them in small batches
 
 
 def local_day_bounds(day: date, tz: ZoneInfo) -> tuple[datetime, datetime]:
@@ -104,7 +104,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         q = q.order_by(Post.created_at.desc()).limit(FEED_LIMIT)
         with Session() as s:
             posts = s.scalars(q).all()
-        # The two newest team posts are always pinned, whatever range or filter is picked
+        # The four newest team posts are always pinned, whatever range or filter is picked
         with Session() as s:
             pinned = s.scalars(select(Post).where(Post.is_team.is_(True), Post.hidden.is_(False),
                                                   Post.text.is_not(None), Post.author_username.is_not(None))

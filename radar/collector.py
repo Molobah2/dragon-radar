@@ -81,6 +81,10 @@ def collect_team(s: Session, client: XClient, cfg: Config, run: CollectorRun, no
     team posts are returned (and billed) after the first run."""
     team_id = resolve_team_id(s, client, cfg, run)
     since_id = get_setting(s, "team_newest_id") or None
+    if since_id:
+        from .discord_share import x_time
+        if now - x_time(since_id) > timedelta(days=6, hours=12):  # X search only reaches back 7 days
+            since_id = None
     start = (now - timedelta(days=6, hours=23)).strftime("%Y-%m-%dT%H:%M:%SZ")
     data = client.search_recent(f"from:{cfg.team_handle} -is:reply -is:retweet", since_id=since_id,
                                 start_time=None if since_id else start, max_results=10)
@@ -236,13 +240,20 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
         return run
 
     if not cfg.x_search:
-        # Paid search switched off: the free Discord share channel (above) is the only source.
-        # Only the free text backfill runs; nothing else here calls the paid X API.
+        # Paid search switched off: the free Discord share channel (above) carries the community.
+        # The only paid call left is the team's own new posts (billed per new post, nothing when quiet).
+        status = "ok"
+        if cfg.team_x and client is not None:
+            try:
+                collect_team(s, client, cfg, run, now)
+            except XApiError as e:
+                status = "rate_limited" if isinstance(e, RateLimited) else "error"
+                run.error = str(e)[:2000]
         try:
             backfill_text(s, cfg, now)
         except Exception:  # noqa: BLE001
             log.exception("Text backfill failed")
-        run.status = "ok"
+        run.status = status
         run.finished_at = utcnow()
         s.commit()
         return run
