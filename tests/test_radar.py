@@ -975,10 +975,25 @@ def test_backup_carries_dragons_and_drops_junk(cfg, Session):
     c = create_app(cfg).test_client()
     dex = {"have": {"lava": {"c": 2, "r": 1}, "ruby": {"l": 1}, "notadragon": {"c": 5}, "ice": {"c": "lots", "r": True},
                     "tiger": {"c": 99999}}, "last": "2026-10-11", "log": [{"id": "lava"}]}
+    dex2 = dict(dex, n=41, g={"last": "2026-10-11", "count": 12, "best": "x"})
     r = c.post("/api/backup", json={"opened": {}, "streak": {}, "dex": dex}).get_json()
     assert r["ok"]
     back = c.get(f"/api/backup/{r['code']}").get_json()
-    assert back["dex"] == {"have": {"lava": {"c": 2, "r": 1}, "ruby": {"l": 1}, "tiger": {"c": 999}}, "last": "2026-10-11"}
+    assert back["dex"]["have"] == {"lava": {"c": 2, "r": 1}, "ruby": {"l": 1}, "tiger": {"c": 999}}
+    assert back["dex"]["last"] == "2026-10-11" and back["dex"]["n"] == 0
+    r3 = c.post("/api/backup", json={"opened": {}, "streak": {}, "dex": dex2}).get_json()
+    d3 = c.get(f"/api/backup/{r3['code']}").get_json()["dex"]
+    assert d3["n"] == 41 and d3["g"] == {"last": "2026-10-11", "count": 12, "best": 0}
     # an old style save without dragons still works
     r2 = c.post("/api/backup", json={"opened": {"123": 1}, "streak": {}}).get_json()
     assert "dex" not in c.get(f"/api/backup/{r2['code']}").get_json()
+
+
+def test_v2_daily_goal_is_20_keeper_posts(cfg, Session):
+    cfg.preview_key = "secret-preview-phrase-123"
+    c = create_app(cfg).test_client()
+    public = c.get("/friends").get_data(as_text=True)
+    assert '"goal": 5' in public and '"goal_rule": "quiet"' in public and "0/5 quiet posts" in public
+    c.get("/preview/secret-preview-phrase-123")
+    page = c.get("/friends").get_data(as_text=True)
+    assert '"goal": 20' in page and '"goal_rule": "keeper"' in page and "0/20 Keeper posts" in page

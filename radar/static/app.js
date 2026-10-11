@@ -107,7 +107,7 @@
     bumpStreak();
     window.keeperBump && window.keeperBump();
     const post = posts.find((x) => x.id === id) || pinnedPosts.find((x) => x.id === id);
-    if (post && !post.opens) bumpGoal();
+    if (post && (KEEPER_GOAL ? !post.team : !post.opens)) bumpGoal();
     if (post) {
       post.opens = (post.opens || 0) + 1;
       const fans = store.get("pd:authors", {}) || {}, key = (post.user || "").toLowerCase();
@@ -252,18 +252,24 @@
       have[id] = cur;
     }
     const last = [mine.last, inc.last].filter((d) => typeof d === "string").sort().pop() || null;
-    store.set("pd:dex", { have, last, log: Array.isArray(mine.log) ? mine.log : [] });
+    // the hatch count sets the pace of new dragons; the goal streak keeps the later one
+    const n = Math.max(mine.n | 0, inc.n | 0);
+    const gs = [mine.g, inc.g].filter((g) => g && typeof g.last === "string").sort((a, b) => (a.last < b.last ? -1 : 1));
+    const g = gs.length ? { ...gs[gs.length - 1], best: Math.max(...gs.map((x) => x.best | 0)) } : mine.g || null;
+    store.set("pd:dex", { have, last, n, g, log: Array.isArray(mine.log) ? mine.log : [] });
     dispatchEvent(new Event("pd:dexchange"));
     return gained;
   }
 
-  // ---------- daily goal: give 5 quiet posts some love, an egg fills up as you go ----------
-  const GOAL = 5;
+  // ---------- daily goal, an egg fills up as you go ----------
+  // v1: give 5 quiet posts some love. v2: cheer on 20 fellow Keepers' posts (any post that is new to you, not the team's)
+  const GOAL = data.goal || 5, KEEPER_GOAL = data.goal_rule === "keeper";
+  const goalWord = KEEPER_GOAL ? "Keeper posts" : "quiet posts";
   let goal = store.get("pd:goal", { day: null, n: 0 }) || { day: null, n: 0 };
   if (goal.day !== today()) goal = { day: today(), n: 0 };
   function showGoal() {
     const n = Math.min(goal.n, GOAL), done = n >= GOAL;
-    $("goal-text").textContent = done ? "Daily goal done" : `${n}/${GOAL} quiet posts today`;
+    $("goal-text").textContent = done ? "Daily goal done" : `${n}/${GOAL} ${goalWord} today`;
     $("goal").classList.toggle("done", done);
     $("goal-egg").style.setProperty("--fill", `${(n / GOAL) * 100}%`);
     dispatchEvent(new Event("pd:goalshow"));   // v2 dragons turn a finished goal into "hatch your egg"
@@ -274,12 +280,13 @@
     store.set("pd:goal", goal);
     showGoal();
     if (goal.n === GOAL) {
-      toast("\u{1F423} You gave 5 quiet posts some love today. Blinky is proud of you.");
+      toast(KEEPER_GOAL ? `\u{1F423} You cheered on ${GOAL} fellow Keepers today. Blinky is proud of you.`
+        : "\u{1F423} You gave 5 quiet posts some love today. Blinky is proud of you.");
       window.meadow && window.meadow.cheer && window.meadow.cheer();
       dispatchEvent(new Event("pd:goaldone"));
     }
   }
-  $("goal").addEventListener("click", () => { $("needsLove").checked = true; $("needsLove").dispatchEvent(new Event("change")); $("feed").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); });
+  $("goal").addEventListener("click", () => { if (KEEPER_GOAL) { $("feed").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); return; } $("needsLove").checked = true; $("needsLove").dispatchEvent(new Event("change")); $("feed").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); });
 
   // ---------- team alerts: a browser notification when a new team post arrives (while a tab is open) ----------
   const canNotify = "Notification" in window;

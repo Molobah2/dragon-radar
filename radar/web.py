@@ -569,9 +569,13 @@ def create_app(cfg: Config | None = None) -> Flask:
                        if isinstance(h.get(r), (int, float)) and not isinstance(h.get(r), bool) and int(h[r]) > 0}
                 if row:
                     have[k] = row
-        last = dex_in.get("last") if isinstance(dex_in.get("last"), str) and len(dex_in.get("last")) == 10 else None
+        day = lambda v: v if isinstance(v, str) and len(v) == 10 and v[4] == "-" else None
+        num = lambda v, top: min(top, int(v)) if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0 else 0
+        g_in = dex_in.get("g") if isinstance(dex_in.get("g"), dict) else {}
+        dex_out = {"have": have, "last": day(dex_in.get("last")), "n": num(dex_in.get("n"), 5000),
+                   "g": {"last": day(g_in.get("last")), "count": num(g_in.get("count"), 5000), "best": num(g_in.get("best"), 5000)}}
         data = _json.dumps({"opened": clean, "streak": {k: streak.get(k) for k in ("last", "count", "best")},
-                            **({"dex": {"have": have, "last": last}} if have else {})})
+                            **({"dex": dex_out} if have else {})})
         if len(data) > 150_000:
             return jsonify({"ok": False, "message": "That is too much to save at once."}), 413
         now = utcnow()

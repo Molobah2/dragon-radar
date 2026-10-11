@@ -54,7 +54,7 @@
     <div class="meter"><i id="meter"></i></div>
     <span class="meter-label"><span id="m-done">0 opened</span> · <span id="m-total">0 posts</span></span>
     <button class="streak" id="streak" type="button" hidden></button>
-    <button class="goal" id="goal" type="button" title="Daily goal: open 5 posts that need love"><span class="goal-egg" id="goal-egg" aria-hidden="true"></span><span id="goal-text">0/5 quiet posts today</span></button>
+    <button class="goal" id="goal" type="button" title="{{ 'Daily goal: open 20 posts from fellow Keepers' if v2 else 'Daily goal: open 5 posts that need love' }}"><span class="goal-egg" id="goal-egg" aria-hidden="true"></span><span id="goal-text">{{ '0/20 Keeper posts' if v2 else '0/5 quiet posts' }} today</span></button>
   </div>
 
   <section class="pulse" id="pulse" aria-label="Community pulse">
@@ -166,7 +166,7 @@
       </div>
       <div class="pg-block">
         <b>My dragons</b>
-        <p>Finish the daily goal to hatch one egg a day. Your dragons move with the code above too.</p>
+        <p>Cheer on 20 fellow Keepers a day to hatch an egg. Your dragons move with the code above too.</p>
         <button class="btn btn-go" data-dex type="button">See my dragons</button>
       </div>{% endif %}
       <p class="kp-msg" id="pg-msg"></p>
@@ -201,10 +201,14 @@
       <p class="sheet-sub" id="dex-sub"></p>
       <div class="dex-bar" id="dex-bar" aria-hidden="true"><i></i></div>
       <button class="btn btn-go dex-ready" id="dex-hatch" type="button" hidden>Your egg is ready, hatch it</button>
+      <p class="dex-next" id="dex-next"></p>
+      <p class="dex-sec"><span>Dragons</span><span id="dex-count-common"></span></p>
       <div class="dex-grid" id="dex-grid"></div>
-      <p class="dex-sec">Golden legends</p>
+      <p class="dex-sec rare"><span>Rare holo</span><span id="dex-count-rare"></span></p>
+      <div class="dex-grid" id="dex-rares"></div>
+      <p class="dex-sec legend"><span>Golden legends</span><span id="dex-count-legend"></span></p>
       <div class="dex-grid" id="dex-legends"></div>
-      <p class="dex-how">Finish the daily goal (5 quiet posts) to hatch one egg a day. A 3 day streak makes rare holo dragons more likely, and a 7 day streak gives the best chance of a golden legend. Your dragons live on this device, and the code in My progress moves them to another one.</p>
+      <p class="dex-how">Cheer on 20 fellow Keepers a day to hatch one egg. New dragons come at a steady pace: keep it up every day and half the shelf is yours in about a month, the whole shelf in about three. Rare holo dragons need a 3 day goal streak and golden legends need 7, so do not break the chain. Your dragons live on this device, and the code in My progress moves them to another one.</p>
       <div class="sheet-actions"><button class="btn btn-soft" id="dex-close" type="button">Close</button></div>
     </div>
   </div>
@@ -274,7 +278,7 @@
   </div>
   </div>
   {% endif %}
-  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "updated": updated, "icons": {"bulb": cfg.icon("bulb")}} | tojson }}</script>
+  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "updated": updated, "goal": 20 if v2 else 5, "goal_rule": "keeper" if v2 else "quiet", "icons": {"bulb": cfg.icon("bulb")}} | tojson }}</script>
   <script src="{{ asset('keeper.js') }}"></script>
   <script src="{{ asset('app.js') }}"></script>
   <script src="{{ asset('weekly.js') }}" defer></script>
