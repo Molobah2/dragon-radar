@@ -135,7 +135,8 @@ def _icon(self, name: str) -> str:
         return ""
     sheet, i = ICONS[name]
     c = 683
-    return (f"{self.scene_base}/image/upload/c_crop,w_{c},h_{c},x_{(i % 3) * c},y_{(i // 3) * c}/"
+    h = 630 if sheet == "b" and i // 3 == 1 else c   # the middle row of sheet b sits close to the row below
+    return (f"{self.scene_base}/image/upload/c_crop,w_{c},h_{h},x_{(i % 3) * c},y_{(i // 3) * c}/"
             f"e_background_removal/c_scale,w_160/f_png/{self.scene_folder}/icons-{sheet}")
 
 
