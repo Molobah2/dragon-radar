@@ -15,7 +15,7 @@
   const KEYS = [[0, "night"], [4.9, "night"], [5.9, "dawn"], [7.3, "day"], [16.7, "day"], [18.0, "dusk"], [19.4, "night"], [24, "night"]];
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const conn = navigator.connection || {};
-  const lean = !!conn.saveData || /2g$/.test(conn.effectiveType || "");       // skip the video entirely
+  const lean = !!conn.saveData || /2g$/.test(conn.effectiveType || "");       // smallest video
   const mid = conn.effectiveType === "3g";                                     // video and images, but smaller
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const sharpW = Math.min(2560, Math.ceil(Math.max(screen.width, screen.height) * dpr / 320) * 320) || 1920;
@@ -61,11 +61,11 @@
   }
 
   function wantClip() {
-    return sharpOn && !reduce && !lean && cfg.video && cfg.video[current] && !document.body.classList.contains("lapse");
+    return sharpOn && !reduce && cfg.video && cfg.video[current] && !document.body.classList.contains("lapse");
   }
   function syncVideo() {
     if (wantClip()) {
-      const src = `${cfg.base}/video/upload/c_scale,w_${Math.min(mid ? 1280 : 1600, sharpW)}/f_auto:video/q_auto/${ver}${cfg.folder}/${cfg.video[current]}`;
+      const src = `${cfg.base}/video/upload/c_scale,w_${Math.min(lean ? 720 : mid ? 1280 : 1600, sharpW)}/f_auto:video/q_auto/${ver}${cfg.folder}/${cfg.video[current]}`;
       if (video.dataset.src !== src) { video.dataset.src = src; video.src = src; video.classList.remove("on"); }
       const p = video.play(); if (p && p.catch) p.catch(() => {});
     } else {
@@ -87,6 +87,12 @@
   const body = document.body;
   const watch = () => setSharp(!body.classList.contains("ready") || body.classList.contains("lapse"));
   new MutationObserver(watch).observe(body, { attributes: true, attributeFilter: ["class"] });
+
+  // phones pause videos when you switch apps or come back with the back button: pick it up again
+  const nudge = () => { if (!document.hidden && wantClip() && video.paused) { const p = video.play(); if (p && p.catch) p.catch(() => {}); } };
+  document.addEventListener("visibilitychange", nudge);
+  addEventListener("pageshow", nudge);
+  ["pointerdown", "touchstart"].forEach((ev) => addEventListener(ev, nudge, { passive: true }));
 
   window.radarScene = {
     update(hour) {
