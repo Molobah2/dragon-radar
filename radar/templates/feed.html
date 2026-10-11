@@ -12,7 +12,7 @@
   </div>
 </div>
 {% endblock %}
-{% block header_right %}{% if cfg.demo_mode %}<span class="sample-flag">Demo data</span>{% endif %}{% endblock %}
+{% block header_right %}{% if cfg.demo_mode %}<span class="sample-flag">Demo data</span>{% endif %}<a class="btn btn-soft nav-keepers" href="{{ url_for('keepers_page') }}">{{ ico("shield", 20) }}<span>Keepers</span></a>{% endblock %}
 {% block main %}
   <section class="hero">
     <div class="hero-main">

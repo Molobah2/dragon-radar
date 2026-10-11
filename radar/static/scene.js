@@ -99,6 +99,9 @@
   };
   // first paint: show the right render straight away, before the canvas starts ticking
   const d = new Date(), forced = parseFloat(new URLSearchParams(location.search).get("hour"));
-  window.radarScene.update(isNaN(forced) ? d.getHours() + d.getMinutes() / 60 : ((forced % 24) + 24) % 24);
+  let skyMode = "auto";
+  try { skyMode = localStorage.getItem("pd:sky") || "auto"; } catch (e) { /* private mode */ }
+  const first = !isNaN(forced) ? ((forced % 24) + 24) % 24 : skyMode === "day" ? 12.5 : skyMode === "night" ? 23.5 : d.getHours() + d.getMinutes() / 60;
+  window.radarScene.update(first);
   watch();
 })();

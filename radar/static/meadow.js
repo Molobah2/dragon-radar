@@ -45,6 +45,8 @@
     const LAPSE_S = 24;                                   // a full day in 24 seconds when someone presses play
     const forced = parseFloat(new URLSearchParams(location.search).get("hour"));
     let lapse = null, onLapse = null, sky = palette(12), hour = 12;
+    let mode = "auto";
+    try { mode = localStorage.getItem("pd:sky") || "auto"; } catch (e) { /* private mode */ }
     function clockHour(nowMs) {
       if (lapse) {
         const e = (nowMs - lapse.start) / 1000;
@@ -52,6 +54,8 @@
         lapse = null; onLapse && onLapse(false);
       }
       if (!isNaN(forced)) return ((forced % 24) + 24) % 24;
+      if (mode === "day") return 12.5;
+      if (mode === "night") return 23.5;
       const d = new Date();
       return d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
     }
@@ -452,6 +456,12 @@
     return {
       cheer() { dragon.cheer = 0.6; burst(); },
       setLowRes(v) { lowRes = v; resize(); place(); if (reduce) frame(performance.now()); },
+      setMode(m2) {
+        mode = m2;
+        try { localStorage.setItem("pd:sky", m2); } catch (e) { /* private mode */ }
+        if (reduce) frame(performance.now());
+      },
+      getMode() { return mode; },
       playDay(cb) {
         if (reduce || lapse) return false;
         onLapse = cb; lapse = { start: performance.now(), from: hour }; cb && cb(true);
@@ -464,6 +474,26 @@
   const m = buildMeadow();
   window.meadow = m;
   if (m && document.body.classList.contains("static-page")) m.setLowRes(true);
-  const pill = $("sky-pill");
-  if (m && pill) pill.addEventListener("click", () => m.playDay((on) => { document.body.classList.toggle("lapse", on); pill.setAttribute("aria-pressed", on ? "true" : "false"); }));
+  const pill = $("sky-pill"), menu = $("sky-menu");
+  if (m && pill && menu) {
+    const hint = pill.querySelector(".sky-hint");
+    const LABEL = { auto: "Auto", day: "Day", night: "Night" };
+    const mark = () => {
+      const cur = m.getMode();
+      menu.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.mode === cur)));
+      if (hint) hint.textContent = LABEL[cur] || "Auto";
+    };
+    const close = () => { menu.hidden = true; pill.setAttribute("aria-expanded", "false"); };
+    pill.addEventListener("click", (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; pill.setAttribute("aria-expanded", String(!menu.hidden)); });
+    menu.addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      e.stopPropagation();
+      if (b.dataset.mode) m.setMode(b.dataset.mode);
+      if (b.dataset.play) m.playDay((on) => { document.body.classList.toggle("lapse", on); pill.setAttribute("aria-pressed", on ? "true" : "false"); });
+      mark(); close();
+    });
+    document.addEventListener("click", close);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+    mark();
+  }
 })();

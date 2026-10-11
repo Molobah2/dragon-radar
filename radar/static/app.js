@@ -22,6 +22,9 @@
     return map;
   })();
   const save = () => store.set("radar:opened", opened);
+  // ask the browser to keep this site's storage (no prompt in Chrome; Safari may still clear it after a long absence,
+  // by which time those posts have left the 7 day feed anyway)
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist().catch(() => {}); } catch (e) {}
   const lastVisit = store.get("radar:lastVisit", null);
   setTimeout(() => store.set("radar:lastVisit", Date.now()), 5000);
 
@@ -170,6 +173,8 @@
         p.opens ? `${p.opens} Keeper${p.opens === 1 ? "" : "s"}` : "Needs love"), el("time", { datetime: p.t, title: new Date(p.t).toLocaleString() }, ago(p.t))),
       el("div", { class: "foot" }));
     card.style.setProperty("--i", i % BATCH);
+    // play the entrance once; moving the card later (filters, load more) must not replay it
+    card.addEventListener("animationend", () => card.classList.add("shown"), { once: true });
     return card;
   }
   function placeCard(p, i) {
@@ -185,9 +190,22 @@
     const list = data.newcomers || [];
     $("welcome").hidden = !list.length;
     if (!list.length) return;
-    // a few different openers so nobody ends up posting identical replies (X dislikes copy paste)
-    const greets = ["Welcome to the hatchery \u{1F409}", "Glad you found the dragons, welcome Keeper", "Welcome in! Which egg did you get?",
-      "Good to see you in the hatchery \u{1F95A}", "Welcome Keeper, see you at the next AMA", "A new Keeper! Welcome \u{1F525}"];
+    // Say hi: a starting line built from three small pools, so visitors almost never share the same reply
+    // (identical replies from many accounts look like spam to X). 22 x 20 x 9 = 3,960 combinations, edit before sending.
+    const HI = ["welcome to the hatchery", "welcome in", "glad you found the dragons", "good to see you here", "hey welcome",
+      "welcome welcome", "nice to have you here", "a new Keeper, love to see it", "welcome to the fam", "happy you made it",
+      "welcome aboard", "glad you joined us", "yo welcome", "hey hey, welcome", "welcome to the nest", "great to see a new face",
+      "welcome friend", "nice one, welcome", "welcome to pocket dragons", "big welcome", "so glad you are here", "hello and welcome"];
+    const MID = ["which egg did you get?", "what made you jump in?", "hope you enjoy it here", "the community here is great",
+      "you picked a good time to join", "have fun hatching", "let me know if you need anything", "the AMAs are worth catching",
+      "say hi in the discord too", "cannot wait to see your dragon", "enjoy the ride", "you will like it here",
+      "good luck with your first hatch", "this place is a lot of fun", "plenty of friendly Keepers around", "what got you curious?",
+      "happy hatching", "first of many posts I hope", "keep the posts coming", "nice first post"];
+    const END = ["", "", "", " \u{1F409}", " \u{1F95A}", " \u{1F525}", " \u{1F44B}", " \u{2728}", " \u{1F64C}"];
+    const pick = (a) => a[Math.floor(Math.random() * a.length)];
+    const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+    const greet = () => { const a = pick(HI), b = pick(MID), bang = Math.random() < 0.6;
+      return `${cap(a)}${bang ? "!" : ","} ${bang ? cap(b) : b}${pick(END)}`; };
     $("welcome-row").replaceChildren(...list.map((n, i) => {
       const avatar = n.avatar
         ? el("img", { class: "avatar", src: n.avatar, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })
@@ -196,7 +214,7 @@
         el("a", { class: "newbie-who", href: `https://x.com/${n.user}/status/${n.id}`, target: "_blank", rel: "noopener" },
           avatar, el("span", { class: "newbie-text" }, el("b", {}, n.name || n.user),
             el("small", {}, (n.hatchery ? "Ancient Hatchery \u00b7 " : "first post \u00b7 ") + ago(n.t)))),
-        el("a", { class: "btn btn-go newbie-hi", href: `https://x.com/intent/post?in_reply_to=${n.id}&text=${encodeURIComponent(greets[(i + Math.floor(Math.random() * greets.length)) % greets.length])}`,
+        el("a", { class: "btn btn-go newbie-hi", href: `https://x.com/intent/post?in_reply_to=${n.id}&text=${encodeURIComponent(greet())}`,
           target: "_blank", rel: "noopener" }, "Say hi"));
       card.style.setProperty("--i", i);
       return card;
@@ -212,33 +230,75 @@
     $("hot-trail").replaceChildren(...hot.map((p, i) => placeCard(p, i)));
     const rest = visible().filter((p) => !hotIds.has(p.id) && !pinnedIds.has(p.id));
     const list = rest.slice(0, shown);
+    for (const p of list) placeCard(p, 0);
+    // only add what is new when the list just grew (smooth infinite scroll), rebuild otherwise
+    const have = [...trail.children].map((c) => c.dataset.id), want = list.map((p) => p.id);
+    const grew = have.length <= want.length && have.every((id, k) => id === want[k]);
     const frag = document.createDocumentFragment();
-    let i = 0;
-    for (const p of list) {
-      let card = cards.get(p.id);
-      if (!card) { card = makeCard(p, i); cards.set(p.id, card); }
-      card.classList.remove("leaving");
-      card.classList.toggle("opened", !!opened[p.id]);
-      setFoot(card, p.id);
-      frag.append(card); i++;
-    }
-    trail.replaceChildren(frag);
+    (grew ? list.slice(have.length) : list).forEach((p, k) => { const c = cards.get(p.id); c.style.setProperty("--i", k % BATCH); frag.append(c); });
+    if (grew) trail.append(frag); else trail.replaceChildren(frag);
     $("empty").hidden = list.length + hot.length + pinnedPosts.length > 0;
     $("more").hidden = rest.length <= shown;
     counts();
   }
   $("more").addEventListener("click", () => { shown += BATCH; render(); });
-  new IntersectionObserver((e) => { if (e[0].isIntersecting && !$("more").hidden) { shown += BATCH; render(); } }, { rootMargin: "500px 0px" }).observe($("more"));
+  // keep filling while the end of the list is near the screen (the observer only fires on changes)
+  let filling = false;
+  function maybeMore() {
+    if (filling) return;
+    filling = true;
+    requestAnimationFrame(() => {
+      filling = false;
+      const more = $("more");
+      if (!more.hidden && more.getBoundingClientRect().top < innerHeight + 1400) { shown += BATCH; render(); maybeMore(); }
+    });
+  }
+  new IntersectionObserver((e) => { if (e[0].isIntersecting) maybeMore(); }, { rootMargin: "1400px 0px" }).observe($("more"));
+  addEventListener("scroll", maybeMore, { passive: true });
   $("needsLove").addEventListener("change", (e) => { needsLove = e.target.checked; store.set("radar:needsLove", needsLove); render(); });
   $("showOpened").addEventListener("change", (e) => { showOpened = e.target.checked; store.set("radar:showOpened", showOpened); render(); });
 
   // ---------- filters: keep the other choices when one changes ----------
   const params = new URLSearchParams(location.search);
   const current = { range: params.get("range") || "24h", who: params.get("who") || "all", quotes: $("quotes").checked ? "1" : "0" };
-  function go(change) { const q = new URLSearchParams({ ...current, ...change }); location.search = q.toString(); }
+  // switching range or who swaps just the posts, no page reload
+  let busy = null;
+  function pressed() {
+    document.querySelectorAll('#filters button[name="range"]').forEach((b) => b.setAttribute("aria-pressed", String(b.value === current.range)));
+    document.querySelectorAll('#filters button[name="who"]').forEach((b) => b.setAttribute("aria-pressed", String(b.value === current.who)));
+    $("quotes").checked = current.quotes === "1";
+  }
+  async function go(change, push = true) {
+    Object.assign(current, change);
+    pressed();
+    const q = new URLSearchParams(current).toString();
+    if (push) history.pushState(current, "", `?${q}`);
+    const ticket = busy = {};
+    $("trail").classList.add("loading");
+    try {
+      const r = await fetch(`/api/posts?${q}`, { headers: { Accept: "application/json" } });
+      if (!r.ok) throw new Error(r.status);
+      const j = await r.json();
+      if (ticket !== busy) return;                        // a newer click won
+      posts.splice(0, posts.length, ...(j.posts || []));
+      pinnedPosts.splice(0, pinnedPosts.length, ...(j.pinned || []));
+      pinnedIds.clear(); pinnedPosts.forEach((p) => pinnedIds.add(p.id));
+      data.newcomers = j.newcomers || [];
+      shown = BATCH;
+      render(); renderWelcome(); pulse();
+    } catch (e) {
+      location.search = q;                                // fall back to a normal page load
+    } finally {
+      if (ticket === busy) $("trail").classList.remove("loading");
+    }
+  }
   document.querySelectorAll('#filters button[name="range"]').forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); go({ range: b.value }); }));
   document.querySelectorAll('#filters button[name="who"]').forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); go({ who: b.value }); }));
   $("quotes").addEventListener("change", (e) => go({ quotes: e.target.checked ? "1" : "0" }));
+  addEventListener("popstate", () => {
+    const p2 = new URLSearchParams(location.search);
+    go({ range: p2.get("range") || "24h", who: p2.get("who") || "all", quotes: p2.get("quotes") === "0" ? "0" : "1" }, false);
+  });
   document.querySelectorAll("time[data-rel]").forEach((t) => { t.textContent = ago(t.getAttribute("datetime")); });
 
   // ---------- the 5 second opening (skipped when changing filters) ----------

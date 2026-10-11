@@ -39,9 +39,17 @@
             <select id="lang-select" aria-label="Language"></select>
           </label>
           {% include "_sound.html" %}
-          <button class="sky-pill" id="sky-pill" type="button" aria-pressed="false" title="Play a full day in the meadow">
-            <i class="sky-dot" aria-hidden="true"></i><span id="sky-label">Day</span><b id="sky-time">--:--</b><span class="sky-hint">Play a day</span>
+          <div class="sky-wrap">
+          <button class="sky-pill" id="sky-pill" type="button" aria-pressed="false" aria-haspopup="true" aria-expanded="false" title="Day and night">
+            <i class="sky-dot" aria-hidden="true"></i><span id="sky-label">Day</span><b id="sky-time">--:--</b><span class="sky-hint">Auto</span>
           </button>
+          <div class="sky-menu" id="sky-menu" role="menu" hidden>
+            <button type="button" role="menuitemradio" data-mode="auto" aria-checked="true"><b>Auto</b><small>Follows your clock</small></button>
+            <button type="button" role="menuitemradio" data-mode="day" aria-checked="false"><b>Day</b><small>Always sunny</small></button>
+            <button type="button" role="menuitemradio" data-mode="night" aria-checked="false"><b>Night</b><small>Always starry</small></button>
+            <button type="button" role="menuitem" data-play="1"><b>Play a day</b><small>A full day in 24 seconds</small></button>
+          </div>
+          </div>
           {% block header_right %}{% endblock %}
         </div>
       </header>
@@ -49,7 +57,7 @@
       {% include "_faq.html" %}
       <footer>
         <span>Unofficial community tool. Not affiliated with or endorsed by Pocket Dragons. Every post links back to X.</span>
-        <strong>Built by Jon Wynn</strong>
+        <a class="by-link" href="https://x.com/{{ cfg.author_x }}" target="_blank" rel="noopener"><strong>Built by Jon Wynn</strong> <span class="by-x">@{{ cfg.author_x }} on X</span></a>
       </footer>
     </div></div>
   </div>

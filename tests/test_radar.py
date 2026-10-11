@@ -737,31 +737,41 @@ def test_x_search_off_still_reads_only_team_posts(cfg, Session):
         assert s.get(Post, "1840000000000000000").is_team
 
 
-def test_missing_pictures_filled_once_per_author(cfg, Session):
-    from radar.fxpic import backfill_avatars
+def test_authors_get_pictures_and_dragon_keepers_join(cfg, Session):
+    from radar.db import Keeper
+    from radar.fxpic import refresh_authors
     now = utcnow()
     calls = []
+    users = {"bob": {"screen_name": "Bob", "id": "1", "name": "Bob", "avatar_url": "https://pbs.twimg.com/b_normal.jpg",
+                     "verification": {"verified": False}},
+             "drago": {"screen_name": "Drago", "id": "2", "name": "Drago \U0001F409", "avatar_url": "https://pbs.twimg.com/d.jpg",
+                       "verification": {"verified": True, "type": "individual"}}}
 
     class R:
-        status_code = 200
-        def json(self):
-            return {"tweet": {"author": {"avatar_url": "https://pbs.twimg.com/a_normal.jpg"}}}
+        def __init__(self, u): self.u = u; self.status_code = 200 if u else 404
+        def json(self): return {"user": self.u}
 
     class H:
         def get(self, url, **k):
             calls.append(url)
-            return R()
+            return R(users.get(url.rsplit("/", 1)[-1].lower()))
 
     with Session() as s:
-        s.add_all([Post(id=str(i), author_id="u:bob", author_username="Bob", text="x", created_at=now - timedelta(hours=i))
-                   for i in range(1, 4)] +
+        s.add_all([Post(id=str(i), author_id="u:bob", author_username="Bob", author_name="Bob", text="x",
+                        created_at=now - timedelta(hours=i)) for i in range(1, 4)] +
                   [Post(id="9", author_id="u:amy", author_username="amy", text="x", created_at=now, author_avatar="https://pic/amy"),
-                   Post(id="10", author_id="u:amy", author_username="Amy", text="x", created_at=now)])
+                   Post(id="10", author_id="u:amy", author_username="Amy", text="x", created_at=now),
+                   Post(id="20", author_id="u:drago", author_username="Drago", author_name="Drago \U0001F409", text="x",
+                        created_at=now, author_avatar="https://pic/d")])
         s.commit()
-        assert backfill_avatars(s, cfg, now, http=H()) == 4
-        assert len(calls) == 1 and "/Bob/status/" in calls[0]
-        assert s.get(Post, "2").author_avatar.endswith("a_bigger.jpg") and s.get(Post, "10").author_avatar == "https://pic/amy"
-
+        out = refresh_authors(s, cfg, now, http=H())
+        s.commit()
+        assert out["pictures"] == 4 and out["keepers"] == 1 and s.get(Post, "10").author_avatar == "https://pic/amy"
+        assert s.get(Post, "2").author_avatar.endswith("b_bigger.jpg")
+        assert s.get(Keeper, "drago") is not None and s.get(Keeper, "bob") is None
+        n = len(calls)
+        refresh_authors(s, cfg, now, http=H())       # cached: no new lookups
+        assert len(calls) == n
 
 def test_sound_on_pages(cfg, Session):
     c = create_app(cfg).test_client()

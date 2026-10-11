@@ -41,6 +41,7 @@ def _bool(name: str, default: str = "0") -> bool:
 
 @dataclass
 class Config:
+    author_x: str = field(default_factory=lambda: os.environ.get("AUTHOR_X", "jonwynnx").lstrip("@"))
     hub_name: str = field(default_factory=lambda: os.environ.get("HUB_NAME", "pdtools"))
     # Main web address; requests to any other host (like the old onrender.com address) are sent here
     canonical_host: str = field(default_factory=lambda: os.environ.get("CANONICAL_HOST", "").strip().lower())
