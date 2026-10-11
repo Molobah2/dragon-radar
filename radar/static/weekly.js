@@ -1,5 +1,5 @@
 /* This week's top posts: a shareable card drawn in the browser from the posts Keepers opened most.
-   Credit to Jon Wynn sits on the card once. Avatars are skipped on purpose (they would block saving the image). */
+   The board is a 3D render; the names and posts are written onto its plates live. Avatars are skipped on purpose (they would block saving the image). */
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
@@ -18,56 +18,70 @@
   function round(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
   function fit(text, max) { if (ctx.measureText(text).width <= max) return text; let t = text; while (t.length && ctx.measureText(t + "...").width > max) t = t.slice(0, -1); return t.trimEnd() + "..."; }
 
+  // where the plates sit on the 3D board (measured on the 1200 x 675 artwork)
+  const TITLE = { x0: 521, x1: 1051, y0: 80, y1: 143 };
+  const ROWS = [185, 266, 345, 425, 504].map((y0) => ({ x0: 579, x1: 1051, y0, y1: y0 + 47 }));
+  const MEDAL_X = 534;
+  const INK = "#3a2412", INK_SOFT = "#6b4a2b";
+
+  function engraved(text, x, y, color) {
+    ctx.fillStyle = "rgba(255,248,230,.85)"; ctx.fillText(text, x, y + 1.2);   // light catch below the cut
+    ctx.fillStyle = color; ctx.fillText(text, x, y);
+  }
+
   async function draw() {
     try { await document.fonts.load('700 40px "Fredoka"'); await document.fonts.load('800 20px "Nunito"'); } catch (e) { /* system fonts */ }
-    const [bg, logo] = await Promise.all([load(cv.dataset.bg), load(cv.dataset.logo)]);
+    const bg = await load(cv.dataset.bg);
     const D = '"Fredoka", "Trebuchet MS", sans-serif', B = '"Nunito", system-ui, sans-serif';
-    // background: the meadow, softened, with depth
-    if (bg) ctx.drawImage(bg, 0, 0, W, H);
-    else { const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#7cc8ff"); g.addColorStop(1, "#5cc95a"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
-    const shade = ctx.createLinearGradient(0, 0, W, H); shade.addColorStop(0, "rgba(12,18,40,.55)"); shade.addColorStop(1, "rgba(12,18,40,.25)");
-    ctx.fillStyle = shade; ctx.fillRect(0, 0, W, H);
-    // glass panel
-    ctx.save(); ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = 40; ctx.shadowOffsetY = 16;
-    round(48, 40, W - 96, H - 80, 36); ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.fill(); ctx.restore();
-    const sheen = ctx.createLinearGradient(0, 40, 0, 200); sheen.addColorStop(0, "rgba(255,255,255,.9)"); sheen.addColorStop(1, "rgba(255,255,255,0)");
-    round(48, 40, W - 96, H - 80, 36); ctx.fillStyle = sheen; ctx.fill();
-    // header
-    if (logo) ctx.drawImage(logo, 84, 70, 74, 74);
-    ctx.fillStyle = "#1d2433"; ctx.font = `700 46px ${D}`; ctx.textBaseline = "alphabetic";
-    ctx.fillText("This week in the Hatchery", logo ? 176 : 84, 118);
-    ctx.fillStyle = "#4a5468"; ctx.font = `700 21px ${B}`;
-    ctx.fillText("Community posts Keepers opened most", logo ? 178 : 86, 150);
-    // rows
-    const rowY = 176, rowH = 68;
+    ctx.setTransform(W / 1200, 0, 0, H / 675, 0, 0);
+    ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+    if (bg) ctx.drawImage(bg, 0, 0, 1200, 675);
+    else {
+      const g = ctx.createLinearGradient(0, 0, 0, 675); g.addColorStop(0, "#2f5a33"); g.addColorStop(1, "#14301a"); ctx.fillStyle = g; ctx.fillRect(0, 0, 1200, 675);
+      [TITLE, ...ROWS].forEach((r) => { round(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0, 12); ctx.fillStyle = "#f3e6c8"; ctx.fill(); });
+    }
+    // title plaque
+    const cx = (TITLE.x0 + TITLE.x1) / 2;
+    ctx.textAlign = "center";
+    ctx.font = `700 30px ${D}`; engraved("This week in the Hatchery", cx, TITLE.y0 + 35, INK);
+    ctx.font = `800 13.5px ${B}`; engraved("COMMUNITY POSTS KEEPERS OPENED MOST", cx, TITLE.y0 + 54, INK_SOFT);
+    ctx.textAlign = "left";
     if (!top.length) {
-      ctx.fillStyle = "#4a5468"; ctx.font = `700 26px ${B}`; ctx.fillText("Quiet week so far. Go show some love!", 86, rowY + 80);
+      const r = ROWS[0];
+      ctx.font = `800 18px ${B}`; engraved("Quiet week so far. Go show some love!", r.x0 + 18, r.y0 + 30, INK);
     }
     top.forEach((p, i) => {
-      const y = rowY + i * (rowH + 8);
-      round(78, y, W - 156, rowH, 22); ctx.fillStyle = i === 0 ? "rgba(255,210,63,.22)" : "rgba(29,36,51,.05)"; ctx.fill();
-      // rank medal
-      const mx = 120, my = y + rowH / 2;
-      const medal = ctx.createLinearGradient(mx, my - 24, mx, my + 24);
-      const tone = [["#ffe27a", "#e0a422"], ["#eef1f6", "#aab4c3"], ["#ffc9a3", "#d27c43"]][i] || ["#c9d6ff", "#6b7fd8"];
-      medal.addColorStop(0, tone[0]); medal.addColorStop(1, tone[1]);
-      ctx.beginPath(); ctx.arc(mx, my, 22, 0, Math.PI * 2); ctx.fillStyle = medal; ctx.fill();
-      ctx.fillStyle = "#1d2433"; ctx.font = `700 24px ${D}`; ctx.textAlign = "center"; ctx.fillText(String(i + 1), mx, my + 8); ctx.textAlign = "left";
-      // who and what
-      ctx.fillStyle = "#1d2433"; ctx.font = `800 23px ${B}`;
-      const name = fit(p.name || p.user, 300); ctx.fillText(name, 164, y + 29);
+      const r = ROWS[i]; if (!r) return;
+      // rank number stamped into the coin
+      const my = (r.y0 + r.y1) / 2;
+      ctx.textAlign = "center"; ctx.font = `700 26px ${D}`;
+      if (i < 3) {   // stamped into the metal: dark cut with a bright lip
+        ctx.fillStyle = "rgba(255,255,240,.8)"; ctx.fillText(String(i + 1), MEDAL_X, my + 10.5);
+        ctx.fillStyle = ["#6b4500", "#4a5260", "#5a2a0e"][i]; ctx.fillText(String(i + 1), MEDAL_X, my + 9);
+      } else {
+        ctx.fillStyle = "rgba(0,40,20,.6)"; ctx.fillText(String(i + 1), MEDAL_X + 1, my + 10);
+        ctx.fillStyle = "#fffaf0"; ctx.fillText(String(i + 1), MEDAL_X, my + 9);
+      }
+      ctx.textAlign = "left";
+      // opens, right side
+      const label = `${p.opens} ${p.opens === 1 ? "Keeper" : "Keepers"}`;
+      ctx.font = `800 13px ${B}`; const lw = ctx.measureText(label).width;
+      const px = r.x1 - 16 - lw;
+      ctx.fillStyle = "#c2410c"; ctx.fillText(label, px, r.y0 + 20);
+      // who
+      const left = r.x0 + 18;
+      ctx.font = `800 16px ${B}`; const name = fit(p.name || p.user, 200); engraved(name, left, r.y0 + 20, INK);
       const nw = ctx.measureText(name).width;
-      ctx.fillStyle = "#6b7280"; ctx.font = `700 18px ${B}`; ctx.fillText(fit("@" + p.user, 220), 172 + nw, y + 29);
-      ctx.fillStyle = "#374151"; ctx.font = `600 19px ${B}`; ctx.fillText(fit(clean(p.text), W - 156 - 120 - 210), 164, y + 54);
-      // opens pill
-      const label = `${p.opens} Keepers`;
-      ctx.font = `800 18px ${B}`; const lw = ctx.measureText(label).width + 30;
-      round(W - 100 - lw, y + rowH / 2 - 18, lw, 36, 18); ctx.fillStyle = "#ff7a59"; ctx.fill();
-      ctx.fillStyle = "#fff"; ctx.fillText(label, W - 100 - lw + 15, y + rowH / 2 + 6);
+      ctx.font = `700 12.5px ${B}`; engraved(fit("@" + p.user, Math.max(40, px - left - nw - 22)), left + nw + 8, r.y0 + 20, INK_SOFT);
+      // what
+      ctx.font = `600 13.5px ${B}`; engraved(fit(clean(p.text), r.x1 - left - 18), left, r.y0 + 38, "#4a3420");
     });
-    // footer: one bold credit
-    ctx.fillStyle = "#1d2433"; ctx.font = `800 20px ${B}`; ctx.fillText("Built by Jon Wynn", 86, H - 60);
-    ctx.fillStyle = "#4a5468"; ctx.font = `700 19px ${B}`; ctx.textAlign = "right"; ctx.fillText("pdtools.xyz", W - 86, H - 60); ctx.textAlign = "left";
+    // address, small and quiet on the ground under the board
+    ctx.textAlign = "center"; ctx.font = `800 15px ${B}`;
+    ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.fillText("pdtools.xyz", cx, 653);
+    ctx.fillStyle = "#fff4d6"; ctx.fillText("pdtools.xyz", cx, 652);
+    ctx.textAlign = "left";
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   async function open() {
