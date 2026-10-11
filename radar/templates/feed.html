@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_ico.html" import ico with context %}
 {% block intro %}
 <div class="intro" id="intro">
   <div class="intro-card">
@@ -19,8 +20,8 @@
       <p class="lede">Every whisper that calls the dragons lands here. Open one and it fades from your sight.</p>
     </div>
     <div class="tally">
-      <div class="chip hot"><b id="left">0</b><span>waiting for you</span></div>
-      <div class="chip sun"><b id="fresh">0</b><span>new since your last visit</span></div>
+      <div class="chip hot">{{ ico("egg", 56) }}<b id="left">0</b><span>waiting for you</span></div>
+      <div class="chip sun">{{ ico("sparkle", 56) }}<b id="fresh">0</b><span>new since your last visit</span></div>
     </div>
   </section>
 
@@ -45,7 +46,7 @@
   </form>
 
   <div class="progress-strip">
-    <strong>Your day so far</strong>
+    {{ ico("hourglass", 30) }}<strong>Your day so far</strong>
     <span id="progress-text">Nothing opened yet in this range.</span>
     <div class="meter"><i id="meter"></i></div>
     <span class="meter-label"><span id="m-done">0 opened</span> · <span id="m-total">0 posts</span></span>
@@ -53,14 +54,14 @@
 
   <section class="pulse" id="pulse" aria-label="Community pulse">
     <div class="pulse-head">
-      <strong>Community pulse</strong>
+      {{ ico("pulse", 30) }}<strong>Community pulse</strong>
       <span id="pulse-range">Last 24 hours</span>
     </div>
     <div class="pulse-stats">
-      <div class="stat"><b id="p-posts">0</b><span>posts</span></div>
-      <div class="stat"><b id="p-people">0</b><span>people posting</span></div>
-      <div class="stat"><b id="p-team">0</b><span>team posts</span></div>
-      <div class="stat"><b id="p-quotes">0%</b><span>quote posts</span></div>
+      <div class="stat">{{ ico("chat", 34) }}<b id="p-posts">0</b><span>posts</span></div>
+      <div class="stat">{{ ico("paw", 34) }}<b id="p-people">0</b><span>people posting</span></div>
+      <div class="stat">{{ ico("crown", 34) }}<b id="p-team">0</b><span>team posts</span></div>
+      <div class="stat">{{ ico("quote", 34) }}<b id="p-quotes">0%</b><span>quote posts</span></div>
     </div>
     <div class="pulse-chart">
       <div class="bars" id="p-bars" role="img" aria-label="Posts over time"></div>
@@ -71,27 +72,27 @@
   <div class="layout" id="feed">
     <main>
       <section class="hot pinned-row" id="pinned" hidden>
-        <h2 class="hot-title">Pinned <span>latest from the team</span></h2>
+        <h2 class="hot-title">{{ ico("pin", 30) }}Pinned <span>latest from the team</span></h2>
         <div class="trail" id="pinned-trail"></div>
       </section>
       <section class="hot welcome" id="welcome" hidden>
-        <h2 class="hot-title">New in the hatchery <span>first posts this week, say hi</span></h2>
+        <h2 class="hot-title">{{ ico("hatch", 30) }}New in the hatchery <span>first posts this week, say hi</span></h2>
         <div class="welcome-row" id="welcome-row"></div>
       </section>
       <section class="hot" id="hot" hidden>
-        <h2 class="hot-title">Hot now <span>most opened by Keepers</span></h2>
+        <h2 class="hot-title">{{ ico("flame", 30) }}Hot now <span>most opened by Keepers</span></h2>
         <div class="trail" id="hot-trail"></div>
       </section>
       <div class="trail" id="trail" aria-live="polite"></div>
       <button id="more" class="btn btn-soft more" type="button" hidden>Load more</button>
       <div class="empty" id="empty" hidden>
-        <h2>All caught up</h2>
+        {{ ico("letter", 64) }}<h2>All caught up</h2>
         <p>No unopened posts here. Fresh ones land every 20 minutes.</p>
       </div>
     </main>
     <aside class="side">
       <div class="panel how">
-        <h3>How it works</h3>
+        <h3>{{ ico("bulb", 30) }}How it works</h3>
         <ol class="steps">
           <li>New posts that tag the account land every 20 minutes.</li>
           <li>Open one on X and join in however you like.</li>
@@ -104,7 +105,7 @@
         <button class="btn btn-go keeper-btn" id="keeper-open" type="button">My Keeper card</button>
         {% else %}
         <button class="btn keeper-btn keeper-locked" type="button" disabled aria-disabled="true">
-          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><rect x="4" y="9" width="12" height="9" rx="2.5" fill="currentColor"/><path d="M6.5 9V6.8a3.5 3.5 0 0 1 7 0V9" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          {{ ico("lock", 22) }}
           Keeper card <span>locked for now</span>
         </button>
         {% endif %}

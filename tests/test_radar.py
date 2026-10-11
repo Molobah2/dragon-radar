@@ -702,3 +702,15 @@ def test_hub_forest_scene_and_badge_logo(cfg, Session):
     assert "r_max" in hub and "pdtools-badge" in hub and 'rel="apple-touch-icon"' in hub
     feed = c.get("/friends").get_data(as_text=True)
     assert "mark.svg" not in hub and "mark.svg" not in feed and 'class="brand-mark"' in feed
+
+
+def test_premium_icons_and_mailbox(cfg, Session):
+    cfg.scene_base = "https://res.cloudinary.com/demo"
+    cfg.suggest_url = "https://forms.gle/x"
+    c = create_app(cfg).test_client()
+    feed = c.get("/friends").get_data(as_text=True)
+    keepers = c.get("/friends/keepers").get_data(as_text=True)
+    hub = c.get("/").get_data(as_text=True)
+    assert feed.count('class="ico') >= 10 and "e_background_removal" in feed
+    assert 'class="mb-clip"' in feed and "mailbox-hover" in feed and "mailbox.js" in feed and "<svg viewBox=\"0 0 64 64\"" not in feed
+    assert keepers.count('class="ico') >= 4 and 'class="ico egg"' in hub

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_ico.html" import ico with context %}
 {% block title %}Keepers · {{ cfg.site_name }}{% endblock %}
 {% block body_class %}ready static-page{% endblock %}
 {% block header_right %}<a class="btn btn-soft" data-i18n-html="back" href="{{ url_for('feed') }}"><span class="wide-only">Back to the </span>feed</a>{% endblock %}
@@ -9,13 +10,13 @@
       <p class="lede">Blue tick Keepers who wear the 🐉 in their name. Open a profile, follow who you vibe with.</p>
     </div>
     <div class="tally">
-      <div class="chip hot"><b id="k-count">0</b><span>Keepers found</span></div>
-      <div class="chip sun"><b id="k-left">0</b><span>not followed yet</span></div>
+      <div class="chip hot">{{ ico("shield", 56) }}<b id="k-count">0</b><span>Keepers found</span></div>
+      <div class="chip sun">{{ ico("plus", 56) }}<b id="k-left">0</b><span>not followed yet</span></div>
     </div>
   </section>
 
   <section class="kp-block">
-    <h2 class="hot-title">The Hatchery team <span>pinned</span></h2>
+    <h2 class="hot-title">{{ ico("crown", 30) }}The Hatchery team <span>pinned</span></h2>
     <div class="kp-grid kp-team" id="k-team"></div>
   </section>
 
@@ -37,7 +38,7 @@
 
   <section class="panel kp-add">
     <div>
-      <h3>Wear the 🐉 and not listed?</h3>
+      <h3>{{ ico("letter", 30) }}Wear the 🐉 and not listed?</h3>
       <p>Put 🐉 in your X display name, keep your blue tick, and add yourself. Remove the 🐉 any time and you leave the list.</p>
     </div>
     <div class="keeper-row">

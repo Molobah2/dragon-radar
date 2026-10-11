@@ -472,3 +472,127 @@ html[lang="ko"] h1, html[lang="zh"] h1, html[lang="ko"] .lede { word-break: keep
 .crumb-sep { color: var(--on-sky-soft, var(--ink-soft)); font-weight: 700; opacity: .6; }
 .brand.crumb { font-size: 20px; }
 @media (max-width: 560px) { .crumbs .hub-word, .crumb-sep { display: none; } .brand.crumb { font-size: 17px; } .crumbs { gap: 8px; } }
+
+/* =========================================================================================
+   Premium glass pass: layered frosted panels with a lit top edge, real 3D icons,
+   glossy controls and richer cards. Only transform and opacity animate, so it stays smooth.
+   ========================================================================================= */
+:root {
+  --glass-hi: linear-gradient(160deg, rgba(255, 255, 255, .9) 0%, rgba(255, 255, 255, .72) 45%, rgba(255, 255, 255, .62) 100%);
+  --rim: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 0 0 1px rgba(255, 255, 255, .55), inset 0 -1px 0 rgba(29, 36, 51, .06);
+  --lift: 0 1px 2px rgba(29, 36, 51, .06), 0 10px 24px -14px rgba(29, 36, 51, .28), 0 34px 64px -34px rgba(29, 36, 51, .45);
+}
+.ico { display: inline-block; flex: none; object-fit: contain; clip-path: inset(0 0 7% 0); vertical-align: middle;
+  filter: drop-shadow(0 6px 8px rgba(29, 36, 51, .22)); user-select: none; -webkit-user-drag: none; }
+
+/* panels */
+.hero-main, .chip.sun, .rail, .progress-strip, .pulse, .panel, .faq details, .empty, .side-actions .btn-soft, .keeper-locked {
+  background: var(--glass-hi); border: 0; box-shadow: var(--rim), var(--lift); position: relative; }
+.hero-main::before, .pulse::before, .panel::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(120% 60% at 0% 0%, rgba(255, 255, 255, .55), transparent 55%); }
+.hero-main > *, .pulse > *, .panel > * { position: relative; }
+.hero-main { padding: 38px 38px 34px; }
+h1 { text-shadow: 0 1px 0 rgba(255, 255, 255, .8); }
+h1 .pop { background: linear-gradient(180deg, #ff8a5c, #e8452a 70%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 3px 0 rgba(232, 69, 42, .18)); }
+
+/* counters */
+.chip { gap: 18px; padding: 18px 24px 18px 18px; }
+.chip .ico { width: 64px; height: 64px; transition: transform .5s cubic-bezier(.3, 1.5, .5, 1); }
+.chip:hover .ico { transform: translateY(-3px) rotate(-6deg) scale(1.05); }
+.chip.hot { background: linear-gradient(135deg, #ff9466 0%, #ff6d47 48%, #f0532f 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), inset 0 -10px 24px rgba(180, 40, 10, .25), 0 22px 44px -22px rgba(232, 69, 42, .75); }
+.chip.hot::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .28), transparent 46%); }
+.chip { position: relative; overflow: hidden; }
+.chip.hot .ico { filter: drop-shadow(0 8px 12px rgba(120, 30, 0, .45)); }
+.chip b { text-shadow: 0 2px 0 rgba(0, 0, 0, .06); }
+.chip.sun b { background: linear-gradient(180deg, #8a6cff, #5a3fd0); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* filter rail */
+.rail { padding: 8px; }
+.tab { transition: background .25s, color .25s, transform .15s, box-shadow .25s; }
+.tab[aria-pressed="true"] { background: linear-gradient(180deg, #34405a, #1b2232); color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 6px 14px -6px rgba(29, 36, 51, .7); }
+.switch input { background: linear-gradient(180deg, rgba(29, 36, 51, .2), rgba(29, 36, 51, .1)); box-shadow: inset 0 2px 4px rgba(29, 36, 51, .18); }
+.switch input:checked { background: linear-gradient(180deg, #4fc04d, #74da72); box-shadow: inset 0 2px 4px rgba(20, 90, 30, .35), 0 0 12px rgba(92, 201, 90, .45); }
+.switch input::after { background: linear-gradient(180deg, #fff, #eef1f6); box-shadow: 0 2px 5px rgba(0, 0, 0, .25), inset 0 -1px 0 rgba(0, 0, 0, .06); }
+
+/* progress */
+.progress-strip { padding: 10px 18px 10px 12px; }
+.progress-strip .ico { width: 34px; height: 34px; margin-right: -4px; }
+.meter { box-shadow: inset 0 2px 4px rgba(29, 36, 51, .12); }
+.meter i { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 0 12px rgba(92, 201, 90, .5); }
+
+/* community pulse */
+.pulse { padding: 18px 22px 16px; }
+.pulse-head { align-items: center; }
+.pulse-head .ico { width: 32px; height: 32px; }
+.stat { grid-template-columns: auto 1fr; grid-template-areas: "i n" "i l"; column-gap: 10px; align-items: center; padding: 12px 16px 12px 12px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .7)); box-shadow: var(--rim), 0 10px 20px -16px rgba(29, 36, 51, .45);
+  transition: transform .3s cubic-bezier(.3, 1.4, .5, 1); }
+.stat:hover { transform: translateY(-2px); }
+.stat .ico { grid-area: i; width: 40px; height: 40px; }
+.stat b { grid-area: n; } .stat span { grid-area: l; }
+.bars i { background: linear-gradient(180deg, #ffa07f, #ff7a59 55%, #f05c3a); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55); opacity: .92; }
+.bars i.peak { background: linear-gradient(180deg, #b6a4ff, #7b5cf0 55%, #5a3fd0); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 0 14px rgba(107, 79, 216, .45); }
+
+/* section titles */
+.hot-title { align-items: center; }
+.hot-title .ico { width: 34px; height: 34px; margin-right: -2px; }
+.panel h3, .kp-add h3 { display: flex; align-items: center; gap: 10px; }
+.panel h3 .ico { width: 32px; height: 32px; }
+.empty .ico { width: 72px; height: 72px; }
+.keeper-locked .ico { width: 24px; height: 24px; filter: drop-shadow(0 3px 4px rgba(29, 36, 51, .25)) grayscale(.15); }
+.lang-pick .ico { width: 20px; height: 20px; filter: drop-shadow(0 2px 3px rgba(29, 36, 51, .25)); }
+
+/* post and keeper cards */
+.post { background: linear-gradient(165deg, #ffffff 0%, #fbfcff 55%, #f4f6fb 100%); border: 0;
+  box-shadow: inset 0 1px 0 #fff, inset 0 0 0 1px rgba(29, 36, 51, .05), 0 1px 2px rgba(29, 36, 51, .06), 0 14px 30px -20px rgba(29, 36, 51, .45); }
+.post::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .35s;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .55) 48%, transparent 62%); }
+.post:hover { border: 0; box-shadow: inset 0 1px 0 #fff, inset 0 0 0 1px rgba(255, 122, 89, .28), 0 2px 4px rgba(29, 36, 51, .06), 0 26px 44px -22px rgba(29, 36, 51, .5); }
+.post:hover::after { opacity: 1; }
+.post.team { background: linear-gradient(160deg, #fff9e3 0%, #ffffff 55%, #fffaf0 100%);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 2px #ffd666, 0 0 0 5px rgba(255, 210, 63, .25), 0 24px 44px -26px rgba(150, 110, 0, .55); }
+.hot .post { box-shadow: inset 0 1px 0 #fff, 0 0 0 2px rgba(255, 122, 89, .7), 0 0 0 5px rgba(255, 122, 89, .16), 0 24px 44px -26px rgba(29, 36, 51, .45); }
+.pinned-row .post { box-shadow: inset 0 1px 0 #fff, 0 0 0 2px #ffd666, 0 0 0 5px rgba(255, 210, 63, .22), 0 24px 44px -26px rgba(150, 110, 0, .5); }
+.avatar { box-shadow: 0 0 0 2px #fff, 0 4px 10px -3px rgba(29, 36, 51, .4); }
+.tag { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6); }
+.tag.team { background: linear-gradient(180deg, #ffe27a, #ffc93a); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 2px 6px -2px rgba(180, 130, 0, .5); }
+.newbie { background: linear-gradient(165deg, #fff, #f6f8fc); border: 0; box-shadow: inset 0 1px 0 #fff, inset 0 0 0 1px rgba(29, 36, 51, .05), 0 14px 28px -18px rgba(29, 36, 51, .5); }
+
+/* buttons */
+.btn-go { background: linear-gradient(180deg, #ff9670 0%, #ff7a59 45%, #f0603d 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 4px 0 #cf4a2c, 0 14px 24px -12px rgba(232, 86, 58, .9); text-shadow: 0 1px 0 rgba(150, 40, 10, .3); }
+.btn-go:active { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 1px 0 #cf4a2c; }
+.btn-soft { background: linear-gradient(180deg, rgba(255, 255, 255, .95), rgba(240, 243, 249, .9)); box-shadow: inset 0 1px 0 #fff, inset 0 0 0 1px rgba(29, 36, 51, .08), 0 4px 10px -6px rgba(29, 36, 51, .35); }
+.btn-soft:hover { background: linear-gradient(180deg, #fff, #f3f5fa); }
+.steps li::before { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -3px 0 rgba(0, 0, 0, .12), 0 4px 8px -3px rgba(29, 36, 51, .35); }
+.sky-pill, .lang-pick { box-shadow: var(--rim), 0 8px 18px -10px rgba(29, 36, 51, .45); }
+
+/* night: the same glass, tinted with the sky */
+body.dark-sky .side-actions .btn-soft, body.dark-sky .keeper-locked { background: linear-gradient(160deg, rgba(36, 44, 100, .82), rgba(20, 26, 69, .72));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 14px 30px -18px rgba(0, 0, 0, .7); }
+
+/* ---------- the mailbox: a real photo in a gold rimmed porthole ---------- */
+.mailbox { width: 112px; height: 112px; border-radius: 50%; padding: 4px; overflow: visible;
+  background: conic-gradient(from 210deg, #fff3c4, #e2a93b, #fff1b8, #b9822a, #ffe08a, #fff3c4);
+  box-shadow: 0 18px 34px -14px rgba(29, 36, 51, .6), 0 0 0 1px rgba(255, 255, 255, .5); }
+.mailbox:hover { transform: translateY(-4px) scale(1.04); box-shadow: 0 26px 44px -16px rgba(29, 36, 51, .65), 0 0 0 1px rgba(255, 255, 255, .6), 0 0 28px rgba(255, 210, 63, .45); }
+.mb-media { position: relative; display: block; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: #6b5130;
+  box-shadow: inset 0 0 0 2px rgba(80, 50, 10, .35); isolation: isolate; }
+.mb-media::after { content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: 2;
+  background: radial-gradient(80% 60% at 30% 18%, rgba(255, 255, 255, .35), transparent 55%); }
+.mb-still, .mb-clip { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.mb-clip { opacity: 0; transition: opacity .35s ease; }
+.mailbox.playing .mb-clip { opacity: 1; }
+body.dark-sky .mailbox { background: conic-gradient(from 210deg, #fff3c4, #e2a93b, #fff1b8, #b9822a, #ffe08a, #fff3c4); }
+.mailbox-tip { right: calc(100% + 12px); }
+@media (max-width: 560px) { .mailbox { width: 84px; height: 84px; padding: 3px; } }
+
+@media (max-width: 760px) {
+  .chip .ico { width: 44px; height: 44px; }
+  .chip { padding: 14px; gap: 6px; }
+  .stat .ico { width: 32px; height: 32px; }
+}

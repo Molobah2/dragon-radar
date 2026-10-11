@@ -119,3 +119,34 @@ def _logo(self, w: int = 96, fmt: str = "auto") -> str:
 
 
 Config.logo = _logo
+
+
+# Premium 3D icons: two Higgsfield sheets (3 by 3 on 2048 px), cut out once on the CDN and served at one size
+ICONS = {
+    "egg": ("a", 0), "sparkle": ("a", 1), "chat": ("a", 2), "paw": ("a", 3), "crown": ("a", 4), "quote": ("a", 5),
+    "hourglass": ("a", 6), "pulse": ("a", 7), "pin": ("a", 8),
+    "flame": ("b", 0), "hatch": ("b", 1), "lock": ("b", 2), "plus": ("b", 3), "shield": ("b", 4), "letter": ("b", 5),
+    "bulb": ("b", 6), "book": ("b", 7), "globe": ("b", 8),
+}
+
+
+def _icon(self, name: str) -> str:
+    if not self.scene_base or name not in ICONS:
+        return ""
+    sheet, i = ICONS[name]
+    c = 683
+    return (f"{self.scene_base}/image/upload/c_crop,w_{c},h_{c},x_{(i % 3) * c},y_{(i // 3) * c}/"
+            f"e_background_removal/c_scale,w_160/f_png/{self.scene_folder}/icons-{sheet}")
+
+
+def _mailbox(self, kind: str = "image") -> str:
+    if not self.scene_base:
+        return ""
+    if kind == "video":
+        return f"{self.scene_base}/video/upload/ac_none,c_fill,w_256,h_256/f_auto:video/q_auto/v{self.hub_version}/{self.scene_folder}/mailbox-hover"
+    # the clip's own first frame, so the hand over to the animation is seamless
+    return f"{self.scene_base}/video/upload/so_0,c_fill,w_256,h_256/q_auto/v{self.hub_version}/{self.scene_folder}/mailbox-hover.jpg"
+
+
+Config.icon = _icon
+Config.mailbox = _mailbox
