@@ -942,3 +942,18 @@ def test_my_week_card_is_v2_only(cfg, Session):
     assert "myweek.js" in page and 'id="myweek-canvas"' in page and page.count("data-myweek") == 2
     assert "cards-data.js" in page and 'id="mw-eggs"' in page and 'id="mw-times"' in page and 'id="mw-designs"' in page
     assert "My week card" in c.get("/lab").get_data(as_text=True)
+
+
+def test_hatchery_numbers_on_home_are_v2_only(cfg, Session):
+    cfg.preview_key = "secret-preview-phrase-123"
+    c = create_app(cfg).test_client()
+    pc = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130"}
+    for vid in ("a" * 32, "b" * 32, "c" * 32):
+        c.post("/api/hit", data=json.dumps({"vid": vid, "path": "/"}), headers=pc, content_type="text/plain")
+    public = c.get("/").get_data(as_text=True)
+    assert 'id="numbers"' not in public and "The Hatchery so far" not in public
+    c.get("/preview/secret-preview-phrase-123")
+    page = c.get("/").get_data(as_text=True)
+    assert 'id="numbers"' in page and "people have visited" in page and "<b>3</b>" in page
+    assert page.count('class="later"') == 13         # the chart starts on the first counted day and fills up
+    assert "Hatchery numbers" in c.get("/lab").get_data(as_text=True)

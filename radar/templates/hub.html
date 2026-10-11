@@ -146,6 +146,21 @@
     @media (max-width: 720px) and (max-height: 620px) { .more-cue { margin-top: 9vh; } }
     @media (min-width: 721px) { .hero-go, .more-cue { display: none; } }
     @media (prefers-reduced-motion: reduce) { .more-cue svg { animation: none; } }
+    /* v2: the Hatchery numbers */
+    .numbers { margin: 0 0 34px; padding: 22px 22px 18px; border-radius: 26px; background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    .nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .num { padding: 14px 14px 12px; border-radius: 18px; background: var(--bg); border: 1px solid var(--line); display: grid; gap: 2px; }
+    .num b { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 4vw, 40px); line-height: 1.05; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+    .num:nth-child(1) b { color: var(--coral); } .num:nth-child(2) b { color: var(--teal); } .num:nth-child(3) b { color: #c98a10; }
+    .num span { color: var(--soft); font-weight: 700; font-size: 14px; }
+    .n-chart { margin-top: 18px; }
+    .n-bars { display: grid; grid-template-columns: repeat(14, 1fr); gap: 6px; align-items: end; height: 92px; }
+    .n-bars i { display: block; border-radius: 7px 7px 3px 3px; min-height: 4px; background: linear-gradient(180deg, var(--gold), var(--coral)); opacity: .9; }
+    .n-bars i.zero { background: var(--line); opacity: 1; }
+    .n-bars i.later { height: 4px; background: none; border-bottom: 2px dashed var(--line); border-radius: 0; opacity: 1; }
+    .n-foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; color: var(--soft); font-size: 13px; font-weight: 700; }
+    .n-note { margin: 14px 0 0; color: var(--soft); font-size: 13px; font-weight: 600; }
+    @media (max-width: 720px) { .nums { grid-template-columns: repeat(2, 1fr); } .numbers { padding: 18px 16px 14px; } .n-bars { gap: 4px; height: 76px; } }
   </style>
 </head>
 <body>
@@ -208,6 +223,25 @@
         </div>
       </div>
     </section>
+
+    {% if stats %}
+    <div class="section-head" id="numbers">The Hatchery so far</div>
+    <section class="numbers reveal" aria-label="How many people use pdtools">
+      <div class="nums">
+        <div class="num"><b>{{ "{:,}".format(stats.total) }}</b><span>people have visited</span></div>
+        <div class="num"><b>{{ "{:,}".format(stats.week) }}</b><span>this week</span></div>
+        <div class="num"><b>{{ "{:,}".format(stats.returning) }}</b><span>came back again</span></div>
+        <div class="num"><b>{{ "{:,}".format(stats.views) }}</b><span>pages opened</span></div>
+      </div>
+      <div class="n-chart">
+        <div class="n-bars" role="img" aria-label="People each day for the last 14 days">
+          {% for d in stats.days %}<i class="{{ 'zero' if not d.people }}" style="height:{{ (d.people / stats.peak * 100) | round(1) if d.people else 4 }}%" title="{{ d.day.strftime('%b %-d') }}: {{ d.people }} {{ 'person' if d.people == 1 else 'people' }}"></i>{% endfor %}{% for _ in range(stats.empty) %}<i class="later" aria-hidden="true"></i>{% endfor %}
+        </div>
+        <div class="n-foot"><span>{{ stats.days[0].day.strftime('%b %-d') }}</span><span>People each day</span><span>Today: {{ stats.today }}</span></div>
+      </div>
+      <p class="n-note">Counted since {{ stats.since.strftime('%B %-d, %Y') }}. Each browser counts once, so one Keeper on a phone and a laptop counts as two. No names or X accounts are stored.</p>
+    </section>
+    {% endif %}
 
     <footer>
       <span>Unofficial community tools. Not affiliated with or endorsed by Pocket Dragons.</span>

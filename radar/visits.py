@@ -102,3 +102,26 @@ def summary(s, today: date) -> dict:
         "pages": sorted(counts(week, "page:").items(), key=lambda kv: -kv[1]),
         "days": days, "peak": peak,
     }
+
+
+def public_summary(s, today: date) -> dict:
+    """The friendly numbers everyone can see on the home page (v2). No sources, devices or anything per person."""
+    def uniques(since: date) -> int:
+        return s.scalar(select(func.count(func.distinct(VisitDay.vid))).where(VisitDay.day >= since)) or 0
+
+    total = s.scalar(select(func.count()).select_from(Visitor)) or 0
+    first = s.scalar(select(func.min(Visitor.first_seen)))
+    since = first.date() if first else today
+    start = max(since, today - timedelta(days=13))      # the chart starts on the first counted day and fills up
+    rows = dict(s.execute(select(VisitDay.day, func.count()).where(VisitDay.day >= start).group_by(VisitDay.day)).all())
+    days = [{"day": start + timedelta(days=i), "people": rows.get(start + timedelta(days=i), 0)}
+            for i in range((today - start).days + 1)]
+    return {
+        "total": total,
+        "week": uniques(today - timedelta(days=6)),
+        "today": uniques(today),
+        "returning": s.scalar(select(func.count()).select_from(Visitor).where(Visitor.days > 1)) or 0,
+        "views": int(s.scalar(select(func.coalesce(func.sum(Visitor.views), 0))) or 0),
+        "since": since, "empty": 14 - len(days),
+        "days": days, "peak": max([d["people"] for d in days] + [1]),
+    }

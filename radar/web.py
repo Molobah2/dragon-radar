@@ -105,6 +105,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     # v2 tools in progress: add {"name", "url", "note"} here as each one is built
     LAB_TOOLS: list[dict] = [
         {"name": "My week card", "url": "/friends#myweek", "note": "Blinky's Friends, side menu or My progress: a card of the Keepers you supported this week, to share on X."},
+        {"name": "Hatchery numbers", "url": "/#numbers", "note": "Home page, under the tools: how many people have visited pdtools, this week, who came back, and a 14 day chart."},
     ]
 
     # ---- v2 preview ------------------------------------------------------------------------------------
@@ -234,9 +235,24 @@ def create_app(cfg: Config | None = None) -> Flask:
         qs = request.query_string.decode()
         return redirect(f"https://{cfg.canonical_host}{target}" + (f"?{qs}" if qs else ""), code=301)
 
+    # v2: the community numbers on the home page, worked out at most every 5 minutes
+    stats_cache: dict = {"at": 0.0, "data": None}
+
+    def public_stats():
+        if time.time() - stats_cache["at"] > 300 or stats_cache["data"] is None:
+            from .visits import public_summary
+            try:
+                with Session() as s:
+                    stats_cache["data"] = public_summary(s, datetime.now(tz).date())
+            except Exception:  # the home page never breaks over the numbers
+                app.logger.exception("public stats failed")
+                return stats_cache["data"]
+            stats_cache["at"] = time.time()
+        return stats_cache["data"]
+
     @app.get("/")
     def hub():
-        return render_template("hub.html", cfg=cfg)
+        return render_template("hub.html", cfg=cfg, stats=public_stats() if g.get("v2") else None)
 
     @app.get("/keepers")
     def keepers_old():
