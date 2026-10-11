@@ -63,8 +63,8 @@ body.ready .site { opacity: 1; transform: none; visibility: visible; }
 
 .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: calc(16px + env(safe-area-inset-top, 0px)) 0; }
 .brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--ink); }
-.brand-mark { width: 38px; height: 38px; border-radius: 14px; display: grid; place-items: center; background: var(--glass-strong); box-shadow: 0 6px 16px -6px rgba(29, 36, 51, .3); }
-.brand-mark svg { width: 26px; height: 26px; }
+.brand-mark { width: 40px; height: 40px; border-radius: 50%; display: block; flex: none; filter: drop-shadow(0 6px 12px rgba(29, 36, 51, .3)); transition: transform .4s cubic-bezier(.2, .8, .2, 1); }
+.brand:hover .brand-mark { transform: rotate(-8deg) scale(1.06); }
 .sample-flag { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink); background: var(--sun);
   padding: 7px 12px; border-radius: 999px; box-shadow: 0 6px 16px -8px rgba(29, 36, 51, .4); white-space: nowrap; }
 

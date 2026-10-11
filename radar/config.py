@@ -72,6 +72,12 @@ class Config:
     scene_folder: str = field(default_factory=lambda: os.environ.get("SCENE_FOLDER", "dragon-radar"))
     scene_version: str = field(default_factory=lambda: os.environ.get("SCENE_VERSION", "2").strip())
     scene_videos: str = field(default_factory=lambda: os.environ.get("SCENE_VIDEOS", ""))  # e.g. "day:meadow-day-loop,night:meadow-night-loop"
+    # pdtools home: forest hut scene (still, walk out intro, idle loop) and the badge logo, all on the same CDN
+    hub_scene: str = field(default_factory=lambda: os.environ.get("HUB_SCENE", "hut-day"))
+    hub_intro: str = field(default_factory=lambda: os.environ.get("HUB_INTRO", "hut-intro"))
+    hub_loop: str = field(default_factory=lambda: os.environ.get("HUB_LOOP", "hut-loop"))
+    hub_version: str = field(default_factory=lambda: os.environ.get("HUB_VERSION", "1").strip())
+    brand_logo: str = field(default_factory=lambda: os.environ.get("BRAND_LOGO", "pdtools-badge"))
     # Keeper card is locked until this is switched on (no lookups, button shows as coming soon)
     keeper_card_open: bool = field(default_factory=lambda: _bool("KEEPER_CARD_OPEN"))
     # Where the mailbox button leads (a Google Doc or Form for suggestions); the mailbox hides when empty
@@ -102,3 +108,14 @@ def _scene_video_map(self) -> dict:
 
 
 Config.scene_video_map = property(_scene_video_map)
+
+
+def _logo(self, w: int = 96, fmt: str = "auto") -> str:
+    """The round Blinky badge, cut to a transparent circle and sized for its slot."""
+    if not self.scene_base:
+        return ""
+    return (f"{self.scene_base}/image/upload/c_crop,w_1784,h_1784,x_96,y_88/r_max/c_scale,w_{int(w)}/f_{fmt}/q_auto/"
+            f"v{self.hub_version}/{self.scene_folder}/{self.brand_logo}")
+
+
+Config.logo = _logo

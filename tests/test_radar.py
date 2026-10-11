@@ -692,3 +692,13 @@ def test_hub_tool_paths_and_old_host_redirect(cfg, Session):
     assert r.status_code == 301 and r.headers["Location"] == "https://pdtools.xyz/friends?range=7d"
     assert c.post("/cron/collect", base_url="https://dragon-radar.onrender.com").status_code != 301
     assert c.get("/friends", base_url="https://pdtools.xyz").status_code == 200
+
+
+def test_hub_forest_scene_and_badge_logo(cfg, Session):
+    cfg.scene_base = "https://res.cloudinary.com/demo"
+    c = create_app(cfg).test_client()
+    hub = c.get("/").get_data(as_text=True)
+    assert 'id="forest"' in hub and "forest.js" in hub and '"loop": "hut-loop"' in hub
+    assert "r_max" in hub and "pdtools-badge" in hub and 'rel="apple-touch-icon"' in hub
+    feed = c.get("/friends").get_data(as_text=True)
+    assert "mark.svg" not in hub and "mark.svg" not in feed and 'class="brand-mark"' in feed
