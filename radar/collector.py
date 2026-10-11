@@ -253,6 +253,12 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
             backfill_text(s, cfg, now)
         except Exception:  # noqa: BLE001
             log.exception("Text backfill failed")
+        try:
+            from .fxpic import backfill_avatars
+            s.flush()
+            backfill_avatars(s, cfg, now)
+        except Exception:  # noqa: BLE001
+            log.exception("Picture backfill failed")
         run.status = status
         run.finished_at = utcnow()
         s.commit()

@@ -71,6 +71,7 @@ def collect_discord(s, cfg, run, now: datetime, client=None, http=None) -> int:
     from . import oembed
     from .collector import is_blocked_text, blocklist
     from .directory import note_user
+    from .fxpic import known_avatar
 
     own = http is None
     http = http or requests.Session()
@@ -152,7 +153,7 @@ def collect_discord(s, cfg, run, now: datetime, client=None, http=None) -> int:
                 continue
             s.add(Post(id=pid, author_id=author_id, created_at=x_time(pid), is_quote=False, is_team=is_team,
                        collected_at=now, text=(g["text"] or "")[:1200], author_name=(g["name"] or "")[:100] or None,
-                       author_username=g["username"][:32], author_avatar=c.avatar if c else None,
+                       author_username=g["username"][:32], author_avatar=(c.avatar if c and c.avatar else known_avatar(s, g["username"])),
                        has_media=bool(g["media"])))
             added += 1
         run.posts_new += added
