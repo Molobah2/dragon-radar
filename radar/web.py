@@ -4,12 +4,14 @@ Run locally:  flask --app "radar.web:create_app()" run
 Production:   gunicorn "radar.web:create_app()"
 """
 import hmac
+import os
 import secrets
+import time
 import threading
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from flask import Flask, abort, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, Response, abort, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import func, select
 
 from .collector import run_collection
@@ -84,6 +86,21 @@ def create_app(cfg: Config | None = None) -> Flask:
     from . import scheduler
     scheduler.start(cfg, Session)
 
+    # Every deploy gets its own asset version, so browsers (and the offline cache) can keep
+    # static files for a year and still pick up changes the moment a new version ships.
+    version = (os.environ.get("RENDER_GIT_COMMIT") or str(int(time.time())))[:8]
+    app.extensions["radar"]["version"] = version
+
+    @app.context_processor
+    def _assets():
+        return {"asset": lambda filename: url_for("static", filename=filename, v=version), "asset_version": version}
+
+    @app.after_request
+    def _cache_headers(resp):
+        if request.path.startswith("/static/") and request.args.get("v") == version and resp.status_code == 200:
+            resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return resp
+
     def feed_query(args):
         key, start, end = resolve_range(args, tz, utcnow(), cfg.feed_days)
         who = args.get("who", "all")
@@ -101,6 +118,12 @@ def create_app(cfg: Config | None = None) -> Flask:
             who = "all"
         if not quotes:
             q = q.where(Post.is_quote.is_(False))
+        after = args.get("after")
+        if after:   # the "new posts" check only asks for what arrived since the newest post on screen
+            try:
+                q = q.where(Post.created_at > datetime.strptime(after[:19], "%Y-%m-%dT%H:%M:%S"))
+            except ValueError:
+                pass
         q = q.order_by(Post.created_at.desc()).limit(FEED_LIMIT)
         with Session() as s:
             posts = s.scalars(q).all()
@@ -113,10 +136,12 @@ def create_app(cfg: Config | None = None) -> Flask:
             last_run = s.scalar(select(CollectorRun).where(CollectorRun.status.in_(["ok", "page_limit"]))
                                 .order_by(CollectorRun.started_at.desc()).limit(1))
         # Welcome row: people whose very first post on the radar landed in the last 7 days
+        # (skipped for the light "anything new?" check)
+        fresh = []
         with Session() as s:
             first = (select(Post.author_id, func.min(Post.created_at).label("first"))
                      .where(Post.hidden.is_(False)).group_by(Post.author_id).subquery())
-            fresh = s.scalars(select(Post).join(first, (Post.author_id == first.c.author_id) & (Post.created_at == first.c.first))
+            fresh = [] if after else s.scalars(select(Post).join(first, (Post.author_id == first.c.author_id) & (Post.created_at == first.c.first))
                               .where(first.c.first >= utcnow() - timedelta(days=7), Post.is_team.is_(False),
                                      Post.text.is_not(None), Post.author_username.is_not(None),
                                      Post.author_id.not_in(select(BlockedAuthor.author_id)))
@@ -403,6 +428,15 @@ def create_app(cfg: Config | None = None) -> Flask:
                 return {"ok": False, "message": f"@{profile['username']} needs {' and '.join(need)} to join."}
             s.commit()
             return {"ok": True, "message": f"Welcome to the meadow, @{profile['username']}."}
+
+    @app.get("/sw.js")
+    def service_worker():
+        """The offline helper. It lives at the site root so it can look after every page."""
+        body = render_template("sw.js", version=version, enabled=cfg.offline_cache)
+        resp = Response(body, mimetype="application/javascript")
+        resp.headers["Cache-Control"] = "no-cache"
+        resp.headers["Service-Worker-Allowed"] = "/"
+        return resp
 
     @app.get("/healthz")
     def healthz():

@@ -258,6 +258,54 @@
   $("needsLove").addEventListener("change", (e) => { needsLove = e.target.checked; store.set("radar:needsLove", needsLove); render(); });
   $("showOpened").addEventListener("change", (e) => { showOpened = e.target.checked; store.set("radar:showOpened", showOpened); render(); });
 
+  // ---------- placeholders while posts load (no empty flash, no layout jump) ----------
+  function skeletons(n = 6) {
+    const f = document.createDocumentFragment();
+    for (let k = 0; k < n; k++) { const d = el("div", { class: "post skel", "aria-hidden": "true" }); d.innerHTML = "<i></i><i></i><i></i><i></i>"; f.append(d); }
+    $("trail").replaceChildren(f);
+    $("more").hidden = true; $("empty").hidden = true;
+  }
+
+  // ---------- "new posts" pill: checks quietly every 2 minutes, adds them only when tapped ----------
+  const pending = [];
+  const pill = $("new-pill"), pillText = $("new-pill-text");
+  function hidePill() { pill.classList.remove("show"); setTimeout(() => { if (!pill.classList.contains("show")) pill.hidden = true; }, 300); }
+  function showPill() {
+    const n = pending.length;
+    pillText.textContent = n === 1 ? "1 new post" : `${n} new posts`;
+    pill.hidden = false; requestAnimationFrame(() => pill.classList.add("show"));
+  }
+  let newPinned = null;
+  async function poll() {
+    if (document.hidden || current.range === "yesterday" || busy && busy.live) return;
+    const newest = posts.concat(pending).reduce((m, p) => (p.t > m ? p.t : m), "");
+    const q = new URLSearchParams({ ...current, after: newest || "" });
+    try {
+      const r = await fetch(`/api/posts?${q}`, { headers: { Accept: "application/json" } });
+      if (!r.ok) return;
+      const j = await r.json();
+      const have = new Set(posts.concat(pending).map((p) => p.id));
+      const fresh = (j.posts || []).filter((p) => !have.has(p.id));
+      const pinChanged = (j.pinned || []).map((p) => p.id).join() !== pinnedPosts.map((p) => p.id).join();
+      if (pinChanged) newPinned = j.pinned;
+      if (fresh.length) { pending.unshift(...fresh); showPill(); }
+      else if (pinChanged) { pinnedPosts.splice(0, pinnedPosts.length, ...newPinned); pinnedIds.clear(); pinnedPosts.forEach((p) => pinnedIds.add(p.id)); newPinned = null; render(); }
+    } catch (e) { /* offline for a moment: try next time */ }
+  }
+  pill.addEventListener("click", () => {
+    const ids = new Set(posts.map((p) => p.id));
+    posts.unshift(...pending.filter((p) => !ids.has(p.id)));
+    posts.sort((a, b) => (a.t < b.t ? 1 : -1));
+    pending.length = 0;
+    if (newPinned) { pinnedPosts.splice(0, pinnedPosts.length, ...newPinned); pinnedIds.clear(); pinnedPosts.forEach((p) => pinnedIds.add(p.id)); newPinned = null; }
+    hidePill();
+    render(); pulse();
+    const top = $("feed").getBoundingClientRect().top + scrollY - 90;
+    window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
+  });
+  setInterval(poll, 120000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+
   // ---------- filters: keep the other choices when one changes ----------
   const params = new URLSearchParams(location.search);
   const current = { range: params.get("range") || "24h", who: params.get("who") || "all", quotes: $("quotes").checked ? "1" : "0" };
@@ -274,7 +322,8 @@
     const q = new URLSearchParams(current).toString();
     if (push) history.pushState(current, "", `?${q}`);
     const ticket = busy = {};
-    $("trail").classList.add("loading");
+    skeletons();
+    hidePill(); pending.length = 0;
     try {
       const r = await fetch(`/api/posts?${q}`, { headers: { Accept: "application/json" } });
       if (!r.ok) throw new Error(r.status);
@@ -288,9 +337,7 @@
       render(); renderWelcome(); pulse();
     } catch (e) {
       location.search = q;                                // fall back to a normal page load
-    } finally {
-      if (ticket === busy) $("trail").classList.remove("loading");
-    }
+    } finally { /* render() replaced the placeholders */ }
   }
   document.querySelectorAll('#filters button[name="range"]').forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); go({ range: b.value }); }));
   document.querySelectorAll('#filters button[name="who"]').forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); go({ who: b.value }); }));

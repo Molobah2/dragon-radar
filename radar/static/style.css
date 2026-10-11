@@ -191,7 +191,7 @@ footer { padding-block: 34px 48px; text-align: center; color: var(--ink); font-s
 footer span { opacity: .75; }
 
 @media (max-width: 960px) {
-  .layout { grid-template-columns: 1fr; }
+  .layout { grid-template-columns: minmax(0, 1fr); }
   aside.side { position: static; grid-row: 1; }
   aside .how { display: none; }
 }
@@ -641,3 +641,37 @@ body.dark-sky .sound-pill { background: rgba(20, 26, 69, .72); color: #f2f4ff; }
 .by-link { color: inherit; text-decoration: none; display: inline-grid; justify-items: center; gap: 2px; }
 .by-link .by-x { font-size: 13px; font-weight: 700; opacity: .75; }
 .by-link:hover .by-x { opacity: 1; text-decoration: underline; }
+
+/* ---------- placeholder cards while posts load ---------- */
+.post.skel { height: 250px; display: grid; grid-template-rows: 40px 1fr 18px 40px; gap: 14px; padding: 16px; pointer-events: none; animation: none; }
+.post.skel i { display: block; border-radius: 12px;
+  background: linear-gradient(100deg, rgba(29, 36, 51, .06) 30%, rgba(29, 36, 51, .12) 50%, rgba(29, 36, 51, .06) 70%) 0 0 / 300% 100%;
+  animation: skel 1.3s ease-in-out infinite; }
+.post.skel i:nth-child(1) { width: 62%; border-radius: 999px; }
+.post.skel i:nth-child(3) { width: 45%; justify-self: end; border-radius: 999px; }
+.post.skel i:nth-child(4) { width: 55%; border-radius: 999px; }
+@keyframes skel { from { background-position: 100% 0; } to { background-position: 0 0; } }
+
+/* ---------- "new posts" pill: top centre, thumb friendly ---------- */
+.new-pill { position: fixed; left: 50%; top: calc(14px + env(safe-area-inset-top, 0px)); z-index: 60; transform: translate(-50%, -140%);
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 18px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 800 14px var(--font-body); color: #fff; background: linear-gradient(180deg, #ff9670, #f0603d);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 14px 30px -12px rgba(232, 86, 58, .8); transition: transform .35s cubic-bezier(.2, .9, .3, 1.2); }
+.new-pill.show { transform: translate(-50%, 0); }
+.new-pill .np-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 0 rgba(255, 255, 255, .7); animation: live 1.8s infinite; }
+.new-pill::before { content: "\2191"; font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { .post.skel i, .new-pill .np-dot { animation: none; } .new-pill { transition: none; } }
+
+/* phones: nothing may widen the page (the sideways welcome row used to stretch it and zoom everything out) */
+.layout > *, .hot, .welcome-row, main { min-width: 0; }
+html, body { max-width: 100%; overflow-x: clip; }
+
+/* phones: brand on its own line, controls in a tidy row underneath that can scroll sideways */
+@media (max-width: 640px) {
+  .bar { flex-wrap: wrap; row-gap: 10px; }
+  .crumbs { width: 100%; }
+  .bar-right { width: 100%; justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 6px; margin: 0 -2px; }
+  .bar-right::-webkit-scrollbar { display: none; }
+  .bar-right > * { flex: none; }
+  .sky-menu { position: fixed; left: 16px; right: 16px; top: auto; min-width: 0; margin-top: 8px; }
+}

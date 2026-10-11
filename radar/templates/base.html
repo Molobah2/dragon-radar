@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ asset('style.css') }}">
 </head>
 <body class="{% block body_class %}{% endblock %}">
   {% if cfg.scene_base %}
@@ -70,13 +70,14 @@
     <span class="mailbox-tip">Suggestions</span>
   </a>
   {% endif %}
-  <script>window.PD_SOUND = {{ {"ambience": url_for('static', filename='audio/meadow-ambience.m4a'),
-    "song": url_for('static', filename='audio/blinky-song.m4a'), "waitReady": True} | tojson }};</script>
-  <script src="{{ url_for('static', filename='i18n.js') }}"></script>
-  <script src="{{ url_for('static', filename='sound.js') }}" defer></script>
-  {% if cfg.scene_base %}<script src="{{ url_for('static', filename='scene.js') }}"></script>
-  <script src="{{ url_for('static', filename='mailbox.js') }}" defer></script>{% endif %}
-  <script src="{{ url_for('static', filename='meadow.js') }}"></script>
+  <script>window.PD_SOUND = {{ {"ambience": asset('audio/meadow-ambience.m4a'),
+    "song": asset('audio/blinky-song.m4a'), "waitReady": True} | tojson }};</script>
+  <script src="{{ asset('i18n.js') }}"></script>
+  <script src="{{ asset('sound.js') }}" defer></script>
+  {% if cfg.scene_base %}<script src="{{ asset('scene.js') }}"></script>
+  <script src="{{ asset('mailbox.js') }}" defer></script>{% endif %}
+  <script src="{{ asset('meadow.js') }}"></script>
   {% block scripts %}{% endblock %}
+  <script>if ("serviceWorker" in navigator && location.protocol === "https:") addEventListener("load", () => navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {}));</script>
 </body>
 </html>

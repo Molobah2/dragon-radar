@@ -83,7 +83,7 @@
         <h2 class="hot-title">{{ ico("flame", 30) }}Hot now <span>most opened by Keepers</span></h2>
         <div class="trail" id="hot-trail"></div>
       </section>
-      <div class="trail" id="trail" aria-live="polite"></div>
+      <div class="trail" id="trail" aria-live="polite">{% for _ in range(6) %}<div class="post skel" aria-hidden="true"><i></i><i></i><i></i><i></i></div>{% endfor %}</div>
       <button id="more" class="btn btn-soft more" type="button" hidden>Load more</button>
       <div class="empty" id="empty" hidden>
         {{ ico("letter", 64) }}<h2>All caught up</h2>
@@ -116,6 +116,7 @@
   </div>
 {% endblock %}
 {% block scripts %}
+  <button class="new-pill" id="new-pill" type="button" hidden><span class="np-dot" aria-hidden="true"></span><span id="new-pill-text">New posts</span></button>
   {% if cfg.keeper_card_open %}
   <div class="keeper-modal" id="keeper" hidden role="dialog" aria-modal="true" aria-label="My Keeper card">
     <div class="keeper-box">
@@ -147,6 +148,6 @@
   </div>
   {% endif %}
   <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000} | tojson }}</script>
-  <script src="{{ url_for('static', filename='keeper.js') }}"></script>
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script src="{{ asset('keeper.js') }}"></script>
+  <script src="{{ asset('app.js') }}"></script>
 {% endblock %}

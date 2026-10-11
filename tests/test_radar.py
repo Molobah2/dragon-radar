@@ -780,3 +780,23 @@ def test_sound_on_pages(cfg, Session):
     assert "meadow-ambience.m4a" in feed and "blinky-song.m4a" in feed and 'id="sound-btn"' in feed
     assert "forest-ambience.m4a" in hub and "blinky-song" not in hub and "sound.js" in hub
     assert c.get("/static/audio/blinky-song.m4a").status_code == 200
+
+
+def test_new_posts_check_and_offline_helper(cfg, Session):
+    now = utcnow()
+    with Session() as s:
+        s.add_all([Post(id="old", author_id="a", author_username="a", text="x", created_at=now - timedelta(hours=2)),
+                   Post(id="new", author_id="b", author_username="b", text="x", created_at=now - timedelta(minutes=5))])
+        s.commit()
+    c = create_app(cfg).test_client()
+    after = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    j = c.get(f"/api/posts?range=24h&after={after}").get_json()
+    assert [p["id"] for p in j["posts"]] == ["new"] and j["newcomers"] == []
+    sw = c.get("/sw.js")
+    assert sw.status_code == 200 and "pd-static-" in sw.get_data(as_text=True) and sw.headers["Cache-Control"] == "no-cache"
+    page = c.get("/friends").get_data(as_text=True)
+    assert "serviceWorker" in page and 'class="post skel"' in page and 'id="new-pill"' in page
+    import re
+    v = re.search(r'/static/app\.js\?v=(\w+)', page).group(1)
+    assert "immutable" in c.get(f"/static/app.js?v={v}").headers["Cache-Control"]
+    assert "immutable" not in c.get("/static/app.js").headers.get("Cache-Control", "")
