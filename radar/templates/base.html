@@ -61,6 +61,13 @@
       </footer>
     </div></div>
   </div>
+  {% set here = request.path %}
+  <nav class="tabbar" aria-label="Sections">
+    <a href="{{ url_for('hub') }}" class="tab-i">{% if cfg.scene_base %}<img src="{{ cfg.logo(64) }}" alt="" width="26" height="26" class="tb-logo">{% endif %}<span>Home</span></a>
+    <a href="{{ url_for('feed') }}" class="tab-i{% if here == '/friends' %} on{% endif %}"{% if here == '/friends' %} aria-current="page"{% endif %}>{{ ico("chat", 26) }}<span>Feed</span></a>
+    <a href="{{ url_for('keepers_page') }}" class="tab-i{% if here == '/friends/keepers' %} on{% endif %}"{% if here == '/friends/keepers' %} aria-current="page"{% endif %}>{{ ico("shield", 26) }}<span>Keepers</span></a>
+    <a href="{{ url_for('feed') }}#progress" class="tab-i" id="tab-progress">{{ ico("hourglass", 26) }}<span>Progress</span></a>
+  </nav>
   {% if cfg.suggest_url %}
   <a class="mailbox" href="{{ cfg.suggest_url }}" target="_blank" rel="noopener" aria-label="Send a suggestion">
     <span class="mb-media" aria-hidden="true">

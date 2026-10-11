@@ -39,6 +39,7 @@
         {% endfor %}
       </div>
       <input type="hidden" name="who" value="{{ filters.who }}" disabled id="who-keep">
+      <input class="kp-search feed-search" id="f-search" type="search" placeholder="Search posts or @handle" autocomplete="off" enterkeyhint="search" aria-label="Search posts">
       <label class="switch"><input type="hidden" name="quotes" value="0"><input type="checkbox" name="quotes" value="1" id="quotes" {% if filters.quotes == "1" %}checked{% endif %}>Quotes</label>
       <label class="switch" title="Posts no visitor has opened yet"><input type="checkbox" id="needsLove">Needs love</label>
       <label class="switch"><input type="checkbox" id="showOpened">Show opened</label>
@@ -50,6 +51,7 @@
     <span id="progress-text">Nothing opened yet in this range.</span>
     <div class="meter"><i id="meter"></i></div>
     <span class="meter-label"><span id="m-done">0 opened</span> · <span id="m-total">0 posts</span></span>
+    <button class="streak" id="streak" type="button" hidden></button>
   </div>
 
   <section class="pulse" id="pulse" aria-label="Community pulse">
@@ -86,8 +88,8 @@
       <div class="trail" id="trail" aria-live="polite">{% for _ in range(6) %}<div class="post skel" aria-hidden="true"><i></i><i></i><i></i><i></i></div>{% endfor %}</div>
       <button id="more" class="btn btn-soft more" type="button" hidden>Load more</button>
       <div class="empty" id="empty" hidden>
-        {{ ico("letter", 64) }}<h2>All caught up</h2>
-        <p>No unopened posts here. Fresh ones land every 20 minutes.</p>
+        {{ ico("letter", 64) }}<h2 id="empty-title">All caught up</h2>
+        <p id="empty-text">No unopened posts here. Fresh ones land every 20 minutes.</p>
       </div>
     </main>
     <aside class="side">
@@ -109,6 +111,7 @@
           Keeper card <span>locked for now</span>
         </button>
         {% endif %}
+        <button class="btn btn-soft keeper-btn" id="progress-open" type="button">{{ ico("hourglass", 20) }}My progress</button>
         <a class="btn btn-soft keeper-btn" href="{{ url_for('keepers_page') }}">Find Keepers to follow</a>
         <button class="btn btn-soft replay" id="replay" type="button">Watch the meadow again</button>
       </div>
@@ -116,6 +119,39 @@
   </div>
 {% endblock %}
 {% block scripts %}
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <div class="sheet-wrap" id="ideas" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ideas-title">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <h3 id="ideas-title">Reply ideas</h3>
+      <p class="sheet-sub">Pick one and say it in your own words. Real replies beat copied ones.</p>
+      <ul class="idea-list" id="idea-list"></ul>
+      <div class="sheet-actions">
+        <a class="btn btn-go" id="ideas-reply" href="#" target="_blank" rel="noopener">Reply on X</a>
+        <button class="btn btn-soft" id="ideas-shuffle" type="button">Shuffle</button>
+        <button class="btn btn-soft" id="ideas-close" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+  <div class="sheet-wrap" id="progress" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="progress-title">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <h3 id="progress-title">My progress</h3>
+      <p class="sheet-sub" id="progress-streak">Open a post today to start a streak.</p>
+      <div class="pg-block">
+        <b>Move to another phone or computer</b>
+        <p>Save your opened posts under a short code, then enter it on the other device. No login, works for 30 days.</p>
+        <button class="btn btn-go" id="pg-save" type="button">Save my progress</button>
+        <div class="pg-code" id="pg-code" hidden><span id="pg-code-text"></span><button class="btn btn-soft" id="pg-copy" type="button">Copy</button></div>
+      </div>
+      <div class="pg-block">
+        <b>Got a code?</b>
+        <div class="keeper-row"><input id="pg-input" type="text" placeholder="ABCD-1234" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text"><button class="btn btn-soft" id="pg-restore" type="button">Restore</button></div>
+      </div>
+      <p class="kp-msg" id="pg-msg"></p>
+      <div class="sheet-actions"><button class="btn btn-soft" id="progress-close" type="button">Close</button></div>
+    </div>
+  </div>
   <button class="new-pill" id="new-pill" type="button" hidden><span class="np-dot" aria-hidden="true"></span><span id="new-pill-text">New posts</span></button>
   {% if cfg.keeper_card_open %}
   <div class="keeper-modal" id="keeper" hidden role="dialog" aria-modal="true" aria-label="My Keeper card">
@@ -147,7 +183,7 @@
   </div>
   </div>
   {% endif %}
-  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000} | tojson }}</script>
+  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "icons": {"bulb": cfg.icon("bulb")}} | tojson }}</script>
   <script src="{{ asset('keeper.js') }}"></script>
   <script src="{{ asset('app.js') }}"></script>
 {% endblock %}

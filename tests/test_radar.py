@@ -800,3 +800,28 @@ def test_new_posts_check_and_offline_helper(cfg, Session):
     v = re.search(r'/static/app\.js\?v=(\w+)', page).group(1)
     assert "immutable" in c.get(f"/static/app.js?v={v}").headers["Cache-Control"]
     assert "immutable" not in c.get("/static/app.js").headers.get("Cache-Control", "")
+
+
+def test_progress_backup_codes(cfg, Session):
+    c = create_app(cfg).test_client()
+    r = c.post("/api/backup", json={"opened": {"123456": 1700000000000, "bad id": 1}, "streak": {"last": "2026-10-11", "count": 3, "best": 5}})
+    j = r.get_json()
+    assert j["ok"] and len(j["code"]) == 9 and j["code"][4] == "-"
+    back = c.get(f"/api/backup/{j['code'].lower()}").get_json()
+    assert back["opened"] == {"123456": 1700000000000} and back["streak"]["count"] == 3
+    assert c.get("/api/backup/ZZZZ-ZZZZ").status_code == 404
+
+
+def test_every_element_the_scripts_use_exists(cfg, Session):
+    """app.js and keepers.js look elements up by id; a missing one breaks the page."""
+    import re
+    from pathlib import Path
+    cfg.suggest_url = "https://forms.gle/x"
+    c = create_app(cfg).test_client()
+    static = Path(__file__).resolve().parents[1] / "radar" / "static"
+    for page, script in (("/friends", "app.js"), ("/friends/keepers", "keepers.js")):
+        html = c.get(page).get_data(as_text=True)
+        ids = set(re.findall(r'\$\("([\w-]+)"\)', (static / script).read_text()))
+        optional = {"keeper-open", "keeper"}          # only there when the Keeper card is switched on
+        missing = sorted(i for i in ids - optional if f'id="{i}"' not in html)
+        assert not missing, (page, missing)

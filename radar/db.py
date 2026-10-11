@@ -89,6 +89,15 @@ class CollectorRun(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
+class ProgressBackup(Base):
+    """A visitor's own progress (opened posts, streak) saved under a short code, so they can
+    carry it to another device without any login. Nothing personal: just post ids and dates."""
+    __tablename__ = "progress_backups"
+    code: Mapped[str] = mapped_column(String(12), primary_key=True)
+    data: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class Setting(Base):
     __tablename__ = "settings"
     key: Mapped[str] = mapped_column(String(64), primary_key=True)

@@ -49,9 +49,11 @@
   const pool = () => posts.filter((p) => !unavailable.has(p.id));
   let needsLove = !!store.get("radar:needsLove", false);
   $("needsLove").checked = needsLove;
-  const visible = () => pool().filter((p) => (showOpened || !opened[p.id]) && (!needsLove || !p.opens));
+  let query = "";
+  const matches = (p) => !query || `${p.name} ${p.user} ${p.text}`.toLowerCase().includes(query);
+  const visible = () => pool().filter((p) => (showOpened || !opened[p.id]) && (!needsLove || !p.opens) && matches(p));
   const HOT_MIN = 2, HOT_MAX = 4;
-  const hotList = () => needsLove ? [] : visible().filter((p) => p.opens >= HOT_MIN && !pinnedIds.has(p.id))
+  const hotList = () => needsLove || query ? [] : visible().filter((p) => p.opens >= HOT_MIN && !pinnedIds.has(p.id))
     .sort((a, b) => b.opens - a.opens || Date.parse(b.t) - Date.parse(a.t)).slice(0, HOT_MAX);
 
   // ---------- counts ----------
@@ -101,9 +103,15 @@
     if (opened[id]) return;
     opened[id] = Date.now();
     save();
+    pace();
+    bumpStreak();
     window.keeperBump && window.keeperBump();
     const post = posts.find((x) => x.id === id) || pinnedPosts.find((x) => x.id === id);
-    if (post) { post.opens = (post.opens || 0) + 1; }
+    if (post) {
+      post.opens = (post.opens || 0) + 1;
+      const fans = store.get("pd:authors", {}) || {}, key = (post.user || "").toLowerCase();
+      if (key) { fans[key] = (fans[key] || 0) + 1; store.set("pd:authors", fans); }
+    }
     try { fetch(`/api/open/${id}`, { method: "POST", keepalive: true }); } catch (e) {}
     window.meadow && window.meadow.cheer();
     counts(true);
@@ -118,7 +126,134 @@
                 onclick: () => markOpened(id, card), onauxclick: () => markOpened(id, card) }),
       opened[id]
         ? el("button", { class: "btn btn-soft", type: "button", onclick: () => undo(id) }, "Undo")
-        : el("button", { class: "btn btn-soft", type: "button", onclick: () => markOpened(id, card) }, "Done")));
+        : el("button", { class: "btn btn-soft", type: "button", onclick: () => markOpened(id, card) }, "Done"),
+      el("button", { class: "btn btn-soft btn-idea", type: "button", title: "Reply ideas", "aria-label": "Reply ideas",
+        html: ICON_BULB ? `<img src="${ICON_BULB}" alt="" width="22" height="22">` : "\u{1F4A1}", onclick: () => openIdeas(id, card) })));
+  }
+
+  // ---------- reply ideas: prompts to think with, never text to paste ----------
+  const ICON_BULB = (data.icons || {}).bulb || "";
+  const IDEAS = ["Ask which egg they got", "Share your own latest pull", "Ask what they plan to name their dragon",
+    "Tell them what you liked about the post", "Ask how long they have been a Keeper", "Share a tip that helped you",
+    "Ask what they think comes next", "Congratulate them on their progress", "Share your favourite dragon so far",
+    "Ask if they caught the last AMA", "React to their art or screenshot", "Tell them about a fun moment you had in the game",
+    "Ask what got them into Pocket Dragons", "Share your score so you can compare", "Wish them luck on their next hatch",
+    "Ask a question about something they mentioned", "Share how you would have done it", "Tell them which part made you smile"];
+  let ideaFor = null;
+  function shuffleIdeas() {
+    const pool = IDEAS.slice(), out = [];
+    while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    $("idea-list").replaceChildren(...out.map((t) => el("li", {}, t)));
+  }
+  function openIdeas(id, card) {
+    ideaFor = { id, card };
+    shuffleIdeas();
+    $("ideas-reply").href = `https://x.com/intent/post?in_reply_to=${id}`;
+    $("ideas").hidden = false;
+    requestAnimationFrame(() => $("ideas").classList.add("open"));
+    document.body.classList.add("sheet-open");
+  }
+  function closeIdeas() {
+    $("ideas").classList.remove("open");
+    document.body.classList.remove("sheet-open");
+    setTimeout(() => { if (!$("ideas").classList.contains("open")) $("ideas").hidden = true; }, 250);
+  }
+  $("ideas-shuffle").addEventListener("click", shuffleIdeas);
+  $("ideas-close").addEventListener("click", closeIdeas);
+  $("ideas").addEventListener("click", (e) => { if (e.target === $("ideas")) closeIdeas(); });
+  document.addEventListener("keydown", (e) => { if (e.key !== "Escape") return; if (!$("ideas").hidden) closeIdeas(); if (!$("progress").hidden) closeSheet("progress"); });
+  $("ideas-reply").addEventListener("click", () => { if (ideaFor) markOpened(ideaFor.id, ideaFor.card); closeIdeas(); });
+
+  // ---------- daily streak: days in a row with at least one post opened (this browser only) ----------
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+  const dayGap = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+  let streak = store.get("pd:streak", { last: null, count: 0, best: 0 }) || { last: null, count: 0, best: 0 };
+  function bumpStreak() {
+    const t = today();
+    if (streak.last === t) return;
+    streak.count = streak.last && dayGap(streak.last, t) === 1 ? streak.count + 1 : 1;
+    streak.best = Math.max(streak.best || 0, streak.count);
+    streak.last = t;
+    store.set("pd:streak", streak);
+    showStreak(true);
+  }
+  function liveStreak() { return streak.last && dayGap(streak.last, today()) <= 1 ? streak.count : 0; }
+  function showStreak(bump) {
+    const n = liveStreak(), b = $("streak");
+    b.hidden = !n;
+    if (n) b.textContent = `\u{1F525} ${n} day streak`;
+    if (bump && n) { b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump"); }
+    $("progress-streak").textContent = n ? `\u{1F525} ${n} day streak \u00b7 best ${Math.max(n, streak.best || 0)}`
+      : "Open a post today to start a streak.";
+  }
+
+  // ---------- my progress: save under a short code, restore on another device ----------
+  function openSheet(id) { $(id).hidden = false; requestAnimationFrame(() => $(id).classList.add("open")); document.body.classList.add("sheet-open"); }
+  function closeSheet(id) { $(id).classList.remove("open"); document.body.classList.remove("sheet-open"); setTimeout(() => { if (!$(id).classList.contains("open")) $(id).hidden = true; }, 250); }
+  const pgMsg = (t, ok) => { $("pg-msg").textContent = t; $("pg-msg").className = "kp-msg " + (ok ? "ok" : "no"); };
+  $("progress-open").addEventListener("click", () => { showStreak(); pgMsg("", true); openSheet("progress"); });
+  $("streak").addEventListener("click", () => { showStreak(); pgMsg("", true); openSheet("progress"); });
+  $("progress-close").addEventListener("click", () => closeSheet("progress"));
+  $("progress").addEventListener("click", (e) => { if (e.target === $("progress")) closeSheet("progress"); });
+  $("pg-save").addEventListener("click", async () => {
+    $("pg-save").disabled = true;
+    try {
+      const r = await fetch("/api/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ opened, streak }) });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.message);
+      $("pg-code-text").textContent = j.code; $("pg-code").hidden = false;
+      pgMsg("Saved. Enter this code on your other device within 30 days.", true);
+    } catch (e) { pgMsg(e.message || "Could not save right now, please try again.", false); }
+    $("pg-save").disabled = false;
+  });
+  $("pg-copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText($("pg-code-text").textContent); pgMsg("Code copied.", true); } catch (e) { pgMsg("Long press the code to copy it.", true); }
+  });
+  $("pg-input").addEventListener("input", (e) => {
+    let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+    e.target.value = v.length > 4 ? v.slice(0, 4) + "-" + v.slice(4) : v;
+  });
+  $("pg-restore").addEventListener("click", async () => {
+    const code = $("pg-input").value.trim();
+    if (code.replace("-", "").length < 8) { pgMsg("Codes have 8 letters and numbers, like ABCD-1234.", false); return; }
+    $("pg-restore").disabled = true;
+    try {
+      const r = await fetch(`/api/backup/${encodeURIComponent(code)}`);
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.message);
+      let added = 0;
+      for (const [id, ts] of Object.entries(j.opened || {})) if (!opened[id]) { opened[id] = ts; added++; }
+      save();
+      const s2 = j.streak || {};
+      if ((s2.best || 0) > (streak.best || 0)) streak.best = s2.best;
+      if (s2.last && (!streak.last || s2.last > streak.last)) { streak.last = s2.last; streak.count = s2.count || 0; }
+      store.set("pd:streak", streak);
+      showStreak(); render();
+      pgMsg(added ? `Restored ${added} opened posts.` : "All set, nothing new to restore.", true);
+    } catch (e) { pgMsg(e.message || "Could not restore right now, please try again.", false); }
+    $("pg-restore").disabled = false;
+  });
+
+  // ---------- pacing: a gentle nudge when someone is going very fast (protects their X account) ----------
+  const PACE_N = 15, PACE_MS = 5 * 60e3, NUDGE_GAP = 10 * 60e3;
+  const taps = (() => { try { return JSON.parse(sessionStorage.getItem("pd:taps") || "[]"); } catch (e) { return []; } })();
+  let lastNudge = 0;
+  function toast(msg, ms = 6500) {
+    const t = $("toast");
+    t.textContent = msg; t.hidden = false;
+    requestAnimationFrame(() => t.classList.add("show"));
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => { t.classList.remove("show"); setTimeout(() => { t.hidden = true; }, 300); }, ms);
+  }
+  function pace() {
+    const nowMs = Date.now();
+    taps.push(nowMs);
+    while (taps.length && nowMs - taps[0] > PACE_MS) taps.shift();
+    try { sessionStorage.setItem("pd:taps", JSON.stringify(taps)); } catch (e) { /* ignore */ }
+    if (taps.length >= PACE_N && nowMs - lastNudge > NUDGE_GAP) {
+      lastNudge = nowMs;
+      toast("Take a little breather \u{1F409} X likes a human pace, and a few real replies beat lots of quick ones.");
+    }
   }
 
   // ---------- post text ----------
@@ -214,7 +349,7 @@
         el("a", { class: "newbie-who", href: `https://x.com/${n.user}/status/${n.id}`, target: "_blank", rel: "noopener" },
           avatar, el("span", { class: "newbie-text" }, el("b", {}, n.name || n.user),
             el("small", {}, (n.hatchery ? "Ancient Hatchery \u00b7 " : "first post \u00b7 ") + ago(n.t)))),
-        el("a", { class: "btn btn-go newbie-hi", href: `https://x.com/intent/post?in_reply_to=${n.id}&text=${encodeURIComponent(greet())}`,
+        el("a", { class: "btn btn-go newbie-hi", href: `https://x.com/intent/post?in_reply_to=${n.id}&text=${encodeURIComponent(greet())}`, onclick: () => pace(),
           target: "_blank", rel: "noopener" }, "Say hi"));
       card.style.setProperty("--i", i);
       return card;
@@ -237,7 +372,9 @@
     const frag = document.createDocumentFragment();
     (grew ? list.slice(have.length) : list).forEach((p, k) => { const c = cards.get(p.id); c.style.setProperty("--i", k % BATCH); frag.append(c); });
     if (grew) trail.append(frag); else trail.replaceChildren(frag);
-    $("empty").hidden = list.length + hot.length + pinnedPosts.length > 0;
+    $("empty").hidden = query ? list.length > 0 : list.length + hot.length + pinnedPosts.length > 0;
+    $("empty-title").textContent = query ? "Nothing found" : "All caught up";
+    $("empty-text").textContent = query ? "No posts match your search." : "No unopened posts here. Fresh ones land every 20 minutes.";
     $("more").hidden = rest.length <= shown;
     counts();
   }
@@ -368,9 +505,23 @@
   $("replay").addEventListener("click", playIntro);
   document.addEventListener("keydown", (e) => { if (!revealed && (e.key === "Escape" || e.key === "Enter")) reveal(); });
 
+  let searchTimer = null;
+  $("f-search").addEventListener("input", (e) => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { query = e.target.value.trim().toLowerCase().replace(/^@/, ""); shown = BATCH; render(); }, 160);
+  });
+  $("f-search").addEventListener("keydown", (e) => { if (e.key === "Enter") e.target.blur(); });
+  function fromHash() {
+    if (location.hash === "#progress") { showStreak(); pgMsg("", true); openSheet("progress"); history.replaceState(null, "", location.pathname + location.search); }
+  }
+  addEventListener("hashchange", fromHash);
+  $("tab-progress") && $("tab-progress").addEventListener("click", (e) => { e.preventDefault(); showStreak(); pgMsg("", true); openSheet("progress"); });
+
   render();
   renderWelcome();
   pulse();
+  showStreak();
+  fromHash();
   let seenIntro = false;
   try { seenIntro = sessionStorage.getItem("radar:intro") === "1"; sessionStorage.setItem("radar:intro", "1"); } catch (e) {}
   if (reduce || seenIntro) reveal(); else timer = setTimeout(reveal, INTRO_MS);

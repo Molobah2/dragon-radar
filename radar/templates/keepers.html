@@ -27,7 +27,16 @@
       <button class="tab" type="button" data-show="new" aria-pressed="false">New this week</button>
     </div>
     <div class="right">
-      <input class="kp-search" id="k-search" type="search" placeholder="Search a name or @handle" autocomplete="off">
+      <input class="kp-search" id="k-search" type="search" placeholder="Search a name or @handle" autocomplete="off" enterkeyhint="search">
+      <label class="kp-sort">Sort
+        <select id="k-sort" aria-label="Sort">
+          <option value="suggested">Suggested</option>
+          <option value="foryou">For you</option>
+          <option value="active">Recently active</option>
+          <option value="newest">Newest</option>
+          <option value="az">A to Z</option>
+        </select>
+      </label>
       <label class="switch"><input type="checkbox" id="k-hide">Hide followed</label>
     </div>
   </form>

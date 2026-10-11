@@ -429,6 +429,57 @@ def create_app(cfg: Config | None = None) -> Flask:
             s.commit()
             return {"ok": True, "message": f"Welcome to the meadow, @{profile['username']}."}
 
+    # ---------- progress backup codes: no login, nothing personal, gone after 30 days ----------
+    CODE_ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    backup_hits: dict[str, list[float]] = {}
+
+    def _too_many(ip: str, limit: int = 12, window: float = 3600) -> bool:
+        nowt = time.time()
+        hits = [t for t in backup_hits.get(ip, []) if nowt - t < window]
+        backup_hits[ip] = hits + [nowt]
+        return len(hits) >= limit
+
+    @app.post("/api/backup")
+    def backup_save():
+        import json as _json
+        from .db import ProgressBackup
+        ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "?").split(",")[0].strip()
+        if _too_many(ip):
+            return jsonify({"ok": False, "message": "Too many saves for now, try again later."}), 429
+        body = request.get_json(silent=True) or {}
+        opened = body.get("opened") if isinstance(body.get("opened"), dict) else {}
+        # keep only well formed post ids and timestamps
+        clean = {str(k)[:25]: int(v) for k, v in list(opened.items())[:3000]
+                 if str(k).isdigit() and isinstance(v, (int, float))}
+        streak = body.get("streak") if isinstance(body.get("streak"), dict) else {}
+        data = _json.dumps({"opened": clean, "streak": {k: streak.get(k) for k in ("last", "count", "best")}})
+        if len(data) > 150_000:
+            return jsonify({"ok": False, "message": "That is too much to save at once."}), 413
+        now = utcnow()
+        with Session() as s:
+            s.query(ProgressBackup).filter(ProgressBackup.created_at < now - timedelta(days=30)).delete()
+            for _ in range(5):
+                raw = "".join(secrets.choice(CODE_ABC) for _ in range(8))
+                if s.get(ProgressBackup, raw) is None:
+                    break
+            s.add(ProgressBackup(code=raw, data=data, created_at=now))
+            s.commit()
+        return jsonify({"ok": True, "code": f"{raw[:4]}-{raw[4:]}", "days": 30})
+
+    @app.get("/api/backup/<code>")
+    def backup_load(code: str):
+        import json as _json
+        from .db import ProgressBackup
+        ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "?").split(",")[0].strip()
+        if _too_many("r:" + ip, limit=30):
+            return jsonify({"ok": False, "message": "Too many tries for now, try again later."}), 429
+        raw = "".join(ch for ch in code.upper() if ch in CODE_ABC)
+        with Session() as s:
+            row = s.get(ProgressBackup, raw)
+            if row is None or utcnow() - row.created_at > timedelta(days=30):
+                return jsonify({"ok": False, "message": "That code was not found. Check it and try again."}), 404
+            return jsonify({"ok": True, **_json.loads(row.data)})
+
     @app.get("/sw.js")
     def service_worker():
         """The offline helper. It lives at the site root so it can look after every page."""

@@ -10,6 +10,10 @@
   let show = "all", hide = !!store.get("radar:hideFollowed", false), query = "";
   $("k-hide").checked = hide;
   let team = [], keepers = [];
+  const fans = store.get("pd:authors", {}) || {};          // whose posts you opened on the feed (this browser only)
+  const fanOf = (k) => fans[k.username.toLowerCase()] || 0;
+  let sort = store.get("radar:kSort", null) || (Object.keys(fans).length ? "foryou" : "suggested");
+  $("k-sort").value = sort;
 
   const el = (tag, attrs = {}, ...kids) => {
     const n = document.createElement(tag);
@@ -49,7 +53,9 @@
     const url = `https://x.com/${k.username}`;
     const av = k.avatar ? el("img", { class: "avatar", src: k.avatar, alt: "", loading: "lazy" })
       : el("span", { class: "avatar blank" }, (k.name || "?").slice(0, 1));
+    const n = fanOf(k);
     const meta = isTeam ? el("span", { class: "tag team" }, k.role)
+      : n ? el("span", { class: "kp-when fan" }, n === 1 ? "You opened 1 of their posts" : `You opened ${n} of their posts`)
       : el("span", { class: "kp-when" + (k.last_post ? "" : " quiet") }, k.last_post ? `Posted about the dragons ${ago(k.last_post)}` : "Quiet lately");
     return el("article", { class: "post kp-card" + (done ? " opened" : "") + (isTeam ? " team" : "") },
       el("header", { class: "card-head" }, av,
@@ -72,13 +78,20 @@
     if (show === "new") list = list.filter((k) => Date.parse(k.since) >= week);
     if (query) list = list.filter((k) => (k.name + " " + k.username).toLowerCase().includes(query));
     if (hide) list = list.filter((k) => !followed[k.username.toLowerCase()]);
-    // Active this week first (shuffled daily), then everyone else by most recent post
-    list.sort((a, b) => {
-      const aa = a.last_post && Date.parse(a.last_post) >= week, bb = b.last_post && Date.parse(b.last_post) >= week;
-      if (aa !== bb) return aa ? -1 : 1;
-      if (aa) return rank(a) - rank(b);
-      return (Date.parse(b.last_post || 0) || 0) - (Date.parse(a.last_post || 0) || 0);
-    });
+    const recentFirst = (a, b) => (Date.parse(b.last_post || 0) || 0) - (Date.parse(a.last_post || 0) || 0);
+    if (sort === "foryou") list.sort((a, b) => fanOf(b) - fanOf(a) || recentFirst(a, b));
+    else if (sort === "active") list.sort(recentFirst);
+    else if (sort === "newest") list.sort((a, b) => (Date.parse(b.since) || 0) - (Date.parse(a.since) || 0));
+    else if (sort === "az") list.sort((a, b) => (a.name || a.username).localeCompare(b.name || b.username));
+    else {
+      // Suggested: active this week first (shuffled daily so the same people are not always on top), then by latest post
+      list.sort((a, b) => {
+        const aa = a.last_post && Date.parse(a.last_post) >= week, bb = b.last_post && Date.parse(b.last_post) >= week;
+        if (aa !== bb) return aa ? -1 : 1;
+        if (aa) return rank(a) - rank(b);
+        return recentFirst(a, b);
+      });
+    }
     $("k-list").replaceChildren(...list.map((k) => card(k, false)));
     $("k-empty").hidden = list.length > 0;
     $("k-count").textContent = keepers.length;
@@ -91,6 +104,7 @@
     render();
   }));
   $("k-search").addEventListener("input", (e) => { query = e.target.value.trim().toLowerCase().replace(/^@/, ""); render(); });
+  $("k-sort").addEventListener("change", (e) => { sort = e.target.value; store.set("radar:kSort", sort); render(); });
   $("k-hide").addEventListener("change", (e) => { hide = e.target.checked; store.set("radar:hideFollowed", hide); render(); });
 
   async function add() {

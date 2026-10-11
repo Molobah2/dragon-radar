@@ -675,3 +675,78 @@ html, body { max-width: 100%; overflow-x: clip; }
   .bar-right > * { flex: none; }
   .sky-menu { position: fixed; left: 16px; right: 16px; top: auto; min-width: 0; margin-top: 8px; }
 }
+
+/* ---------- reply ideas button and sheet ---------- */
+.btn-idea { padding: 6px 9px; min-width: 40px; min-height: 40px; justify-content: center; }
+.btn-idea img { width: 22px; height: 22px; display: block; filter: drop-shadow(0 2px 3px rgba(29, 36, 51, .25)); }
+.sheet-wrap { position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; padding: 16px; background: rgba(12, 16, 32, 0); transition: background .25s; }
+.sheet-wrap.open { background: rgba(12, 16, 32, .45); }
+.sheet { width: min(440px, 100%); border-radius: 26px; padding: 22px 22px 18px; background: linear-gradient(165deg, #fff, #f7f8fc);
+  box-shadow: inset 0 1px 0 #fff, 0 30px 70px -20px rgba(0, 0, 0, .55); transform: translateY(16px) scale(.98); opacity: 0;
+  transition: transform .28s cubic-bezier(.2, .9, .3, 1.1), opacity .2s; }
+.sheet-wrap.open .sheet { transform: none; opacity: 1; }
+.sheet h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: 22px; font-weight: 600; }
+.sheet-sub { margin: 0 0 14px; color: var(--ink-soft); font-weight: 600; font-size: 14px; }
+.idea-list { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; }
+.idea-list li { padding: 12px 14px 12px 40px; border-radius: 16px; font-weight: 700; position: relative;
+  background: rgba(255, 210, 63, .14); box-shadow: inset 0 0 0 1px rgba(214, 160, 20, .2); }
+.idea-list li::before { content: "\1F4A1"; position: absolute; left: 13px; top: 11px; font-size: 16px; }
+.sheet-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sheet-grip { display: none; }
+body.sheet-open { overflow: hidden; }
+@media (max-width: 640px) {   /* phones: a bottom sheet within thumb reach */
+  .sheet-wrap { place-items: end stretch; padding: 0; }
+  .sheet { width: 100%; border-radius: 24px 24px 0 0; padding: 10px 18px calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateY(100%); }
+  .sheet-grip { display: block; width: 44px; height: 5px; border-radius: 3px; background: rgba(29, 36, 51, .18); margin: 0 auto 12px; }
+  .sheet-actions .btn { flex: 1 1 auto; justify-content: center; min-height: 46px; }
+}
+
+/* ---------- toast: friendly notes, above the mailbox on phones ---------- */
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 105; transform: translate(-50%, 140%);
+  width: max-content; max-width: min(520px, calc(100vw - 32px)); padding: 13px 18px; border-radius: 18px; font-weight: 700; font-size: 14.5px; line-height: 1.4;
+  color: #fff; background: rgba(24, 30, 52, .94); box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .6); transition: transform .35s cubic-bezier(.2, .9, .3, 1.15); }
+.toast.show { transform: translate(-50%, 0); }
+@media (max-width: 640px) { .toast { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); } }
+@media (prefers-reduced-motion: reduce) { .sheet, .toast, .sheet-wrap { transition: none; } }
+
+/* ---------- streak chip and progress sheet ---------- */
+.streak { border: 0; cursor: pointer; font: 800 12.5px var(--font-body); padding: 6px 11px; border-radius: 999px; white-space: nowrap;
+  color: #9a3412; background: linear-gradient(180deg, #fff1e6, #ffe2cc); box-shadow: inset 0 0 0 1px rgba(234, 88, 12, .25); }
+.pg-block { padding: 14px; border-radius: 18px; background: rgba(29, 36, 51, .04); margin-bottom: 10px; display: grid; gap: 8px; }
+.pg-block b { font-size: 15px; }
+.pg-block p { margin: 0; color: var(--ink-soft); font-weight: 600; font-size: 13.5px; }
+.pg-block .btn { justify-self: start; }
+.pg-code { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 14px;
+  background: #fff; box-shadow: inset 0 0 0 2px rgba(255, 122, 89, .4); }
+.pg-code span { font-family: var(--font-mono); font-size: 22px; font-weight: 700; letter-spacing: .08em; user-select: all; }
+#pg-input { text-transform: uppercase; font-family: var(--font-mono); letter-spacing: .08em; font-size: 16px; }
+.side-actions .keeper-btn .ico { width: 22px; height: 22px; }
+
+/* ---------- search and sort ---------- */
+.feed-search { width: 210px; }
+.kp-sort { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-size: 13px; color: var(--ink-soft); }
+.kp-sort select { font: 800 13.5px var(--font-body); color: var(--ink); border: 2px solid #e3e7f2; border-radius: 999px; padding: 7px 12px; background: #fff; cursor: pointer; }
+.kp-when.fan { color: #c2410c; }
+@media (max-width: 760px) { .feed-search { width: 100%; order: -1; } .rail .right { width: 100%; } }
+
+/* ---------- phone tab bar: the main sections within thumb reach ---------- */
+.tabbar { display: none; }
+@media (max-width: 640px) {
+  .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 10px; right: 10px; z-index: 90;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px)); padding: 6px; border-radius: 24px;
+    background: rgba(255, 255, 255, .9); -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3);
+    box-shadow: inset 0 1px 0 #fff, 0 18px 40px -16px rgba(29, 36, 51, .55); }
+  .tab-i { display: grid; justify-items: center; gap: 2px; padding: 6px 2px 5px; border-radius: 18px; text-decoration: none; color: var(--ink-soft);
+    font-weight: 800; font-size: 11px; min-height: 52px; -webkit-tap-highlight-color: transparent; transition: background .2s, color .2s; }
+  .tab-i .ico, .tab-i .tb-logo { width: 26px; height: 26px; border-radius: 50%; }
+  .tab-i.on { color: var(--coral-deep); background: rgba(255, 122, 89, .12); }
+  .tab-i:active { transform: scale(.96); }
+  body.dark-sky .tabbar { background: rgba(20, 26, 69, .86); }
+  body.dark-sky .tab-i { color: rgba(242, 244, 255, .75); }
+  body.dark-sky .tab-i.on { color: #ffb199; background: rgba(255, 122, 89, .18); }
+  .site { padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
+  .nav-keepers { display: none; }
+  .mailbox { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); right: 12px; width: 64px; height: 64px; }
+  .toast { bottom: calc(166px + env(safe-area-inset-bottom, 0px)); }
+  body.sheet-open .tabbar { display: none; }
+}
