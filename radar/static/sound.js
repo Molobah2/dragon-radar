@@ -13,9 +13,11 @@
     get() { try { return localStorage.getItem("pd:sound"); } catch (e) { return null; } },
     set(v) { try { localStorage.setItem("pd:sound", v); } catch (e) { /* private mode */ } },
   };
-  const NATURE_FULL = cfg.song ? 0.55 : 0.5;   // what you hear first
-  const NATURE_UNDER = 0.16;                     // under the song
-  const SONG = 0.6;
+  // Never louder than half of the visitor's own volume, so it stays gentle even at full volume
+  const MASTER = 0.5;
+  const NATURE_FULL = MASTER * 0.9;    // what you hear first
+  const NATURE_UNDER = MASTER * 0.3;   // under the song
+  const SONG = MASTER;
 
   let ctx = null, started = false, on = store.get() !== "off";
   const tracks = {};
