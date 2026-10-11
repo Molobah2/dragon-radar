@@ -251,6 +251,35 @@ def create_app(cfg: Config | None = None) -> Flask:
         items, pinned_items, filters, updated, newcomers = feed_query(request.args)
         return jsonify({"posts": items, "pinned": pinned_items, "filters": filters, "updated": updated, "newcomers": newcomers})
 
+    # Visitor counter: one beacon per page view from the browser (bots that do not run scripts never send it).
+    # Jon's own preview devices are left out so his testing does not inflate the numbers.
+    last_hit: dict[str, float] = {}
+
+    @app.post("/api/hit")
+    def api_hit():
+        import json
+        from .visits import record
+        if g.get("v2") and not cfg.v2_public:
+            return {"counted": False}
+        try:
+            data = json.loads(request.get_data(as_text=True)[:2000] or "{}")
+        except ValueError:
+            return {"counted": False}, 400
+        vid, path = str(data.get("vid", ""))[:32], str(data.get("path", ""))[:60]
+        now_ts = time.time()
+        if now_ts - last_hit.get(vid + path, 0) < 3:
+            return {"counted": False}
+        if len(last_hit) > 50000:
+            last_hit.clear()
+        last_hit[vid + path] = now_ts
+        today = datetime.now(tz).date()
+        with Session() as s:
+            ok = record(s, vid, path, str(data.get("ref", ""))[:300], request.headers.get("User-Agent", ""), today,
+                        cfg.canonical_host or (request.host or "").split(":")[0])
+            if ok:
+                s.commit()
+        return {"counted": ok}
+
     # Anonymous open counter. Nothing about the visitor is stored. The browser only
     # sends this the first time it opens a post, and the same address can bump
     # a post once a day, so refreshing or scripting the button barely moves it.
@@ -650,6 +679,8 @@ def create_app(cfg: Config | None = None) -> Flask:
             feedback_rows = s.scalars(select(Feedback).order_by(Feedback.created_at.desc()).limit(100)).all()
             fb_avg = s.scalar(select(func.avg(Feedback.rating)))
             fb_count = s.scalar(select(func.count()).select_from(Feedback))
+            from .visits import summary
+            visits = summary(s, datetime.now(tz).date())
         stale_after = cfg.stale_after_minutes
         if cfg.daily_post_cap > 0:  # testing mode only reads every few hours
             stale_after += int(24 * 60 * 10 / cfg.daily_post_cap)
@@ -657,7 +688,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         return render_template("admin.html", cfg=cfg, runs=runs, spend=spend, total_posts=total_posts,
                                hidden=hidden, blocked=blocked, keywords=keywords, stale=stale,
                                last_ok=last_ok, csrf=session.get("csrf"), feedback=feedback_rows,
-                               fb_avg=fb_avg, fb_count=fb_count)
+                               fb_avg=fb_avg, fb_count=fb_count, visits=visits)
 
     def post_id_from(value: str) -> str:
         # Accept a raw id or a full x.com / twitter.com status link

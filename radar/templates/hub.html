@@ -219,6 +219,7 @@
   <script src="{{ asset('sound.js') }}" defer></script>
   {% if cfg.scene_base %}<script src="{{ asset('forest.js') }}" defer></script>{% endif %}
   <script>if ("serviceWorker" in navigator && location.protocol === "https:") addEventListener("load", () => navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {}));</script>
+  <script src="{{ asset('hit.js') }}" defer></script>
   {% include "_preview.html" %}
 </body>
 </html>

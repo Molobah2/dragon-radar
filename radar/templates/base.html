@@ -101,6 +101,7 @@
   <script src="{{ asset('meadow.js') }}"></script>
   {% block scripts %}{% endblock %}
   <script>if ("serviceWorker" in navigator && location.protocol === "https:") addEventListener("load", () => navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {}));</script>
+  <script src="{{ asset('hit.js') }}" defer></script>
   {% include "_preview.html" %}
 </body>
 </html>

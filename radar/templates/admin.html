@@ -18,6 +18,44 @@
   </section>
   <p>Estimates use ${{ cfg.cost_per_post_usd }} per post returned. Your X developer console shows the real bill.</p>
 
+  <section class="panel visitors">
+    <h2>Visitors</h2>
+    <div class="stats">
+      <div class="stat"><span class="stat-num">{{ visits.total }}</span><span class="muted">people ever (unique)</span></div>
+      <div class="stat"><span class="stat-num">{{ visits.today }}</span><span class="muted">people today</span></div>
+      <div class="stat"><span class="stat-num">{{ visits.week }}</span><span class="muted">people in 7 days</span></div>
+      <div class="stat"><span class="stat-num">{{ visits.month }}</span><span class="muted">people in 30 days</span></div>
+      <div class="stat"><span class="stat-num">{{ visits.new_today }}</span><span class="muted">new today</span></div>
+      <div class="stat"><span class="stat-num">{{ visits.returning_pct }}%</span><span class="muted">came back on another day</span></div>
+      <div class="stat"><span class="stat-num">{{ visits.views_today }}</span><span class="muted">page views today</span></div>
+      <div class="stat"><span class="stat-num">{{ visits.phone_pct }}%</span><span class="muted">on phones</span></div>
+    </div>
+    <h3>People per day, last 14 days</h3>
+    <div class="vbars" role="img" aria-label="People per day">
+      {% for d in visits.days %}
+      <div class="vbar" title="{{ d.day.strftime('%a %b %d') }}: {{ d.people }} people, {{ d.views }} views">
+        <b>{{ d.people }}</b><i style="height: {{ (100 * d.people / visits.peak) | round(1) }}%"></i><span>{{ d.day.strftime('%d') }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="vcols">
+      <div><h3>Where people come from (7 days)</h3>
+        <ul class="list">{% for k, n in visits.sources %}<li>{{ k }} <b>{{ n }}</b></li>{% else %}<li class="muted">No visits yet</li>{% endfor %}</ul></div>
+      <div><h3>Page views (7 days)</h3>
+        <ul class="list">{% for k, n in visits.pages %}<li>{{ k }} <b>{{ n }}</b></li>{% else %}<li class="muted">No visits yet</li>{% endfor %}</ul></div>
+    </div>
+    <p class="muted">Counted with a random number each browser makes for itself. No names, X accounts or IP addresses are stored. Your own preview devices are not counted.</p>
+  </section>
+  <style>
+    .visitors .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .vbars { display: grid; grid-template-columns: repeat(14, 1fr); gap: 6px; align-items: end; height: 170px; margin: 10px 0 18px; }
+    .vbar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; font-size: 12px; }
+    .vbar i { display: block; width: 100%; min-height: 3px; border-radius: 6px 6px 2px 2px; background: linear-gradient(180deg, #ffb347, #f0643f); }
+    .vbar b { font-size: 12px; } .vbar span { color: var(--ink-soft); }
+    .vcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .vcols .list li { display: flex; justify-content: space-between; }
+  </style>
+
   <section class="panel">
     <h2>Tester ratings</h2>
     <p>{{ fb_count or 0 }} ratings{% if fb_avg %}, average {{ "%.1f"|format(fb_avg) }} out of 5{% endif %}.</p>

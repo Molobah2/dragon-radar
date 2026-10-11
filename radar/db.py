@@ -6,7 +6,7 @@ recent posts once a day and clears text older than the feed window.
 """
 from datetime import datetime, timezone
 
-from sqlalchemy import (Boolean, DateTime, Float, Integer, String, Text, create_engine, func, select)
+from sqlalchemy import (Boolean, Date, DateTime, Float, Integer, String, Text, create_engine, func, select)
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 
@@ -107,6 +107,35 @@ class Feedback(Base):
     page: Mapped[str] = mapped_column(String(40), default="")
     device: Mapped[str] = mapped_column(String(10), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class Visitor(Base):
+    """One row per browser that has visited. The id is a random number the browser made up for itself;
+    no name, X account, IP address or anything personal is stored."""
+    __tablename__ = "visitors"
+    vid: Mapped[str] = mapped_column(String(32), primary_key=True)
+    first_seen: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    last_seen: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    days: Mapped[int] = mapped_column(Integer, default=1)          # how many different days they came
+    views: Mapped[int] = mapped_column(Integer, default=0)
+    device: Mapped[str] = mapped_column(String(10), default="")
+    source: Mapped[str] = mapped_column(String(40), default="")    # where they first came from (x, discord, direct...)
+
+
+class VisitDay(Base):
+    """Who came on which day (for daily unique visitors and returning visitors)."""
+    __tablename__ = "visit_days"
+    day: Mapped[datetime] = mapped_column(Date, primary_key=True)
+    vid: Mapped[str] = mapped_column(String(32), primary_key=True)
+    views: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class DailyCount(Base):
+    """Simple daily counters: page views per page and visits per source."""
+    __tablename__ = "daily_counts"
+    day: Mapped[datetime] = mapped_column(Date, primary_key=True)
+    key: Mapped[str] = mapped_column(String(60), primary_key=True)
+    count: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class Setting(Base):

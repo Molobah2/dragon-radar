@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -888,3 +889,44 @@ def test_v2_launch_switch_and_noindex(cfg, Session):
     cfg.noindex = True
     r = create_app(cfg).test_client().get("/")
     assert 'name="robots" content="noindex' in r.get_data(as_text=True) and r.headers["X-Robots-Tag"].startswith("noindex")
+
+
+def test_visitor_counting_is_private_and_unique(cfg, Session):
+    cfg.admin_password = "pw"
+    app = create_app(cfg)
+    c = app.test_client()
+    phone = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Mobile"}
+    pc = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130"}
+    a, b = "a" * 32, "b" * 32
+    hit = lambda vid, path, h, ref="": c.post("/api/hit", data=json.dumps({"vid": vid, "path": path, "ref": ref}),
+                                              headers=h, content_type="text/plain").get_json()["counted"]
+    assert hit(a, "/", phone, "https://t.co/abc") is True
+    assert hit(a, "/friends", phone) is True
+    assert hit(a, "/friends", phone) is False                     # same page twice in a row is ignored
+    assert hit(b, "/friends/keepers", pc, "https://discord.com/channels/1") is True
+    assert hit("not-an-id", "/", pc) is False
+    assert hit("c" * 32, "/", {"User-Agent": "Googlebot/2.1"}) is False
+    assert hit("d" * 32, "/admin", pc) is False
+    from radar.db import Visitor
+    from radar.visits import summary
+    with Session() as s:
+        assert s.scalar(select(func.count()).select_from(Visitor)) == 2
+        v = s.get(Visitor, a)
+        assert v.views == 2 and v.device == "phone" and v.source == "x"
+        today = datetime.now(ZoneInfo(cfg.timezone)).date()
+        out = summary(s, today)
+    assert out["total"] == 2 and out["today"] == 2 and out["views_today"] == 3 and out["phone_pct"] == 50
+    assert dict(out["sources"]) == {"x": 1, "discord": 1}
+    # admin shows the numbers
+    with c.session_transaction() as sess:
+        sess["admin"] = True
+    page = c.get("/admin").get_data(as_text=True)
+    assert "people ever (unique)" in page
+
+
+def test_preview_devices_are_not_counted(cfg, Session):
+    cfg.preview_key = "secret-preview-phrase-123"
+    c = create_app(cfg).test_client()
+    c.get("/preview/secret-preview-phrase-123")
+    r = c.post("/api/hit", data=json.dumps({"vid": "e" * 32, "path": "/"}), content_type="text/plain")
+    assert r.get_json()["counted"] is False
