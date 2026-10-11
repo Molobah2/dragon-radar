@@ -436,7 +436,10 @@
       const darkSky = sky.dark > 0.5;
       if (darkSky !== lastDark) { lastDark = darkSky; document.body.classList.toggle("dark-sky", darkSky); }
       if (meta) meta.setAttribute("content", rgb(sky.mid).replace(/rgba\((\d+),(\d+),(\d+),1\)/, (_, r, g, b) => "#" + [r, g, b].map((v) => (+v).toString(16).padStart(2, "0")).join("")));
-      const hh = Math.floor(hour), mm = Math.floor((hour - hh) * 60);
+      // the clock always tells the real time; only Play a day shows the sky's own hour
+      let shown = hour;
+      if (!lapse && mode !== "auto") { const d = new Date(); shown = d.getHours() + d.getMinutes() / 60; }
+      const hh = Math.floor(shown), mm = Math.floor((shown - hh) * 60);
       const label = document.getElementById("sky-label"), time = document.getElementById("sky-time"), pill = document.getElementById("sky-pill");
       if (label) label.textContent = phaseName();
       if (time) time.textContent = String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");

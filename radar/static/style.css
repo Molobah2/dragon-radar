@@ -785,3 +785,22 @@ body.sheet-open { overflow: hidden; }
 .pulse-head { flex-wrap: wrap; row-gap: 4px; }
 .pulse-head .status-line { margin-left: auto; text-transform: none; letter-spacing: 0; }
 @media (max-width: 640px) { .pulse-head .status-line { margin-left: 0; width: 100%; } }
+
+/* ---------- filter rail: two tidy rows, both edges used ---------- */
+.rail { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "date search" "who toggles";
+  align-items: center; gap: 6px 16px; border-radius: 30px; padding: 8px 10px; }
+.rail .right { display: contents; }
+.rail .g-date { grid-area: date; }
+.rail .g-who { grid-area: who; }
+.rail .feed-search { grid-area: search; justify-self: end; width: 300px; }
+.rail .toggles { grid-area: toggles; justify-self: end; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+@media (max-width: 760px) {
+  .rail { grid-template-columns: minmax(0, 1fr); grid-template-areas: "search" "date" "who" "toggles"; border-radius: 26px; gap: 6px; }
+  .rail .feed-search { width: 100%; justify-self: stretch; }
+  .rail .group { display: grid; gap: 4px; }
+  .rail .g-date { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .rail .g-who { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rail .tab { padding: 9px 4px; font-size: 13.5px; text-align: center; white-space: nowrap; }
+  .rail .toggles { justify-self: stretch; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding-top: 4px; }
+  .rail .switch { flex-direction: column; gap: 5px; padding: 6px 2px; font-size: 12.5px; text-align: center; white-space: nowrap; }
+}
