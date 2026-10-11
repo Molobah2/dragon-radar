@@ -157,7 +157,9 @@
     const avatar = p.avatar
       ? el("img", { class: "avatar", src: p.avatar, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })
       : el("span", { class: "avatar blank" }, (p.name || "?").slice(0, 1));
-    const card = el("article", { class: "post" + (p.team ? " team" : ""), "data-id": p.id },
+    // one line posts get a bigger, quote style text so the card never looks half empty
+    const short = (text || "").length <= 60 && !(text || "").includes("\n");
+    const card = el("article", { class: "post" + (p.team ? " team" : "") + (short ? " short" : ""), "data-id": p.id },
       el("header", { class: "card-head" }, avatar,
         el("a", { class: "who", href: `https://x.com/${p.user}`, target: "_blank", rel: "noopener" },
           el("b", { class: "name" }, p.name || p.user), el("span", { class: "handle" }, `@${p.user}`)),

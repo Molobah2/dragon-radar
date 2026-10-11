@@ -597,3 +597,10 @@ body.dark-sky .mailbox { background: conic-gradient(from 210deg, #fff3c4, #e2a93
   .chip { padding: 14px; gap: 6px; }
   .stat .ico { width: 32px; height: 32px; }
 }
+
+/* one line posts: a bigger quote style line that fills the card instead of leaving a gap */
+.post.short .text { align-self: center; font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.22; letter-spacing: -.005em;
+  max-height: none; -webkit-line-clamp: 3; line-clamp: 3; padding-left: 14px; position: relative; }
+.post.short .text::before { content: ""; position: absolute; left: 0; top: 4px; bottom: 4px; width: 4px; border-radius: 4px;
+  background: linear-gradient(180deg, var(--coral), #ffc56b); }
+.post.team.short .text::before { background: linear-gradient(180deg, #ffd23f, #f0a92a); }
