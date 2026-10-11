@@ -105,6 +105,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     # v2 tools in progress: add {"name", "url", "note"} here as each one is built
     LAB_TOOLS: list[dict] = [
         {"name": "My week card", "url": "/friends#myweek", "note": "Blinky's Friends, side menu or My progress: a card of the Keepers you supported this week, to share on X."},
+        {"name": "Collectible dragons", "url": "/friends#dragons", "note": "Blinky's Friends: finish the daily goal to hatch one egg a day into a dragon sticker. Streaks raise the odds of rare and golden ones. Side menu or My progress: My dragons."},
         {"name": "Hatchery numbers", "url": "/#numbers", "note": "Home page, under the tools: how many people have visited pdtools, this week, who came back, and a 14 day chart."},
     ]
 
@@ -535,6 +536,8 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     # ---------- progress backup codes: no login, nothing personal, gone after 30 days ----------
     CODE_ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    DEX_IDS = {"shadow", "space", "speed", "tiger", "tree", "water", "acid", "ghost", "ice", "jelly", "light", "lightning",
+               "lava", "panda", "pink", "ruby", "sapphire", "emerald", "amethyst", "diamond"}
     backup_hits: dict[str, list[float]] = {}
 
     def _too_many(ip: str, limit: int = 12, window: float = 3600) -> bool:
@@ -556,7 +559,19 @@ def create_app(cfg: Config | None = None) -> Flask:
         clean = {str(k)[:25]: int(v) for k, v in list(opened.items())[:3000]
                  if str(k).isdigit() and isinstance(v, (int, float))}
         streak = body.get("streak") if isinstance(body.get("streak"), dict) else {}
-        data = _json.dumps({"opened": clean, "streak": {k: streak.get(k) for k in ("last", "count", "best")}})
+        # collectible dragons (v2): only known dragon ids and small whole numbers are kept
+        dex_in = body.get("dex") if isinstance(body.get("dex"), dict) else {}
+        have_in = dex_in.get("have") if isinstance(dex_in.get("have"), dict) else {}
+        have = {}
+        for k, h in list(have_in.items())[:40]:
+            if k in DEX_IDS and isinstance(h, dict):
+                row = {r: min(999, int(h[r])) for r in ("c", "r", "l")
+                       if isinstance(h.get(r), (int, float)) and not isinstance(h.get(r), bool) and int(h[r]) > 0}
+                if row:
+                    have[k] = row
+        last = dex_in.get("last") if isinstance(dex_in.get("last"), str) and len(dex_in.get("last")) == 10 else None
+        data = _json.dumps({"opened": clean, "streak": {k: streak.get(k) for k in ("last", "count", "best")},
+                            **({"dex": {"have": have, "last": last}} if have else {})})
         if len(data) > 150_000:
             return jsonify({"ok": False, "message": "That is too much to save at once."}), 413
         now = utcnow()

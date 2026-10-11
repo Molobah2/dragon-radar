@@ -117,7 +117,8 @@
         {% endif %}
         <button class="btn btn-soft keeper-btn" id="weekly-open" type="button">{{ ico("crown", 20) }}This week's top posts</button>
         <button class="btn btn-soft keeper-btn" id="progress-open" type="button">{{ ico("hourglass", 20) }}My progress</button>
-        {% if v2 %}<button class="btn btn-soft keeper-btn" data-myweek type="button">{{ ico("crown", 20) }}My week card</button>{% endif %}
+        {% if v2 %}<button class="btn btn-soft keeper-btn" data-myweek type="button">{{ ico("crown", 20) }}My week card</button>
+        <button class="btn btn-soft keeper-btn" data-dex type="button">{{ ico("hatch", 20) }}My dragons</button>{% endif %}
         <a class="btn btn-soft keeper-btn" href="{{ url_for('keepers_page') }}">Find Keepers to follow</a>
         <button class="btn btn-soft replay" id="replay" type="button">Watch the meadow again</button>
       </div>
@@ -162,12 +163,51 @@
         <b>My week card</b>
         <p>A card of the Keepers you supported this week, ready to share on X.</p>
         <button class="btn btn-go" data-myweek type="button">Make my card</button>
+      </div>
+      <div class="pg-block">
+        <b>My dragons</b>
+        <p>Finish the daily goal to hatch one egg a day. Your dragons move with the code above too.</p>
+        <button class="btn btn-go" data-dex type="button">See my dragons</button>
       </div>{% endif %}
       <p class="kp-msg" id="pg-msg"></p>
       <div class="sheet-actions"><button class="btn btn-soft" id="progress-close" type="button">Close</button></div>
     </div>
   </div>
   {% if v2 %}
+  <div class="sheet-wrap" id="hatch" hidden data-base="{{ cfg.scene_base }}">
+    <div class="sheet hatch-sheet" role="dialog" aria-modal="true" aria-labelledby="hatch-title">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <h3 id="hatch-title">Your egg is ready</h3>
+      <p class="sheet-sub" id="hatch-sub">You gave 5 quiet posts some love today. Tap the egg to hatch it.</p>
+      <div class="hatch-stage" id="hatch-stage" data-state="egg">
+        <div class="hatch-rays" aria-hidden="true"></div>
+        <button class="hatch-egg" id="hatch-egg" type="button" aria-label="Hatch the egg"><span class="egg-top"></span><span class="egg-bottom"></span></button>
+        <img class="hatch-dragon" id="hatch-dragon" alt="" hidden>
+      </div>
+      <p class="hatch-name" id="hatch-name" hidden></p>
+      <div class="sheet-actions" id="hatch-actions" hidden>
+        <button class="btn btn-go" id="hatch-share" type="button" hidden>Share</button>
+        <a class="btn btn-go" id="hatch-post" href="https://x.com/intent/post" target="_blank" rel="noopener">Post on X</a>
+        <button class="btn btn-soft" id="hatch-save" type="button">Save picture</button>
+        <button class="btn btn-soft" id="hatch-shelf" type="button">My dragons</button>
+        <button class="btn btn-soft" id="hatch-close" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+  <div class="sheet-wrap" id="dex" hidden>
+    <div class="sheet sheet-wide" role="dialog" aria-modal="true" aria-labelledby="dex-title">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <h3 id="dex-title">My dragons</h3>
+      <p class="sheet-sub" id="dex-sub"></p>
+      <div class="dex-bar" id="dex-bar" aria-hidden="true"><i></i></div>
+      <button class="btn btn-go dex-ready" id="dex-hatch" type="button" hidden>Your egg is ready, hatch it</button>
+      <div class="dex-grid" id="dex-grid"></div>
+      <p class="dex-sec">Golden legends</p>
+      <div class="dex-grid" id="dex-legends"></div>
+      <p class="dex-how">Finish the daily goal (5 quiet posts) to hatch one egg a day. A 3 day streak makes rare holo dragons more likely, and a 7 day streak gives the best chance of a golden legend. Your dragons live on this device, and the code in My progress moves them to another one.</p>
+      <div class="sheet-actions"><button class="btn btn-soft" id="dex-close" type="button">Close</button></div>
+    </div>
+  </div>
   <div class="sheet-wrap" id="myweek" hidden>
     <div class="sheet sheet-wide" role="dialog" aria-modal="true" aria-labelledby="myweek-title">
       <div class="sheet-grip" aria-hidden="true"></div>
@@ -240,5 +280,7 @@
   <script src="{{ asset('weekly.js') }}" defer></script>
   {% if v2 %}<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Press+Start+2P&display=swap">
   <script src="{{ asset('cards-data.js') }}" defer></script>
-  <script src="{{ asset('myweek.js') }}" defer></script>{% endif %}
+  <script src="{{ asset('myweek.js') }}" defer></script>
+  <script src="{{ asset('dex-data.js') }}" defer></script>
+  <script src="{{ asset('dragons.js') }}" defer></script>{% endif %}
 {% endblock %}

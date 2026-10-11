@@ -957,3 +957,28 @@ def test_hatchery_numbers_on_home_are_v2_only(cfg, Session):
     assert 'id="numbers"' in page and "people have visited" in page and "<b>3</b>" in page
     assert page.count('class="later"') == 13         # the chart starts on the first counted day and fills up
     assert "Hatchery numbers" in c.get("/lab").get_data(as_text=True)
+
+
+def test_collectible_dragons_are_v2_only(cfg, Session):
+    cfg.preview_key = "secret-preview-phrase-123"
+    c = create_app(cfg).test_client()
+    public = c.get("/friends").get_data(as_text=True)
+    assert "dragons.js" not in public and 'id="hatch"' not in public and "data-dex" not in public
+    c.get("/preview/secret-preview-phrase-123")
+    page = c.get("/friends").get_data(as_text=True)
+    assert "dragons.js" in page and "dex-data.js" in page and 'id="hatch"' in page and 'id="dex"' in page
+    assert page.count("data-dex") == 2
+    assert "Collectible dragons" in c.get("/lab").get_data(as_text=True)
+
+
+def test_backup_carries_dragons_and_drops_junk(cfg, Session):
+    c = create_app(cfg).test_client()
+    dex = {"have": {"lava": {"c": 2, "r": 1}, "ruby": {"l": 1}, "notadragon": {"c": 5}, "ice": {"c": "lots", "r": True},
+                    "tiger": {"c": 99999}}, "last": "2026-10-11", "log": [{"id": "lava"}]}
+    r = c.post("/api/backup", json={"opened": {}, "streak": {}, "dex": dex}).get_json()
+    assert r["ok"]
+    back = c.get(f"/api/backup/{r['code']}").get_json()
+    assert back["dex"] == {"have": {"lava": {"c": 2, "r": 1}, "ruby": {"l": 1}, "tiger": {"c": 999}}, "last": "2026-10-11"}
+    # an old style save without dragons still works
+    r2 = c.post("/api/backup", json={"opened": {"123": 1}, "streak": {}}).get_json()
+    assert "dex" not in c.get(f"/api/backup/{r2['code']}").get_json()

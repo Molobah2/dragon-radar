@@ -199,7 +199,7 @@
   $("pg-save").addEventListener("click", async () => {
     $("pg-save").disabled = true;
     try {
-      const r = await fetch("/api/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ opened, streak }) });
+      const r = await fetch("/api/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ opened, streak, dex: store.get("pd:dex", null) }) });
       const j = await r.json();
       if (!j.ok) throw new Error(j.message);
       $("pg-code-text").textContent = j.code; $("pg-code").hidden = false;
@@ -229,11 +229,33 @@
       if ((s2.best || 0) > (streak.best || 0)) streak.best = s2.best;
       if (s2.last && (!streak.last || s2.last > streak.last)) { streak.last = s2.last; streak.count = s2.count || 0; }
       store.set("pd:streak", streak);
+      const dexIn = mergeDex(j.dex);
       showStreak(); render();
-      pgMsg(added ? `Restored ${added} opened posts.` : "All set, nothing new to restore.", true);
+      const bits = [added ? `${added} opened posts` : "", dexIn ? `${dexIn} dragon${dexIn === 1 ? "" : "s"}` : ""].filter(Boolean);
+      pgMsg(bits.length ? `Restored ${bits.join(" and ")}.` : "All set, nothing new to restore.", true);
     } catch (e) { pgMsg(e.message || "Could not restore right now, please try again.", false); }
     $("pg-restore").disabled = false;
   });
+
+  // collectible dragons from a backup code: keep the higher count of each, never lose one
+  function mergeDex(inc) {
+    if (!inc || typeof inc !== "object" || !inc.have || typeof inc.have !== "object") return 0;
+    const mine = store.get("pd:dex", null) || {};
+    const have = mine.have && typeof mine.have === "object" ? mine.have : {};
+    let gained = 0;
+    for (const [id, h] of Object.entries(inc.have)) {
+      if (!h || typeof h !== "object") continue;
+      const cur = have[id] || {};
+      const before = (cur.c || 0) + (cur.r || 0) + (cur.l || 0);
+      for (const k of ["c", "r", "l"]) { const v = Math.max(cur[k] || 0, Math.min(999, h[k] | 0)); if (v) cur[k] = v; }
+      if (!before && (cur.c || cur.r || cur.l)) gained++;
+      have[id] = cur;
+    }
+    const last = [mine.last, inc.last].filter((d) => typeof d === "string").sort().pop() || null;
+    store.set("pd:dex", { have, last, log: Array.isArray(mine.log) ? mine.log : [] });
+    dispatchEvent(new Event("pd:dexchange"));
+    return gained;
+  }
 
   // ---------- daily goal: give 5 quiet posts some love, an egg fills up as you go ----------
   const GOAL = 5;
@@ -244,6 +266,7 @@
     $("goal-text").textContent = done ? "Daily goal done" : `${n}/${GOAL} quiet posts today`;
     $("goal").classList.toggle("done", done);
     $("goal-egg").style.setProperty("--fill", `${(n / GOAL) * 100}%`);
+    dispatchEvent(new Event("pd:goalshow"));   // v2 dragons turn a finished goal into "hatch your egg"
   }
   function bumpGoal() {
     if (goal.day !== today()) goal = { day: today(), n: 0 };
@@ -253,6 +276,7 @@
     if (goal.n === GOAL) {
       toast("\u{1F423} You gave 5 quiet posts some love today. Blinky is proud of you.");
       window.meadow && window.meadow.cheer && window.meadow.cheer();
+      dispatchEvent(new Event("pd:goaldone"));
     }
   }
   $("goal").addEventListener("click", () => { $("needsLove").checked = true; $("needsLove").dispatchEvent(new Event("change")); $("feed").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); });
