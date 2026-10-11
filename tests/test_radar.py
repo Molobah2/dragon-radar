@@ -761,3 +761,12 @@ def test_missing_pictures_filled_once_per_author(cfg, Session):
         assert backfill_avatars(s, cfg, now, http=H()) == 4
         assert len(calls) == 1 and "/Bob/status/" in calls[0]
         assert s.get(Post, "2").author_avatar.endswith("a_bigger.jpg") and s.get(Post, "10").author_avatar == "https://pic/amy"
+
+
+def test_sound_on_pages(cfg, Session):
+    c = create_app(cfg).test_client()
+    feed = c.get("/friends").get_data(as_text=True)
+    hub = c.get("/").get_data(as_text=True)
+    assert "meadow-ambience.m4a" in feed and "blinky-song.m4a" in feed and 'id="sound-btn"' in feed
+    assert "forest-ambience.m4a" in hub and "blinky-song" not in hub and "sound.js" in hub
+    assert c.get("/static/audio/blinky-song.m4a").status_code == 200

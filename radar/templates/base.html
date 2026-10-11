@@ -38,6 +38,7 @@
             {{ ico("globe", 20) if cfg.scene_base else "" }}
             <select id="lang-select" aria-label="Language"></select>
           </label>
+          {% include "_sound.html" %}
           <button class="sky-pill" id="sky-pill" type="button" aria-pressed="false" title="Play a full day in the meadow">
             <i class="sky-dot" aria-hidden="true"></i><span id="sky-label">Day</span><b id="sky-time">--:--</b><span class="sky-hint">Play a day</span>
           </button>
@@ -61,7 +62,10 @@
     <span class="mailbox-tip">Suggestions</span>
   </a>
   {% endif %}
+  <script>window.PD_SOUND = {{ {"ambience": url_for('static', filename='audio/meadow-ambience.m4a'),
+    "song": url_for('static', filename='audio/blinky-song.m4a'), "waitReady": True} | tojson }};</script>
   <script src="{{ url_for('static', filename='i18n.js') }}"></script>
+  <script src="{{ url_for('static', filename='sound.js') }}" defer></script>
   {% if cfg.scene_base %}<script src="{{ url_for('static', filename='scene.js') }}"></script>
   <script src="{{ url_for('static', filename='mailbox.js') }}" defer></script>{% endif %}
   <script src="{{ url_for('static', filename='meadow.js') }}"></script>
