@@ -825,3 +825,14 @@ def test_every_element_the_scripts_use_exists(cfg, Session):
         optional = {"keeper-open", "keeper"}          # only there when the Keeper card is switched on
         missing = sorted(i for i in ids - optional if f'id="{i}"' not in html)
         assert not missing, (page, missing)
+
+
+def test_tester_ratings(cfg, Session):
+    c = create_app(cfg).test_client()
+    assert c.post("/api/feedback", json={"rating": 9}).status_code == 400
+    assert c.post("/api/feedback", json={"rating": 4, "comment": "smooth on my phone", "page": "/friends", "device": "phone"}).get_json()["ok"]
+    from radar.db import Feedback
+    with Session() as s:
+        f = s.query(Feedback).one()
+        assert f.rating == 4 and f.device == "phone"
+    assert 'id="rate"' in c.get("/friends").get_data(as_text=True)

@@ -19,6 +19,15 @@
   <p>Estimates use ${{ cfg.cost_per_post_usd }} per post returned. Your X developer console shows the real bill.</p>
 
   <section class="panel">
+    <h2>Tester ratings</h2>
+    <p>{{ fb_count or 0 }} ratings{% if fb_avg %}, average {{ "%.1f"|format(fb_avg) }} out of 5{% endif %}.</p>
+    <div class="table-wrap"><table>
+      <tr><th>When (UTC)</th><th>Stars</th><th>Device</th><th>Page</th><th>Comment</th></tr>
+      {% for f in feedback %}<tr><td>{{ f.created_at.strftime("%b %d %H:%M") }}</td><td>{{ "★" * f.rating }}</td><td>{{ f.device }}</td><td>{{ f.page }}</td><td style="white-space:normal">{{ f.comment }}</td></tr>{% endfor %}
+    </table></div>
+  </section>
+
+  <section class="panel">
     <h2>Hide a post</h2>
     <form method="post" action="{{ url_for('admin_hide') }}" class="inline-form">
       <input type="hidden" name="csrf" value="{{ csrf }}">

@@ -107,6 +107,7 @@
     bumpStreak();
     window.keeperBump && window.keeperBump();
     const post = posts.find((x) => x.id === id) || pinnedPosts.find((x) => x.id === id);
+    if (post && !post.opens) bumpGoal();
     if (post) {
       post.opens = (post.opens || 0) + 1;
       const fans = store.get("pd:authors", {}) || {}, key = (post.user || "").toLowerCase();
@@ -234,6 +235,50 @@
     $("pg-restore").disabled = false;
   });
 
+  // ---------- daily goal: give 5 quiet posts some love, an egg fills up as you go ----------
+  const GOAL = 5;
+  let goal = store.get("pd:goal", { day: null, n: 0 }) || { day: null, n: 0 };
+  if (goal.day !== today()) goal = { day: today(), n: 0 };
+  function showGoal() {
+    const n = Math.min(goal.n, GOAL), done = n >= GOAL;
+    $("goal-text").textContent = done ? "Daily goal done" : `${n}/${GOAL} quiet posts today`;
+    $("goal").classList.toggle("done", done);
+    $("goal-egg").style.setProperty("--fill", `${(n / GOAL) * 100}%`);
+  }
+  function bumpGoal() {
+    if (goal.day !== today()) goal = { day: today(), n: 0 };
+    goal.n++;
+    store.set("pd:goal", goal);
+    showGoal();
+    if (goal.n === GOAL) {
+      toast("\u{1F423} You gave 5 quiet posts some love today. Blinky is proud of you.");
+      window.meadow && window.meadow.cheer && window.meadow.cheer();
+    }
+  }
+  $("goal").addEventListener("click", () => { $("needsLove").checked = true; $("needsLove").dispatchEvent(new Event("change")); $("feed").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); });
+
+  // ---------- team alerts: a browser notification when a new team post arrives (while a tab is open) ----------
+  const canNotify = "Notification" in window;
+  let alerts = !!store.get("pd:teamAlerts", false) && canNotify && Notification.permission === "granted";
+  $("team-alerts").checked = alerts;
+  $("team-alerts").disabled = !canNotify;
+  $("team-alerts").addEventListener("change", async (e) => {
+    if (!e.target.checked) { alerts = false; store.set("pd:teamAlerts", false); return; }
+    let perm = Notification.permission;
+    if (perm === "default") { try { perm = await Notification.requestPermission(); } catch (err) { perm = "denied"; } }
+    alerts = perm === "granted";
+    e.target.checked = alerts;
+    store.set("pd:teamAlerts", alerts);
+    pgMsg(alerts ? "Done. You will get a ping when the team posts." : "Notifications are blocked in your browser settings.", alerts);
+  });
+  function teamAlert(p) {
+    if (!alerts || !p) return;
+    try {
+      const n = new Notification("New post from the Pocket Dragons team", { body: (p.text || "").slice(0, 140), icon: p.avatar || undefined, tag: `team-${p.id}` });
+      n.onclick = () => { window.focus(); window.open(`https://x.com/i/status/${p.id}`, "_blank", "noopener"); n.close(); };
+    } catch (e) { /* some phones only allow notifications from installed apps */ }
+  }
+
   // ---------- pacing: a gentle nudge when someone is going very fast (protects their X account) ----------
   const PACE_N = 15, PACE_MS = 5 * 60e3, NUDGE_GAP = 10 * 60e3;
   const taps = (() => { try { return JSON.parse(sessionStorage.getItem("pd:taps") || "[]"); } catch (e) { return []; } })();
@@ -304,7 +349,7 @@
         el("a", { class: "xmark", href: url, target: "_blank", rel: "noopener", title: "View on X", html: xLogo })),
       el("a", { class: "text", href: url, target: "_blank", rel: "noopener", onclick: () => markOpened(p.id, card) },
         text || "(no text)"),
-      el("div", { class: "meta" }, ...chips, el("span", { class: "reach" + (p.opens ? "" : " none"), title: "Visitors who opened this post" },
+      el("div", { class: "meta" }, ...chips, el("span", { class: "reach" + (p.opens ? "" : " none"), title: p.opens ? `${p.opens} Keeper${p.opens === 1 ? "" : "s"} opened this post` : "Nobody has opened this yet. Be the first!" },
         p.opens ? `${p.opens} Keeper${p.opens === 1 ? "" : "s"}` : "Needs love"), el("time", { datetime: p.t, title: new Date(p.t).toLocaleString() }, ago(p.t))),
       el("div", { class: "foot" }));
     card.style.setProperty("--i", i % BATCH);
@@ -395,6 +440,19 @@
   $("needsLove").addEventListener("change", (e) => { needsLove = e.target.checked; store.set("radar:needsLove", needsLove); render(); });
   $("showOpened").addEventListener("change", (e) => { showOpened = e.target.checked; store.set("radar:showOpened", showOpened); render(); });
 
+  // ---------- status line: when posts were last collected and when the next check runs (every 20 minutes) ----------
+  let updatedAt = data.updated ? Date.parse(data.updated) : null;
+  function statusLine() {
+    const el2 = $("status-line"); if (!el2) return;
+    if (!updatedAt) { el2.textContent = ""; return; }
+    const mins = Math.max(0, Math.round((Date.now() - updatedAt) / 6e4));
+    const next = 20 - (new Date().getUTCMinutes() % 20);
+    const ago2 = mins < 1 ? "just now" : mins < 60 ? `${mins} min ago` : `${Math.floor(mins / 60)}h ago`;
+    el2.textContent = mins >= 60 ? `Updated ${ago2}` : `Updated ${ago2} \u00b7 next check in ${next} min`;
+    el2.classList.toggle("stale", mins >= 60);
+  }
+  setInterval(statusLine, 30000);
+
   // ---------- placeholders while posts load (no empty flash, no layout jump) ----------
   function skeletons(n = 6) {
     const f = document.createDocumentFragment();
@@ -414,17 +472,22 @@
   }
   let newPinned = null;
   async function poll() {
-    if (document.hidden || current.range === "yesterday" || busy && busy.live) return;
+    if ((document.hidden && !alerts) || current.range === "yesterday") return;
     const newest = posts.concat(pending).reduce((m, p) => (p.t > m ? p.t : m), "");
     const q = new URLSearchParams({ ...current, after: newest || "" });
     try {
       const r = await fetch(`/api/posts?${q}`, { headers: { Accept: "application/json" } });
       if (!r.ok) return;
       const j = await r.json();
+      if (j.updated) { updatedAt = Date.parse(j.updated); statusLine(); }
       const have = new Set(posts.concat(pending).map((p) => p.id));
       const fresh = (j.posts || []).filter((p) => !have.has(p.id));
       const pinChanged = (j.pinned || []).map((p) => p.id).join() !== pinnedPosts.map((p) => p.id).join();
-      if (pinChanged) newPinned = j.pinned;
+      if (pinChanged) {
+        newPinned = j.pinned;
+        const known = new Set(pinnedPosts.map((p) => p.id));
+        (j.pinned || []).filter((p) => !known.has(p.id)).slice(0, 1).forEach(teamAlert);
+      }
       if (fresh.length) { pending.unshift(...fresh); showPill(); }
       else if (pinChanged) { pinnedPosts.splice(0, pinnedPosts.length, ...newPinned); pinnedIds.clear(); pinnedPosts.forEach((p) => pinnedIds.add(p.id)); newPinned = null; render(); }
     } catch (e) { /* offline for a moment: try next time */ }
@@ -521,6 +584,8 @@
   renderWelcome();
   pulse();
   showStreak();
+  showGoal();
+  statusLine();
   fromHash();
   let seenIntro = false;
   try { seenIntro = sessionStorage.getItem("radar:intro") === "1"; sessionStorage.setItem("radar:intro", "1"); } catch (e) {}

@@ -480,6 +480,27 @@ def create_app(cfg: Config | None = None) -> Flask:
                 return jsonify({"ok": False, "message": "That code was not found. Check it and try again."}), 404
             return jsonify({"ok": True, **_json.loads(row.data)})
 
+    @app.post("/api/feedback")
+    def feedback():
+        from .db import Feedback
+        ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "?").split(",")[0].strip()
+        if _too_many("f:" + ip, limit=6):
+            return jsonify({"ok": False, "message": "Thanks, we already got your rating."}), 429
+        body = request.get_json(silent=True) or {}
+        try:
+            rating = int(body.get("rating") or 0)
+        except (TypeError, ValueError):
+            rating = 0
+        if not 1 <= rating <= 5:
+            return jsonify({"ok": False, "message": "Pick from 1 to 5 stars first."}), 400
+        comment = str(body.get("comment") or "").strip()[:1000]
+        page = str(body.get("page") or "")[:40]
+        device = "phone" if str(body.get("device")) == "phone" else "computer"
+        with Session() as s:
+            s.add(Feedback(rating=rating, comment=comment, page=page, device=device, created_at=utcnow()))
+            s.commit()
+        return jsonify({"ok": True})
+
     @app.get("/sw.js")
     def service_worker():
         """The offline helper. It lives at the site root so it can look after every page."""
@@ -568,13 +589,18 @@ def create_app(cfg: Config | None = None) -> Flask:
             keywords = get_setting(s, "block_keywords", cfg.default_blocklist)
             last_ok = s.scalar(select(CollectorRun.finished_at).where(CollectorRun.status.in_(["ok", "page_limit"]))
                                .order_by(CollectorRun.started_at.desc()).limit(1))
+            from .db import Feedback
+            feedback_rows = s.scalars(select(Feedback).order_by(Feedback.created_at.desc()).limit(100)).all()
+            fb_avg = s.scalar(select(func.avg(Feedback.rating)))
+            fb_count = s.scalar(select(func.count()).select_from(Feedback))
         stale_after = cfg.stale_after_minutes
         if cfg.daily_post_cap > 0:  # testing mode only reads every few hours
             stale_after += int(24 * 60 * 10 / cfg.daily_post_cap)
         stale = last_ok is None or (now - last_ok) > timedelta(minutes=stale_after)
         return render_template("admin.html", cfg=cfg, runs=runs, spend=spend, total_posts=total_posts,
                                hidden=hidden, blocked=blocked, keywords=keywords, stale=stale,
-                               last_ok=last_ok, csrf=session.get("csrf"))
+                               last_ok=last_ok, csrf=session.get("csrf"), feedback=feedback_rows,
+                               fb_avg=fb_avg, fb_count=fb_count)
 
     def post_id_from(value: str) -> str:
         # Accept a raw id or a full x.com / twitter.com status link

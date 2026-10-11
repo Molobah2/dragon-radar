@@ -52,12 +52,14 @@
     <div class="meter"><i id="meter"></i></div>
     <span class="meter-label"><span id="m-done">0 opened</span> · <span id="m-total">0 posts</span></span>
     <button class="streak" id="streak" type="button" hidden></button>
+    <button class="goal" id="goal" type="button" title="Daily goal: open 5 posts that need love"><span class="goal-egg" id="goal-egg" aria-hidden="true"></span><span id="goal-text">0/5 quiet posts today</span></button>
   </div>
 
   <section class="pulse" id="pulse" aria-label="Community pulse">
     <div class="pulse-head">
       {{ ico("pulse", 30) }}<strong>Community pulse</strong>
       <span id="pulse-range">Last 24 hours</span>
+      <span class="status-line" id="status-line"></span>
     </div>
     <div class="pulse-stats">
       <div class="stat">{{ ico("chat", 34) }}<b id="p-posts">0</b><span>posts</span></div>
@@ -111,6 +113,7 @@
           Keeper card <span>locked for now</span>
         </button>
         {% endif %}
+        <button class="btn btn-soft keeper-btn" id="weekly-open" type="button">{{ ico("crown", 20) }}This week's top posts</button>
         <button class="btn btn-soft keeper-btn" id="progress-open" type="button">{{ ico("hourglass", 20) }}My progress</button>
         <a class="btn btn-soft keeper-btn" href="{{ url_for('keepers_page') }}">Find Keepers to follow</a>
         <button class="btn btn-soft replay" id="replay" type="button">Watch the meadow again</button>
@@ -148,8 +151,26 @@
         <b>Got a code?</b>
         <div class="keeper-row"><input id="pg-input" type="text" placeholder="ABCD-1234" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text"><button class="btn btn-soft" id="pg-restore" type="button">Restore</button></div>
       </div>
+      <div class="pg-block">
+        <label class="switch"><input type="checkbox" id="team-alerts">Alert me when the team posts</label>
+        <p>Works while pdtools is open in a tab, even in the background. Your browser will ask first.</p>
+      </div>
       <p class="kp-msg" id="pg-msg"></p>
       <div class="sheet-actions"><button class="btn btn-soft" id="progress-close" type="button">Close</button></div>
+    </div>
+  </div>
+  <div class="sheet-wrap" id="weekly" hidden>
+    <div class="sheet sheet-wide" role="dialog" aria-modal="true" aria-labelledby="weekly-title">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <h3 id="weekly-title">This week's top posts</h3>
+      <p class="sheet-sub">The community posts Keepers opened most in the last 7 days. Save the card and share it on X.</p>
+      <canvas id="weekly-canvas" width="1200" height="675"{% if cfg.scene_base %} data-logo="{{ cfg.logo(160, 'png') }}" data-bg="{{ cfg.scene_base }}/image/upload/c_fill,w_1200,h_675,g_auto/e_blur:300/f_jpg/q_auto/v{{ cfg.scene_version }}/{{ cfg.scene_folder }}/meadow-day"{% endif %}></canvas>
+      <p class="kp-msg" id="weekly-msg"></p>
+      <div class="sheet-actions">
+        <button class="btn btn-go" id="weekly-save" type="button">Save image</button>
+        <a class="btn btn-soft" id="weekly-post" href="#" target="_blank" rel="noopener">Post on X</a>
+        <button class="btn btn-soft" id="weekly-close" type="button">Close</button>
+      </div>
     </div>
   </div>
   <button class="new-pill" id="new-pill" type="button" hidden><span class="np-dot" aria-hidden="true"></span><span id="new-pill-text">New posts</span></button>
@@ -183,7 +204,8 @@
   </div>
   </div>
   {% endif %}
-  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "icons": {"bulb": cfg.icon("bulb")}} | tojson }}</script>
+  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "updated": updated, "icons": {"bulb": cfg.icon("bulb")}} | tojson }}</script>
   <script src="{{ asset('keeper.js') }}"></script>
   <script src="{{ asset('app.js') }}"></script>
+  <script src="{{ asset('weekly.js') }}" defer></script>
 {% endblock %}

@@ -98,6 +98,17 @@ class ProgressBackup(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class Feedback(Base):
+    """v1 tester ratings: a 1 to 5 score and an optional comment. No names or accounts."""
+    __tablename__ = "feedback"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    rating: Mapped[int] = mapped_column(default=0)
+    comment: Mapped[str] = mapped_column(Text, default="")
+    page: Mapped[str] = mapped_column(String(40), default="")
+    device: Mapped[str] = mapped_column(String(10), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class Setting(Base):
     __tablename__ = "settings"
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
