@@ -72,6 +72,7 @@
     pAlready: "@{h} is already in the directory.", pNotQual: "@{h} was checked today and did not qualify. Try again tomorrow.",
     pBeing: "@{h} is being checked right now. Give it a second.", pNoExist: "@{h} does not seem to exist on X.",
     pWelcome: "Welcome to the meadow, @{h}.",
+    pNeeds: "@{h} needs {a} to join. Add it on X, then try again here in a few minutes.", pStill: "@{h} still needs {a}. Changes on X can take a few minutes to show, so try again in about 10 minutes.", pJust: "@{h} was just checked. Try again in about 10 minutes.", nTick: "a blue tick", nDragon: "the 🐉 in the display name", nBoth: "a blue tick and the 🐉 in the display name", kReach: "Blinky could not reach X just now. Try again in a few minutes.",
     h1Feed: "Something stirs<br>in the <span class=\"pop\">Hatchery.</span>", h1Keepers: "Every dragon<br>knows <span class=\"pop\">its own.</span>",
   };
 
@@ -137,6 +138,7 @@
       pAlready: "@{h} ya está en el directorio.", pNotQual: "@{h} se revisó hoy y no calificó. Inténtalo mañana.",
       pBeing: "@{h} se está revisando ahora. Dale un segundo.", pNoExist: "@{h} no parece existir en X.",
       pWelcome: "Bienvenido a la pradera, @{h}.",
+      pNeeds: "@{h} necesita {a} para unirse. Agrégalo en X y vuelve a intentarlo aquí en unos minutos.", pStill: "@{h} todavía necesita {a}. Los cambios en X pueden tardar unos minutos en verse, así que inténtalo de nuevo en unos 10 minutos.", pJust: "@{h} se acaba de revisar. Inténtalo de nuevo en unos 10 minutos.", nTick: "una marca azul", nDragon: "el 🐉 en el nombre visible", nBoth: "una marca azul y el 🐉 en el nombre visible", kReach: "Blinky no pudo conectar con X ahora mismo. Inténtalo en unos minutos.",
       h1Feed: "Algo se mueve<br>en el <span class=\"pop\">Criadero.</span>", h1Keepers: "Cada dragón<br>reconoce <span class=\"pop\">a los suyos.</span>",
     },
     fr: {
@@ -200,6 +202,7 @@
       pAlready: "@{h} est déjà dans l'annuaire.", pNotQual: "@{h} a été vérifié aujourd'hui et ne remplit pas les conditions. Réessaie demain.",
       pBeing: "@{h} est en cours de vérification. Un instant.", pNoExist: "@{h} ne semble pas exister sur X.",
       pWelcome: "Bienvenue dans la prairie, @{h}.",
+      pNeeds: "@{h} a besoin de {a} pour rejoindre. Ajoute-le sur X, puis réessaie ici dans quelques minutes.", pStill: "@{h} a encore besoin de {a}. Les changements sur X peuvent prendre quelques minutes, réessaie dans environ 10 minutes.", pJust: "@{h} vient d'être vérifié. Réessaie dans environ 10 minutes.", nTick: "un badge bleu", nDragon: "le 🐉 dans le nom affiché", nBoth: "un badge bleu et le 🐉 dans le nom affiché", kReach: "Blinky n'a pas pu joindre X pour l'instant. Réessaie dans quelques minutes.",
       h1Feed: "Quelque chose bouge<br>dans <span class=\"pop\">l'Écloserie.</span>", h1Keepers: "Chaque dragon<br>reconnaît <span class=\"pop\">les siens.</span>",
     },
     pt: {
@@ -263,6 +266,7 @@
       pAlready: "@{h} já está no diretório.", pNotQual: "@{h} foi verificado hoje e não se qualificou. Tente amanhã.",
       pBeing: "@{h} está sendo verificado agora. Um segundo.", pNoExist: "@{h} parece não existir no X.",
       pWelcome: "Bem-vindo ao campo, @{h}.",
+      pNeeds: "@{h} precisa de {a} para entrar. Adicione no X e tente de novo aqui em alguns minutos.", pStill: "@{h} ainda precisa de {a}. Mudanças no X podem levar alguns minutos para aparecer, então tente de novo em cerca de 10 minutos.", pJust: "@{h} acabou de ser verificado. Tente de novo em cerca de 10 minutos.", nTick: "um selo azul", nDragon: "o 🐉 no nome de exibição", nBoth: "um selo azul e o 🐉 no nome de exibição", kReach: "O Blinky não conseguiu falar com o X agora. Tente de novo em alguns minutos.",
       h1Feed: "Algo se agita<br>no <span class=\"pop\">Viveiro.</span>", h1Keepers: "Todo dragão<br>reconhece <span class=\"pop\">os seus.</span>",
     },
     tr: {
@@ -326,6 +330,7 @@
       pAlready: "@{h} zaten rehberde.", pNotQual: "@{h} bugün kontrol edildi ve uygun değil. Yarın tekrar dene.",
       pBeing: "@{h} şu an kontrol ediliyor. Bir saniye.", pNoExist: "@{h} X'te yok gibi görünüyor.",
       pWelcome: "Çayıra hoş geldin, @{h}.",
+      pNeeds: "@{h} katılmak için {a} gerekiyor. X'te ekle, sonra birkaç dakika içinde burada tekrar dene.", pStill: "@{h} için hâlâ {a} gerekiyor. X'teki değişikliklerin görünmesi birkaç dakika sürebilir, yaklaşık 10 dakika sonra tekrar dene.", pJust: "@{h} az önce kontrol edildi. Yaklaşık 10 dakika sonra tekrar dene.", nTick: "mavi tik", nDragon: "görünen adda 🐉", nBoth: "mavi tik ve görünen adda 🐉", kReach: "Blinky şu anda X'e ulaşamadı. Birkaç dakika sonra tekrar dene.",
       h1Feed: "Bir şeyler kıpırdıyor<br><span class=\"pop\">Kuluçkada.</span>", h1Keepers: "Her ejderha<br><span class=\"pop\">kendinden olanı</span> tanır.",
     },
     ru: {
@@ -389,6 +394,7 @@
       pAlready: "@{h} уже в каталоге.", pNotQual: "@{h} проверен сегодня и не подошёл. Попробуй завтра.",
       pBeing: "@{h} проверяется прямо сейчас. Секунду.", pNoExist: "@{h}, похоже, нет в X.",
       pWelcome: "Добро пожаловать на луг, @{h}.",
+      pNeeds: "@{h}: чтобы присоединиться, не хватает: {a}. Добавь это в X и попробуй здесь снова через несколько минут.", pStill: "@{h}: всё ещё не хватает: {a}. Изменения в X появляются не сразу, попробуй снова примерно через 10 минут.", pJust: "@{h} только что проверили. Попробуй снова примерно через 10 минут.", nTick: "синяя галочка", nDragon: "🐉 в отображаемом имени", nBoth: "синяя галочка и 🐉 в отображаемом имени", kReach: "Blinky сейчас не может связаться с X. Попробуй через несколько минут.",
       h1Feed: "Что то шевелится<br>в <span class=\"pop\">Инкубаторе.</span>", h1Keepers: "Каждый дракон<br>узнаёт <span class=\"pop\">своих.</span>",
     },
     vi: {
@@ -452,6 +458,7 @@
       pAlready: "@{h} đã có trong danh bạ.", pNotQual: "@{h} đã được kiểm tra hôm nay và chưa đủ điều kiện. Mai thử lại nhé.",
       pBeing: "@{h} đang được kiểm tra. Chờ một giây.", pNoExist: "@{h} có vẻ không tồn tại trên X.",
       pWelcome: "Chào mừng đến đồng cỏ, @{h}.",
+      pNeeds: "@{h} cần {a} để tham gia. Thêm trên X rồi thử lại ở đây sau vài phút.", pStill: "@{h} vẫn cần {a}. Thay đổi trên X có thể mất vài phút mới hiện, hãy thử lại sau khoảng 10 phút.", pJust: "@{h} vừa được kiểm tra. Hãy thử lại sau khoảng 10 phút.", nTick: "dấu tích xanh", nDragon: "🐉 trong tên hiển thị", nBoth: "dấu tích xanh và 🐉 trong tên hiển thị", kReach: "Blinky chưa kết nối được với X lúc này. Hãy thử lại sau vài phút.",
       h1Feed: "Có gì đó đang cựa quậy<br>trong <span class=\"pop\">Lò Ấp.</span>", h1Keepers: "Mỗi chú rồng<br>đều nhận ra <span class=\"pop\">đồng loại.</span>",
     },
     id: {
@@ -515,6 +522,7 @@
       pAlready: "@{h} sudah ada di direktori.", pNotQual: "@{h} sudah diperiksa hari ini dan belum memenuhi syarat. Coba besok.",
       pBeing: "@{h} sedang diperiksa. Sebentar ya.", pNoExist: "@{h} sepertinya tidak ada di X.",
       pWelcome: "Selamat datang di padang, @{h}.",
+      pNeeds: "@{h} perlu {a} untuk bergabung. Tambahkan di X, lalu coba lagi di sini beberapa menit lagi.", pStill: "@{h} masih perlu {a}. Perubahan di X bisa butuh beberapa menit untuk muncul, jadi coba lagi sekitar 10 menit lagi.", pJust: "@{h} baru saja dicek. Coba lagi sekitar 10 menit lagi.", nTick: "centang biru", nDragon: "🐉 di nama tampilan", nBoth: "centang biru dan 🐉 di nama tampilan", kReach: "Blinky belum bisa menghubungi X sekarang. Coba lagi beberapa menit lagi.",
       h1Feed: "Ada yang bergerak<br>di <span class=\"pop\">Penetasan.</span>", h1Keepers: "Setiap naga<br>mengenali <span class=\"pop\">sesamanya.</span>",
     },
     ko: {
@@ -578,6 +586,7 @@
       pAlready: "@{h}님은 이미 목록에 있어요.", pNotQual: "@{h}님은 오늘 확인했지만 조건에 맞지 않았어요. 내일 다시 시도해 주세요.",
       pBeing: "@{h}님을 지금 확인 중이에요. 잠시만요.", pNoExist: "@{h}님은 X에 없는 것 같아요.",
       pWelcome: "초원에 오신 걸 환영해요, @{h}님.",
+      pNeeds: "@{h} 님은 참여하려면 {a}이(가) 필요해요. X에서 추가한 뒤 몇 분 후 여기서 다시 시도하세요.", pStill: "@{h} 님은 아직 {a}이(가) 필요해요. X의 변경 사항이 보이기까지 몇 분 걸릴 수 있으니 약 10분 후 다시 시도하세요.", pJust: "@{h} 님은 방금 확인했어요. 약 10분 후 다시 시도하세요.", nTick: "파란 체크", nDragon: "표시 이름의 🐉", nBoth: "파란 체크와 표시 이름의 🐉", kReach: "Blinky가 지금 X에 연결하지 못했어요. 몇 분 후 다시 시도하세요.",
       h1Feed: "<span class=\"pop\">부화장</span>에서<br>무언가 꿈틀거려요.", h1Keepers: "모든 드래곤은<br><span class=\"pop\">자기 편</span>을 알아봐요.",
     },
     zh: {
@@ -641,6 +650,7 @@
       pAlready: "@{h} 已在名录中。", pNotQual: "@{h} 今天已检查，暂不符合条件，明天再试吧。",
       pBeing: "正在检查 @{h}，请稍等。", pNoExist: "X 上似乎没有 @{h}。",
       pWelcome: "欢迎来到草原，@{h}。",
+      pNeeds: "@{h} 需要{a}才能加入。在 X 上加好后，过几分钟再回来试试。", pStill: "@{h} 仍然需要{a}。X 上的更改可能要几分钟才会生效，请大约 10 分钟后再试。", pJust: "@{h} 刚刚检查过。请大约 10 分钟后再试。", nTick: "蓝色认证", nDragon: "显示名称里的 🐉", nBoth: "蓝色认证和显示名称里的 🐉", kReach: "Blinky 暂时连不上 X。请几分钟后再试。",
       h1Feed: "<span class=\"pop\">孵化场</span>里<br>有动静了。", h1Keepers: "每条巨龙<br>都认得<span class=\"pop\">同伴。</span>",
     },
   };

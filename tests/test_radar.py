@@ -503,6 +503,8 @@ def test_directory_lists_only_verified_dragon_names_and_pins_team(cfg, Session):
 
 def test_directory_add_checks_name_and_limits(cfg, Session, monkeypatch):
     from radar import xapi
+    from radar import fxpic
+    monkeypatch.setattr(fxpic, "profile", lambda u, http, timeout=8: None)   # FxTwitter busy: X is asked
 
     class Fake:
         def __init__(self, token): pass
@@ -532,6 +534,8 @@ def test_cron_is_not_blocked_by_a_directory_check(cfg, Session):
 
 def test_directory_add_never_pays_twice_for_the_same_handle(cfg, Session, monkeypatch):
     from radar import xapi
+    from radar import fxpic
+    monkeypatch.setattr(fxpic, "profile", lambda u, http, timeout=8: None)   # FxTwitter busy: X is asked
     calls = []
 
     class Fake:
@@ -997,3 +1001,56 @@ def test_v2_daily_goal_is_20_keeper_posts(cfg, Session):
     c.get("/preview/secret-preview-phrase-123")
     page = c.get("/friends").get_data(as_text=True)
     assert '"goal": 20' in page and '"goal_rule": "keeper"' in page and "0/20 Keeper posts" in page
+
+
+def test_directory_add_is_free_and_lets_people_retry_after_fixing_their_name(cfg, Session, monkeypatch):
+    from radar import fxpic, xapi
+    names = {"nastya": "Anastasiya"}
+
+    def fx(u, http, timeout=8):
+        return {"id": "7", "username": u, "name": names[u], "profile_image_url": "", "verified": True, "verified_type": "blue"}
+    monkeypatch.setattr(fxpic, "profile", fx)
+    monkeypatch.setattr(xapi, "XClient", lambda t: (_ for _ in ()).throw(AssertionError("X must not be paid")))
+    app = create_app(cfg)
+    c = app.test_client()
+    first = c.post("/api/keepers/add", json={"handle": "nastya"}).get_json()
+    assert first["ok"] is False and "display name" in first["message"] and "try again" in first["message"]
+    names["nastya"] = "Anastasiya \U0001F409"          # she adds the dragon on X
+    soon = c.post("/api/keepers/add", json={"handle": "nastya"}).get_json()
+    assert soon["ok"] is False and "10 minutes" in soon["message"]   # a short pause, not a whole day
+    with Session() as s:                                  # ten minutes later
+        from radar.db import get_setting, set_setting
+        at, _, why = get_setting(s, "dirno:nastya").partition("|")
+        set_setting(s, "dirno:nastya", (datetime.fromisoformat(at) - timedelta(minutes=11)).isoformat() + "|" + why)
+        s.commit()
+    ok = c.post("/api/keepers/add", json={"handle": "nastya"}).get_json()
+    assert ok["ok"] is True
+    with Session() as s:
+        assert s.scalar(select(func.count()).select_from(CollectorRun).where(CollectorRun.status == "directory_add")) == 0
+
+
+def test_discord_authors_are_looked_at_again_when_they_put_the_dragon_on(cfg, Session):
+    from radar.db import AuthorCheck, Keeper
+    from radar.fxpic import refresh_authors
+    now = utcnow()
+    calls = []
+
+    class R:
+        status_code = 200
+        def json(self): return {"user": {"screen_name": "Karpo", "id": "3", "name": "Karpo \U0001F409",
+                                         "avatar_url": "", "verification": {"verified": True, "type": "individual"}}}
+
+    class H:
+        def get(self, url, **k):
+            calls.append(url)
+            return R()
+
+    with Session() as s:
+        s.add(AuthorCheck(key="karpo", username="Karpo", name="Karpo", verified=True, avatar="https://pic/k",
+                          checked_at=now - timedelta(hours=10)))   # looked at before the dragon went on
+        s.add(Post(id="30", author_id="u:k", author_username="Karpo", author_name="Karpo \U0001F409", text="x",
+                   created_at=now, author_avatar="https://pic/k"))
+        s.commit()
+        refresh_authors(s, cfg, now, http=H())
+        s.commit()
+        assert len(calls) == 1 and s.get(Keeper, "karpo") is not None

@@ -478,6 +478,8 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     add_seen: dict[str, list[float]] = {}
     add_inflight: set[str] = set()
+    import requests as _requests
+    fx_http = _requests.Session()   # FxTwitter: free public profile lookups for "add me"
 
     @app.post("/api/keepers/add")
     def api_keepers_add():
@@ -496,19 +498,66 @@ def create_app(cfg: Config | None = None) -> Flask:
             # Already listed: answer for free. Only re-check X once the listing is a month old.
             if k and k.tagged and k.verified and now - k.last_checked < timedelta(days=30):
                 return {"ok": True, "message": f"@{k.username} is already in the directory."}
-            if get_setting(s, f"dirno:{key}") and now - datetime.fromisoformat(get_setting(s, f"dirno:{key}")) < timedelta(days=1):
-                return {"ok": False, "message": f"@{handle} was checked today and did not qualify. Try again tomorrow."}
+            # A recent "not yet" is remembered only briefly: people fix their name or get the tick and try again.
+            last_no = get_setting(s, f"dirno:{key}")
+            if last_no:
+                no_at, _, why = last_no.partition("|")
+                if now - datetime.fromisoformat(no_at) < timedelta(minutes=10):
+                    if why:
+                        return {"ok": False, "message": f"@{handle} still needs {why}. Changes on X can take a few "
+                                                        "minutes to show, so try again in about 10 minutes."}
+                    return {"ok": False, "message": f"@{handle} was just checked. Try again in about 10 minutes."}
             day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
             checks = s.scalar(select(func.count()).select_from(CollectorRun)
                               .where(CollectorRun.status == "directory_add", CollectorRun.started_at >= day_start)) or 0
             if checks >= cfg.directory_adds_per_day or month_spend(s, now) + cfg.cost_per_user_usd > cfg.monthly_spend_limit_usd:
                 return {"ok": False, "message": "Blinky has checked enough Keepers for today. Try again tomorrow."}
+        if key in add_inflight:  # same handle submitted twice at once: only one check goes out
+            return {"ok": False, "message": f"@{handle} is being checked right now. Give it a second."}
+
+        def missing_for(profile):
+            need = [] if profile.get("verified") and profile.get("verified_type") == "blue" else ["a blue tick"]
+            if not has_dragon_tag(profile.get("name")):
+                need.append("the \U0001F409 in the display name")
+            return " and ".join(need)
+
+        def answer(profile, paid: bool):
+            with Session() as s:
+                if paid:
+                    s.add(CollectorRun(started_at=now, finished_at=utcnow(), status="directory_add",
+                                       users_returned=1, est_cost_usd=cfg.cost_per_user_usd))
+                if not profile:
+                    set_setting(s, f"dirno:{key}", now.isoformat())  # do not look up a typo again straight away
+                    s.commit()
+                    return {"ok": False, "message": f"@{handle} does not seem to exist on X."}
+                k = note_user(s, profile, "added", now=now)
+                if k is None or not (k.tagged and k.verified):
+                    why = missing_for(profile)
+                    set_setting(s, f"dirno:{key}", f"{now.isoformat()}|{why}")
+                    s.commit()
+                    return {"ok": False, "message": f"@{profile['username']} needs {why} to join. "
+                                                    "Add it on X, then try again here in a few minutes."}
+                set_setting(s, f"dirno:{key}", "")
+                s.commit()
+                return {"ok": True, "message": f"Welcome to the meadow, @{profile['username']}."}
+
+        # 1. a free look through FxTwitter (the same source that fills the directory from Discord shares)
+        from .fxpic import profile as fx_profile
+        add_seen[ip] = recent + [now_ts]
+        add_inflight.add(key)
+        try:
+            fx = fx_profile(handle, fx_http)
+        finally:
+            add_inflight.discard(key)
+        if fx is not None:
+            return answer(fx or None, paid=False)
+
+        # 2. FxTwitter is busy: ask X itself (billed, capped per day)
         if not cfg.x_bearer_token:
-            return {"ok": False, "message": "Adding is switched off right now."}
+            return {"ok": False, "message": "Blinky could not reach X just now. Try again in a few minutes."}
         from .xapi import XClient, XApiError
         if key in add_inflight:  # same handle submitted twice at once: only one check goes to X
             return {"ok": False, "message": f"@{handle} is being checked right now. Give it a second."}
-        add_seen[ip] = recent + [now_ts]
         add_inflight.add(key)
         try:
             profile = XClient(cfg.x_bearer_token).user_profile(handle)
@@ -516,23 +565,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             return {"ok": False, "message": "X did not answer just now. Try again in a bit."}
         finally:
             add_inflight.discard(key)
-        with Session() as s:
-            s.add(CollectorRun(started_at=now, finished_at=utcnow(), status="directory_add",
-                               users_returned=1, est_cost_usd=cfg.cost_per_user_usd))
-            if not profile:
-                set_setting(s, f"dirno:{key}", now.isoformat())  # do not pay to look up a typo twice
-                s.commit()
-                return {"ok": False, "message": f"@{handle} does not seem to exist on X."}
-            k = note_user(s, profile, "added", now=now)
-            if k is None or not (k.tagged and k.verified):
-                set_setting(s, f"dirno:{key}", now.isoformat())
-                s.commit()
-                need = [] if profile.get("verified") and profile.get("verified_type") == "blue" else ["a blue tick"]
-                if not has_dragon_tag(profile.get("name")):
-                    need.append("the \U0001F409 in your display name")
-                return {"ok": False, "message": f"@{profile['username']} needs {' and '.join(need)} to join."}
-            s.commit()
-            return {"ok": True, "message": f"Welcome to the meadow, @{profile['username']}."}
+        return answer(profile, paid=True)
 
     # ---------- progress backup codes: no login, nothing personal, gone after 30 days ----------
     CODE_ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"

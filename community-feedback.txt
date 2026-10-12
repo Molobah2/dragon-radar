@@ -1,0 +1,13 @@
+PDTOOLS COMMUNITY FEEDBACK
+Everyone here helped make pdtools better. Shout them out when we share updates.
+
+Format: date | who | what they reported | what we fixed
+
+2026-10-10 | TJ (@TradingJoker) | Shared the PD Tools logo and brand art for the site | Logo, badge and share card now use TJ's design
+2026-10-11 | TJ (@TradingJoker) | On phones the home page hero filled the whole screen | Phone layout fixed with quick links and an "All tools" cue, laptops unchanged
+2026-10-11 | TJ (@TradingJoker) | Blinky's animation stopped playing on phones | The animation now restarts on its own whenever the page comes back into view
+2026-10-12 | Anastasiya (@BugaenkoNastya) | Could not add herself to Keepers even though she met every requirement | People who fix their name or get the blue tick can now try again after 10 minutes instead of a whole day, the check is free, and the feed now notices when someone adds the dragon to their name. Anastasiya and 5 other Keepers who were stuck were added: karpo27, Battle Beasts, INSANE, Hunter || Whale, HEAT
+
+SHOUT OUT LIST (one line each, ready to copy)
+@TradingJoker
+@BugaenkoNastya

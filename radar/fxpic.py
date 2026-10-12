@@ -73,6 +73,11 @@ def refresh_authors(s, cfg, now: datetime, http=None, limit: int = 40) -> dict:
     for handle, last, name, missing in rows:
         c = s.get(AuthorCheck, handle.lower())
         fresh = c is not None and now - c.checked_at < timedelta(days=RECHECK_DAYS)
+        if fresh and has_dragon_tag(name) and not (c.verified and has_dragon_tag(c.name)):
+            # they wear the dragon in their posts now: look again if they put it on after our last look,
+            # or after a day if the blue tick was what was missing (people get Premium to join)
+            if not has_dragon_tag(c.name) or now - c.checked_at >= timedelta(days=1):
+                fresh = False
         if missing and c and c.avatar:
             todo.append((0, last, handle, c, False))        # picture known, no call needed
         elif not fresh and (missing or has_dragon_tag(name)):
