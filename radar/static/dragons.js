@@ -152,7 +152,7 @@
       const l = (d[i] + d[i + 1] + d[i + 2]) / 3, dl = l - bgl;
       return Math.abs(d[i] - bg[0] - dl) + Math.abs(d[i + 1] - bg[1] - dl) + Math.abs(d[i + 2] - bg[2] - dl) < 9 && Math.abs(dl) < 7;
     };
-    const tried = new Uint8Array(N), minHole = N * 0.0012;
+    const tried = new Uint8Array(N), minHole = N * 0.0005;
     const near = (r) => { const X = r % W; return [X > 0 ? r - 1 : -1, X < W - 1 ? r + 1 : -1, r >= W ? r - W : -1, r < N - W ? r + W : -1]; };
     for (let p0 = 0; p0 < N; p0++) {
       if (seen[p0] || tried[p0] || !isBg(p0 * 4)) continue;
