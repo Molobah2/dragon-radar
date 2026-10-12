@@ -178,6 +178,28 @@
     </div>
   </div>
   {% if v2 %}
+  <div class="sheet-wrap" id="daycard" hidden>
+    <div class="sheet daycard-sheet" role="dialog" aria-modal="true" aria-labelledby="dc-title">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <h3 id="dc-title">Your daily card</h3>
+      <p class="sheet-sub">Goal done. Pick your Blinky, a scene and a colour, then post it.</p>
+      <div class="dc-stage"><canvas id="dc-preview" width="480" height="600" aria-label="Preview of your daily card"></canvas></div>
+      <div class="dc-group"><span class="dc-label">Pose</span><div class="dc-poses" id="dc-poses"></div><small class="dc-unlock" id="dc-unlock"></small></div>
+      <div class="dc-group"><span class="dc-label">Scene</span><div class="dc-row" id="dc-scenes"></div></div>
+      <div class="dc-group"><span class="dc-label">Colour</span><div class="dc-row" id="dc-tones"></div></div>
+      <label class="dc-group hatch-xname"><span class="dc-label">Your X name for the card</span>
+        <input id="dc-xname" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="16" placeholder="@yourname"></label>
+      <div class="dc-group"><span class="dc-label">Caption ideas for today</span><div class="dc-caps" id="dc-caps"></div>
+        <textarea id="dc-text" rows="3" maxlength="240" aria-label="Your caption"></textarea></div>
+      <p class="sheet-hint" id="dc-hint" hidden></p>
+      <div class="sheet-actions">
+        <button class="btn btn-go" id="dc-share" type="button" hidden>Share</button>
+        <a class="btn btn-go" id="dc-post" href="https://x.com/intent/post" target="_blank" rel="noopener">Post on X</a>
+        <button class="btn btn-soft" id="dc-save" type="button">Save picture</button>
+        <button class="btn btn-soft" id="dc-close" type="button">Close</button>
+      </div>
+    </div>
+  </div>
   <div class="sheet-wrap" id="hatch" hidden data-base="{{ cfg.scene_base }}">
     <div class="sheet hatch-sheet" role="dialog" aria-modal="true" aria-labelledby="hatch-title">
       <div class="sheet-grip" aria-hidden="true"></div>
@@ -195,6 +217,7 @@
         <button class="btn btn-go" id="hatch-share" type="button" hidden>Share</button>
         <a class="btn btn-go" id="hatch-post" href="https://x.com/intent/post" target="_blank" rel="noopener">Post on X</a>
         <button class="btn btn-soft" id="hatch-save" type="button">Save picture</button>
+        <button class="btn btn-go" id="hatch-daycard" type="button" hidden>Make my daily card</button>
         <button class="btn btn-soft" id="hatch-shelf" type="button">My dragons</button>
         <button class="btn btn-soft" id="hatch-close" type="button">Close</button>
       </div>
@@ -296,5 +319,6 @@
   <script src="{{ asset('cards-data.js') }}" defer></script>
   <script src="{{ asset('myweek.js') }}" defer></script>
   <script src="{{ asset('dex-data.js') }}" defer></script>
-  <script src="{{ asset('dragons.js') }}" defer></script>{% endif %}
+  <script src="{{ asset('dragons.js') }}" defer></script>
+  <script src="{{ asset('goalcard.js') }}" defer></script>{% endif %}
 {% endblock %}

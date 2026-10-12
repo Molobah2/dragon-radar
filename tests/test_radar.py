@@ -1211,3 +1211,15 @@ def test_team_spotlight_failure_does_not_stop_the_run(cfg, Session):
     with Session() as s:
         run = run_collection(s, Fake([]), cfg, now=utcnow())
         assert run.status != "error"
+
+
+def test_daily_goal_card_is_v2_only(cfg, Session):
+    cfg.preview_key = "secret-preview-phrase-123"
+    c = create_app(cfg).test_client()
+    page = c.get("/friends").get_data(as_text=True)
+    assert 'id="daycard"' not in page and "goalcard.js" not in page
+    c.get("/preview/secret-preview-phrase-123")
+    page = c.get("/friends").get_data(as_text=True)
+    assert 'id="daycard"' in page and "goalcard.js" in page and 'id="hatch-daycard"' in page
+    js = c.get("/static/goalcard.js").get_data(as_text=True)
+    assert js.count('["') >= 12 and "dragon-radar/blinky/" in js

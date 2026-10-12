@@ -140,3 +140,9 @@ html.theme-dark .hatch-xname input { background: var(--d-field); border-color: r
 
 html.theme-dark .crew-row .post { box-shadow: 0 0 0 2px rgba(185, 166, 255, .55), 0 24px 44px -26px rgba(0, 0, 0, .7); }
 html.theme-dark .tag.crew { background: rgba(150, 120, 255, .2); color: #d6ccff; }
+
+html.theme-dark .dc-pose { background: linear-gradient(160deg, #2a2450, #1c1838); }
+html.theme-dark .dc-cap { border-color: rgba(185, 166, 255, .25); background: rgba(185, 166, 255, .08); }
+html.theme-dark .dc-cap.on { border-color: #b9a6ff; background: rgba(185, 166, 255, .18); }
+html.theme-dark #dc-text { background: rgba(255, 255, 255, .06); color: inherit; border-color: rgba(255, 255, 255, .18); }
+html.theme-dark .dc-swatch, html.theme-dark .dc-dot { border-color: rgba(255, 255, 255, .85); }

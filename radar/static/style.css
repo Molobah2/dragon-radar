@@ -1041,3 +1041,27 @@ html.theme-dark .kp-end { color: rgba(242, 244, 255, .8); text-shadow: 0 1px 8px
   .crew-row .trail { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding: 4px 2px 14px; -webkit-overflow-scrolling: touch; }
   .crew-row .trail > .post { flex: 0 0 84%; scroll-snap-align: start; }
 }
+
+/* Daily goal card (v2) */
+.daycard-sheet { max-height: 92vh; overflow-y: auto; }
+.dc-stage { display: grid; place-items: center; margin: 6px 0 14px; }
+#dc-preview { width: min(100%, 300px); height: auto; aspect-ratio: 4 / 5; border-radius: 18px; box-shadow: 0 22px 44px -22px rgba(40, 20, 90, .6); background: #eee8ff; }
+.dc-group { display: grid; gap: 8px; margin: 0 0 14px; }
+.dc-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
+.dc-poses { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.dc-pose { position: relative; flex: 0 0 74px; height: 74px; border-radius: 16px; border: 2px solid transparent; background: linear-gradient(160deg, #f4efff, #e2d8ff); padding: 4px; cursor: pointer; scroll-snap-align: start; }
+.dc-pose img { width: 100%; height: 100%; object-fit: contain; }
+.dc-pose.on { border-color: var(--plum, #6b4fd8); box-shadow: 0 0 0 3px rgba(107, 79, 216, .2); }
+.dc-pose.locked img { filter: grayscale(1) brightness(.6) blur(1px); opacity: .55; }
+.dc-lock { position: absolute; inset: auto 4px 4px auto; font: 800 11px/1 var(--font-mono, monospace); background: #1d2433; color: #fff; border-radius: 999px; padding: 4px 6px; }
+.dc-lock::before { content: "\1F512 "; }
+.dc-unlock { opacity: .7; font-size: 12px; }
+.dc-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.dc-swatch { width: 44px; height: 44px; border-radius: 14px; border: 3px solid #fff; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .35); cursor: pointer; }
+.dc-dot { width: 36px; height: 36px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .35); cursor: pointer; }
+.dc-swatch.on, .dc-dot.on { outline: 3px solid var(--plum, #6b4fd8); outline-offset: 2px; }
+.dc-caps { display: grid; gap: 8px; }
+.dc-cap { text-align: left; font: 600 14px/1.35 inherit; padding: 10px 12px; border-radius: 14px; border: 2px solid rgba(107, 79, 216, .18); background: rgba(107, 79, 216, .06); color: inherit; cursor: pointer; }
+.dc-cap.on { border-color: var(--plum, #6b4fd8); background: rgba(107, 79, 216, .12); }
+#dc-text { width: 100%; font: 16px/1.4 inherit; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(0, 0, 0, .15); resize: vertical; box-sizing: border-box; }
+.goal.card-ready { box-shadow: 0 0 0 3px rgba(255, 210, 63, .55); }
