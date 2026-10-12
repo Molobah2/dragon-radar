@@ -425,13 +425,12 @@
       x.beginPath(); x.arc(px, py, sz, 0, Math.PI * 2); x.fill(); x.shadowBlur = 0;
     }
     x.globalAlpha = 1;
-    if (id === "moon") {   // a great crescent behind the relic
-      x.save(); x.shadowColor = "rgba(200, 220, 255, .8)"; x.shadowBlur = 60;
-      x.fillStyle = "#e9f0ff"; x.beginPath(); x.arc(340, 300, 250, 0, Math.PI * 2); x.fill(); x.restore();
-      x.globalCompositeOperation = "destination-out"; x.beginPath(); x.arc(420, 250, 236, 0, Math.PI * 2); x.fill();
-      x.globalCompositeOperation = "source-over";
-      const veil = x.createRadialGradient(340, 337, 120, 340, 337, 420); veil.addColorStop(0, "rgba(7, 11, 26, 0)"); veil.addColorStop(1, "rgba(7, 11, 26, .25)");
-      x.fillStyle = veil; x.fillRect(0, 0, W, H);
+    if (id === "moon") {   // moonlight: a soft silver glow and a thin halo ring (the relic brings its own crescent)
+      const mg = x.createRadialGradient(340, 330, 40, 340, 330, 360); mg.addColorStop(0, "rgba(220, 232, 255, .35)"); mg.addColorStop(0.55, "rgba(160, 185, 240, .12)"); mg.addColorStop(1, "rgba(7, 11, 26, 0)");
+      x.fillStyle = mg; x.fillRect(0, 0, W, H);
+      x.save(); x.strokeStyle = "rgba(220, 232, 255, .35)"; x.lineWidth = 1.5; x.shadowColor = "rgba(200, 220, 255, .8)"; x.shadowBlur = 14;
+      x.beginPath(); x.arc(340, 337, 300, 0, Math.PI * 2); x.stroke();
+      x.globalAlpha = 0.5; x.beginPath(); x.arc(340, 337, 318, 0, Math.PI * 2); x.stroke(); x.restore();
     }
     if (id === "ember") {   // molten cracks along the floor
       x.save(); x.strokeStyle = "#ff8a2a"; x.shadowColor = "#ff6a00"; x.shadowBlur = 18; x.lineWidth = 2.4; x.globalAlpha = 0.75;
