@@ -148,10 +148,8 @@
     while (q.length) { const p = q.pop(), X = p % W; if (X > 0) push(p - 1); if (X < W - 1) push(p + 1); if (p >= W) push(p - W); if (p < N - W) push(p + W); }
     // grey pockets the sticker wraps around (say between a wing and the tail) are background too.
     // Only big, almost perfectly flat ones with the light sticker border round their edge, so grey or silver art is never touched.
-    const flat = (i) => {
-      const l = (d[i] + d[i + 1] + d[i + 2]) / 3, dl = l - bgl;
-      return Math.abs(d[i] - bg[0] - dl) + Math.abs(d[i + 1] - bg[1] - dl) + Math.abs(d[i + 2] - bg[2] - dl) < 9 && Math.abs(dl) < 7;
-    };
+    // "flat" means one even tone (the upscaler can shift the pocket's grey a little from the outside grey)
+    const chroma = (i) => { const dl = (d[i] + d[i + 1] + d[i + 2]) / 3 - bgl; return Math.abs(d[i] - bg[0] - dl) + Math.abs(d[i + 1] - bg[1] - dl) + Math.abs(d[i + 2] - bg[2] - dl); };
     const tried = new Uint8Array(N), minHole = N * 0.0005;
     const near = (r) => { const X = r % W; return [X > 0 ? r - 1 : -1, X < W - 1 ? r + 1 : -1, r >= W ? r - W : -1, r < N - W ? r + W : -1]; };
     for (let p0 = 0; p0 < N; p0++) {
@@ -161,13 +159,15 @@
         const r = st.pop();
         for (const n of near(r)) if (n >= 0 && !seen[n] && !tried[n] && isBg(n * 4)) { tried[n] = 1; st.push(n); part.push(n); }
       }
-      if (part.length < minHole) continue;
+      if (part.length < minHole || bgl < 100 || bgl > 200) continue;   // only on the usual mid grey backdrop
+      const tones = part.map((r) => (d[r * 4] + d[r * 4 + 1] + d[r * 4 + 2]) / 3).sort((a, b) => a - b), mid = tones[tones.length >> 1];
       let flatN = 0, edge = 0, light = 0;
       for (const r of part) {
-        if (flat(r * 4)) flatN++;
+        const i = r * 4;
+        if (Math.abs((d[i] + d[i + 1] + d[i + 2]) / 3 - mid) < 4 && chroma(i) < 9) flatN++;
         for (const n of near(r)) { if (n < 0 || tried[n]) continue; edge++; if ((d[n * 4] + d[n * 4 + 1] + d[n * 4 + 2]) / 3 > 200) light++; }
       }
-      if (flatN >= part.length * 0.85 && light >= edge * 0.35) for (const r of part) seen[r] = 1;
+      if (Math.abs(mid - bgl) < 14 && flatN >= part.length * 0.85 && light >= edge * 0.35) for (const r of part) seen[r] = 1;
     }
     // a die-cut sticker is one piece: keep the biggest, drop any stray specks
     const lab = new Int32Array(N);
