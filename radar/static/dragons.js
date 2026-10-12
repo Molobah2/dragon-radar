@@ -107,7 +107,7 @@
   const imgCache = new Map();
   // each dragon is its own square render on flat grey; it is cut out here and trimmed to the sticker
   function rawUrl(entry, h) {
-    return `${BASE}/image/upload/c_scale,w_${Math.round(h * 1.25)}/f_png/${D.art[entry.key] || "v1"}/dragon-radar/dex2/${entry.key}`;
+    return `${BASE}/image/upload/c_scale,w_${Math.round(h * 1.25)}/f_png/${D.art[entry.key] || "v1"}/dragon-radar/dex3/${entry.key}`;
   }
   const loadImg = (src) => new Promise((res) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
   // the sheets sit on flat grey and every sticker has a white border, so the grey is lifted off from the edges in
