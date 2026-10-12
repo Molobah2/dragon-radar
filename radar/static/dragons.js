@@ -100,7 +100,7 @@
     const all = [...SCHEDULE.common, ...SCHEDULE.rare, ...SCHEDULE.legend].filter((d) => d > n).sort((a, b) => a - b);
     if (!all.length) return found() >= TOTAL ? "You found every dragon. A true Keeper legend." : "";
     const k = all[0] - n;
-    return k <= 1 ? "Your next egg brings a new dragon." : `A new dragon arrives in ${k} goal days.`;
+    return k <= 1 ? "Your next egg brings a new dragon." : "More dragons are on the way. Keep your streak going.";
   }
 
   // ---------- sticker images: cut out of the art sheet on this device ----------
