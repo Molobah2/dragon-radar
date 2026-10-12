@@ -1028,3 +1028,8 @@ html.theme-dark .kp-end { color: rgba(242, 244, 255, .8); text-shadow: 0 1px 8px
 .music-credits { display: grid; gap: 4px; justify-items: center; margin: 0 0 6px; font-size: 13.5px; font-weight: 700; }
 .music-credits .mc-title { font-weight: 800; letter-spacing: .02em; }
 .music-credits a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
+/* the X name field on a secret relic */
+.hatch-xname { display: grid; gap: 6px; margin: -2px auto 12px; max-width: 320px; text-align: center; font: 800 12px var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+.hatch-xname input { font: 800 16px var(--font-body); text-align: center; text-transform: none; letter-spacing: 0; padding: 10px 14px; border-radius: 999px; border: 2px solid #e3e7f2; background: #fff; color: var(--ink); outline: none; }
+.hatch-xname input:focus { border-color: #7b6cff; }

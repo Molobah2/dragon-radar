@@ -1129,3 +1129,11 @@ def test_music_credits_show_in_v2_only_and_only_when_set(cfg, Session):
 def test_keepers_page_says_when_everyone_is_shown(cfg, Session):
     page = create_app(cfg).test_client().get("/friends/keepers").get_data(as_text=True)
     assert 'id="k-end"' in page
+
+
+def test_relic_cards_can_carry_the_keepers_x_name(cfg, Session):
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1] / "radar"
+    assert 'id="hatch-xname-in"' in (root / "templates" / "feed.html").read_text()
+    js = (root / "static" / "dragons.js").read_text()
+    assert "pd:xname" in js and "EARNED BY" in js and "cleanX" in js

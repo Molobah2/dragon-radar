@@ -146,6 +146,29 @@
     for (let X = 0; X < W; X++) { push(X); push((H - 1) * W + X); }
     for (let Y = 0; Y < H; Y++) { push(Y * W); push(Y * W + W - 1); }
     while (q.length) { const p = q.pop(), X = p % W; if (X > 0) push(p - 1); if (X < W - 1) push(p + 1); if (p >= W) push(p - W); if (p < N - W) push(p + W); }
+    // grey pockets the sticker wraps around (say between a wing and the tail) are background too.
+    // Only big, almost perfectly flat ones with the light sticker border round their edge, so grey or silver art is never touched.
+    const flat = (i) => {
+      const l = (d[i] + d[i + 1] + d[i + 2]) / 3, dl = l - bgl;
+      return Math.abs(d[i] - bg[0] - dl) + Math.abs(d[i + 1] - bg[1] - dl) + Math.abs(d[i + 2] - bg[2] - dl) < 9 && Math.abs(dl) < 7;
+    };
+    const tried = new Uint8Array(N), minHole = N * 0.0012;
+    const near = (r) => { const X = r % W; return [X > 0 ? r - 1 : -1, X < W - 1 ? r + 1 : -1, r >= W ? r - W : -1, r < N - W ? r + W : -1]; };
+    for (let p0 = 0; p0 < N; p0++) {
+      if (seen[p0] || tried[p0] || !isBg(p0 * 4)) continue;
+      const part = [p0], st = [p0]; tried[p0] = 1;
+      while (st.length) {
+        const r = st.pop();
+        for (const n of near(r)) if (n >= 0 && !seen[n] && !tried[n] && isBg(n * 4)) { tried[n] = 1; st.push(n); part.push(n); }
+      }
+      if (part.length < minHole) continue;
+      let flatN = 0, edge = 0, light = 0;
+      for (const r of part) {
+        if (flat(r * 4)) flatN++;
+        for (const n of near(r)) { if (n < 0 || tried[n]) continue; edge++; if ((d[n * 4] + d[n * 4 + 1] + d[n * 4 + 2]) / 3 > 200) light++; }
+      }
+      if (flatN >= part.length * 0.85 && light >= edge * 0.35) for (const r of part) seen[r] = 1;
+    }
     // a die-cut sticker is one piece: keep the biggest, drop any stray specks
     const lab = new Int32Array(N);
     let cur = 0, bestN = 0, best = 0;
@@ -281,6 +304,7 @@
       : `${entry.pose} · ${found()} of ${TOTAL} found${mode === "copy" ? ` · you have ${have}` : ""}`;
     n.append(tag, b, p); n.hidden = false;
     const t = entry.tier;
+    if (xField) { xField.hidden = t !== "secret"; if (t === "secret" && xIn) xIn.value = xName() ? "@" + xName() : ""; }
     if (t === "secret") {
       $("hatch-title").textContent = mode === "view" ? "My secret relic" : "You found a secret relic";
       $("hatch-sub").textContent = mode === "view" ? entry.sp.line : `${entry.sp.line} Very few Keepers will ever see this one.`;
@@ -355,6 +379,18 @@
     x.fillText("pdtools.xyz", 1168, 640);
     return c;
   }
+
+  // the X name the Keeper wants on their relic card (kept on this device only)
+  const cleanX = (v) => String(v || "").trim().replace(/^@+/, "").replace(/[^A-Za-z0-9_]/g, "").slice(0, 15);
+  const xName = () => cleanX(store.get("pd:xname", ""));
+  const xField = $("hatch-xname"), xIn = $("hatch-xname-in");
+  let xTimer = null;
+  if (xIn) xIn.addEventListener("input", () => {
+    const v = cleanX(xIn.value);
+    store.set("pd:xname", v);
+    clearTimeout(xTimer);
+    xTimer = setTimeout(() => { if (shown && shown.entry.tier === "secret") prepShare(shown.entry); }, 500);
+  });
 
   // ---------- secret relic cards: each one has its own world ----------
   function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -449,7 +485,16 @@
     x.fillStyle = L.soft; x.font = '700 25px "Nunito", system-ui, sans-serif';
     wrap(x, entry.sp.line, 660, words[1] ? 420 : 344, 470, 34);
     x.fillStyle = L.accent; x.font = '800 22px "Nunito", system-ui, sans-serif';
-    x.fillText(`${SECRETS.filter(sealed).length} of ${SECRETS.length} secret relics`, 660, 560);
+    const who = xName();
+    if (who) {   // the Keeper who earned it, signed on the card
+      x.fillStyle = L.soft; x.font = '700 20px "Nunito", system-ui, sans-serif'; x.fillText("EARNED BY".split("").join(String.fromCharCode(8202)), 660, 520);
+      x.fillStyle = L.ink; x.font = '700 40px "Fredoka", system-ui, sans-serif';
+      x.save(); x.shadowColor = L.glow; x.shadowBlur = 18; x.fillText("@" + who, 660, 566); x.restore();
+      x.fillStyle = L.accent; x.font = '800 18px "Nunito", system-ui, sans-serif';
+      x.fillText(`${SECRETS.filter(sealed).length} of ${SECRETS.length} secret relics`, 660, 604);
+    } else {
+      x.fillText(`${SECRETS.filter(sealed).length} of ${SECRETS.length} secret relics`, 660, 560);
+    }
     x.textAlign = "right"; x.fillStyle = L.ink; x.font = '800 21px "Nunito", system-ui, sans-serif';
     x.fillText("pdtools.xyz", W - 60, H - 58);
     return c;
