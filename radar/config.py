@@ -90,6 +90,9 @@ class Config:
     brand_logo: str = field(default_factory=lambda: os.environ.get("BRAND_LOGO", "pdtools-badge"))
     # Keeper card is locked until this is switched on (no lookups, button shows as coming soon)
     keeper_card_open: bool = field(default_factory=lambda: _bool("KEEPER_CARD_OPEN"))
+    # v2 music credits, one track per entry: "Track title|Maker name|x_handle" separated by ";".
+    # Only tracks with the maker's permission go here; the credits row stays hidden while this is empty.
+    music_credits_raw: str = field(default_factory=lambda: os.environ.get("MUSIC_CREDITS", "").strip())
     # Where the mailbox button leads (a Google Doc or Form for suggestions); the mailbox hides when empty
     suggest_url: str = field(default_factory=lambda: os.environ.get("SUGGEST_URL", "").strip())
     # Live Keeper card lookups on X: most posts read per lookup, and a daily spend cap for them
@@ -161,3 +164,16 @@ def _mailbox(self, kind: str = "image") -> str:
 
 Config.icon = _icon
 Config.mailbox = _mailbox
+
+def _music_credits(self) -> list[dict]:
+    out = []
+    for part in self.music_credits_raw.split(";"):
+        bits = [b.strip() for b in part.split("|")]
+        if len(bits) >= 2 and bits[0] and bits[1]:
+            handle = (bits[2] if len(bits) > 2 else "").lstrip("@")
+            out.append({"track": bits[0][:60], "by": bits[1][:40],
+                        "x": handle if handle.replace("_", "").isalnum() and len(handle) <= 15 else ""})
+    return out[:12]
+
+
+Config.music_credits = _music_credits

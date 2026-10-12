@@ -107,6 +107,9 @@ def create_app(cfg: Config | None = None) -> Flask:
         {"name": "My week card", "url": "/friends#myweek", "note": "Blinky's Friends, side menu or My progress: a card of the Keepers you supported this week, to share on X."},
         {"name": "Collectible dragons", "url": "/friends#dragons", "note": "Blinky's Friends: finish the daily goal to hatch one egg a day into a dragon sticker. Streaks raise the odds of rare and golden ones. Side menu or My progress: My dragons."},
         {"name": "Hatchery numbers", "url": "/#numbers", "note": "Home page, under the tools: how many people have visited pdtools, this week, who came back, and a 14 day chart."},
+        {"name": "Weekly top posts designs", "url": "/friends#weekly", "note": "Blinky's Friends, This week's top posts: 7 painted card styles with bigger, easy to read text."},
+        {"name": "Secret relics", "url": "/friends#dragons", "note": "My dragons: three sealed relics nobody can see how to earn. They appear on their own when a Keeper earns one."},
+        {"name": "Dark mode", "url": "/friends", "note": "Every Blinky's Friends page: the Dark and Light button at the top. Follows the phone's own setting until someone picks."},
     ]
 
     # ---- v2 preview ------------------------------------------------------------------------------------
@@ -605,10 +608,13 @@ def create_app(cfg: Config | None = None) -> Flask:
         day = lambda v: v if isinstance(v, str) and len(v) == 10 and v[4] == "-" else None
         num = lambda v, top: min(top, int(v)) if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0 else 0
         g_in = dex_in.get("g") if isinstance(dex_in.get("g"), dict) else {}
+        s_in = dex_in.get("s") if isinstance(dex_in.get("s"), dict) else {}
         dex_out = {"have": have, "last": day(dex_in.get("last")), "n": num(dex_in.get("n"), 5000),
-                   "g": {"last": day(g_in.get("last")), "count": num(g_in.get("count"), 5000), "best": num(g_in.get("best"), 5000)}}
+                   "g": {"last": day(g_in.get("last")), "count": num(g_in.get("count"), 5000), "best": num(g_in.get("best"), 5000)},
+                   "e": num(dex_in.get("e"), 1_000_000),
+                   "s": {k: day(v) for k, v in s_in.items() if k in ("moon", "ember", "star") and day(v)}}
         data = _json.dumps({"opened": clean, "streak": {k: streak.get(k) for k in ("last", "count", "best")},
-                            **({"dex": dex_out} if have else {})})
+                            **({"dex": dex_out} if have or dex_out["e"] or dex_out["s"] else {})})
         if len(data) > 150_000:
             return jsonify({"ok": False, "message": "That is too much to save at once."}), 413
         now = utcnow()

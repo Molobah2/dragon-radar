@@ -25,5 +25,12 @@ window.PD_DEX = {
     { id: "amethyst", name: "Amethyst", pose: "Crystal flight" },
     { id: "diamond", name: "Diamond", pose: "Hero cape" },
   ],
+  // secret relics: how to earn them is never written on the site
+  secrets: [
+    { id: "moon", name: "Moonsilver Keeper", pose: "Secret relic", line: "Silver light finds the ones who keep showing up." },
+    { id: "ember", name: "Ember Warden", pose: "Secret relic", line: "A warm little fire that keeps every Keeper close." },
+    { id: "star", name: "Starborn Sovereign", pose: "Secret relic", line: "Written in the stars long before the first egg." },
+  ],
+  secretArt: { "moon-s": "v1791820014", "ember-s": "v1791820017", "star-s": "v1791820020" },
   art: {"shadow-c":"v1791763925","space-c":"v1791764135","speed-c":"v1791763928","tiger-c":"v1791763930","tree-c":"v1791763932","water-c":"v1791763933","acid-c":"v1791763935","ghost-c":"v1791763937","ice-c":"v1791764264","jelly-c":"v1791764019","light-c":"v1791764137","lightning-c":"v1791763939","lava-c":"v1791763810","panda-c":"v1791764021","pink-c":"v1791764023","shadow-r":"v1791764266","space-r":"v1791764139","speed-r":"v1791764268","tiger-r":"v1791764270","tree-r":"v1791764272","water-r":"v1791763811","acid-r":"v1791764142","ghost-r":"v1791764144","ice-r":"v1791764274","jelly-r":"v1791764277","light-r":"v1791764348","lightning-r":"v1791764351","lava-r":"v1791764279","panda-r":"v1791764352","pink-r":"v1791764354","ruby-l":"v1791763813","sapphire-l":"v1791764138","emerald-l":"v1791764024","amethyst-l":"v1791764355","diamond-l":"v1791764357"},
 };

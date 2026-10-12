@@ -7,7 +7,17 @@ Format: date | who | what they reported | what we fixed
 2026-10-11 | TJ (@TradingJoker) | On phones the home page hero filled the whole screen | Phone layout fixed with quick links and an "All tools" cue, laptops unchanged
 2026-10-11 | TJ (@TradingJoker) | Blinky's animation stopped playing on phones | The animation now restarts on its own whenever the page comes back into view
 2026-10-12 | Anastasiya (@BugaenkoNastya) | Could not add herself to Keepers even though she met every requirement | People who fix their name or get the blue tick can now try again after 10 minutes instead of a whole day, the check is free, and the feed now notices when someone adds the dragon to their name. Anastasiya and 5 other Keepers who were stuck were added: karpo27, Battle Beasts, INSANE, Hunter || Whale, HEAT
+2026-10-12 | Shiv (@Shivo222) | On phones the Keepers filter box covered the cards below it, and this happened on other pages too | Phone layout fixed: the filter box stays in place and is half the height, the tab bar now sits flush on the bottom edge so nothing peeks under it, and tapping the search box no longer zooms the page on iPhones
+2026-10-12 | Aphation (@Aphation_) | On phones, Reply on X opened a blank new post instead of a reply, so the popup had to be closed first | On phones the reply button now opens the post itself in X with a short hint to tap reply there, and Say hi copies the greeting so it can be pasted into the reply. Computers keep the direct reply box
+2026-10-11 | Feedback form (no name left) | On a phone the music stopped when switching tabs | Music now carries on from the same spot when moving between pages, keeps playing while people visit X and picks up again when they come back, phones start it on a normal tap, the sound button pulses when a tap is needed, and phones get lock screen play and pause
+2026-10-12 | Nacho (@NachoAvg_) | Asked for a dark mode | Dark mode built for v2: a Dark and Light button in the header, it follows the phone's own setting until someone picks, and every card, sheet, field and the tab bar turn deep navy with the meadow dimmed behind
+2026-10-12 | Jon (@jonwynnx) | On phones the side buttons under Community pulse looked messy: mixed alignment, some with icons and some without | The side menu is now one tidy glass list: an icon tile on the left of every row, words aligned, an arrow on the right, and the locked Keeper card shown with a small pill
+2026-10-12 | HeartyBoi (@HeartyOfDaCards) | Wanted to scroll past page 1 of the Keepers list and see everyone; suggested crediting the community musicians and getting their permission before adding more songs | Checked every author: all Keepers with the 🐉 and a blue tick are already listed on one page (9 more wear the 🐉 but have no blue tick yet), and the list now says so at the bottom. Music credits row is ready for v2 and fills in once each maker gives permission
 
 SHOUT OUT LIST (one line each, ready to copy)
 @TradingJoker
 @BugaenkoNastya
+@Shivo222
+@Aphation_
+@NachoAvg_
+@HeartyOfDaCards

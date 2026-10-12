@@ -12,6 +12,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
   <link rel="stylesheet" href="{{ asset('style.css') }}">
+  {% if v2 %}<link rel="stylesheet" href="{{ asset('dark.css') }}">
+  <script>/* dark mode before the first paint: the visitor's choice, or their phone's own setting */
+    (function () { var t = null; try { t = localStorage.getItem("pd:theme"); } catch (e) {}
+      if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      if (t === "dark") document.documentElement.classList.add("theme-dark"); })();</script>{% endif %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
   {% if cfg.scene_base %}
@@ -38,6 +43,11 @@
             {{ ico("globe", 20) if cfg.scene_base else "" }}
             <select id="lang-select" aria-label="Language"></select>
           </label>
+          {% if v2 %}<button class="theme-pill" id="theme-btn" type="button" aria-pressed="false" title="Dark mode">
+            <svg class="t-moon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a.6.6 0 0 0-.8-.7A9.5 9.5 0 1 0 21.2 15.4a.6.6 0 0 0-.7-.8z"/></svg>
+            <svg class="t-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></g></svg>
+            <span class="t-label">Dark</span>
+          </button>{% endif %}
           {% include "_sound.html" %}
           <div class="sky-wrap">
           <button class="sky-pill" id="sky-pill" type="button" aria-pressed="false" aria-haspopup="true" aria-expanded="false" title="Day and night">
@@ -71,6 +81,9 @@
       {% include "_faq.html" %}
       <footer>
         <span>Unofficial community tool. Not affiliated with or endorsed by Pocket Dragons. Every post links back to X.</span>
+        {% if v2 and cfg.music_credits() %}<p class="music-credits"><span class="mc-title">&#9835; Music made by the community</span>
+          {% for m in cfg.music_credits() %}<span class="mc-row">{{ m.track }} by {% if m.x %}<a href="https://x.com/{{ m.x }}" target="_blank" rel="noopener">{{ m.by }}</a>{% else %}{{ m.by }}{% endif %}</span>{% endfor %}
+        </p>{% endif %}
         <a class="by-link" href="https://x.com/{{ cfg.author_x }}" target="_blank" rel="noopener"><strong>Built by Jon Wynn</strong> <span class="by-x">@{{ cfg.author_x }} on X</span></a>
       </footer>
     </div></div>
@@ -95,6 +108,7 @@
     "song": asset('audio/blinky-song.m4a'), "waitReady": True} | tojson }};</script>
   <script src="{{ asset('i18n.js') }}"></script>
   <script src="{{ asset('sound.js') }}" defer></script>
+  {% if v2 %}<script src="{{ asset('theme.js') }}" defer></script>{% endif %}
   <script src="{{ asset('rate.js') }}" defer></script>
   {% if cfg.scene_base %}<script src="{{ asset('scene.js') }}"></script>
   <script src="{{ asset('mailbox.js') }}" defer></script>{% endif %}

@@ -948,6 +948,16 @@ def test_my_week_card_is_v2_only(cfg, Session):
     assert "My week card" in c.get("/lab").get_data(as_text=True)
 
 
+def test_weekly_designs_are_v2_only(cfg, Session):
+    cfg.preview_key = "secret-preview-phrase-123"
+    c = create_app(cfg).test_client()
+    public = c.get("/friends").get_data(as_text=True)
+    assert "weekly.js" in public and "weekly2.js" not in public and 'id="wk-designs"' not in public
+    c.get("/preview/secret-preview-phrase-123")
+    page = c.get("/friends").get_data(as_text=True)
+    assert "weekly2.js" in page and 'id="wk-designs"' in page and "/weekly.js" not in page
+
+
 def test_hatchery_numbers_on_home_are_v2_only(cfg, Session):
     cfg.preview_key = "secret-preview-phrase-123"
     c = create_app(cfg).test_client()
@@ -1054,3 +1064,68 @@ def test_discord_authors_are_looked_at_again_when_they_put_the_dragon_on(cfg, Se
         refresh_authors(s, cfg, now, http=H())
         s.commit()
         assert len(calls) == 1 and s.get(Keeper, "karpo") is not None
+
+
+def test_phone_filters_never_float_over_the_page():
+    import pathlib, re
+    css = (pathlib.Path(__file__).resolve().parents[1] / "radar" / "static" / "style.css").read_text()
+    assert not re.search(r"\.rail\s*\{[^}]*position:\s*sticky", css)
+    assert "#k-filters .group" in css and "font-size: 16px !important" in css
+
+
+def test_phone_replies_open_the_post_not_a_blank_composer(cfg, Session):
+    import pathlib
+    js = (pathlib.Path(__file__).resolve().parents[1] / "radar" / "static" / "app.js").read_text()
+    assert "const replyUrl" in js and "ideas-hint" in js
+    page = create_app(cfg).test_client().get("/friends").get_data(as_text=True)
+    assert 'id="ideas-hint"' in page
+
+
+def test_music_carries_on_between_pages_and_starts_on_phone_taps():
+    import pathlib
+    js = (pathlib.Path(__file__).resolve().parents[1] / "radar" / "static" / "sound.js").read_text()
+    assert "pd:soundPos" in js and '"touchend"' in js and "mediaSession" in js
+    assert "pauseAll(); else" not in js        # leaving for X no longer stops the music
+
+
+def test_dark_mode_is_v2_only(cfg, Session):
+    cfg.preview_key = "secret-preview-phrase-123"
+    c = create_app(cfg).test_client()
+    for path in ("/friends", "/friends/keepers"):
+        page = c.get(path).get_data(as_text=True)
+        assert "dark.css" not in page and 'id="theme-btn"' not in page and "theme.js" not in page
+    c.get("/preview/secret-preview-phrase-123")
+    for path in ("/friends", "/friends/keepers"):
+        page = c.get(path).get_data(as_text=True)
+        assert "dark.css" in page and 'id="theme-btn"' in page and "theme.js" in page and "pd:theme" in page
+
+
+def test_secret_relics_stay_secret_and_travel_with_backups(cfg, Session):
+    import pathlib, json
+    root = pathlib.Path(__file__).resolve().parents[1] / "radar"
+    js = (root / "static" / "dragons.js").read_text()
+    assert "1500" not in js and "3000" not in js and "MARK" in js and "pd:opened" in js
+    feed = (root / "templates" / "feed.html").read_text()
+    assert 'id="dex-secrets"' in feed and "500" not in feed.split('id="dex"')[1].split("</div>\n  </div>")[0]
+    c = create_app(cfg).test_client()
+    r = c.post("/api/backup", json={"opened": {}, "dex": {"have": {}, "e": 1234, "s": {"moon": "2026-10-12", "hack": "2026-10-12", "ember": "nope"}}})
+    code = r.get_json()["code"]
+    back = c.get(f"/api/backup/{code}").get_json()
+    assert back["dex"]["e"] == 1234 and back["dex"]["s"] == {"moon": "2026-10-12"}
+
+
+def test_music_credits_show_in_v2_only_and_only_when_set(cfg, Session):
+    cfg.preview_key = "secret-preview-phrase-123"
+    cfg.music_credits_raw = "Blinky's song|Sample Maker|samplemaker;Bad|<x>|not a handle!"
+    c = create_app(cfg).test_client()
+    assert "Music made by the community" not in c.get("/friends").get_data(as_text=True)
+    c.get("/preview/secret-preview-phrase-123")
+    page = c.get("/friends").get_data(as_text=True)
+    assert "Music made by the community" in page and "https://x.com/samplemaker" in page and "&lt;x&gt;" in page
+    cfg.music_credits_raw = ""
+    assert "Music made by the community" not in c.get("/friends").get_data(as_text=True)
+
+
+def test_keepers_page_says_when_everyone_is_shown(cfg, Session):
+    page = create_app(cfg).test_client().get("/friends/keepers").get_data(as_text=True)
+    assert 'id="k-end"' in page

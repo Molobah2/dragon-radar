@@ -110,17 +110,16 @@
         {% if cfg.keeper_card_open %}
         <button class="btn btn-go keeper-btn" id="keeper-open" type="button">My Keeper card</button>
         {% else %}
-        <button class="btn keeper-btn keeper-locked" type="button" disabled aria-disabled="true">
-          {{ ico("lock", 22) }}
-          Keeper card <span>locked for now</span>
+        <button class="btn keeper-btn keeper-locked side-row" type="button" disabled aria-disabled="true">
+          {{ ico("lock", 22) }}<span class="sr-text">Keeper card</span><span class="sr-pill">locked for now</span>
         </button>
         {% endif %}
-        <button class="btn btn-soft keeper-btn" id="weekly-open" type="button">{{ ico("crown", 20) }}This week's top posts</button>
-        <button class="btn btn-soft keeper-btn" id="progress-open" type="button">{{ ico("hourglass", 20) }}My progress</button>
-        {% if v2 %}<button class="btn btn-soft keeper-btn" data-myweek type="button">{{ ico("crown", 20) }}My week card</button>
-        <button class="btn btn-soft keeper-btn" data-dex type="button">{{ ico("hatch", 20) }}My dragons</button>{% endif %}
-        <a class="btn btn-soft keeper-btn" href="{{ url_for('keepers_page') }}">Find Keepers to follow</a>
-        <button class="btn btn-soft replay" id="replay" type="button">Watch the meadow again</button>
+        <button class="btn btn-soft keeper-btn side-row" id="weekly-open" type="button">{{ ico("crown", 22) }}<span class="sr-text">This week's top posts</span><i class="sr-go" aria-hidden="true"></i></button>
+        <button class="btn btn-soft keeper-btn side-row" id="progress-open" type="button">{{ ico("hourglass", 22) }}<span class="sr-text">My progress</span><i class="sr-go" aria-hidden="true"></i></button>
+        {% if v2 %}<button class="btn btn-soft keeper-btn side-row" data-myweek type="button">{{ ico("sparkle", 22) }}<span class="sr-text">My week card</span><i class="sr-go" aria-hidden="true"></i></button>
+        <button class="btn btn-soft keeper-btn side-row" data-dex type="button">{{ ico("hatch", 22) }}<span class="sr-text">My dragons</span><i class="sr-go" aria-hidden="true"></i></button>{% endif %}
+        <a class="btn btn-soft keeper-btn side-row" href="{{ url_for('keepers_page') }}">{{ ico("shield", 22) }}<span class="sr-text">Find Keepers to follow</span><i class="sr-go" aria-hidden="true"></i></a>
+        <button class="btn btn-soft replay side-row" id="replay" type="button">{{ ico("paw", 22) }}<span class="sr-text">Watch the meadow again</span><i class="sr-go" aria-hidden="true"></i></button>
       </div>
     </aside>
   </div>
@@ -133,6 +132,7 @@
       <h3 id="ideas-title">Reply ideas</h3>
       <p class="sheet-sub">Pick one and say it in your own words. Real replies beat copied ones.</p>
       <ul class="idea-list" id="idea-list"></ul>
+      <p class="sheet-hint" id="ideas-hint" hidden>This opens the post in X. Tap reply there.</p>
       <div class="sheet-actions">
         <a class="btn btn-go" id="ideas-reply" href="#" target="_blank" rel="noopener">Reply on X</a>
         <button class="btn btn-soft" id="ideas-shuffle" type="button">Shuffle</button>
@@ -208,6 +208,8 @@
       <div class="dex-grid" id="dex-rares"></div>
       <p class="dex-sec legend"><span>Golden legends</span><span id="dex-count-legend"></span></p>
       <div class="dex-grid" id="dex-legends"></div>
+      <p class="dex-sec secret"><span>Secret relics</span><span id="dex-count-secret"></span></p>
+      <div class="dex-grid dex-secrets" id="dex-secrets"></div>
       <p class="dex-how">Cheer on 20 fellow Keepers a day to hatch one egg. New dragons come at a steady pace, so keep showing up every day. Rare holo dragons need a 3 day goal streak and golden legends need 7, so do not break the chain. Your dragons live on this device, and the code in My progress moves them to another one.</p>
       <div class="sheet-actions"><button class="btn btn-soft" id="dex-close" type="button">Close</button></div>
     </div>
@@ -238,7 +240,9 @@
       <div class="sheet-grip" aria-hidden="true"></div>
       <h3 id="weekly-title">This week's top posts</h3>
       <p class="sheet-sub">The community posts Keepers opened most in the last 7 days. Save the card and share it on X.</p>
-      <canvas id="weekly-canvas" width="2400" height="1350"{% if cfg.scene_base %} data-bg="{{ cfg.scene_base }}/image/upload/c_fill,w_2400,h_1350/f_jpg/q_90/v1791730865/{{ cfg.scene_folder }}/weekly-board-c"{% endif %}></canvas>
+      {% if v2 %}<canvas id="weekly-canvas" class="share-canvas" width="2400" height="1350" data-base="{{ cfg.scene_base }}"></canvas>
+      <div class="mw-pick"><div class="mw-row"><b>Card style</b><div class="mw-designs" id="wk-designs" role="group" aria-label="Card style"></div></div></div>
+      {% else %}<canvas id="weekly-canvas" width="2400" height="1350"{% if cfg.scene_base %} data-bg="{{ cfg.scene_base }}/image/upload/c_fill,w_2400,h_1350/f_jpg/q_90/v1791730865/{{ cfg.scene_folder }}/weekly-board-c"{% endif %}></canvas>{% endif %}
       <p class="kp-msg" id="weekly-msg"></p>
       <div class="sheet-actions">
         <button class="btn btn-go" id="weekly-save" type="button">Save image</button>
@@ -281,7 +285,7 @@
   <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "updated": updated, "goal": 20 if v2 else 5, "goal_rule": "keeper" if v2 else "quiet", "icons": {"bulb": cfg.icon("bulb")}} | tojson }}</script>
   <script src="{{ asset('keeper.js') }}"></script>
   <script src="{{ asset('app.js') }}"></script>
-  <script src="{{ asset('weekly.js') }}" defer></script>
+  {% if v2 %}<script src="{{ asset('weekly2.js') }}" defer></script>{% else %}<script src="{{ asset('weekly.js') }}" defer></script>{% endif %}
   {% if v2 %}<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Press+Start+2P&display=swap">
   <script src="{{ asset('cards-data.js') }}" defer></script>
   <script src="{{ asset('myweek.js') }}" defer></script>

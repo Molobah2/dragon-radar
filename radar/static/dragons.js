@@ -17,7 +17,7 @@
   const dayGap = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
   const GOAL = (() => { try { return JSON.parse($("radar-data").textContent).goal || 20; } catch (e) { return 20; } })();
   const TIERS = ["common", "rare", "legend"], TK = { common: "c", rare: "r", legend: "l" };
-  const RARITY = { common: "Common", rare: "Rare holo", legend: "Golden legend" };
+  const RARITY = { common: "Common", rare: "Rare holo", legend: "Golden legend", secret: "Secret relic" };
 
   // every collectible: 15 commons, 15 rare holo versions of the same species, 5 golden legends = 35
   const ENTRIES = [
@@ -25,7 +25,9 @@
     ...D.dragons.map((d) => ({ key: d.id + "-r", sp: d, tier: "rare", pose: d.pose.r })),
     ...D.legends.map((d) => ({ key: d.id + "-l", sp: d, tier: "legend", pose: d.pose })),
   ];
-  const byKey = Object.fromEntries(ENTRIES.map((e) => [e.key, e]));
+  // three secret relics, outside the 35. How to find them is never shown anywhere on the site.
+  const SECRETS = (D.secrets || []).map((d) => ({ key: d.id + "-s", sp: d, tier: "secret", pose: d.pose }));
+  const byKey = Object.fromEntries([...ENTRIES, ...SECRETS].map((e) => [e.key, e]));
   const TOTAL = ENTRIES.length;
 
   // The pace: one egg a day, and a fixed number of completed goal days brings each new dragon.
@@ -45,10 +47,19 @@
     const out = ok ? { have: d.have, last: d.last || null, log: Array.isArray(d.log) ? d.log : [], n: d.n | 0, g: d.g || null }
       : { have: {}, last: null, log: [], n: 0, g: null };
     if (!out.n) out.n = new Set(out.log.map((l) => l.day)).size;   // older saves: count the days already hatched
+    out.s = d && d.s && typeof d.s === "object" ? d.s : {};
+    // a quiet tally of every post this device has opened on the feed, all time
+    const fans = store.get("pd:authors", {}) || {};
+    const past = Object.values(fans).reduce((a, v) => a + (v | 0), 0);
+    out.e = Math.max(d && d.e | 0 || 0, past);
     return out;
   }
   let dex = load();
   const save = () => store.set("pd:dex", dex);
+  const sealed = (e) => !!dex.s[e.sp.id];
+  // the secret marks, kept unreadable on purpose
+  const MARK = [3974678, 11828366, 24034322].map((v) => ((v ^ 0x2A5F3) - 104729) / 7919);
+  function sealDue() { return SECRETS.find((e, i) => !sealed(e) && dex.e >= MARK[i]) || null; }
   const owned = (e) => ((dex.have[e.sp.id] || {})[TK[e.tier]] || 0) > 0;
   const found = () => ENTRIES.filter(owned).length;
   const foundIn = (tier) => ENTRIES.filter((e) => e.tier === tier && owned(e)).length;
@@ -83,6 +94,7 @@
     return { entry: rand(pool), fresh: false };
   }
   function keep(entry) {
+    if (entry.tier === "secret") { dex.s[entry.sp.id] = today(); dex.log.push({ k: entry.key, day: today() }); dex.log = dex.log.slice(-120); save(); return; }
     const h = dex.have[entry.sp.id] || {}, k = TK[entry.tier];
     h[k] = (h[k] || 0) + 1;
     dex.have[entry.sp.id] = h;
@@ -107,6 +119,7 @@
   const imgCache = new Map();
   // each dragon is its own square render on flat grey; it is cut out here and trimmed to the sticker
   function rawUrl(entry, h) {
+    if (entry.tier === "secret") return `${BASE}/image/upload/c_scale,w_${Math.round(h * 1.25)}/f_png/${(D.secretArt || {})[entry.key] || "v1"}/dragon-radar/secret/${entry.key}`;
     return `${BASE}/image/upload/c_scale,w_${Math.round(h * 1.25)}/f_png/${D.art[entry.key] || "v1"}/dragon-radar/dex3/${entry.key}`;
   }
   const loadImg = (src) => new Promise((res) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
@@ -225,6 +238,7 @@
       : `You cheered on ${GOAL} fellow Keepers today. Tap the egg to hatch it.`;
     $("hatch-name").textContent = ""; $("hatch-name").hidden = true;
     $("hatch-actions").hidden = true; pic.hidden = true; egg.hidden = false; egg.disabled = false;
+    egg.setAttribute("aria-label", "Hatch the egg");
     setStage("egg", t === "legend" ? "legend-egg" : t === "rare" ? "rare-egg" : "");
     openSheet(hatchEl);
   }
@@ -234,6 +248,17 @@
     egg.disabled = true;
     const { entry, fresh } = shown;
     const imgP = stickerUrl(entry, 520);
+    if (entry.tier === "secret") {   // a slower, grander reveal
+      stage.dataset.state = "wobble"; await wait(2100);
+      stage.dataset.state = "crack"; await wait(520);
+      keep(entry);
+      pic.src = await imgP; pic.alt = `${entry.sp.name}, a secret relic`;
+      egg.hidden = true; pic.hidden = false;
+      setStage("reveal", "secret-" + entry.sp.id);
+      showName(entry, "new");
+      renderDex();
+      return;
+    }
     stage.dataset.state = "wobble"; await wait(1300);
     stage.dataset.state = "crack"; await wait(380);
     keep(entry);
@@ -249,12 +274,21 @@
   function showName(entry, mode) {
     const n = $("hatch-name"), have = (dex.have[entry.sp.id] || {})[TK[entry.tier]] || 1;
     n.innerHTML = "";
-    const tag = document.createElement("span"); tag.className = "hatch-tag " + entry.tier; tag.textContent = RARITY[entry.tier];
-    const b = document.createElement("b"); b.textContent = `${entry.sp.name} dragon`;
+    const tag = document.createElement("span"); tag.className = "hatch-tag " + entry.tier + (entry.tier === "secret" ? " " + entry.sp.id : ""); tag.textContent = RARITY[entry.tier];
+    const b = document.createElement("b"); b.textContent = entry.tier === "secret" ? entry.sp.name : `${entry.sp.name} dragon`;
     const p = document.createElement("small");
-    p.textContent = `${entry.pose} · ${found()} of ${TOTAL} found${mode === "copy" ? ` · you have ${have}` : ""}`;
+    p.textContent = entry.tier === "secret" ? `${entry.pose} · ${SECRETS.filter(sealed).length} of ${SECRETS.length} relics`
+      : `${entry.pose} · ${found()} of ${TOTAL} found${mode === "copy" ? ` · you have ${have}` : ""}`;
     n.append(tag, b, p); n.hidden = false;
     const t = entry.tier;
+    if (t === "secret") {
+      $("hatch-title").textContent = mode === "view" ? "My secret relic" : "You found a secret relic";
+      $("hatch-sub").textContent = mode === "view" ? entry.sp.line : `${entry.sp.line} Very few Keepers will ever see this one.`;
+      $("hatch-post").href = `https://x.com/intent/post?text=${encodeURIComponent(postText(entry, mode))}`;
+      $("hatch-actions").hidden = false;
+      prepShare(entry);
+      return;
+    }
     $("hatch-title").textContent = mode === "view" ? "My dragon"
       : mode === "copy" ? "Another one joins the family"
       : t === "legend" ? "A golden legend hatched!" : t === "rare" ? "A rare holo dragon hatched!" : "A new dragon hatched!";
@@ -269,7 +303,7 @@
   async function viewOne(entry) {
     shown = { entry, fresh: false };
     egg.hidden = true; pic.hidden = true;
-    setStage("reveal", entry.tier);
+    setStage("reveal", entry.tier === "secret" ? "secret-" + entry.sp.id : entry.tier);
     openSheet(hatchEl);
     pic.src = await stickerUrl(entry, 520); pic.alt = `${RARITY[entry.tier]} ${entry.sp.name} dragon`; pic.hidden = false;
     showName(entry, "view");
@@ -277,12 +311,14 @@
 
   // ---------- sharing ----------
   const postText = (entry, mode) => {
+    if (entry.tier === "secret") return `${mode === "view" ? "Still can not believe I have" : "I just found"} a secret relic on pdtools \u{1F409} ${entry.sp.name}. Nobody knows how to find them. pdtools.xyz`;
     const what = entry.tier === "legend" ? `a golden legendary ${entry.sp.name} dragon` : entry.tier === "rare" ? `a rare holo ${entry.sp.name} dragon` : `a ${entry.sp.name} dragon`;
     const gs = goalStreak(), streak = gs > 1 ? ` with a ${gs} day streak` : "";
     const lead = mode === "view" ? `Look at my ${what.replace(/^an? /, "")}` : `I just hatched ${what}`;
     return `${lead} on pdtools \u{1F409} ${found()} of ${TOTAL} found${streak}. Cheer on ${GOAL} fellow Keepers a day and hatch yours at pdtools.xyz`;
   };
   async function card(entry) {
+    if (entry.tier === "secret") return secretCard(entry);
     const c = document.createElement("canvas"); c.width = 1200; c.height = 675;
     const x = c.getContext("2d"), t = entry.tier;
     try { await document.fonts.load('700 60px "Fredoka"'); await document.fonts.load('800 20px "Nunito"'); } catch (e) {}
@@ -318,6 +354,113 @@
     x.textAlign = "right"; x.font = '800 22px "Nunito", system-ui, sans-serif'; x.fillStyle = ink;
     x.fillText("pdtools.xyz", 1168, 640);
     return c;
+  }
+
+  // ---------- secret relic cards: each one has its own world ----------
+  function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const LOOKS = {
+    moon: { bg: ["#1a2647", "#070b1a"], glow: "rgba(190, 215, 255, .55)", ink: "#f4f7ff", soft: "rgba(220, 230, 255, .78)", accent: "#cfe0ff",
+      frame: ["#f4f7ff", "#9fb3d9", "#e6eeff", "#7f93bd"], kicker: "SECRET RELIC  I" },
+    ember: { bg: ["#3a1406", "#090302"], glow: "rgba(255, 140, 40, .6)", ink: "#fff1e0", soft: "rgba(255, 214, 180, .8)", accent: "#ffb347",
+      frame: ["#ffd27a", "#b5521c", "#ffb347", "#6e2a0c"], kicker: "SECRET RELIC  II" },
+    star: { bg: ["#2a1260", "#05031a"], glow: "rgba(190, 140, 255, .6)", ink: "#fff6dc", soft: "rgba(235, 220, 255, .82)", accent: "#ffd76a",
+      frame: ["#fff1b8", "#e0a21a", "#ffd76a", "#8a5a0a"], kicker: "SECRET RELIC  III" },
+  };
+  async function secretCard(entry) {
+    const W = 1200, H = 675, id = entry.sp.id, L = LOOKS[id] || LOOKS.moon, r = seeded(id.length * 7919 + 17);
+    // drawn at twice the size so the 4K art stays crisp when shared
+    const c = document.createElement("canvas"); c.width = W * 2; c.height = H * 2;
+    const x = c.getContext("2d"); x.scale(2, 2);
+    try { await document.fonts.load('700 60px "Fredoka"'); await document.fonts.load('800 20px "Nunito"'); } catch (e) {}
+    // the sky of this relic
+    const g = x.createRadialGradient(340, 330, 30, 600, 340, 900); g.addColorStop(0, L.bg[0]); g.addColorStop(1, L.bg[1]);
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    if (id === "star") {   // nebula clouds
+      [["rgba(140, 60, 255, .35)", 260, 220, 420], ["rgba(40, 200, 220, .22)", 880, 160, 380], ["rgba(255, 90, 180, .22)", 760, 560, 420], ["rgba(255, 210, 120, .14)", 340, 420, 300]]
+        .forEach(([col, cx, cy, rad]) => { const n = x.createRadialGradient(cx, cy, 0, cx, cy, rad); n.addColorStop(0, col); n.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = n; x.fillRect(0, 0, W, H); });
+    }
+    // stars, embers or moon dust
+    const dots = id === "ember" ? 140 : 260;
+    for (let i = 0; i < dots; i++) {
+      const px = r() * W, py = id === "ember" ? H - Math.pow(r(), 0.7) * H : r() * H, sz = id === "ember" ? 1 + r() * 3.2 : 0.4 + r() * 1.8;
+      x.globalAlpha = 0.25 + r() * 0.75;
+      x.fillStyle = id === "ember" ? (r() < 0.5 ? "#ffb347" : "#ff6a1a") : id === "star" && r() < 0.15 ? "#ffd76a" : "#ffffff";
+      if (id === "ember") { x.shadowColor = "#ff7a1a"; x.shadowBlur = 8; }
+      x.beginPath(); x.arc(px, py, sz, 0, Math.PI * 2); x.fill(); x.shadowBlur = 0;
+    }
+    x.globalAlpha = 1;
+    if (id === "moon") {   // a great crescent behind the relic
+      x.save(); x.shadowColor = "rgba(200, 220, 255, .8)"; x.shadowBlur = 60;
+      x.fillStyle = "#e9f0ff"; x.beginPath(); x.arc(340, 300, 250, 0, Math.PI * 2); x.fill(); x.restore();
+      x.globalCompositeOperation = "destination-out"; x.beginPath(); x.arc(420, 250, 236, 0, Math.PI * 2); x.fill();
+      x.globalCompositeOperation = "source-over";
+      const veil = x.createRadialGradient(340, 337, 120, 340, 337, 420); veil.addColorStop(0, "rgba(7, 11, 26, 0)"); veil.addColorStop(1, "rgba(7, 11, 26, .25)");
+      x.fillStyle = veil; x.fillRect(0, 0, W, H);
+    }
+    if (id === "ember") {   // molten cracks along the floor
+      x.save(); x.strokeStyle = "#ff8a2a"; x.shadowColor = "#ff6a00"; x.shadowBlur = 18; x.lineWidth = 2.4; x.globalAlpha = 0.75;
+      for (let k = 0; k < 7; k++) {
+        let px = r() * 620, py = H - 30 - r() * 40; x.beginPath(); x.moveTo(px, py);
+        for (let j = 0; j < 6; j++) { px += (r() - 0.5) * 140; py -= r() * 12; x.lineTo(px, py); }
+        x.stroke();
+      }
+      x.restore();
+    }
+    if (id === "star") {   // golden constellations and light rays
+      x.save(); x.translate(340, 337); x.globalAlpha = 0.08; x.fillStyle = "#ffd76a";
+      for (let i = 0; i < 18; i++) { x.rotate(Math.PI / 9); x.beginPath(); x.moveTo(0, 0); x.lineTo(-40, -800); x.lineTo(40, -800); x.closePath(); x.fill(); }
+      x.restore();
+      x.save(); x.strokeStyle = "rgba(255, 215, 106, .55)"; x.fillStyle = "#ffe9a8"; x.lineWidth = 1.4;
+      for (let k = 0; k < 4; k++) {
+        const pts = Array.from({ length: 5 }, () => [40 + r() * 580, k % 2 ? 40 + r() * 170 : 470 + r() * 170]);
+        x.beginPath(); pts.forEach(([a, b], i) => (i ? x.lineTo(a, b) : x.moveTo(a, b))); x.stroke();
+        pts.forEach(([a, b]) => { x.beginPath(); x.arc(a, b, 2.6, 0, Math.PI * 2); x.fill(); });
+      }
+      x.restore();
+    }
+    // the glow and the relic itself
+    const halo = x.createRadialGradient(340, 337, 10, 340, 337, 330); halo.addColorStop(0, L.glow); halo.addColorStop(1, "rgba(0,0,0,0)");
+    x.fillStyle = halo; x.fillRect(0, 0, W, H);
+    const s = await sticker(entry, 1000);
+    if (s) {
+      const k = Math.min(560 / s.height, 540 / s.width), w = s.width * k, hh = s.height * k;
+      x.save(); x.shadowColor = L.glow; x.shadowBlur = 50; x.drawImage(s, 340 - w / 2, 337 - hh / 2, w, hh); x.restore();
+      x.save(); x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 30; x.shadowOffsetY = 14; x.drawImage(s, 340 - w / 2, 337 - hh / 2, w, hh); x.restore();
+    }
+    // an engraved double frame with corner jewels
+    const fr = x.createLinearGradient(0, 0, W, H); L.frame.forEach((col, i) => fr.addColorStop(i / (L.frame.length - 1), col));
+    x.strokeStyle = fr; x.lineWidth = 6; x.strokeRect(22, 22, W - 44, H - 44);
+    x.lineWidth = 1.5; x.globalAlpha = 0.7; x.strokeRect(36, 36, W - 72, H - 72); x.globalAlpha = 1;
+    [[22, 22], [W - 22, 22], [22, H - 22], [W - 22, H - 22]].forEach(([a, b]) => {
+      x.save(); x.translate(a, b); x.rotate(Math.PI / 4); x.fillStyle = fr; x.shadowColor = L.glow; x.shadowBlur = 16; x.fillRect(-11, -11, 22, 22); x.restore();
+    });
+    // a soft shade behind the words so they always read
+    const shade = x.createLinearGradient(600, 0, W, 0); shade.addColorStop(0, "rgba(0,0,0,0)"); shade.addColorStop(0.25, "rgba(0,0,0,.22)"); shade.addColorStop(1, "rgba(0,0,0,.3)");
+    x.fillStyle = shade; x.fillRect(40, 40, W - 80, H - 80);
+    // words
+    x.textAlign = "left";
+    x.fillStyle = L.accent; x.font = '800 22px "Nunito", system-ui, sans-serif';
+    x.fillText(L.kicker.split("").join(String.fromCharCode(8202)), 660, 196);
+    const words = entry.sp.name.split(" ");
+    x.fillStyle = L.ink; x.font = '700 78px "Fredoka", system-ui, sans-serif';
+    x.save(); x.shadowColor = L.glow; x.shadowBlur = 24;
+    x.fillText(words[0], 660, 286); if (words[1]) x.fillText(words.slice(1).join(" "), 660, 364);
+    x.restore();
+    x.fillStyle = L.soft; x.font = '700 25px "Nunito", system-ui, sans-serif';
+    wrap(x, entry.sp.line, 660, words[1] ? 420 : 344, 470, 34);
+    x.fillStyle = L.accent; x.font = '800 22px "Nunito", system-ui, sans-serif';
+    x.fillText(`${SECRETS.filter(sealed).length} of ${SECRETS.length} secret relics`, 660, 560);
+    x.textAlign = "right"; x.fillStyle = L.ink; x.font = '800 21px "Nunito", system-ui, sans-serif';
+    x.fillText("pdtools.xyz", W - 60, H - 58);
+    return c;
+  }
+  function wrap(x, text, left, top, width, line) {
+    let row = "", y = top;
+    for (const w of text.split(" ")) {
+      const t = row ? row + " " + w : w;
+      if (x.measureText(t).width > width && row) { x.fillText(row, left, y); row = w; y += line; } else row = t;
+    }
+    if (row) x.fillText(row, left, y);
   }
   let shareFile = null, cardBlob = null;
   async function prepShare(entry) {
@@ -377,7 +520,50 @@
         stickerUrl(entry, 220, !have).then((u) => { if (u) im.src = u; });
       }
     }
+    renderSecrets();
   }
+  function renderSecrets() {
+    const grid = $("dex-secrets"); if (!grid) return;
+    grid.innerHTML = "";
+    const n = SECRETS.filter(sealed).length;
+    $("dex-count-secret").textContent = n ? `${n} of ${SECRETS.length}` : "???";
+    SECRETS.forEach((entry) => {
+      const have = sealed(entry);
+      const fig = document.createElement(have ? "button" : "div");
+      fig.className = `dex-card secret ${entry.sp.id} ${have ? "have" : "missing"}`;
+      if (have) {
+        fig.type = "button"; fig.addEventListener("click", () => { closeSheet(dexEl); setTimeout(() => viewOne(entry), 260); });
+        const im = document.createElement("img"); im.alt = entry.sp.name; im.decoding = "async"; fig.append(im);
+        stickerUrl(entry, 220).then((u) => { if (u) im.src = u; });
+      } else {
+        const seal = document.createElement("i"); seal.className = "dex-seal"; seal.setAttribute("aria-hidden", "true"); fig.append(seal);
+      }
+      const cap = document.createElement("span"); cap.className = "dex-cap";
+      const b = document.createElement("b"); b.textContent = have ? entry.sp.name : "Sealed";
+      const sm = document.createElement("small"); sm.textContent = have ? "Secret relic" : "Nobody knows";
+      cap.append(b, sm); fig.append(cap); grid.append(fig);
+    });
+  }
+  // a relic is ready: it waits for a quiet moment, then the sealed relic appears
+  function offerSeal() {
+    const entry = sealDue();
+    if (!entry || !hatchEl.hidden || document.querySelector(".sheet-wrap.open")) return;
+    shown = { entry, fresh: true };
+    egg.style.removeProperty("--body"); egg.style.removeProperty("--spot");
+    $("hatch-title").textContent = "Something secret stirs";
+    $("hatch-sub").textContent = "A sealed relic has appeared for you. Tap it to break the seal.";
+    $("hatch-name").textContent = ""; $("hatch-name").hidden = true;
+    $("hatch-actions").hidden = true; pic.hidden = true; egg.hidden = false; egg.disabled = false;
+    egg.setAttribute("aria-label", "Break the seal");
+    setStage("egg", "seal-" + entry.sp.id);
+    sticker(entry, 520); sticker(entry, 1000);
+    openSheet(hatchEl);
+  }
+  addEventListener("pd:opened", () => {
+    dex.e = (dex.e | 0) + 1; save();
+    if (sealDue()) setTimeout(offerSeal, 900);
+  });
+
   function openDex() { renderDex(); openSheet(dexEl); }
   $("dex-hatch").addEventListener("click", () => { closeSheet(dexEl); setTimeout(openHatch, 260); });
   $("dex-close").addEventListener("click", () => closeSheet(dexEl));
@@ -401,5 +587,7 @@
   refreshGoal();
 
   window.pdDex = { canHatch, openHatch, openDex };
+  // a relic earned earlier (or brought over with a backup code) shows up once the page has settled
+  (function waitCalm(t) { if (document.body.classList.contains("ready")) setTimeout(offerSeal, 2500); else if (t < 60) setTimeout(() => waitCalm(t + 1), 1000); })(0);
   if (location.hash === "#dragons") { history.replaceState(null, "", location.pathname + location.search); setTimeout(openDex, 600); }
 })();

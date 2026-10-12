@@ -108,6 +108,7 @@
     window.keeperBump && window.keeperBump();
     const post = posts.find((x) => x.id === id) || pinnedPosts.find((x) => x.id === id);
     if (post && (KEEPER_GOAL ? !post.team : !post.opens)) bumpGoal();
+    dispatchEvent(new Event("pd:opened"));
     if (post) {
       post.opens = (post.opens || 0) + 1;
       const fans = store.get("pd:authors", {}) || {}, key = (post.user || "").toLowerCase();
@@ -141,6 +142,10 @@
     "Ask what got them into Pocket Dragons", "Share your score so you can compare", "Wish them luck on their next hatch",
     "Ask a question about something they mentioned", "Share how you would have done it", "Tell them which part made you smile"];
   let ideaFor = null;
+  // Phones: X's app ignores reply links and opens a blank new post, so we open the post itself and people tap reply there
+  const PHONE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || !!(window.matchMedia && matchMedia("(pointer: coarse)").matches);
+  const replyUrl = (id, user) => PHONE ? (user ? `https://x.com/${user}/status/${id}` : `https://x.com/i/status/${id}`)
+    : `https://x.com/intent/post?in_reply_to=${id}`;
   function shuffleIdeas() {
     const pool = IDEAS.slice(), out = [];
     while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
@@ -149,7 +154,8 @@
   function openIdeas(id, card) {
     ideaFor = { id, card };
     shuffleIdeas();
-    $("ideas-reply").href = `https://x.com/intent/post?in_reply_to=${id}`;
+    $("ideas-reply").href = replyUrl(id);
+    $("ideas-hint").hidden = !PHONE;
     $("ideas").hidden = false;
     requestAnimationFrame(() => $("ideas").classList.add("open"));
     document.body.classList.add("sheet-open");
@@ -256,7 +262,11 @@
     const n = Math.max(mine.n | 0, inc.n | 0);
     const gs = [mine.g, inc.g].filter((g) => g && typeof g.last === "string").sort((a, b) => (a.last < b.last ? -1 : 1));
     const g = gs.length ? { ...gs[gs.length - 1], best: Math.max(...gs.map((x) => x.best | 0)) } : mine.g || null;
-    store.set("pd:dex", { have, last, n, g, log: Array.isArray(mine.log) ? mine.log : [] });
+    const e = Math.max(mine.e | 0, Math.min(1e6, inc.e | 0));
+    const sIn = inc.s && typeof inc.s === "object" ? inc.s : {}, sMine = mine.s && typeof mine.s === "object" ? mine.s : {};
+    const sOut = { ...sMine };
+    for (const [k, v] of Object.entries(sIn)) if (typeof v === "string" && !sOut[k]) sOut[k] = v;
+    store.set("pd:dex", { have, last, n, g, e, s: sOut, log: Array.isArray(mine.log) ? mine.log : [] });
     dispatchEvent(new Event("pd:dexchange"));
     return gained;
   }
@@ -320,6 +330,9 @@
     requestAnimationFrame(() => t.classList.add("show"));
     clearTimeout(toast.timer);
     toast.timer = setTimeout(() => { t.classList.remove("show"); setTimeout(() => { t.hidden = true; }, 300); }, ms);
+  }
+  function copyHi(text) {
+    try { navigator.clipboard.writeText(text).then(() => toast("Greeting copied. Paste it in your reply."), () => {}); } catch (e) { /* no clipboard: they can still reply */ }
   }
   function pace() {
     const nowMs = Date.now();
@@ -421,11 +434,13 @@
       const avatar = n.avatar
         ? el("img", { class: "avatar", src: n.avatar, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })
         : el("span", { class: "avatar blank" }, (n.name || "?").slice(0, 1));
+      const hi = greet();
       const card = el("div", { class: "newbie" },
         el("a", { class: "newbie-who", href: `https://x.com/${n.user}/status/${n.id}`, target: "_blank", rel: "noopener" },
           avatar, el("span", { class: "newbie-text" }, el("b", {}, n.name || n.user),
             el("small", {}, (n.hatchery ? "Ancient Hatchery \u00b7 " : "first post \u00b7 ") + ago(n.t)))),
-        el("a", { class: "btn btn-go newbie-hi", href: `https://x.com/intent/post?in_reply_to=${n.id}&text=${encodeURIComponent(greet())}`, onclick: () => pace(),
+        el("a", { class: "btn btn-go newbie-hi", href: PHONE ? replyUrl(n.id, n.user) : `https://x.com/intent/post?in_reply_to=${n.id}&text=${encodeURIComponent(hi)}`,
+          onclick: () => { pace(); if (PHONE) copyHi(hi); },
           target: "_blank", rel: "noopener" }, "Say hi"));
       card.style.setProperty("--i", i);
       return card;

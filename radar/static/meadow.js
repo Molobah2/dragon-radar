@@ -435,7 +435,7 @@
       if (PHOTO && window.radarScene) window.radarScene.update(hour);
       const darkSky = sky.dark > 0.5;
       if (darkSky !== lastDark) { lastDark = darkSky; document.body.classList.toggle("dark-sky", darkSky); }
-      if (meta) meta.setAttribute("content", rgb(sky.mid).replace(/rgba\((\d+),(\d+),(\d+),1\)/, (_, r, g, b) => "#" + [r, g, b].map((v) => (+v).toString(16).padStart(2, "0")).join("")));
+      if (meta && !document.documentElement.classList.contains("theme-dark")) meta.setAttribute("content", rgb(sky.mid).replace(/rgba\((\d+),(\d+),(\d+),1\)/, (_, r, g, b) => "#" + [r, g, b].map((v) => (+v).toString(16).padStart(2, "0")).join("")));
       // the clock always tells the real time; only Play a day shows the sky's own hour
       let shown = hour;
       if (!lapse && mode !== "auto") { const d = new Date(); shown = d.getHours() + d.getMinutes() / 60; }
