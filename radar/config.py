@@ -102,6 +102,13 @@ class Config:
     # Follow directory: pinned accounts (handle:role) and the daily cap on "add me" checks
     team_accounts: str = field(default_factory=lambda: os.environ.get("TEAM_ACCOUNTS",
         "Pocket_Dragons_:Official,djsamwithers:Product,TradingJoker:Engineering,HeartyOfDaCards:Community,plooshGWIN:3D Art"))
+    # Team spotlight row under the official posts: the newest post from each team member in TEAM_ACCOUNTS
+    # (everyone except the official account). Only posts about the dragons are read, and a slot steps aside
+    # once its post is older than CREW_HOURS.
+    crew_x: bool = field(default_factory=lambda: _bool("CREW_X", "1"))
+    crew_hours: int = field(default_factory=lambda: int(os.environ.get("CREW_HOURS", "48")))
+    crew_terms: str = field(default_factory=lambda: os.environ.get("CREW_TERMS",
+        '("pocket dragons" OR @Pocket_Dragons_ OR "ancient hatchery" OR blinky OR #PocketDragons)'))
     directory_adds_per_day: int = field(default_factory=lambda: int(os.environ.get("DIRECTORY_ADDS_PER_DAY", "30")))
     max_pages_per_run: int = field(default_factory=lambda: int(os.environ.get("MAX_PAGES_PER_RUN", "10")))
     first_run_backfill_hours: int = field(default_factory=lambda: int(os.environ.get("FIRST_RUN_BACKFILL_HOURS", "24")))
@@ -177,3 +184,17 @@ def _music_credits(self) -> list[dict]:
 
 
 Config.music_credits = _music_credits
+
+
+def _crew(self) -> list[tuple[str, str]]:
+    """Team members for the spotlight row: (handle, role), the official account left out."""
+    out = []
+    for a in self.team_accounts.split(","):
+        h, _, role = a.strip().partition(":")
+        h = h.strip().lstrip("@")
+        if h and h.lower() != self.team_handle.lower() and h.replace("_", "").isalnum() and len(h) <= 15:
+            out.append((h, role.strip() or "Team"))
+    return out[:4]
+
+
+Config.crew = property(_crew)

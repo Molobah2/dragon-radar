@@ -374,6 +374,7 @@
     const { text, links } = cleanText(p.text);
     const chips = [];
     if (p.team) chips.push(el("span", { class: "tag team" }, "Team"));
+    if (p.crew) chips.push(el("span", { class: "tag crew" }, p.crew));
     if (p.quote) chips.push(el("span", { class: "tag" }, "Quote"));
     if (p.media) chips.push(el("span", { class: "tag media" }, "Media"));
     else if (links) chips.push(el("span", { class: "tag media" }, "Link"));
@@ -449,8 +450,11 @@
 
   function render() {
     const trail = $("trail");
-    $("pinned").hidden = !pinnedPosts.length;
-    $("pinned-trail").replaceChildren(...pinnedPosts.map((p, i) => placeCard(p, i)));
+    const official = pinnedPosts.filter((p) => !p.crew), crew = pinnedPosts.filter((p) => p.crew);
+    $("pinned").hidden = !official.length;
+    $("pinned-trail").replaceChildren(...official.map((p, i) => placeCard(p, i)));
+    $("crew").hidden = !crew.length;
+    $("crew-trail").replaceChildren(...crew.map((p, i) => placeCard(p, i)));
     const hot = hotList(), hotIds = new Set(hot.map((p) => p.id));
     $("hot").hidden = !hot.length;
     $("hot-trail").replaceChildren(...hot.map((p, i) => placeCard(p, i)));
@@ -532,7 +536,7 @@
       if (pinChanged) {
         newPinned = j.pinned;
         const known = new Set(pinnedPosts.map((p) => p.id));
-        (j.pinned || []).filter((p) => !known.has(p.id)).slice(0, 1).forEach(teamAlert);
+        (j.pinned || []).filter((p) => !known.has(p.id) && !p.crew).slice(0, 1).forEach(teamAlert);
       }
       if (fresh.length) { pending.unshift(...fresh); showPill(); }
       else if (pinChanged) { pinnedPosts.splice(0, pinnedPosts.length, ...newPinned); pinnedIds.clear(); pinnedPosts.forEach((p) => pinnedIds.add(p.id)); newPinned = null; render(); }

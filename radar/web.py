@@ -210,6 +210,23 @@ def create_app(cfg: Config | None = None) -> Flask:
                                      Post.text.is_not(None), Post.author_username.is_not(None),
                                      Post.author_id.not_in(select(BlockedAuthor.author_id)))
                               .order_by(Post.created_at.desc()).limit(NEWCOMERS)).all()
+        # Team spotlight: the newest dragon post from each team member, newest first. A new post replaces
+        # the old one in that member's slot; a slot older than crew_hours steps aside.
+        crew_posts = []
+        crew = cfg.crew
+        if crew:
+            roles = {h.lower(): r for h, r in crew}
+            with Session() as s:
+                rows = s.scalars(select(Post).where(func.lower(Post.author_username).in_(list(roles)),
+                                                    Post.hidden.is_(False), Post.text.is_not(None),
+                                                    Post.created_at >= utcnow() - timedelta(hours=cfg.crew_hours))
+                                 .order_by(Post.created_at.desc())).all()
+            seen = set()
+            for p in rows:
+                k = p.author_username.lower()
+                if k not in seen:
+                    seen.add(k)
+                    crew_posts.append((p, roles[k]))
         def item(p):
             return {"id": p.id, "t": p.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
                   "team": p.is_team, "quote": p.is_quote, "text": p.text, "name": p.author_name or p.author_username,
@@ -217,6 +234,8 @@ def create_app(cfg: Config | None = None) -> Flask:
                     "opens": p.opens or 0}
         items = [item(p) for p in posts]
         pinned_items = [item(p) for p in pinned]
+        pinned_ids = {p["id"] for p in pinned_items}
+        pinned_items += [{**item(p), "crew": role} for p, role in crew_posts if p.id not in pinned_ids]
         newcomers = [{"id": p.id, "t": p.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"), "name": p.author_name or p.author_username,
                       "user": p.author_username, "avatar": p.author_avatar,
                       "hatchery": "ancient hatchery" in (p.text or "").lower()} for p in fresh]

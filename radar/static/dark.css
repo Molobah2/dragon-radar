@@ -137,3 +137,6 @@ html.theme-dark .side-actions > .side-row + .side-row::before { background: rgba
 html.theme-dark .side-actions > .side-row .ico { background: linear-gradient(160deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .05)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14); }
 html.theme-dark .sr-pill { color: var(--ink-soft); background: rgba(255, 255, 255, .08); }
 html.theme-dark .hatch-xname input { background: var(--d-field); border-color: rgba(255, 255, 255, .14); color: var(--ink); }
+
+html.theme-dark .crew-row .post { box-shadow: 0 0 0 2px rgba(185, 166, 255, .55), 0 24px 44px -26px rgba(0, 0, 0, .7); }
+html.theme-dark .tag.crew { background: rgba(150, 120, 255, .2); color: #d6ccff; }

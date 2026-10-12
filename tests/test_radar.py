@@ -60,6 +60,7 @@ def cfg(tmp_path):
     c.demo_mode = False
     c.recheck_deleted = False
     c.daily_post_cap = 0
+    c.crew_x = False   # the spotlight read has its own tests below
     return c
 
 
@@ -354,7 +355,7 @@ def test_daily_cap_spreads_reads():
     class Fake:
         calls = []
         def search_recent(self, q, since_id=None, start_time=None, next_token=None, max_results=100):
-            if q.startswith("from:"):
+            if q.startswith(("from:", "(from:")):
                 return {"meta": {}}
             self.calls.append(max_results)
             n = len(self.calls)
@@ -1137,3 +1138,76 @@ def test_relic_cards_can_carry_the_keepers_x_name(cfg, Session):
     assert 'id="hatch-xname-in"' in (root / "templates" / "feed.html").read_text()
     js = (root / "static" / "dragons.js").read_text()
     assert "pd:xname" in js and "EARNED BY" in js and "cleanX" in js
+
+
+def test_team_spotlight_keeps_one_newest_post_per_member(cfg, Session):
+    cfg.team_accounts = "Pocket_Dragons_:Official,TradingJoker:Engineering,HeartyOfDaCards:Community,plooshGWIN:3D Art"
+    now = utcnow()
+    with Session() as s:
+        s.add_all([
+            Post(id="off", author_username="Pocket_Dragons_", text="hi", author_id="t", created_at=now - timedelta(hours=1), is_team=True),
+            Post(id="tj-old", author_username="TradingJoker", text="old", author_id="tj", created_at=now - timedelta(hours=20)),
+            Post(id="tj-new", author_username="tradingjoker", text="new", author_id="tj", created_at=now - timedelta(hours=2)),
+            Post(id="hearty", author_username="HeartyOfDaCards", text="gm", author_id="h", created_at=now - timedelta(hours=5)),
+            Post(id="ploosh-stale", author_username="plooshGWIN", text="art", author_id="p", created_at=now - timedelta(hours=60)),
+            Post(id="fan", author_username="fan", text="gm", author_id="f", created_at=now - timedelta(hours=3)),
+        ])
+        s.commit()
+    data = create_app(cfg).test_client().get("/api/posts?range=24h").get_json()
+    pinned = data["pinned"]
+    assert [p["id"] for p in pinned if not p.get("crew")] == ["off"]
+    crew = [(p["id"], p["crew"]) for p in pinned if p.get("crew")]
+    assert crew == [("tj-new", "Engineering"), ("hearty", "Community")]   # newest first, stale slot steps aside
+    assert "tj-old" not in [p["id"] for p in pinned]
+    feed_ids = [p["id"] for p in data["posts"]]
+    assert "fan" in feed_ids
+
+
+def test_team_spotlight_reads_only_new_dragon_posts_from_members(cfg, Session):
+    cfg.daily_post_cap = 50
+    cfg.team_user_id = TEAM_ID
+    cfg.crew_x = True
+    cfg.team_accounts = "Pocket_Dragons_:Official,TradingJoker:Engineering,HeartyOfDaCards:Community"
+    now = utcnow()
+    created = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    cid = str(int(((now - timedelta(hours=1)).timestamp() * 1000) - 1288834974657) << 22)
+
+    class Fake(FakeClient):
+        def search_recent(self, query, since_id=None, start_time=None, next_token=None, max_results=100):
+            self.calls.append({"query": query, "since_id": since_id, "start_time": start_time})
+            if query.startswith("(from:"):
+                return {"data": [post(cid, author="tj", created=created)],
+                        "includes": {"users": [{"id": "tj", "username": "TradingJoker", "name": "TJ"}]},
+                        "meta": {"newest_id": cid}}
+            return {"data": [], "meta": {}}
+
+    client = Fake([])
+    with Session() as s:
+        run_collection(s, client, cfg, now=now)
+        assert s.get(Post, cid).author_username == "TradingJoker"
+        assert not s.get(Post, cid).is_team
+        assert get_setting(s, "crew_newest_id") == cid
+    q = [c for c in client.calls if c["query"].startswith("(from:")][0]
+    assert "from:TradingJoker OR from:HeartyOfDaCards" in q["query"]
+    assert "Pocket_Dragons_ OR" not in q["query"].split(")")[0]      # the official account is not in the member list
+    assert '"pocket dragons"' in q["query"] and "-is:reply" in q["query"]
+    with Session() as s:
+        run_collection(s, client, cfg, now=now + timedelta(minutes=30))
+    q2 = [c for c in client.calls if c["query"].startswith("(from:")][-1]
+    assert q2["since_id"] == cid
+
+
+def test_team_spotlight_failure_does_not_stop_the_run(cfg, Session):
+    cfg.daily_post_cap = 50
+    cfg.team_user_id = TEAM_ID
+    cfg.crew_x = True
+
+    class Fake(FakeClient):
+        def search_recent(self, query, since_id=None, start_time=None, next_token=None, max_results=100):
+            if query.startswith("(from:"):
+                raise RuntimeError("boom")
+            return {"data": [], "meta": {}}
+
+    with Session() as s:
+        run = run_collection(s, Fake([]), cfg, now=utcnow())
+        assert run.status != "error"

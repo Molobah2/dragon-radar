@@ -95,6 +95,38 @@ def collect_team(s: Session, client: XClient, cfg: Config, run: CollectorRun, no
         set_setting(s, "team_newest_id", newest)
 
 
+def collect_crew(s: Session, client: XClient, cfg: Config, run: CollectorRun, now: datetime) -> None:
+    """New dragon posts from the team members, for the spotlight row. Billed per new post only."""
+    crew = cfg.crew
+    if not crew:
+        return
+    team_id = resolve_team_id(s, client, cfg, run)
+    since_id = get_setting(s, "crew_newest_id") or None
+    if since_id:
+        from .discord_share import x_time
+        if now - x_time(since_id) > timedelta(days=6, hours=12):
+            since_id = None
+    who = " OR ".join(f"from:{h}" for h, _ in crew)
+    query = f"({who}) {cfg.crew_terms} -is:reply -is:retweet".strip()
+    start = (now - timedelta(hours=max(cfg.crew_hours, 1))).strftime("%Y-%m-%dT%H:%M:%SZ")
+    data = client.search_recent(query, since_id=since_id, start_time=None if since_id else start, max_results=10)
+    newest = (data.get("meta") or {}).get("newest_id")
+    if data.get("data"):
+        store_posts(s, data, run, cfg, team_id, set(), blocklist(s, cfg), now)
+    if newest:
+        set_setting(s, "crew_newest_id", newest)
+
+
+def crew_safely(s: Session, client: XClient, cfg: Config, run: CollectorRun, now: datetime) -> None:
+    """The spotlight row is a bonus: a failure here never stops the rest of the run."""
+    if not cfg.crew_x or client is None:
+        return
+    try:
+        collect_crew(s, client, cfg, run, now)
+    except Exception as e:  # noqa: BLE001
+        log.warning("Team spotlight read failed: %s", e)
+
+
 def store_posts(s, data, run, cfg, team_id, blocked_authors, words, now) -> None:
     posts = data.get("data", []) or []
     users = {u["id"]: u for u in (data.get("includes", {}) or {}).get("users", []) or []}
@@ -246,6 +278,7 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
         if cfg.team_x and client is not None:
             try:
                 collect_team(s, client, cfg, run, now)
+                crew_safely(s, client, cfg, run, now)
             except XApiError as e:
                 status = "rate_limited" if isinstance(e, RateLimited) else "error"
                 run.error = str(e)[:2000]
@@ -268,6 +301,7 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
         try:
             capped_collection(s, client, cfg, run, now)
             collect_team(s, client, cfg, run, now)
+            crew_safely(s, client, cfg, run, now)
             tidy_up(s, client, cfg, run, now)
         except XApiError as e:
             run.status = "rate_limited" if isinstance(e, RateLimited) else "error"
@@ -325,6 +359,7 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
             set_setting(s, "resume_token", next_token or "")
             set_setting(s, "resume_newest_id", newest_id or "")
         run.status = status
+        crew_safely(s, client, cfg, run, now)
         tidy_up(s, client, cfg, run, now)
     except RateLimited as e:
         # Keep our place; the next scheduled run picks up from here.

@@ -3,3 +3,7 @@
 __pycache__/
 .pytest_cache/
 .venv/
+
+# delivery packages and design scratch, never pushed
+*.tgz
+_design/
