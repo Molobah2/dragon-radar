@@ -300,7 +300,7 @@
     const tag = document.createElement("span"); tag.className = "hatch-tag " + entry.tier + (entry.tier === "secret" ? " " + entry.sp.id : ""); tag.textContent = RARITY[entry.tier];
     const b = document.createElement("b"); b.textContent = entry.tier === "secret" ? entry.sp.name : `${entry.sp.name} dragon`;
     const p = document.createElement("small");
-    p.textContent = entry.tier === "secret" ? `${entry.pose} · ${SECRETS.filter(sealed).length} of ${SECRETS.length} relics`
+    p.textContent = entry.tier === "secret" ? `${entry.pose} · ${SECRETS.indexOf(entry) + 1} of ${SECRETS.length}`
       : `${entry.pose} · ${found()} of ${TOTAL} found${mode === "copy" ? ` · you have ${have}` : ""}`;
     n.append(tag, b, p); n.hidden = false;
     const t = entry.tier;
@@ -490,9 +490,9 @@
       x.fillStyle = L.ink; x.font = '700 40px "Fredoka", system-ui, sans-serif';
       x.save(); x.shadowColor = L.glow; x.shadowBlur = 18; x.fillText("@" + who, 660, 566); x.restore();
       x.fillStyle = L.accent; x.font = '800 18px "Nunito", system-ui, sans-serif';
-      x.fillText(`${SECRETS.filter(sealed).length} of ${SECRETS.length} secret relics`, 660, 604);
+      x.fillText(`Relic ${SECRETS.indexOf(entry) + 1} of ${SECRETS.length}`, 660, 604);
     } else {
-      x.fillText(`${SECRETS.filter(sealed).length} of ${SECRETS.length} secret relics`, 660, 560);
+      x.fillText(`Relic ${SECRETS.indexOf(entry) + 1} of ${SECRETS.length}`, 660, 560);
     }
     x.textAlign = "right"; x.fillStyle = L.ink; x.font = '800 21px "Nunito", system-ui, sans-serif';
     x.fillText("pdtools.xyz", W - 60, H - 58);
