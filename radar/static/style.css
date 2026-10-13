@@ -119,7 +119,7 @@ body.ready h1 .pop { animation: wiggle 1.4s 1.2s ease-in-out; }
 /* Posts sit in a grid: 3 columns on laptops, 2 on tablets, 1 on phones */
 .trail { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 14px; align-items: stretch; perspective: 1400px; min-width: 0; }
 .trail > .hour { grid-column: 1 / -1; }
-.trail > .post { padding: 14px 14px 12px; gap: 10px; height: 250px; grid-template-rows: auto 86px auto auto; align-content: space-between; }
+.trail > .post { padding: 14px 14px 12px; gap: 10px; min-height: 250px; grid-template-rows: auto 86px auto auto; align-content: space-between; }
 .progress-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 18px; margin: -10px 0 22px; border-radius: 999px;
   background: var(--glass-strong); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 16px 34px -24px rgba(29, 36, 51, .45); font-weight: 700; }
 .progress-strip strong { font-family: var(--font-display); font-weight: 600; font-size: 17px; }
@@ -231,10 +231,21 @@ footer span { opacity: .75; }
 .post .text { color: var(--ink); text-decoration: none; font-size: 14.5px; line-height: 1.45; white-space: pre-line; overflow-wrap: anywhere;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; min-height: 0; align-self: start; max-height: calc(1.45em * 4); }
 .post .text:hover { color: #000; }
-.meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; row-gap: 4px; min-width: 0; }
-.meta time { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
+.meta { display: flex; align-items: center; gap: 6px; row-gap: 6px; flex-wrap: wrap; min-width: 0; }
+/* one line always: the chips give way (they shorten with ...) and the time stays whole, so cards keep their size */
+.post { grid-template-columns: minmax(0, 1fr); }
+.post > * { min-width: 0; }
+.post .meta { margin-left: 0; width: 100%; max-width: 100%; }
+.meta .tag, .meta .reach { flex: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meta time { margin-left: auto; padding-left: 4px; flex: none; font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
 .tag.media { background: rgba(255, 122, 89, .14); color: var(--coral-deep); }
-.trail .foot .btn { padding-top: 8px; padding-bottom: 8px; }
+.trail .foot .btn { padding: 8px 14px; }
+/* the three card buttons always sit on one line inside the card, whatever the width or language */
+.post .foot { flex-wrap: nowrap; min-width: 0; }
+.post .foot .actions { flex: 1; min-width: 0; flex-wrap: nowrap; }
+.post .foot .btn { white-space: nowrap; flex: none; }
+.post .foot .btn-go { flex: 1 1 auto; min-width: 0; justify-content: center; overflow: hidden; text-overflow: ellipsis; }
+.post .foot .btn-idea { padding-left: 11px; padding-right: 11px; }
 .more { display: flex; margin: 10px auto 0; }
 
 /* ---------- admin ---------- */
