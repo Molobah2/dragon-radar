@@ -171,6 +171,20 @@
     x.save(); x.translate(0, 1050); x.scale(1, .22); x.translate(0, -1050); x.fillStyle = sh; x.beginPath(); x.arc(W / 2, 1050, 300, 0, 7); x.fill(); x.restore();
     if (blinky) { x.save(); x.shadowColor = "rgba(30, 15, 60, .35)"; x.shadowBlur = 40; x.shadowOffsetY = 18; x.drawImage(blinky, 150, 150, 900, 900); x.restore(); }
     x.restore();
+    // today's hatched dragon rides along as a badge, so one post tells the whole day
+    const hatch = window.pdDex && window.pdDex.todayHatch ? await window.pdDex.todayHatch().catch(() => null) : null;
+    if (hatch && hatch.img) {
+      const bx = 985, by = 905, br = 112;
+      x.save(); x.shadowColor = "rgba(20, 10, 50, .35)"; x.shadowBlur = 26; x.shadowOffsetY = 10;
+      x.beginPath(); x.arc(bx, by, br, 0, 7); const bg = x.createLinearGradient(bx, by - br, bx, by + br); bg.addColorStop(0, "#ffffff"); bg.addColorStop(1, "#ece6ff");
+      x.fillStyle = bg; x.fill(); x.restore();
+      x.beginPath(); x.arc(bx, by, br, 0, 7); x.lineWidth = 8; const ring = x.createLinearGradient(bx - br, by - br, bx + br, by + br); ring.addColorStop(0, T.a); ring.addColorStop(1, T.b); x.strokeStyle = ring; x.stroke();
+      const im = hatch.img, k = Math.min((br * 1.5) / im.width, (br * 1.5) / im.height);
+      x.drawImage(im, bx - (im.width * k) / 2, by - (im.height * k) / 2 - 6, im.width * k, im.height * k);
+      x.font = '800 22px "Nunito", sans-serif'; const tl = `TODAY: ${hatch.name.toUpperCase()}`, tw = x.measureText(tl).width + 36;
+      rr(x, bx - tw / 2, by + br - 22, tw, 42, 21); x.fillStyle = T.b; x.fill();
+      x.fillStyle = "#ffffff"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(tl, bx, by + br - 1); x.textAlign = "left"; x.textBaseline = "alphabetic";
+    }
     // top pill
     x.font = '800 30px "Nunito", sans-serif'; const label = "DAILY GOAL DONE", lw = x.measureText(label).width + 64;
     x.save(); x.shadowColor = "rgba(0,0,0,.25)"; x.shadowBlur = 18; x.shadowOffsetY = 6;

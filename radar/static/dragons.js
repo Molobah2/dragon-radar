@@ -120,7 +120,26 @@
   // each dragon is its own square render on flat grey; it is cut out here and trimmed to the sticker
   function rawUrl(entry, h) {
     if (entry.tier === "secret") return `${BASE}/image/upload/c_scale,w_${Math.round(h * 1.25)}/f_png/${(D.secretArt || {})[entry.key] || "v1"}/dragon-radar/secret/${entry.key}`;
+    if (flat(entry)) return `${BASE}/image/upload/c_scale,w_${Math.round(h * 1.25)}/f_png/${D.art2d[entry.key]}/dragon-radar/dex2d/${entry.key}`;
     return `${BASE}/image/upload/c_scale,w_${Math.round(h * 1.25)}/f_png/${D.art[entry.key] || "v1"}/dragon-radar/dex3/${entry.key}`;
+  }
+  // the golden legends are hand drawn 2D art on a clear background: they only need the white sticker edge
+  const flat = (entry) => !!(D.art2d && D.art2d[entry.key]);
+  function edge(im) {
+    const W = im.naturalWidth, H = im.naturalHeight, b = Math.max(4, Math.round(W * 0.014)), pad = b + 2;
+    const sil = document.createElement("canvas"); sil.width = W; sil.height = H;
+    const sx = sil.getContext("2d"); sx.drawImage(im, 0, 0); sx.globalCompositeOperation = "source-in"; sx.fillStyle = "#fff"; sx.fillRect(0, 0, W, H);
+    const c = document.createElement("canvas"); c.width = W + pad * 2; c.height = H + pad * 2;
+    const x = c.getContext("2d");
+    for (let a = 0; a < 24; a++) { const t = (a / 24) * Math.PI * 2; x.drawImage(sil, pad + Math.cos(t) * b, pad + Math.sin(t) * b); }
+    x.drawImage(sil, pad, pad); x.drawImage(im, pad, pad);
+    // trim to the sticker
+    const d = x.getImageData(0, 0, c.width, c.height).data; let x0 = c.width, y0 = c.height, x1 = 0, y1 = 0;
+    for (let yy = 0; yy < c.height; yy += 2) for (let xx = 0; xx < c.width; xx += 2) if (d[(yy * c.width + xx) * 4 + 3] > 20) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+    if (x1 <= x0) return c;
+    const o = document.createElement("canvas"); o.width = x1 - x0 + 4; o.height = y1 - y0 + 4;
+    o.getContext("2d").drawImage(c, x0 - 2, y0 - 2, o.width, o.height, 0, 0, o.width, o.height);
+    return o;
   }
   const loadImg = (src) => new Promise((res) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
   // the sheets sit on flat grey and every sticker has a white border, so the grey is lifted off from the edges in
@@ -210,7 +229,7 @@
   }
   function sticker(entry, h = 360) {
     const key = entry.key + ":" + h;
-    if (!imgCache.has(key)) imgCache.set(key, loadImg(rawUrl(entry, h)).then((im) => (im ? cutOut(im) : null)));
+    if (!imgCache.has(key)) imgCache.set(key, loadImg(rawUrl(entry, h)).then((im) => (im ? (flat(entry) ? edge(im) : cutOut(im)) : null)));
     return imgCache.get(key);
   }
   async function stickerUrl(entry, h, dark) {
@@ -396,7 +415,12 @@
     $("hatch-post").href = `https://x.com/intent/post?text=${encodeURIComponent(postText(entry, mode))}`;
     $("hatch-actions").hidden = false;
     if ($("hatch-film")) $("hatch-film").hidden = true;
-    prepShare(entry);
+    // one post a day is plenty: a copy of a common goes on the daily card instead of its own card
+    const worth = mode !== "copy" || t !== "common";
+    ["hatch-post", "hatch-save"].forEach((id) => { if ($(id)) $(id).hidden = !worth; });
+    if (xField) xField.hidden = !worth;
+    if (!worth) $("hatch-sub").textContent = `Your ${entry.sp.name} has company. It will be on today's daily card.`;
+    if (worth) prepShare(entry); else if ($("hatch-share")) $("hatch-share").hidden = true;
   }
   if ($("hatch-film")) $("hatch-film").addEventListener("click", () => { if (shown && shown.entry.tier === "secret") relicFilm(shown.entry); });
 
@@ -754,7 +778,13 @@
   addEventListener("storage", (e) => { if (e.key === "pd:dex" || e.key === "pd:goal") { dex = load(); refreshGoal(); } });
   refreshGoal();
 
-  window.pdDex = { canHatch, openHatch, openDex };
+  async function todayHatch() {
+    const hit = [...(dex.log || [])].reverse().find((l) => l.day === today() && byKey[l.k] && byKey[l.k].tier !== "secret");
+    if (!hit) return null;
+    const entry = byKey[hit.k];
+    return { name: entry.sp.name, tier: entry.tier, label: RARITY[entry.tier], img: await sticker(entry, 360) };
+  }
+  window.pdDex = { canHatch, openHatch, openDex, todayHatch };
   // a relic earned earlier (or brought over with a backup code) shows up once the page has settled
   (function waitCalm(t) { if (document.body.classList.contains("ready")) setTimeout(offerSeal, 2500); else if (t < 60) setTimeout(() => waitCalm(t + 1), 1000); })(0);
   if (location.hash === "#dragons") { history.replaceState(null, "", location.pathname + location.search); setTimeout(openDex, 600); }

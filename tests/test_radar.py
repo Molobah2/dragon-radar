@@ -1234,3 +1234,13 @@ def test_relic_films_play_between_the_seal_and_the_relic(cfg, Session):
     assert "secretFilm" in data and "moon:" in data
     snd = c.get("/static/sound.js").get_data(as_text=True)
     assert "window.pdSound" in snd and "duck(" in snd and "unduck(" in snd
+
+
+def test_legends_use_2d_art_and_daily_card_carries_todays_hatch(cfg, Session):
+    c = create_app(cfg).test_client()
+    data = c.get("/static/dex-data.js").get_data(as_text=True)
+    for k in ("ruby-l", "sapphire-l", "emerald-l", "amethyst-l", "diamond-l"):
+        assert f'"{k}"' in data.split("art2d")[1].split("}")[0]
+    js = c.get("/static/dragons.js").get_data(as_text=True)
+    assert "dragon-radar/dex2d/" in js and "todayHatch" in js and "HATCHED BY" in js
+    assert "todayHatch" in c.get("/static/goalcard.js").get_data(as_text=True)
