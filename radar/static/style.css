@@ -1065,3 +1065,22 @@ html.theme-dark .kp-end { color: rgba(242, 244, 255, .8); text-shadow: 0 1px 8px
 .dc-cap.on { border-color: var(--plum, #6b4fd8); background: rgba(107, 79, 216, .12); }
 #dc-text { width: 100%; font: 16px/1.4 inherit; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(0, 0, 0, .15); resize: vertical; box-sizing: border-box; }
 .goal.card-ready { box-shadow: 0 0 0 3px rgba(255, 210, 63, .55); }
+
+/* Relic film: a full screen moment between breaking the seal and meeting the relic */
+.relic-film { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; align-content: center; gap: 18px; padding: 24px;
+  background: radial-gradient(70% 60% at 50% 45%, rgba(var(--glow), .22), rgba(4, 4, 16, .96) 70%), #04040f;
+  opacity: 0; transition: opacity .6s ease; }
+.relic-film.on { opacity: 1; }
+.relic-film-sky { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.relic-film-frame { position: relative; width: min(86vw, 66vh, 560px); aspect-ratio: 1; border-radius: 30px; overflow: hidden;
+  box-shadow: 0 0 0 2px rgba(var(--glow), .7), 0 0 60px 6px rgba(var(--glow), .45), 0 40px 80px -30px rgba(0, 0, 0, .9);
+  transform: scale(.92); transition: transform 1.2s cubic-bezier(.2, .8, .2, 1); }
+.relic-film.on .relic-film-frame { transform: scale(1); }
+.relic-film-video { width: 100%; height: 100%; object-fit: cover; display: block; background: #05061a; }
+.relic-film-kicker { position: relative; margin: 0; font: 800 13px/1 var(--font-mono, monospace); letter-spacing: .32em; text-transform: uppercase;
+  color: rgba(var(--glow), 1); text-shadow: 0 0 18px rgba(var(--glow), .8); opacity: 0; transition: opacity 1s ease 1.4s; }
+.relic-film.on .relic-film-kicker { opacity: .95; }
+.relic-film-skip { position: absolute; top: max(16px, env(safe-area-inset-top)); right: 16px; font: 700 14px/1 inherit; color: #fff;
+  background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .25); border-radius: 999px; padding: 10px 16px; cursor: pointer;
+  backdrop-filter: blur(6px); }
+@media (prefers-reduced-motion: reduce) { .relic-film, .relic-film-frame, .relic-film-kicker { transition: none; } }

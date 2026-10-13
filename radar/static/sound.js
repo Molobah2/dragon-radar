@@ -175,6 +175,18 @@
   addEventListener("pageshow", (e) => { if (e.persisted && started && on) resume(); });   // back button from cache
   setInterval(savePos, 3000);
 
+  // Big moments (a relic film) turn the background music down, then bring it back where it was
+  const ducked = new Map();
+  window.pdSound = {
+    isOn: () => on,
+    duck(secs = 0.6) {
+      Object.values(tracks).forEach((t) => { if (!ducked.has(t)) { ducked.set(t, t.level); fade(t, t.level * 0.08, secs); } });
+    },
+    unduck(secs = 1.6) {
+      ducked.forEach((level, t) => fade(t, level, secs)); ducked.clear();
+    },
+  };
+
   // lock screen and notification controls on phones
   function media() {
     if (!("mediaSession" in navigator)) return;

@@ -1223,3 +1223,14 @@ def test_daily_goal_card_is_v2_only(cfg, Session):
     assert 'id="daycard"' in page and "goalcard.js" in page and 'id="hatch-daycard"' in page
     js = c.get("/static/goalcard.js").get_data(as_text=True)
     assert js.count('["') >= 12 and "dragon-radar/blinky/" in js
+
+
+def test_relic_films_play_between_the_seal_and_the_relic(cfg, Session):
+    c = create_app(cfg).test_client()
+    js = c.get("/static/dragons.js").get_data(as_text=True)
+    assert "await relicFilm(entry);" in js and "filmEl(entry.sp.id);" in js
+    assert "Skip" in js and "pdSound" in js
+    data = c.get("/static/dex-data.js").get_data(as_text=True)
+    assert "secretFilm" in data and "moon:" in data
+    snd = c.get("/static/sound.js").get_data(as_text=True)
+    assert "window.pdSound" in snd and "duck(" in snd and "unduck(" in snd

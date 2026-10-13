@@ -266,15 +266,89 @@
     openSheet(hatchEl);
   }
 
+
+  // ---------- the relic film: a short premium moment between breaking the seal and the relic itself ----------
+  const FILM = D.secretFilm || {};
+  const filmSrc = (id) => FILM[id] ? `${BASE}/video/upload/q_auto:good/${FILM[id]}/dragon-radar/secret/film/${id}-film.mp4` : "";
+  const filmPoster = (id) => FILM[id] ? `${BASE}/video/upload/so_0,q_auto,w_720/${FILM[id]}/dragon-radar/secret/film/${id}-film.jpg` : "";
+  const FILM_GLOW = { moon: [190, 215, 255], ember: [255, 150, 60], star: [200, 150, 255] };
+  const filmCache = {};
+  function filmEl(id) {   // made early so the film is already loading while the Keeper looks at the seal
+    if (filmCache[id]) return filmCache[id];
+    const src = filmSrc(id); if (!src) return null;
+    const v = document.createElement("video");
+    v.src = src; v.poster = filmPoster(id); v.preload = "auto"; v.playsInline = true; v.setAttribute("playsinline", "");
+    v.crossOrigin = "anonymous"; v.className = "relic-film-video";
+    return (filmCache[id] = v);
+  }
+  function relicFilm(entry) {
+    const id = entry.sp.id, v = filmEl(id);
+    if (!v) return Promise.resolve();
+    return new Promise((done) => {
+      const [r, g, b] = FILM_GLOW[id] || FILM_GLOW.moon;
+      const wrap = document.createElement("div");
+      wrap.className = `relic-film ${id}`; wrap.style.setProperty("--glow", `${r}, ${g}, ${b}`);
+      wrap.setAttribute("role", "dialog"); wrap.setAttribute("aria-label", `${entry.sp.name}, a secret relic awakens`);
+      const sky = document.createElement("canvas"); sky.className = "relic-film-sky"; sky.setAttribute("aria-hidden", "true");
+      const frame = document.createElement("div"); frame.className = "relic-film-frame"; frame.append(v);
+      const kicker = document.createElement("p"); kicker.className = "relic-film-kicker";
+      kicker.textContent = `Secret relic ${SECRETS.indexOf(entry) + 1} of ${SECRETS.length}`;
+      const skip = document.createElement("button"); skip.type = "button"; skip.className = "relic-film-skip"; skip.textContent = "Skip";
+      wrap.append(sky, frame, kicker, skip);
+      document.body.append(wrap);
+      const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      // rising sparkles drawn in code, in the relic's own colour
+      let raf = 0;
+      if (!reduce) {
+        const x = sky.getContext("2d"), dpr = Math.min(2, devicePixelRatio || 1);
+        const size = () => { sky.width = innerWidth * dpr; sky.height = innerHeight * dpr; };
+        size(); addEventListener("resize", size);
+        const motes = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), s: .6 + Math.random() * 2.4, v: .0006 + Math.random() * .0016, p: Math.random() * 6.28 }));
+        const tick = (t) => {
+          x.clearRect(0, 0, sky.width, sky.height);
+          for (const m of motes) {
+            m.y -= m.v; if (m.y < -.02) { m.y = 1.02; m.x = Math.random(); }
+            const a = .35 + .45 * Math.sin(t / 600 + m.p);
+            x.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`; x.beginPath(); x.arc(m.x * sky.width, m.y * sky.height, m.s * dpr, 0, 7); x.fill();
+          }
+          raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        wrap._stop = () => removeEventListener("resize", size);
+      }
+      const snd = window.pdSound, withSound = !snd || snd.isOn();
+      if (snd && withSound) snd.duck(.5);
+      let finished = false;
+      const finish = () => {
+        if (finished) return; finished = true;
+        clearTimeout(guard); wrap.classList.remove("on");
+        if (snd && withSound) snd.unduck(1.8);
+        setTimeout(() => { cancelAnimationFrame(raf); wrap._stop && wrap._stop(); v.pause(); wrap.remove(); done(); }, 650);
+      };
+      skip.addEventListener("click", finish);
+      v.addEventListener("ended", () => setTimeout(finish, 450), { once: true });
+      v.addEventListener("error", finish, { once: true });
+      // a slow connection never leaves anyone waiting: no picture after 6 seconds and we go straight to the relic
+      let guard = setTimeout(() => { if (v.readyState < 3) finish(); }, 6000);
+      v.addEventListener("playing", () => { clearTimeout(guard); guard = setTimeout(finish, 9000); }, { once: true });
+      requestAnimationFrame(() => wrap.classList.add("on"));
+      try { v.currentTime = 0; } catch (e) {}
+      v.muted = !withSound;
+      const p = v.play();
+      if (p && p.catch) p.catch(() => { v.muted = true; v.play().catch(finish); });
+    });
+  }
+
   egg.addEventListener("click", async () => {
     if (!shown || egg.disabled) return;
     egg.disabled = true;
     const { entry, fresh } = shown;
     const imgP = stickerUrl(entry, 520);
-    if (entry.tier === "secret") {   // a slower, grander reveal
-      stage.dataset.state = "wobble"; await wait(2100);
+    if (entry.tier === "secret") {   // a slower, grander reveal: the seal breaks, the film plays, then the relic
+      stage.dataset.state = "wobble"; await wait(1200);
       stage.dataset.state = "crack"; await wait(520);
       keep(entry);
+      await relicFilm(entry);
       pic.src = await imgP; pic.alt = `${entry.sp.name}, a secret relic`;
       egg.hidden = true; pic.hidden = false;
       setStage("reveal", "secret-" + entry.sp.id);
@@ -310,6 +384,7 @@
       $("hatch-sub").textContent = mode === "view" ? entry.sp.line : `${entry.sp.line} Very few Keepers will ever see this one.`;
       $("hatch-post").href = `https://x.com/intent/post?text=${encodeURIComponent(postText(entry, mode))}`;
       $("hatch-actions").hidden = false;
+      if ($("hatch-film")) $("hatch-film").hidden = !filmSrc(entry.sp.id);
       prepShare(entry);
       return;
     }
@@ -320,8 +395,10 @@
       ? `No new dragon today, but your ${entry.sp.name} has company. ${nextNews()}` : "It is now on your shelf. Show it off on X.";
     $("hatch-post").href = `https://x.com/intent/post?text=${encodeURIComponent(postText(entry, mode))}`;
     $("hatch-actions").hidden = false;
+    if ($("hatch-film")) $("hatch-film").hidden = true;
     prepShare(entry);
   }
+  if ($("hatch-film")) $("hatch-film").addEventListener("click", () => { if (shown && shown.entry.tier === "secret") relicFilm(shown.entry); });
 
   // look at one you already have
   async function viewOne(entry) {
@@ -601,6 +678,7 @@
     egg.setAttribute("aria-label", "Break the seal");
     setStage("egg", "seal-" + entry.sp.id);
     sticker(entry, 520); sticker(entry, 1000);
+    filmEl(entry.sp.id);
     openSheet(hatchEl);
   }
   addEventListener("pd:opened", () => {
