@@ -183,7 +183,7 @@
       <div class="sheet-grip" aria-hidden="true"></div>
       <h3 id="dc-title">Your daily card</h3>
       <p class="sheet-sub">Goal done. Pick your Blinky, a scene and a colour, then post it.</p>
-      <div class="dc-stage"><canvas id="dc-preview" width="480" height="600" aria-label="Preview of your daily card"></canvas></div>
+      <div class="dc-stage"><canvas id="dc-preview" width="600" height="338" aria-label="Preview of your daily card"></canvas></div>
       <div class="dc-group"><span class="dc-label">Pose</span><div class="dc-poses" id="dc-poses"></div><small class="dc-unlock" id="dc-unlock"></small></div>
       <div class="dc-group"><span class="dc-label">Scene</span><div class="dc-row" id="dc-scenes"></div></div>
       <div class="dc-group"><span class="dc-label">Colour</span><div class="dc-row" id="dc-tones"></div></div>
@@ -320,6 +320,7 @@
   <script src="{{ asset('cards-data.js') }}" defer></script>
   <script src="{{ asset('myweek.js') }}" defer></script>
   <script src="{{ asset('dex-data.js') }}" defer></script>
+  <script src="{{ asset('cardkit.js') }}" defer></script>
   <script src="{{ asset('dragons.js') }}" defer></script>
   <script src="{{ asset('goalcard.js') }}" defer></script>{% endif %}
 {% endblock %}

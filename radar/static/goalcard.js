@@ -27,15 +27,16 @@
   const art = (p, w) => `${BASE}/image/upload/c_scale,w_${w}/f_png/v${p.v}/dragon-radar/blinky/${p.id}.png`;
 
   // ---------- scenes and colours ----------
+  // deep, rich skies so every card looks premium; the light lives in the glow around Blinky
   const SCENES = [
-    { id: "meadow", name: "Sunrise meadow", sky: ["#ffd9a8", "#ff9d7a", "#7a5cc8"], glow: "rgba(255, 236, 170, .9)", hills: ["#8fd17a", "#5fae5c"], dots: "rgba(255,255,255,.55)" },
-    { id: "night", name: "Starry night", sky: ["#2a2f6e", "#161a44", "#0b0d26"], glow: "rgba(170, 190, 255, .55)", hills: ["#2c3470", "#1d2356"], dots: "rgba(255,255,255,.95)", stars: true },
-    { id: "lavender", name: "Lavender dream", sky: ["#f1dcff", "#c9a2ff", "#6f4bd8"], glow: "rgba(255, 240, 255, .85)", dots: "rgba(255,255,255,.6)", bokeh: true },
-    { id: "ocean", name: "Ocean breeze", sky: ["#c8f4ff", "#5cc8e6", "#1f6fa8"], glow: "rgba(255, 255, 255, .8)", waves: ["#7fdcf0", "#3aa6d0", "#1f7fb4"], dots: "rgba(255,255,255,.7)" },
-    { id: "forest", name: "Forest glade", sky: ["#e6ffd2", "#8fd18f", "#2f6e4f"], glow: "rgba(255, 250, 200, .85)", hills: ["#4f9e5a", "#2f7444"], dots: "rgba(255,255,210,.7)", rays: true },
-    { id: "candy", name: "Candy clouds", sky: ["#ffe3f1", "#ffb6d9", "#a9b8ff"], glow: "rgba(255, 255, 255, .9)", clouds: true, dots: "rgba(255,255,255,.75)" },
-    { id: "ember", name: "Ember hearth", sky: ["#ffcf8a", "#ff7a4a", "#6e1f3a"], glow: "rgba(255, 210, 140, .9)", dots: "rgba(255,200,120,.8)", bokeh: true },
-    { id: "golden", name: "Golden hour", sky: ["#fff3c4", "#ffc94a", "#d97a1f"], glow: "rgba(255, 255, 230, .95)", dots: "rgba(255,255,255,.7)", rays: true },
+    { id: "meadow", name: "Sunrise meadow", sky: ["#ffc88e", "#d9705e", "#3b2466"], glow: "rgba(255, 226, 160, .8)", hills: ["#3f8a4f", "#2a6a3c"], dots: "rgba(255,255,255,.55)" },
+    { id: "night", name: "Starry night", sky: ["#2a2f6e", "#161a44", "#0b0d26"], glow: "rgba(170, 190, 255, .5)", hills: ["#232a5e", "#161c46"], dots: "rgba(255,255,255,.95)", stars: true },
+    { id: "lavender", name: "Lavender dream", sky: ["#c7a8ff", "#7a4fd6", "#281458"], glow: "rgba(240, 220, 255, .7)", dots: "rgba(255,255,255,.6)", bokeh: true },
+    { id: "ocean", name: "Ocean breeze", sky: ["#9fe3f5", "#2a8cbf", "#0c355f"], glow: "rgba(230, 250, 255, .7)", waves: ["#2f9ccc", "#1d76a8", "#12507e"], dots: "rgba(255,255,255,.7)" },
+    { id: "forest", name: "Forest glade", sky: ["#cdebb0", "#4a955a", "#14392a"], glow: "rgba(255, 245, 190, .75)", hills: ["#2f7444", "#1d5232"], dots: "rgba(255,255,210,.7)", rays: true },
+    { id: "candy", name: "Candy clouds", sky: ["#ffc1df", "#d877b0", "#4d3290"], glow: "rgba(255, 240, 250, .75)", clouds: true, dots: "rgba(255,255,255,.75)" },
+    { id: "ember", name: "Ember hearth", sky: ["#ffba74", "#d34f2c", "#36091c"], glow: "rgba(255, 205, 130, .8)", dots: "rgba(255,200,120,.8)", bokeh: true },
+    { id: "golden", name: "Golden hour", sky: ["#ffe29a", "#df9a26", "#5e2e0e"], glow: "rgba(255, 248, 215, .85)", dots: "rgba(255,255,255,.7)", rays: true },
   ];
   const TONES = [
     { id: "gold", name: "Gold", a: "#ffd35a", b: "#f0a020", ink: "#3a2400" },
@@ -117,23 +118,23 @@
     const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, S.sky[0]); g.addColorStop(.55, S.sky[1]); g.addColorStop(1, S.sky[2]);
     x.fillStyle = g; x.fillRect(0, 0, W, H);
     // the light behind Blinky
-    const glow = x.createRadialGradient(W / 2, H * .42, 20, W / 2, H * .42, W * .62);
+    const glow = x.createRadialGradient(360, H * .48, 20, 360, H * .48, W * .5);
     glow.addColorStop(0, S.glow); glow.addColorStop(1, "rgba(255,255,255,0)");
     x.fillStyle = glow; x.fillRect(0, 0, W, H);
     if (S.rays) {
-      x.save(); x.translate(W / 2, H * .38); x.globalAlpha = .18;
+      x.save(); x.translate(360, H * .45); x.globalAlpha = .18;
       for (let i = 0; i < 16; i++) { x.rotate(Math.PI / 8); x.fillStyle = "#fff"; x.beginPath(); x.moveTo(0, 0); x.lineTo(W, -60); x.lineTo(W, 60); x.closePath(); x.fill(); }
       x.restore();
     }
     if (S.stars) {
       for (let i = 0; i < 160; i++) { const sx = r() * W, sy = r() * H * .75, sr = r() * 2.4 + .4; x.globalAlpha = .35 + r() * .65; x.fillStyle = S.dots; x.beginPath(); x.arc(sx, sy, sr, 0, 7); x.fill(); }
       x.globalAlpha = 1;
-      const m = x.createRadialGradient(W * .8, H * .14, 10, W * .8, H * .14, 120); m.addColorStop(0, "rgba(255,250,225,1)"); m.addColorStop(.35, "rgba(255,250,225,.9)"); m.addColorStop(.4, "rgba(255,250,225,.25)"); m.addColorStop(1, "rgba(255,250,225,0)");
+      const m = x.createRadialGradient(110, 96, 8, 110, 96, 90); m.addColorStop(0, "rgba(255,250,225,1)"); m.addColorStop(.35, "rgba(255,250,225,.9)"); m.addColorStop(.4, "rgba(255,250,225,.25)"); m.addColorStop(1, "rgba(255,250,225,0)");
       x.fillStyle = m; x.fillRect(0, 0, W, H);
     }
     if (S.bokeh) for (let i = 0; i < 26; i++) { const bx = r() * W, by = r() * H * .8, br = 14 + r() * 60; const b = x.createRadialGradient(bx, by, 0, bx, by, br); b.addColorStop(0, S.dots); b.addColorStop(1, "rgba(255,255,255,0)"); x.globalAlpha = .25 + r() * .35; x.fillStyle = b; x.beginPath(); x.arc(bx, by, br, 0, 7); x.fill(); }
     x.globalAlpha = 1;
-    if (S.clouds) for (let i = 0; i < 9; i++) { const cx = r() * W, cy = H * (.12 + r() * .6), cs = 50 + r() * 70; x.fillStyle = `rgba(255,255,255,${.35 + r() * .4})`; [[0, 0, 1], [-.9, .25, .7], [.9, .25, .75], [-.4, -.35, .7], [.45, -.3, .65]].forEach(([dx, dy, k]) => { x.beginPath(); x.arc(cx + dx * cs, cy + dy * cs, cs * k, 0, 7); x.fill(); }); }
+    if (S.clouds) for (let i = 0; i < 9; i++) { const cx = r() * W, cy = H * (.12 + r() * .6), cs = 50 + r() * 70; x.fillStyle = `rgba(255,255,255,${.16 + r() * .22})`; [[0, 0, 1], [-.9, .25, .7], [.9, .25, .75], [-.4, -.35, .7], [.45, -.3, .65]].forEach(([dx, dy, k]) => { x.beginPath(); x.arc(cx + dx * cs, cy + dy * cs, cs * k, 0, 7); x.fill(); }); }
     if (S.hills) {
       [[S.hills[0], .74, 90], [S.hills[1], .8, 70]].forEach(([col, base, amp], k) => {
         x.fillStyle = col; x.beginPath(); x.moveTo(0, H);
@@ -155,67 +156,45 @@
   }
 
   async function draw(canvas, scale) {
-    const W = 1200, H = 1500, s = state(), S = SCENES.find((q) => q.id === pick.scene) || SCENES[0];
-    const T = TONES.find((q) => q.id === pick.tone) || TONES[0], P = POSES.find((q) => q.id === pick.pose) || POSES[0];
+    const K = window.pdCard, W = K.W, H = K.H, P = K.P, s = state();
+    const S = SCENES.find((q) => q.id === pick.scene) || SCENES[0], T = TONES.find((q) => q.id === pick.tone) || TONES[0];
+    const Pz = POSES.find((q) => q.id === pick.pose) || POSES[0];
     canvas.width = Math.round(W * scale); canvas.height = Math.round(H * scale);
     const x = canvas.getContext("2d"); x.setTransform(scale, 0, 0, scale, 0, 0);
-    try { await document.fonts.load('700 60px "Fredoka"'); await document.fonts.load('800 20px "Nunito"'); } catch (e) {}
-    const blinky = await load(art(P, scale > .6 ? 1400 : 700)).catch(() => null);
-    // frame in the chosen colour
-    const fr = x.createLinearGradient(0, 0, W, H); fr.addColorStop(0, T.a); fr.addColorStop(1, T.b);
-    x.fillStyle = fr; x.fillRect(0, 0, W, H);
-    x.save(); rr(x, 34, 34, W - 68, H - 68, 58); x.clip();
+    await K.fonts();
+    const blinky = await load(art(Pz, scale > 0.8 ? 1400 : 700)).catch(() => null);
     scene(x, W, H, S);
-    // ground shadow and Blinky
-    const sh = x.createRadialGradient(W / 2, 1050, 10, W / 2, 1050, 300); sh.addColorStop(0, "rgba(20,10,40,.38)"); sh.addColorStop(1, "rgba(20,10,40,0)");
-    x.save(); x.translate(0, 1050); x.scale(1, .22); x.translate(0, -1050); x.fillStyle = sh; x.beginPath(); x.arc(W / 2, 1050, 300, 0, 7); x.fill(); x.restore();
-    if (blinky) { x.save(); x.shadowColor = "rgba(30, 15, 60, .35)"; x.shadowBlur = 40; x.shadowOffsetY = 18; x.drawImage(blinky, 150, 150, 900, 900); x.restore(); }
-    x.restore();
-    // today's hatched dragon rides along as a badge, so one post tells the whole day
-    const hatch = window.pdDex && window.pdDex.todayHatch ? await window.pdDex.todayHatch().catch(() => null) : null;
-    if (hatch && hatch.img) {
-      const bx = 985, by = 905, br = 112;
-      x.save(); x.shadowColor = "rgba(20, 10, 50, .35)"; x.shadowBlur = 26; x.shadowOffsetY = 10;
-      x.beginPath(); x.arc(bx, by, br, 0, 7); const bg = x.createLinearGradient(bx, by - br, bx, by + br); bg.addColorStop(0, "#ffffff"); bg.addColorStop(1, "#ece6ff");
-      x.fillStyle = bg; x.fill(); x.restore();
-      x.beginPath(); x.arc(bx, by, br, 0, 7); x.lineWidth = 8; const ring = x.createLinearGradient(bx - br, by - br, bx + br, by + br); ring.addColorStop(0, T.a); ring.addColorStop(1, T.b); x.strokeStyle = ring; x.stroke();
-      const im = hatch.img, k = Math.min((br * 1.5) / im.width, (br * 1.5) / im.height);
-      x.drawImage(im, bx - (im.width * k) / 2, by - (im.height * k) / 2 - 6, im.width * k, im.height * k);
-      x.font = '800 22px "Nunito", sans-serif'; const tl = `TODAY: ${hatch.name.toUpperCase()}`, tw = x.measureText(tl).width + 36;
-      rr(x, bx - tw / 2, by + br - 22, tw, 42, 21); x.fillStyle = T.b; x.fill();
-      x.fillStyle = "#ffffff"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(tl, bx, by + br - 1); x.textAlign = "left"; x.textBaseline = "alphabetic";
-    }
-    // top pill
-    x.font = '800 30px "Nunito", sans-serif'; const label = "DAILY GOAL DONE", lw = x.measureText(label).width + 64;
-    x.save(); x.shadowColor = "rgba(0,0,0,.25)"; x.shadowBlur = 18; x.shadowOffsetY = 6;
-    rr(x, 80, 84, lw, 64, 32); const pg = x.createLinearGradient(0, 84, 0, 148); pg.addColorStop(0, T.a); pg.addColorStop(1, T.b); x.fillStyle = pg; x.fill(); x.restore();
-    x.fillStyle = T.ink; x.textBaseline = "middle"; x.fillText(label, 112, 117);
-    x.font = '700 30px "Nunito", sans-serif'; x.fillStyle = "rgba(255,255,255,.95)"; x.textAlign = "right";
-    x.shadowColor = "rgba(0,0,0,.35)"; x.shadowBlur = 10;
-    x.fillText(new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }), W - 84, 117);
-    x.shadowBlur = 0; x.textAlign = "left";
-    // the glass panel with the Keeper's day
-    const py = 1110, ph = 300;
-    x.save(); rr(x, 70, py, W - 140, ph, 44); x.clip();
-    x.fillStyle = "rgba(255,255,255,.2)"; x.fillRect(70, py, W - 140, ph);
-    const gl = x.createLinearGradient(0, py, 0, py + ph); gl.addColorStop(0, "rgba(255,255,255,.55)"); gl.addColorStop(1, "rgba(255,255,255,.18)"); x.fillStyle = gl; x.fillRect(70, py, W - 140, ph);
-    x.restore();
-    x.save(); rr(x, 70, py, W - 140, ph, 44); x.strokeStyle = "rgba(255,255,255,.75)"; x.lineWidth = 3; x.stroke(); x.restore();
+    K.vignette(x, 0.38);
+    K.hero(x, blinky, { cx: 360, cy: 330, maxW: 600, maxH: 560, glow: "255, 240, 210" });
+    K.panel(x, "rgba(255, 255, 255, .34)");
+    const X = P.x + 40, inner = P.w - 80;
+    K.pill(x, "DAILY GOAL DONE", X, P.y + 40, { bg: T.a, ink: T.ink });
+    x.fillStyle = K.SOFT; x.font = '700 18px "Nunito", sans-serif'; x.textAlign = "right";
+    x.fillText(new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" }), P.x + P.w - 40, P.y + 66); x.textAlign = "left";
+    const n = Math.max(s.cheered, GOAL);
+    x.fillStyle = K.INK; K.fit(x, `${n} Keepers`, X, P.y + 142, inner, 58, 40);
+    x.fillStyle = K.SOFT; x.font = '700 24px "Nunito", sans-serif'; x.fillText("cheered on today", X, P.y + 180);
+    K.divider(x, P.y + 210);
     const name = xName();
-    x.textAlign = "center"; x.fillStyle = "#1d1640";
-    x.font = `700 ${name.length > 12 ? 62 : 72}px "Fredoka", sans-serif`;
-    x.fillText(name ? "@" + name : "A proud Keeper", W / 2, py + 82);
-    // stat chips
-    const chips = [`${s.streak} day streak`, `${Math.max(s.cheered, GOAL)} Keepers cheered`];
-    x.font = '800 34px "Nunito", sans-serif';
-    const cw = chips.map((c) => x.measureText(c).width + 70), gap = 24, total = cw.reduce((a, b) => a + b, 0) + gap;
-    let cx = (W - total) / 2;
-    chips.forEach((c, i) => {
-      rr(x, cx, py + 140, cw[i], 70, 35); const cg = x.createLinearGradient(0, py + 140, 0, py + 210); cg.addColorStop(0, T.a); cg.addColorStop(1, T.b); x.fillStyle = cg; x.fill();
-      x.fillStyle = T.ink; x.fillText(c, cx + cw[i] / 2, py + 176); cx += cw[i] + gap;
-    });
-    x.font = '800 28px "Nunito", sans-serif'; x.fillStyle = "rgba(29,22,64,.7)"; x.fillText("pdtools.xyz", W / 2, py + 262);
-    x.textAlign = "left";
+    x.fillStyle = K.INK; K.fit(x, name ? "@" + name : "A proud Keeper", X, P.y + 262, inner, 40, 26);
+    K.chip(x, `${s.streak} day streak`, X, P.y + 284);
+    // today's hatch, as a neat tile inside the panel
+    const hatch = window.pdDex && window.pdDex.todayHatch ? await window.pdDex.todayHatch().catch(() => null) : null;
+    const ty = P.y + 352, th = 118;
+    K.rr(x, X, ty, inner, th, 22); x.fillStyle = "rgba(255, 255, 255, .1)"; x.fill();
+    K.rr(x, X, ty, inner, th, 22); x.strokeStyle = "rgba(255, 255, 255, .16)"; x.lineWidth = 1.5; x.stroke();
+    if (hatch && hatch.img) {
+      const im = hatch.img, k = Math.min(96 / im.width, 96 / im.height);
+      x.drawImage(im, X + 14 + (96 - im.width * k) / 2, ty + (th - im.height * k) / 2, im.width * k, im.height * k);
+      K.label(x, "TODAY'S HATCH", X + 128, ty + 46);
+      x.fillStyle = K.INK; K.fit(x, `${hatch.name} Dragon`, X + 128, ty + 82, inner - 140, 30, 20);
+      x.fillStyle = K.SOFT; x.font = '700 16px "Nunito", sans-serif'; x.fillText(hatch.label, X + 128, ty + 104);
+    } else {
+      K.label(x, "EGGS HATCHED", X + 24, ty + 46);
+      x.fillStyle = K.INK; x.font = '700 40px "Fredoka", sans-serif'; x.fillText(String(s.eggs), X + 24, ty + 92);
+    }
+    K.footer(x);
+    K.grain(x, 0.05);
     return canvas;
   }
 
@@ -252,7 +231,7 @@
   function hint(t) { const h = $("dc-hint"); h.textContent = t; h.hidden = !t; }
   async function redraw() {
     const ticket = ++drawing; blob = null; file = null; $("dc-share").hidden = true;
-    const c = await draw(document.createElement("canvas"), .4);
+    const c = await draw(document.createElement("canvas"), .5);
     if (ticket !== drawing) return;
     prev.width = c.width; prev.height = c.height; prev.getContext("2d").drawImage(c, 0, 0);
     // the full size picture, made in the background so Share is instant

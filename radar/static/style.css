@@ -1045,7 +1045,7 @@ html.theme-dark .kp-end { color: rgba(242, 244, 255, .8); text-shadow: 0 1px 8px
 /* Daily goal card (v2) */
 .daycard-sheet { max-height: 92vh; overflow-y: auto; }
 .dc-stage { display: grid; place-items: center; margin: 6px 0 14px; }
-#dc-preview { width: min(100%, 300px); height: auto; aspect-ratio: 4 / 5; border-radius: 18px; box-shadow: 0 22px 44px -22px rgba(40, 20, 90, .6); background: #eee8ff; }
+#dc-preview { width: 100%; max-width: 560px; height: auto; aspect-ratio: 16 / 9; border-radius: 18px; box-shadow: 0 22px 44px -22px rgba(40, 20, 90, .6); background: #eee8ff; }
 .dc-group { display: grid; gap: 8px; margin: 0 0 14px; }
 .dc-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
 .dc-poses { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }

@@ -1244,3 +1244,15 @@ def test_legends_use_2d_art_and_daily_card_carries_todays_hatch(cfg, Session):
     js = c.get("/static/dragons.js").get_data(as_text=True)
     assert "dragon-radar/dex2d/" in js and "todayHatch" in js and "HATCHED BY" in js
     assert "todayHatch" in c.get("/static/goalcard.js").get_data(as_text=True)
+
+
+def test_cards_share_one_horizontal_kit(cfg, Session):
+    cfg.preview_key = "secret-preview-phrase-123"
+    c = create_app(cfg).test_client()
+    c.get("/preview/secret-preview-phrase-123")
+    page = c.get("/friends").get_data(as_text=True)
+    assert page.index("cardkit.js") < page.index("dragons.js") < page.index("goalcard.js")
+    kit = c.get("/static/cardkit.js").get_data(as_text=True)
+    assert "W = 1200, H = 675" in kit and "window.pdCard" in kit
+    for f in ("dragons.js", "goalcard.js"):
+        assert "window.pdCard" in c.get(f"/static/{f}").get_data(as_text=True)
