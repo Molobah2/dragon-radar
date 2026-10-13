@@ -1057,7 +1057,7 @@ html.theme-dark .kp-end { color: rgba(242, 244, 255, .8); text-shadow: 0 1px 8px
 .dc-lock::before { content: "\1F512 "; }
 .dc-unlock { opacity: .7; font-size: 12px; }
 .dc-row { display: flex; flex-wrap: wrap; gap: 10px; }
-.dc-swatch { width: 44px; height: 44px; border-radius: 14px; border: 3px solid #fff; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .35); cursor: pointer; }
+.dc-swatch { width: 64px; height: 40px; border-radius: 14px; border: 3px solid #fff; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .35); cursor: pointer; }
 .dc-dot { width: 36px; height: 36px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .35); cursor: pointer; }
 .dc-swatch.on, .dc-dot.on { outline: 3px solid var(--plum, #6b4fd8); outline-offset: 2px; }
 .dc-caps { display: grid; gap: 8px; }

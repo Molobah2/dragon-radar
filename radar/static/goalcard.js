@@ -27,6 +27,10 @@
   const art = (p, w) => `${BASE}/image/upload/c_scale,w_${w}/f_png/v${p.v}/dragon-radar/blinky/${p.id}.png`;
 
   // ---------- scenes and colours ----------
+  // painted scene plates (Higgsfield, dragon-radar/scenes/<id>); the coded sky below stays as a fallback
+  const PLATES = { meadow: "v1791858736", night: "v1791858738", lavender: "v1791858740", ocean: "v1791858742",
+    forest: "v1791858767", candy: "v1791858770", ember: "v1791858772", golden: "v1791858774" };
+  const plate = (id, w) => PLATES[id] ? `${BASE}/image/upload/c_fill,w_${w},h_${Math.round(w * 9 / 16)},q_auto:good,f_jpg/${PLATES[id]}/dragon-radar/scenes/${id}` : "";
   // deep, rich skies so every card looks premium; the light lives in the glow around Blinky
   const SCENES = [
     { id: "meadow", name: "Sunrise meadow", sky: ["#ffc88e", "#d9705e", "#3b2466"], glow: "rgba(255, 226, 160, .8)", hills: ["#3f8a4f", "#2a6a3c"], dots: "rgba(255,255,255,.55)" },
@@ -163,7 +167,13 @@
     const x = canvas.getContext("2d"); x.setTransform(scale, 0, 0, scale, 0, 0);
     await K.fonts();
     const blinky = await load(art(Pz, scale > 0.8 ? 1400 : 700)).catch(() => null);
-    scene(x, W, H, S);
+    const bg = plate(S.id) ? await load(plate(S.id, scale > 0.8 ? 2400 : 1200)).catch(() => null) : null;
+    if (bg) {
+      x.drawImage(bg, 0, 0, W, H);
+      // a soft shade on the right so the glass panel always reads clearly
+      const sh = x.createLinearGradient(560, 0, W, 0); sh.addColorStop(0, "rgba(8, 6, 24, 0)"); sh.addColorStop(1, "rgba(8, 6, 24, .45)");
+      x.fillStyle = sh; x.fillRect(0, 0, W, H);
+    } else scene(x, W, H, S);
     K.vignette(x, 0.38);
     K.hero(x, blinky, { cx: 360, cy: 330, maxW: 600, maxH: 560, glow: "255, 240, 210" });
     K.panel(x, "rgba(255, 255, 255, .34)");
@@ -217,7 +227,7 @@
       return b;
     }));
     sceneRow.replaceChildren(...SCENES.map((q) => el("button", { type: "button", class: "dc-swatch" + (q.id === pick.scene ? " on" : ""), title: q.name, "aria-label": q.name, "aria-pressed": String(q.id === pick.scene),
-      style: `background:linear-gradient(160deg,${q.sky[0]},${q.sky[1]} 55%,${q.sky[2]})`, onclick: () => { pick.scene = q.id; saveChoice(); buildPickers(); redraw(); } })));
+      style: PLATES[q.id] ? `background:url(${plate(q.id, 160)}) center/cover` : `background:linear-gradient(160deg,${q.sky[0]},${q.sky[1]} 55%,${q.sky[2]})`, onclick: () => { pick.scene = q.id; saveChoice(); buildPickers(); redraw(); } })));
     toneRow.replaceChildren(...TONES.map((q) => el("button", { type: "button", class: "dc-dot" + (q.id === pick.tone ? " on" : ""), title: q.name, "aria-label": q.name, "aria-pressed": String(q.id === pick.tone),
       style: `background:linear-gradient(160deg,${q.a},${q.b})`, onclick: () => { pick.tone = q.id; saveChoice(); buildPickers(); redraw(); } })));
     $("dc-unlock").textContent = open < POSES.length ? `${open} of ${POSES.length} poses unlocked. Next one after ${(open - START + 1) * EVERY} eggs.` : "Every pose unlocked. Legend.";
