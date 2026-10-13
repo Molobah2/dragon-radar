@@ -378,7 +378,7 @@
       : `${entry.pose} · ${found()} of ${TOTAL} found${mode === "copy" ? ` · you have ${have}` : ""}`;
     n.append(tag, b, p); n.hidden = false;
     const t = entry.tier;
-    if (xField) { xField.hidden = t !== "secret"; if (t === "secret" && xIn) xIn.value = xName() ? "@" + xName() : ""; }
+    if (xField) { xField.hidden = false; if (xIn) xIn.value = xName() ? "@" + xName() : ""; }
     if (t === "secret") {
       $("hatch-title").textContent = mode === "view" ? "My secret relic" : "You found a secret relic";
       $("hatch-sub").textContent = mode === "view" ? entry.sp.line : `${entry.sp.line} Very few Keepers will ever see this one.`;
@@ -420,40 +420,86 @@
   };
   async function card(entry) {
     if (entry.tier === "secret") return secretCard(entry);
-    const c = document.createElement("canvas"); c.width = 1200; c.height = 675;
-    const x = c.getContext("2d"), t = entry.tier;
+    const W = 1200, H = 675, t = entry.tier, sp = entry.sp;
+    const c = document.createElement("canvas"); c.width = W * 2; c.height = H * 2;
+    const x = c.getContext("2d"); x.scale(2, 2);
     try { await document.fonts.load('700 60px "Fredoka"'); await document.fonts.load('800 20px "Nunito"'); } catch (e) {}
-    const theme = t === "legend" ? ["#4a300a", "#120b02", "#ffd76a", "#fff4d0"]
-      : t === "rare" ? ["#2c3a86", "#0d1130", "#a8dcff", "#f1f6ff"] : ["#fff8e8", "#cde8b4", "#2f6a3a", "#1b2130"];
-    const g = x.createRadialGradient(330, 330, 40, 600, 340, 900); g.addColorStop(0, theme[0]); g.addColorStop(1, theme[1]);
-    x.fillStyle = g; x.fillRect(0, 0, 1200, 675);
-    x.save(); x.translate(330, 337); x.globalAlpha = t === "legend" ? 0.24 : t === "rare" ? 0.18 : 0.35;
-    x.fillStyle = t === "common" ? "#ffffff" : theme[2];
-    for (let i = 0; i < 16; i++) { x.rotate(Math.PI / 8); x.beginPath(); x.moveTo(0, 0); x.lineTo(-46, -760); x.lineTo(46, -760); x.closePath(); x.fill(); }
+    const idx = Math.max(0, (D.dragons || []).findIndex((d) => d.id === sp.id));
+    const r = seeded(idx * 7919 + (t === "rare" ? 31 : t === "legend" ? 97 : 3));
+    const egg = sp.egg || ["#f4d27a", "#c9822e"];
+    const dark = t !== "common";
+    // the sky: the species' own egg colours, lighter for commons, deep for rares and legends
+    const mix = (hex, to, k) => { const n = parseInt(hex.slice(1), 16), m = parseInt(to.slice(1), 16);
+      const ch = (s) => Math.round(((n >> s) & 255) * (1 - k) + ((m >> s) & 255) * k); return `rgb(${ch(16)}, ${ch(8)}, ${ch(0)})`; };
+    const top = t === "legend" ? "#3a2606" : t === "rare" ? mix(egg[0], "#0b0d2a", .55) : mix(egg[1], "#ffffff", .72);
+    const bot = t === "legend" ? "#0e0802" : t === "rare" ? mix(egg[1], "#05061a", .78) : mix(egg[0], "#ffffff", .55);
+    const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, top); g.addColorStop(1, bot);
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    const tint = t === "legend" ? "255, 214, 110" : dark ? "190, 220, 255" : "255, 255, 255";
+    // one of six patterns per species, so the shelf of cards never looks the same twice
+    const pattern = ["rays", "bokeh", "stars", "clouds", "scales", "ribbons"][(idx + (t === "rare" ? 2 : t === "legend" ? 4 : 0)) % 6];
+    x.save();
+    if (pattern === "rays") { x.translate(360, 340); x.globalAlpha = dark ? .14 : .3; x.fillStyle = `rgb(${tint})`;
+      for (let i = 0; i < 18; i++) { x.rotate(Math.PI / 9); x.beginPath(); x.moveTo(0, 0); x.lineTo(-40, -820); x.lineTo(40, -820); x.closePath(); x.fill(); } }
+    if (pattern === "bokeh") for (let i = 0; i < 34; i++) { const bx = r() * W, by = r() * H, br = 16 + r() * 70; const b = x.createRadialGradient(bx, by, 0, bx, by, br);
+      b.addColorStop(0, `rgba(${tint}, ${.18 + r() * .25})`); b.addColorStop(1, `rgba(${tint}, 0)`); x.fillStyle = b; x.beginPath(); x.arc(bx, by, br, 0, 7); x.fill(); }
+    if (pattern === "stars") for (let i = 0; i < 140; i++) { x.globalAlpha = .25 + r() * .7; x.fillStyle = `rgb(${tint})`; x.beginPath(); x.arc(r() * W, r() * H, r() * 2.2 + .4, 0, 7); x.fill(); }
+    if (pattern === "clouds") for (let i = 0; i < 8; i++) { const cx = r() * W, cy = 80 + r() * 520, cs = 40 + r() * 60; x.fillStyle = `rgba(${tint}, ${dark ? .07 : .35})`;
+      [[0, 0, 1], [-.9, .25, .7], [.9, .25, .75], [-.4, -.35, .7], [.45, -.3, .65]].forEach(([dx, dy, k]) => { x.beginPath(); x.arc(cx + dx * cs, cy + dy * cs, cs * k, 0, 7); x.fill(); }); }
+    if (pattern === "scales") { x.globalAlpha = dark ? .08 : .22; x.strokeStyle = `rgb(${tint})`; x.lineWidth = 2;
+      for (let yy = -20; yy < H + 40; yy += 34) for (let xx = (yy / 34) % 2 ? 0 : 30; xx < W + 60; xx += 60) { x.beginPath(); x.arc(xx, yy, 30, 0, Math.PI); x.stroke(); } }
+    if (pattern === "ribbons") for (let k = 0; k < 5; k++) { x.globalAlpha = dark ? .1 : .28; x.strokeStyle = `rgb(${tint})`; x.lineWidth = 18 + k * 6; x.beginPath();
+      for (let i = 0; i <= 30; i++) { const px = (i / 30) * W, py = 120 + k * 110 + Math.sin(i / 4 + k) * 40; i ? x.lineTo(px, py) : x.moveTo(px, py); } x.stroke(); }
     x.restore();
-    if (t === "rare") {   // a holo shimmer band
-      const h = x.createLinearGradient(0, 0, 1200, 675);
+    if (t === "rare") { const h = x.createLinearGradient(0, 0, W, H);   // holo shimmer
       ["#ff8ad8", "#8fd3ff", "#b77bff", "#6ee7d8", "#ffd76a"].forEach((col, i) => h.addColorStop(i / 4, col));
-      x.save(); x.globalAlpha = 0.12; x.fillStyle = h; x.fillRect(0, 0, 1200, 675); x.restore();
-    }
-    const s = await sticker(entry, 520);
-    if (s) {
-      const k = Math.min(590 / s.height, 560 / s.width), w = s.width * k, hh = s.height * k;
-      x.save(); x.shadowColor = "rgba(0,0,0,.35)"; x.shadowBlur = 34; x.shadowOffsetY = 16;
-      x.drawImage(s, 330 - w / 2, 337 - hh / 2, w, hh); x.restore();
-    }
-    const ink = theme[3], soft = t === "common" ? "#5b6476" : "rgba(255,255,255,.78)";
-    x.textAlign = "left"; x.fillStyle = soft; x.font = '800 22px "Nunito", system-ui, sans-serif';
-    x.fillText("I HATCHED A", 650, 214);
-    x.fillStyle = t === "common" ? "#2f6a3a" : theme[2]; x.font = '800 26px "Nunito", system-ui, sans-serif';
-    x.fillText(RARITY[t].toUpperCase(), 650, 262);
-    x.fillStyle = ink; x.font = '700 76px "Fredoka", system-ui, sans-serif';
-    x.fillText(entry.sp.name, 650, 344); x.fillText("dragon", 650, 422);
-    x.fillStyle = soft; x.font = '800 24px "Nunito", system-ui, sans-serif';
-    x.fillText(`${found()} of ${TOTAL} found`, 650, 482);
-    const gs = goalStreak(); if (gs > 1) x.fillText(`\u{1F525} ${gs} day goal streak`, 650, 518);
-    x.textAlign = "right"; x.font = '800 22px "Nunito", system-ui, sans-serif'; x.fillStyle = ink;
-    x.fillText("pdtools.xyz", 1168, 640);
+      x.save(); x.globalAlpha = .16; x.fillStyle = h; x.fillRect(0, 0, W, H); x.restore(); }
+    // a soft glow and pedestal under the dragon
+    const glow = x.createRadialGradient(360, 330, 20, 360, 330, 330); glow.addColorStop(0, `rgba(${tint}, ${dark ? .35 : .7})`); glow.addColorStop(1, `rgba(${tint}, 0)`);
+    x.fillStyle = glow; x.fillRect(0, 0, 760, H);
+    x.save(); x.translate(360, 590); x.scale(1, .2); const ped = x.createRadialGradient(0, 0, 10, 0, 0, 230);
+    ped.addColorStop(0, "rgba(0, 0, 0, .35)"); ped.addColorStop(1, "rgba(0, 0, 0, 0)"); x.fillStyle = ped; x.beginPath(); x.arc(0, 0, 230, 0, 7); x.fill(); x.restore();
+    const st = await sticker(entry, 1000);
+    if (st) { const k = Math.min(540 / st.height, 560 / st.width), w = st.width * k, hh = st.height * k;
+      x.save(); x.shadowColor = "rgba(0, 0, 0, .3)"; x.shadowBlur = 30; x.shadowOffsetY = 14; x.drawImage(st, 360 - w / 2, 330 - hh / 2, w, hh); x.restore(); }
+    // the glass panel with the story of this hatch
+    const px = 700, py = 64, pw = 444, ph = 547, rr = 34;
+    const round = () => { x.beginPath(); x.moveTo(px + rr, py); x.arcTo(px + pw, py, px + pw, py + ph, rr); x.arcTo(px + pw, py + ph, px, py + ph, rr); x.arcTo(px, py + ph, px, py, rr); x.arcTo(px, py, px + pw, py, rr); x.closePath(); };
+    x.save(); x.shadowColor = "rgba(0, 0, 0, .22)"; x.shadowBlur = 40; x.shadowOffsetY = 18; round();
+    x.fillStyle = dark ? "rgba(255, 255, 255, .1)" : "rgba(255, 255, 255, .55)"; x.fill(); x.restore();
+    round(); x.strokeStyle = t === "legend" ? "rgba(255, 214, 110, .8)" : dark ? "rgba(255, 255, 255, .35)" : "rgba(255, 255, 255, .9)"; x.lineWidth = 2.5; x.stroke();
+    const ink = dark ? "#ffffff" : "#1d1640", soft = dark ? "rgba(255, 255, 255, .75)" : "rgba(29, 22, 64, .62)";
+    const accent = t === "legend" ? "#ffd76a" : t === "rare" ? "#a8dcff" : mix(egg[0], "#1d1640", .35);
+    const cx = px + 40, inner = pw - 80;
+    // tier pill
+    x.font = '800 20px "Nunito", system-ui, sans-serif'; const label = RARITY[t].toUpperCase(), lw = x.measureText(label).width + 40;
+    x.beginPath(); x.roundRect ? x.roundRect(cx, py + 40, lw, 40, 20) : x.rect(cx, py + 40, lw, 40);
+    x.fillStyle = t === "legend" ? "#ffd76a" : t === "rare" ? "rgba(168, 220, 255, .22)" : accent; x.fill();
+    x.fillStyle = t === "legend" ? "#3a2606" : "#ffffff"; x.textBaseline = "middle"; x.fillText(label, cx + 20, py + 61);
+    // the dragon's name, sized to fit one or two lines
+    x.textBaseline = "alphabetic"; x.fillStyle = ink;
+    const full = `${sp.name} Dragon`; let size = 64; x.font = `700 ${size}px "Fredoka", sans-serif`;
+    while (x.measureText(full).width > inner && size > 48) { size -= 2; x.font = `700 ${size}px "Fredoka", sans-serif`; }
+    let y = py + 160;
+    if (x.measureText(full).width <= inner) x.fillText(full, cx, y);
+    else { x.fillText(sp.name, cx, y); y += size + 2; x.fillText("Dragon", cx, y); }
+    x.fillStyle = soft; x.font = '700 24px "Nunito", sans-serif'; y += 44; x.fillText(entry.pose || "", cx, y);
+    // divider
+    y += 34; x.fillStyle = dark ? "rgba(255, 255, 255, .22)" : "rgba(29, 22, 64, .14)"; x.fillRect(cx, y, inner, 2);
+    // who hatched it
+    const who = xName();
+    y += 46; x.fillStyle = soft; x.font = '800 17px "Nunito", sans-serif'; x.fillText("HATCHED BY", cx, y);
+    y += 50; x.fillStyle = ink; let ns = 44; x.font = `700 ${ns}px "Fredoka", sans-serif`;
+    const nm = who ? "@" + who : "A proud Keeper";
+    while (x.measureText(nm).width > inner && ns > 28) { ns -= 2; x.font = `700 ${ns}px "Fredoka", sans-serif`; }
+    x.fillText(nm, cx, y);
+    // stat chips
+    const chips = [`${found()} of ${TOTAL} found`]; const gs = goalStreak(); if (gs > 1) chips.push(`${gs} day streak`);
+    x.font = '800 19px "Nunito", sans-serif'; let chx = cx; y += 34;
+    for (const ch of chips) { const cw = x.measureText(ch).width + 34; x.beginPath(); x.roundRect ? x.roundRect(chx, y, cw, 40, 20) : x.rect(chx, y, cw, 40);
+      x.fillStyle = dark ? "rgba(255, 255, 255, .14)" : "rgba(29, 22, 64, .07)"; x.fill(); x.fillStyle = ink; x.textBaseline = "middle"; x.fillText(ch, chx + 17, y + 21); x.textBaseline = "alphabetic"; chx += cw + 10; }
+    x.textAlign = "right"; x.fillStyle = soft; x.font = '800 20px "Nunito", sans-serif'; x.fillText("pdtools.xyz", px + pw - 36, py + ph - 32);
+    x.textAlign = "left";
     return c;
   }
 
@@ -466,7 +512,7 @@
     const v = cleanX(xIn.value);
     store.set("pd:xname", v);
     clearTimeout(xTimer);
-    xTimer = setTimeout(() => { if (shown && shown.entry.tier === "secret") prepShare(shown.entry); }, 500);
+    xTimer = setTimeout(() => { if (shown) prepShare(shown.entry); }, 500);
   });
 
   // ---------- secret relic cards: each one has its own world ----------
