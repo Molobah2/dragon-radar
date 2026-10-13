@@ -151,3 +151,18 @@ html.theme-dark .dc-swatch, html.theme-dark .dc-dot { border-color: rgba(255, 25
 html.theme-dark .flag { color: var(--ink); }
 html.theme-dark .flag:hover, html.theme-dark .flag:focus-visible { background: rgba(255, 255, 255, .08); }
 html.theme-dark .install-nudge { background: rgba(20, 27, 52, .94); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 22px 50px -18px rgba(0, 0, 0, .8); }
+
+/* v2: Start here, rally, Book of Friends */
+html.theme-dark .start-here { background: linear-gradient(135deg, rgba(48, 40, 78, .96), rgba(36, 30, 64, .96)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 24px 44px -28px rgba(0, 0, 0, .8); }
+html.theme-dark .rally { background: linear-gradient(90deg, rgba(58, 36, 30, .94), rgba(44, 30, 40, .94)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 10px 26px -14px rgba(0, 0, 0, .7); }
+html.theme-dark .rally-text { color: #fff3ea; }
+/* the footer sits on the sky: in dark mode it gets its own glass so it reads in daylight too */
+html.theme-dark footer { background: rgba(14, 18, 34, .78); border-radius: 22px; padding-left: 18px; padding-right: 18px; margin-top: 18px; margin-bottom: 24px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+html.theme-dark .bm-meter { background: rgba(255, 255, 255, .12); }
+html.theme-dark .book-me { background: rgba(255, 255, 255, .05); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06); }
+html.theme-dark .bm-proof { background: rgba(255, 255, 255, .08); }
+html.theme-dark .bm-list li, html.theme-dark .bm-names li:not([class]) { background: rgba(255, 255, 255, .06); }
+html.theme-dark .bm-names li.tier-gold, html.theme-dark .bm-names li.tier-silver { color: #1d2433; }
+html.theme-dark .bm-names li.tier-gold a, html.theme-dark .bm-names li.tier-silver a { color: #1d2433; }
+html.theme-dark .book-ask { background: rgba(20, 27, 52, .95); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 22px 50px -18px rgba(0, 0, 0, .8); }
+html.theme-dark .tag.tier:not(.tier-gold):not(.tier-silver) { color: #f0b27a; }

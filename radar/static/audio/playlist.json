@@ -1,0 +1,34 @@
+[
+  {
+    "src": "audio/blinky-song.m4a",
+    "title": "Blinky's song",
+    "by": "The Panda",
+    "x": "ThePanda_NFT",
+    "dur": 204.7,
+    "mix": 198.0
+  },
+  {
+    "src": "audio/pocket-dragon-wakes.m4a",
+    "title": "The Pocket Dragon Wakes",
+    "by": "DJ",
+    "x": "bubblegum_dee",
+    "dur": 179.97,
+    "mix": 173.97
+  },
+  {
+    "src": "audio/pocket-dragon-boxer.m4a",
+    "title": "Pocket Dragon",
+    "by": "Boxer",
+    "x": "Boxerr110",
+    "dur": 114.6,
+    "mix": 108.6
+  },
+  {
+    "src": "audio/four-leaf-clover-escape.m4a",
+    "title": "Four-Leaf Clover Escape",
+    "by": "DJ",
+    "x": "bubblegum_dee",
+    "dur": 155.3,
+    "mix": 149.3
+  }
+]

@@ -162,10 +162,15 @@
     } catch (e) { /* offline: numbers from this browser only */ }
     const fans = {};
     for (const id of mine) { const p = byId[id]; if (p && !p.team && p.user) fans[p.user] = (fans[p.user] || 0) + 1; }
-    const st = get("pd:streak", {}) || {};
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const last = st.last ? new Date(st.last + "T00:00:00") : null;
-    const live = last && (today - last) / 864e5 <= 1 ? st.count || 0 : 0;
+    // the same streak the header shows (with the streak freeze), counted in calendar days
+    let live = 0;
+    if (window.pdFeed && window.pdFeed.streak) live = window.pdFeed.streak() | 0;
+    else {
+      const st = get("pd:streak", {}) || {};
+      const day = (d) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 864e5;
+      const n = new Date(), t = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) / 864e5;
+      live = typeof st.last === "string" && t - day(st.last) <= 1 ? st.count | 0 : 0;
+    }
     const top = Object.entries(fans).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([u]) => u);
     return { keepers: Object.keys(fans).length, opened: mine.length, streak: live, top, from: new Date(Date.now() - 6 * 864e5), to: new Date() };
   }
@@ -245,7 +250,7 @@
   }
 
   async function open() {
-    wrap.hidden = false; requestAnimationFrame(() => wrap.classList.add("open")); document.body.classList.add("sheet-open");
+    wrap.hidden = false; (void wrap.offsetWidth, wrap.classList.add("open")); document.body.classList.add("sheet-open");
     pickers(); mark();
     msg("Drawing your card...");
     stats = await work();
@@ -253,7 +258,7 @@
     msg(stats.opened ? "" : "Open a few posts this week and your card fills up.");
     $("myweek-post").href = `https://x.com/intent/post?text=${encodeURIComponent(postText())}`;
   }
-  function close() { wrap.classList.remove("open"); document.body.classList.remove("sheet-open"); setTimeout(() => { if (!wrap.classList.contains("open")) wrap.hidden = true; }, 250); }
+  function close() { wrap.classList.remove("open"); (document.querySelector(".sheet-wrap.open") || document.body.classList.remove("sheet-open")); setTimeout(() => { if (!wrap.classList.contains("open")) wrap.hidden = true; }, 250); }
   document.querySelectorAll("[data-myweek]").forEach((b) => b.addEventListener("click", open));
   $("myweek-close").addEventListener("click", close);
   $("myweek-post").addEventListener("click", () => track("share", "myweek"));

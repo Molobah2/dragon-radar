@@ -13,10 +13,12 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import hashlib
+from pathlib import Path
 from functools import wraps
 
 from flask import Flask, Response, abort, g, jsonify, redirect, render_template, request, session, url_for
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
+from sqlalchemy.exc import IntegrityError
 
 from .collector import run_collection
 from .config import Config
@@ -25,6 +27,11 @@ from .db import (SIDE_RUNS, BlockedAuthor, CollectorRun, Keeper, Post, get_setti
                  set_setting, utcnow)
 
 FEED_LIMIT = 1000
+FEED_CACHE_S = 30  # seconds the shared feed result is reused
+OPENS_PER_CONNECTION = 3   # different browsers on one connection that can add to a post's public count
+HABIT_GAP_S = 4            # seconds between two counted opens from one browser
+HABIT_PER_CONNECTION = 200 # counted opens per connection per day, all browsers together
+OPENS_PER_DAY = 50  # per browser, counted for habits, tiers and relics; never shown on the site
 NEWCOMERS = 12  # first time posters shown in the welcome row
 PINNED = 4  # newest team posts kept at the top  # IDs only, a few KB; the browser renders them in small batches
 
@@ -58,6 +65,8 @@ def resolve_range(args, tz: ZoneInfo, now_utc: datetime, max_days: int) -> tuple
             return resolve_range({"range": "24h"}, tz, now_utc, max_days)
         if d_to < d_from:
             d_from, d_to = d_to, d_from
+        d_to = min(d_to, today + timedelta(days=1))          # nothing exists in the future (and year 9999 would overflow)
+        d_from = min(d_from, d_to)
         # Recent search only reaches 7 days back, older custom ranges would just be empty
         oldest = today - timedelta(days=max_days * 4)
         d_from = max(d_from, oldest)
@@ -86,6 +95,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     app.config["SECRET_KEY"] = cfg.secret_key or secrets.token_hex(32)
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["SESSION_COOKIE_SECURE"] = bool(os.environ.get("RENDER"))   # https only on the live site
     Session = make_session_factory(cfg.database_url)
     tz = ZoneInfo(cfg.timezone)
     app.extensions["radar"] = {"cfg": cfg, "Session": Session}
@@ -97,9 +107,27 @@ def create_app(cfg: Config | None = None) -> Flask:
     version = (os.environ.get("RENDER_GIT_COMMIT") or str(int(time.time())))[:8]
     app.extensions["radar"]["version"] = version
 
+    # The community playlist, prepared by audio_prep.py (order, loudness and mix points)
+    import json as _json
+    _pl = Path(__file__).parent / "static" / "audio" / "playlist.json"
+    try:
+        raw_pl = _json.loads(_pl.read_text(encoding="utf-8")) if _pl.exists() else []
+    except ValueError:
+        raw_pl = []
+    # one bad entry must never take a page down: only complete songs whose file exists are used
+    playlist = [x for x in (raw_pl if isinstance(raw_pl, list) else [])
+                if isinstance(x, dict) and all(isinstance(x.get(k), str) and x.get(k) for k in ("src", "title", "by"))
+                and (Path(__file__).parent / "static" / x["src"]).exists()
+                and isinstance(x.get("mix", 0), (int, float)) and isinstance(x.get("dur", 0), (int, float))]
+
+    def site_songs():
+        return [{**s, "src": url_for("static", filename=s["src"], v=version)} for s in playlist]
+
     @app.context_processor
     def _assets():
         return {"asset": lambda filename: url_for("static", filename=filename, v=version), "asset_version": version,
+                "site_songs": site_songs,
+                "site_credits": [{"track": x["title"], "by": x["by"], "x": x.get("x", "")} for x in playlist],
                 "v2": getattr(g, "v2", False), "v2_private": getattr(g, "v2", False) and not cfg.v2_public}
 
     # v2 tools in progress: add {"name", "url", "note"} here as each one is built
@@ -153,9 +181,30 @@ def create_app(cfg: Config | None = None) -> Flask:
     def lab():
         return render_template("lab.html", cfg=cfg, lab_tools=LAB_TOOLS)
 
+    # ---------- language packs (see i18n_pack.py) ----------
+    from .i18n_pack import build as build_packs
+    packs = build_packs()
+
+    @app.get("/i18n/<lang>.js")
+    def i18n_pack(lang):
+        if lang not in packs:
+            abort(404)
+        resp = Response(packs[lang], mimetype="application/javascript")
+        if request.args.get("v") == version:
+            resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return resp
+
     @app.after_request
     def _cache_headers(resp):
-        if request.path.startswith("/static/") and request.args.get("v") == version and resp.status_code == 200:
+        # Jon's admin actions, accepted reports and collector runs show on the feed straight away.
+        # Only real changes clear it: a stranger posting to these addresses cannot keep emptying the cache.
+        if request.method == "POST" and resp.status_code < 400 and (
+                (request.path.startswith("/admin") and session.get("admin"))
+                or request.path == "/cron/collect" or g.get("feed_changed")):
+            feed_cache.clear()
+        if request.path.startswith("/static/fonts/") and resp.status_code == 200:   # font files are never changed in place
+            resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif request.path.startswith("/static/") and request.args.get("v") == version and resp.status_code == 200:
             resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         elif resp.mimetype == "text/html":
             resp.headers.add("Vary", "Cookie")    # a preview page is never handed to someone else
@@ -165,7 +214,41 @@ def create_app(cfg: Config | None = None) -> Flask:
             resp.headers["X-Robots-Tag"] = "noindex, nofollow"
         return resp
 
+    # The feed costs several database round trips. Everyone sees the same posts, so the result is kept
+    # for FEED_CACHE_S seconds: a busy minute costs the database a couple of reads instead of hundreds.
+    feed_cache: dict = {}
+
     def feed_query(args):
+        # One plain value per filter, used for BOTH the cache key and the query, so a repeated parameter
+        # (?after=x&after=) can never store one answer under another request's key.
+        quote_vals = args.getlist("quotes") if hasattr(args, "getlist") else [args.get("quotes", "1")]
+        args = {k: str(args.get(k) or "")[:40] for k in ("range", "who", "from", "to", "after")}
+        args["quotes"] = "0" if quote_vals and quote_vals[-1] == "0" else "1"
+        for k in [k for k, v in args.items() if not v]:
+            del args[k]
+        rkey, rstart, rend = resolve_range(args, tz, utcnow(), cfg.feed_days)
+        window = rkey if rkey in ("24h", "today", "yesterday", "7d") else f"{rstart:%Y%m%d%H}-{rend:%Y%m%d%H}"
+        try:
+            after_key = datetime.strptime(args.get("after", "")[:19], "%Y-%m-%dT%H:%M:%S").isoformat() if args.get("after") else ""
+        except ValueError:
+            after_key = ""
+        ck = f"{window}|{args.get('who', 'all')}|{args['quotes']}|{after_key}|{bool(g.get('v2'))}"
+        now_ts = time.time()
+        hit = feed_cache.get(ck)
+        if hit and now_ts - hit[0] < FEED_CACHE_S:
+            items, pinned_items, filters, updated, newcomers = hit[1]
+            return [dict(i) for i in items], [dict(i) for i in pinned_items], dict(filters), updated, newcomers
+        out = _feed_query(args)
+        if len(feed_cache) > 40:
+            for k in list(feed_cache)[:20]:            # the oldest half goes, the busy ones stay
+                feed_cache.pop(k, None)
+        feed_cache[ck] = (now_ts, out)
+        items, pinned_items, filters, updated, newcomers = out
+        return [dict(i) for i in items], [dict(i) for i in pinned_items], dict(filters), updated, newcomers
+
+    app.feed_cache = feed_cache    # tests and admin actions can empty it
+
+    def _feed_query(args):
         key, start, end = resolve_range(args, tz, utcnow(), cfg.feed_days)
         who = args.get("who", "all")
         # The form sends a hidden "0" then the checkbox "1"; the last value wins
@@ -173,7 +256,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         quotes = (quote_vals[-1] if quote_vals else "1") != "0"
         q = (select(Post).where(Post.hidden.is_(False), Post.created_at >= start, Post.created_at < end,
                                 Post.author_username.is_not(None), Post.text.is_not(None))
-             .where(Post.author_id.not_in(select(BlockedAuthor.author_id))))
+             .where(Post.author_id.not_in(select(BlockedAuthor.author_id)))
+             .where(Post.text.not_like("%Book of Friends PD%")))     # signing proof posts stay out of the feed
         if who == "team":
             q = q.where(Post.is_team.is_(True))
         elif who == "community":
@@ -234,6 +318,12 @@ def create_app(cfg: Config | None = None) -> Flask:
                     "opens": p.opens or 0}
         items = [item(p) for p in posts]
         pinned_items = [item(p) for p in pinned]
+        if g.get("v2"):
+            tags = book_tags()
+            for it in items + pinned_items:
+                t = tags.get((it.get("user") or "").lower())
+                if t:
+                    it["tier"] = t
         pinned_ids = {p["id"] for p in pinned_items}
         pinned_items += [{**item(p), "crew": role} for p, role in crew_posts if p.id not in pinned_ids]
         newcomers = [{"id": p.id, "t": p.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"), "name": p.author_name or p.author_username,
@@ -252,6 +342,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         p = request.path
         if not cfg.canonical_host or host == cfg.canonical_host or host in ("localhost", "127.0.0.1"):
             return None
+        if p.startswith("/api") and request.method == "POST":
+            abort(403)                              # visitors only ever post through the real address
         if p.startswith(("/cron", "/api", "/healthz", "/admin", "/static")):
             return None
         target = {"/": "/friends", "/keepers": "/friends/keepers"}.get(p, p)
@@ -275,7 +367,11 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     @app.get("/")
     def hub():
-        return render_template("hub.html", cfg=cfg, stats=public_stats() if g.get("v2") else None)
+        from .config import COMMUNITY_MUSIC
+        on_site = {x["title"] for x in playlist}
+        makers = [{**m, "playing": any(t in on_site for t in m["songs"]), "on_site": [t for t in m["songs"] if t in on_site]}
+                  for m in COMMUNITY_MUSIC]
+        return render_template("hub.html", cfg=cfg, stats=public_stats() if g.get("v2") else None, music_makers=makers)
 
     @app.get("/keepers")
     def keepers_old():
@@ -292,6 +388,33 @@ def create_app(cfg: Config | None = None) -> Flask:
         items, pinned_items, filters, updated, newcomers = feed_query(request.args)
         return jsonify({"posts": items, "pinned": pinned_items, "filters": filters, "updated": updated, "newcomers": newcomers})
 
+    # ---------- request helpers ----------
+    def client_ip() -> str:
+        """The visitor's address. Cloudflare (in front of Render) sets CF-Connecting-IP itself and overwrites any
+        value a browser sends, so it cannot be faked. X-Forwarded-For is only a fallback for other hosts."""
+        h = request.headers
+        v = (h.get("CF-Connecting-IP") or "").strip()
+        if v:
+            return v[:64]
+        return ((h.get("X-Forwarded-For") or request.remote_addr or "?").split(",")[0]).strip()[:64]
+
+    def conn_hash() -> str:
+        """A salted hash of the connection, for counting different connections without storing an address."""
+        return hashlib.sha256((app.config["SECRET_KEY"] + "|" + client_ip()).encode()).hexdigest()[:24]
+
+    def _no_const(_):
+        raise ValueError("not a number")
+
+    def _body(limit: int = 1000) -> dict:
+        """A small JSON object from the request. Bad JSON raises ValueError; anything that is not an object
+        (a list, a number) or holds NaN or Infinity comes back as an empty dict, so .get never crashes."""
+        import json
+        try:
+            data = json.loads(request.get_data(as_text=True)[:limit] or "{}", parse_constant=_no_const)
+        except ValueError:
+            raise
+        return data if isinstance(data, dict) else {}
+
     # Visitor counter: one beacon per page view from the browser (bots that do not run scripts never send it).
     # Jon's own preview devices are left out so his testing does not inflate the numbers.
     last_hit: dict[str, float] = {}
@@ -303,7 +426,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         if g.get("v2") and not cfg.v2_public:
             return {"counted": False}
         try:
-            data = json.loads(request.get_data(as_text=True)[:2000] or "{}")
+            data = _body(2000)
         except ValueError:
             return {"counted": False}, 400
         vid, path = str(data.get("vid", ""))[:32], str(data.get("path", ""))[:60]
@@ -318,45 +441,184 @@ def create_app(cfg: Config | None = None) -> Flask:
             ok = record(s, vid, path, str(data.get("ref", ""))[:300], request.headers.get("User-Agent", ""), today,
                         cfg.canonical_host or (request.host or "").split(":")[0])
             if ok:
-                s.commit()
+                try:
+                    s.commit()
+                except IntegrityError:              # two tabs at the same moment: the other one counted it
+                    s.rollback()
+                    ok = False
         return {"counted": ok}
 
     # Anonymous open counter. Nothing about the visitor is stored. The browser only
     # sends this the first time it opens a post, and the same address can bump
     # a post once a day, so refreshing or scripting the button barely moves it.
-    seen_opens: dict[tuple[str, str], float] = {}
+    seen_opens: dict[tuple[str, str], tuple[float, set]] = {}
 
     @app.post("/api/open/<post_id>")
     def api_open(post_id):
+        """The public open count on a post. Each browser counts once a day; people sharing one connection
+        (home Wi-Fi, a phone network) each count, up to 5 per connection per post, so a script cannot pump it."""
+        import json
         if not post_id.isdigit() or len(post_id) > 32:
             abort(400)
-        ip = (request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0]).strip()
-        key, now_ts = (ip, post_id), datetime.now().timestamp()
-        if now_ts - seen_opens.get(key, 0) < 86400:
-            return {"counted": False}
-        if len(seen_opens) > 50000:
-            seen_opens.clear()
-        seen_opens[key] = now_ts
+        ip = client_ip()
+        try:
+            vid = str(_body(500).get("vid", ""))[:32]
+        except (ValueError, AttributeError):
+            vid = ""
+        now_ts = datetime.now().timestamp()
+        from .events import VID as _VID
+        who = vid if _VID.match(vid or "") else "no-storage"   # private mode: one count per connection
+        key = (ip, post_id)
         with Session() as s:
             post = s.get(Post, post_id)
             if post is None or post.hidden:
-                return {"counted": False}
-            post.opens = (post.opens or 0) + 1
-            habit(s, post_id)
+                return {"counted": False}            # unknown posts never take room in the memory below
+            seen = seen_opens.get(key)
+            if seen is None or now_ts - seen[0] > 86400:
+                seen = (now_ts, set())
+            bump = who not in seen[1] and len(seen[1]) < OPENS_PER_CONNECTION
+            if bump:
+                seen[1].add(who)
+            if len(seen_opens) > 50000:
+                for k in list(seen_opens)[:10000]:     # forget the oldest, never everything at once
+                    seen_opens.pop(k, None)
+            seen_opens[key] = seen
+            if bump:
+                s.execute(update(Post).where(Post.id == post_id).values(opens=func.coalesce(Post.opens, 0) + 1))
+            habit(s, post_id)                       # the weekly numbers count each browser, whatever the connection
             s.commit()
-            return {"counted": True, "opens": post.opens}
+            if not bump:
+                return {"counted": False}
+            return {"counted": True, "opens": s.scalar(select(Post.opens).where(Post.id == post_id))}
+
+    habit_last: dict[str, float] = {}
+    habit_conn: dict[tuple, int] = {}
 
     def habit(s, post_id: str) -> None:
         """Remember that this browser opened this post today (for the weekly habit number)."""
         import json
         from .events import record
-        if g.get("v2") and not cfg.v2_public:      # Jon's preview devices never count
-            return
+        preview = bool(g.get("v2") and not cfg.v2_public)   # preview devices: counted for the book only, never in the admin numbers
         try:
-            vid = str(json.loads(request.get_data(as_text=True)[:500] or "{}").get("vid", ""))[:32]
+            vid = str(_body(500).get("vid", ""))[:32]
         except (ValueError, AttributeError):
             return
-        record(s, datetime.now(tz).date(), vid, "open", post_id)
+        today = datetime.now(tz).date()
+        from .db import Event
+        from .events import VID as VID_RE
+        now_ts = time.time()
+        if not VID_RE.match(vid) or now_ts - habit_last.get(vid, 0) < HABIT_GAP_S:
+            return                                  # faster than a person can open a post and read it
+        if len(habit_last) > 50000:
+            for k in list(habit_last)[:10000]:
+                habit_last.pop(k, None)
+        habit_last[vid] = now_ts
+        day_key = (client_ip(), str(today))
+        if habit_conn.get(day_key, 0) >= HABIT_PER_CONNECTION:
+            return
+        if len(habit_conn) > 50000:
+            habit_conn.clear()
+        habit_conn[day_key] = habit_conn.get(day_key, 0) + 1
+        if VID_RE.match(vid) and (s.scalar(select(func.count()).select_from(Event).where(
+                Event.day == today, Event.vid == vid, Event.kind.in_(("open", "popen")))) or 0) >= OPENS_PER_DAY:
+            return                                  # quietly: never shown to anyone
+        record(s, today, vid, "popen" if preview else "open", post_id)
+
+    # ---------- Blinky's Book of Friends (v2) ----------
+    book_cache: dict = {"at": 0.0, "data": None, "tags": {}}
+
+    def book_data():
+        from .book import public_book
+        if time.time() - book_cache["at"] > 300 or book_cache["data"] is None:
+            with Session() as s:
+                data = public_book(s, datetime.now(tz).date())
+            book_cache.update(at=time.time(), data=data,
+                              tags={f["handle"].lower(): f["tier"] for f in data["friends"] if f["tier"]})
+        return book_cache["data"]
+
+    def book_tags() -> dict:
+        try:
+            book_data()
+        except Exception:                           # the feed must never fail because of the book
+            return {}
+        return book_cache["tags"]
+
+    book_hits: dict[str, list[float]] = {}
+
+    def book_limit() -> bool:
+        ip = client_ip()
+        now_ts = time.time()
+        recent = [t for t in book_hits.get(ip, []) if now_ts - t < 3600]
+        if len(book_hits) > 50000:
+            book_hits.clear()
+        book_hits[ip] = recent + [now_ts]
+        return len(recent) >= 30
+
+    def json_body() -> dict:
+        import json
+        try:
+            data = _body(1000)
+        except ValueError:
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    @app.get("/api/book")
+    @v2_only
+    def api_book():
+        return jsonify(book_data())
+
+    @app.get("/api/book/me")
+    @v2_only
+    def api_book_me():
+        from .book import me
+        with Session() as s:
+            return jsonify(me(s, request.args.get("vid", "")[:32], datetime.now(tz).date()))
+
+    @app.post("/api/book/sign")
+    @v2_only
+    def api_book_sign():
+        from .book import sign
+        if book_limit():
+            return {"ok": False, "why": "limit"}, 429
+        data = json_body()
+        with Session() as s:
+            out = sign(s, str(data.get("vid", ""))[:32], str(data.get("handle", ""))[:60])
+            s.commit()
+        return out
+
+    @app.post("/api/book/check")
+    @v2_only
+    def api_book_check():
+        from .book import check
+        from .oembed import fetch
+        if book_limit():
+            return {"ok": False, "why": "limit"}, 429
+        data = json_body()
+        vid, link = str(data.get("vid", ""))[:32], str(data.get("link", ""))[:300]
+        from .book import LINK
+        from .db import FriendDevice
+        with Session() as s:
+            dev = s.get(FriendDevice, vid) if vid else None
+            ready = dev is not None and not dev.confirmed
+        found: dict = {}
+        m = LINK.search(link)
+        if ready and m:                             # X is asked only for a real waiting signature, outside the database
+            found[m.group(2)] = fetch(m.group(2))
+        with Session() as s:
+            out = check(s, vid, link, lambda pid: found[pid] if pid in found else fetch(pid))
+            s.commit()
+        if out.get("ok"):
+            book_cache["at"] = 0                    # show the new name right away
+        return out
+
+    # ---------- Discord daily drop (off until DROP_CHANNEL_ID is set on Render) ----------
+    @app.post("/cron/discord-drop")
+    def cron_discord_drop():
+        from .discord_drop import run_drop
+        with Session() as s:
+            out = run_drop(s, cfg, datetime.now(tz))
+            s.commit()
+        return out
 
     # Anonymous moments: daily goal finished, a card shared or saved, the app installed.
     ev_seen: dict[str, list[float]] = {}
@@ -369,10 +631,13 @@ def create_app(cfg: Config | None = None) -> Flask:
         if g.get("v2") and not cfg.v2_public:
             return {"counted": False}
         try:
-            data = json.loads(request.get_data(as_text=True)[:500] or "{}")
+            data = _body(500)
         except ValueError:
             return {"counted": False}, 400
         vid = str(data.get("vid", ""))[:32]
+        kind = str(data.get("kind", ""))[:12]
+        if kind in ("open", "popen"):               # opens only count through /api/open (with its daily cap)
+            return {"counted": False}
         now_ts = time.time()
         recent = [t for t in ev_seen.get(vid, []) if now_ts - t < 3600]
         if len(recent) >= 120:                      # a person never does this many things in an hour
@@ -382,7 +647,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         ev_seen[vid] = recent + [now_ts]
         today = datetime.now(tz).date()
         with Session() as s:
-            ok = record(s, today, vid, str(data.get("kind", ""))[:12], str(data.get("ref", ""))[:32])
+            ok = record(s, today, vid, kind, str(data.get("ref", ""))[:32])
             if pruned["day"] != today:
                 prune(s, today)
                 pruned["day"] = today
@@ -397,10 +662,10 @@ def create_app(cfg: Config | None = None) -> Flask:
         import json
         from .events import add_report
         try:
-            data = json.loads(request.get_data(as_text=True)[:500] or "{}")
+            data = _body(500)
         except ValueError:
             return {"ok": False}, 400
-        ip = (request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0]).strip()
+        ip = client_ip()
         now_ts = time.time()
         recent = [t for t in report_ips.get(ip, []) if now_ts - t < 86400]
         if len(recent) >= 20:
@@ -410,8 +675,11 @@ def create_app(cfg: Config | None = None) -> Flask:
         report_ips[ip] = recent + [now_ts]
         with Session() as s:
             res = add_report(s, str(data.get("post", ""))[:32], str(data.get("vid", ""))[:32],
-                             str(data.get("reason", ""))[:12], datetime.now(tz).date())
+                             str(data.get("reason", ""))[:12], datetime.now(tz).date(),
+                             conn=conn_hash())
             s.commit()
+        if res == "ok":
+            g.feed_changed = True
         return {"ok": res in ("ok", "dup"), "why": res}
 
     # Keeper card lookup. Uses only posts already in our database, so it costs nothing on X.
@@ -575,10 +843,11 @@ def create_app(cfg: Config | None = None) -> Flask:
     @app.post("/api/keepers/add")
     def api_keepers_add():
         import json
-        handle = (request.get_json(silent=True) or {}).get("handle", "").strip().lstrip("@")
+        body = request.get_json(silent=True)
+        handle = str((body.get("handle") if isinstance(body, dict) else "") or "").strip().lstrip("@")
         if not handle or len(handle) > 15 or not all(c.isalnum() or c == "_" for c in handle):
             return {"ok": False, "message": "That does not look like an X handle."}
-        ip = (request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0]).strip()
+        ip = client_ip()
         now_ts = datetime.now().timestamp()
         recent = [t for t in add_seen.get(ip, []) if now_ts - t < 86400]
         if len(recent) >= 10:
@@ -667,21 +936,29 @@ def create_app(cfg: Config | None = None) -> Flask:
     def _too_many(ip: str, limit: int = 12, window: float = 3600) -> bool:
         nowt = time.time()
         hits = [t for t in backup_hits.get(ip, []) if nowt - t < window]
+        if len(backup_hits) > 50000:
+            backup_hits.clear()
         backup_hits[ip] = hits + [nowt]
         return len(hits) >= limit
 
     @app.post("/api/backup")
     def backup_save():
         import json as _json
+        import math as _math
         from .db import ProgressBackup
-        ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "?").split(",")[0].strip()
+        ip = client_ip()
         if _too_many(ip):
             return jsonify({"ok": False, "message": "Too many saves for now, try again later."}), 429
-        body = request.get_json(silent=True) or {}
+        if (request.content_length or 0) > 200_000 or len(request.get_data()) > 200_000:
+            return jsonify({"ok": False, "message": "That is too much to save at once."}), 413
+        try:
+            body = _body(200_000)
+        except ValueError:
+            body = {}
         opened = body.get("opened") if isinstance(body.get("opened"), dict) else {}
         # keep only well formed post ids and timestamps
         clean = {str(k)[:25]: int(v) for k, v in list(opened.items())[:3000]
-                 if str(k).isdigit() and isinstance(v, (int, float))}
+                 if str(k).isdigit() and isinstance(v, (int, float)) and not isinstance(v, bool) and _math.isfinite(v)}
         streak = body.get("streak") if isinstance(body.get("streak"), dict) else {}
         # collectible dragons (v2): only known dragon ids and small whole numbers are kept
         dex_in = body.get("dex") if isinstance(body.get("dex"), dict) else {}
@@ -690,18 +967,21 @@ def create_app(cfg: Config | None = None) -> Flask:
         for k, h in list(have_in.items())[:40]:
             if k in DEX_IDS and isinstance(h, dict):
                 row = {r: min(999, int(h[r])) for r in ("c", "r", "l")
-                       if isinstance(h.get(r), (int, float)) and not isinstance(h.get(r), bool) and int(h[r]) > 0}
+                       if isinstance(h.get(r), (int, float)) and not isinstance(h.get(r), bool) and _math.isfinite(h[r]) and h[r] >= 1}
                 if row:
                     have[k] = row
         day = lambda v: v if isinstance(v, str) and len(v) == 10 and v[4] == "-" else None
-        num = lambda v, top: min(top, int(v)) if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0 else 0
+        num = lambda v, top: min(top, int(v)) if isinstance(v, (int, float)) and not isinstance(v, bool) and _math.isfinite(v) and v > 0 else 0
         g_in = dex_in.get("g") if isinstance(dex_in.get("g"), dict) else {}
         s_in = dex_in.get("s") if isinstance(dex_in.get("s"), dict) else {}
         dex_out = {"have": have, "last": day(dex_in.get("last")), "n": num(dex_in.get("n"), 5000),
-                   "g": {"last": day(g_in.get("last")), "count": num(g_in.get("count"), 5000), "best": num(g_in.get("best"), 5000)},
+                   "g": {"last": day(g_in.get("last")), "count": num(g_in.get("count"), 5000), "best": num(g_in.get("best"), 5000),
+                         "fz": day(g_in.get("fz"))},
                    "e": num(dex_in.get("e"), 1_000_000),
                    "s": {k: day(v) for k, v in s_in.items() if k in ("moon", "ember", "star") and day(v)}}
-        data = _json.dumps({"opened": clean, "streak": {k: streak.get(k) for k in ("last", "count", "best")},
+        book_vid = str(body.get("vid", ""))[:32] if g.get("v2") else ""
+        data = _json.dumps({"opened": clean, "streak": {k: streak.get(k) for k in ("last", "count", "best", "fz")},
+                            **({"book_vid": book_vid} if book_vid else {}),
                             **({"dex": dex_out} if have or dex_out["e"] or dex_out["s"] else {})})
         if len(data) > 150_000:
             return jsonify({"ok": False, "message": "That is too much to save at once."}), 413
@@ -720,7 +1000,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     def backup_load(code: str):
         import json as _json
         from .db import ProgressBackup
-        ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "?").split(",")[0].strip()
+        ip = client_ip()
         if _too_many("r:" + ip, limit=30):
             return jsonify({"ok": False, "message": "Too many tries for now, try again later."}), 429
         raw = "".join(ch for ch in code.upper() if ch in CODE_ABC)
@@ -728,15 +1008,25 @@ def create_app(cfg: Config | None = None) -> Flask:
             row = s.get(ProgressBackup, raw)
             if row is None or utcnow() - row.created_at > timedelta(days=30):
                 return jsonify({"ok": False, "message": "That code was not found. Check it and try again."}), 404
-            return jsonify({"ok": True, **_json.loads(row.data)})
+            data = _json.loads(row.data)
+            book_vid = data.pop("book_vid", "")
+            linked = False
+            if book_vid and g.get("v2"):
+                from .book import link_device
+                linked = link_device(s, book_vid, request.args.get("vid", "")[:32])
+                s.commit()
+            return jsonify({"ok": True, **data, "book": linked})
 
     @app.post("/api/feedback")
     def feedback():
         from .db import Feedback
-        ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "?").split(",")[0].strip()
+        ip = client_ip()
         if _too_many("f:" + ip, limit=6):
             return jsonify({"ok": False, "message": "Thanks, we already got your rating."}), 429
-        body = request.get_json(silent=True) or {}
+        try:
+            body = _body(4000)
+        except ValueError:
+            body = {}
         try:
             rating = int(body.get("rating") or 0)
         except (TypeError, ValueError):
@@ -762,7 +1052,9 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     @app.get("/healthz")
     def healthz():
-        return {"ok": True}
+        # "via" tells Jon which header carried the visitor address (cf = Cloudflare, so limits cannot be faked)
+        return {"ok": True, "via": "cf" if request.headers.get("CF-Connecting-IP") else
+                "xff" if request.headers.get("X-Forwarded-For") else "direct"}
 
     # Called every 20 minutes by a Supabase cron job. No secret needed: the collector
     # already enforces the daily cap, the spacing between grabs and the spend limit,
@@ -774,6 +1066,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         try:
             with Session() as s:
                 run_collection(s, XClient(cfg.x_bearer_token), cfg)
+            feed_cache.clear()                      # new posts show straight away
         except Exception:  # noqa: BLE001  the run row already records errors
             app.logger.exception("Background collection failed")
         finally:
@@ -811,6 +1104,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         if not cfg.admin_password:
             abort(404)
         error = None
+        if request.method == "POST" and _too_many("login:" + client_ip(), limit=10, window=900):
+            return render_template("login.html", cfg=cfg, error="Too many tries. Wait 15 minutes."), 429
         if request.method == "POST":
             if hmac.compare_digest(request.form.get("password", ""), cfg.admin_password):
                 session.clear()
@@ -848,6 +1143,8 @@ def create_app(cfg: Config | None = None) -> Flask:
             from .events import report_queue, summary as habit_summary
             habits = habit_summary(s, datetime.now(tz).date())
             reports = report_queue(s)
+            from .book import admin_list
+            book = admin_list(s)
         stale_after = cfg.stale_after_minutes
         if cfg.daily_post_cap > 0:  # testing mode only reads every few hours
             stale_after += int(24 * 60 * 10 / cfg.daily_post_cap)
@@ -856,7 +1153,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                                hidden=hidden, blocked=blocked, keywords=keywords, stale=stale,
                                last_ok=last_ok, csrf=session.get("csrf"), feedback=feedback_rows,
                                fb_avg=fb_avg, fb_count=fb_count, visits=visits,
-                               habits=habits, reports=reports)
+                               habits=habits, reports=reports, book=book)
 
     def post_id_from(value: str) -> str:
         # Accept a raw id or a full x.com / twitter.com status link
@@ -879,6 +1176,19 @@ def create_app(cfg: Config | None = None) -> Flask:
                     s.add(BlockedAuthor(author_id=post.author_id))
                 s.commit()
         return redirect(url_for("admin"))
+
+    @app.post("/admin/book")
+    def admin_book():
+        require_admin(); check_csrf()
+        from .book import clean_handle, remove
+        key = clean_handle(request.form.get("handle", "")).lower()
+        if not key:
+            abort(400)
+        with Session() as s:
+            remove(s, key, block=request.form.get("block") == "1")
+            s.commit()
+        book_cache["at"] = 0
+        return redirect(url_for("admin") + "#book")
 
     @app.post("/admin/report")
     def admin_report():

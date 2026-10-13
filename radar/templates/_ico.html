@@ -1,3 +1,3 @@
 {% macro ico(name, size=40, cls="") -%}
-{%- if cfg.icon(name) %}<img class="ico {{ cls }}" src="{{ cfg.icon(name) }}" alt="" width="{{ size }}" height="{{ size }}" decoding="async">{% endif -%}
+{%- if cfg.icon(name) %}<img class="ico {{ cls }}" src="{{ cfg.icon(name, size) }}" alt="" width="{{ size }}" height="{{ size }}" loading="lazy" decoding="async">{% endif -%}
 {%- endmacro %}

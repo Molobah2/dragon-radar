@@ -88,7 +88,7 @@
   }
 
   async function open() {
-    wrap.hidden = false; requestAnimationFrame(() => wrap.classList.add("open")); document.body.classList.add("sheet-open");
+    wrap.hidden = false; (void wrap.offsetWidth, wrap.classList.add("open")); document.body.classList.add("sheet-open");
     $("weekly-msg").textContent = "Drawing the card...";
     try {
       const r = await fetch("/api/posts?range=7d&who=community&quotes=1");
@@ -100,7 +100,7 @@
     const text = "This week in the Pocket Dragons Hatchery \u{1F409} the community posts Keepers loved most. See them all at pdtools.xyz";
     $("weekly-post").href = `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
   }
-  function close() { wrap.classList.remove("open"); document.body.classList.remove("sheet-open"); setTimeout(() => { if (!wrap.classList.contains("open")) wrap.hidden = true; }, 250); }
+  function close() { wrap.classList.remove("open"); (document.querySelector(".sheet-wrap.open") || document.body.classList.remove("sheet-open")); setTimeout(() => { if (!wrap.classList.contains("open")) wrap.hidden = true; }, 250); }
   $("weekly-open").addEventListener("click", open);
   $("weekly-close").addEventListener("click", close);
   const track = (kind) => { try { window.pdTrack && window.pdTrack(kind, "weekly"); } catch (e) {} };

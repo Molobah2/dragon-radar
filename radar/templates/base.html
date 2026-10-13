@@ -8,9 +8,9 @@
   <meta name="description" content="Every Pocket Dragons post the community shares, in one organised feed. Unofficial community tool.">
   <meta name="theme-color" content="#8fd3ff">
   {% include "_icons.html" %}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+  <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ asset('fonts.css') }}">
   <link rel="stylesheet" href="{{ asset('style.css') }}">
   {% if v2 %}<link rel="stylesheet" href="{{ asset('dark.css') }}">
   <script>/* dark mode before the first paint: the visitor's choice, or their phone's own setting */
@@ -66,7 +66,7 @@
       {% block main %}{% endblock %}
       <section class="panel rate" id="rate" aria-labelledby="rate-title">
         <div class="rate-head">
-          <h3 id="rate-title">How is v1 working for you?</h3>
+          <h3 id="rate-title">How is pdtools working for you?</h3>
           <p>pdtools is new. A quick rating helps Jon fix what matters most.</p>
         </div>
         <div class="stars" id="stars" role="radiogroup" aria-label="Rating">
@@ -81,8 +81,8 @@
       {% include "_faq.html" %}
       <footer>
         <span>Unofficial community tool. Not affiliated with or endorsed by Pocket Dragons. Every post links back to X.</span>
-        {% if v2 and cfg.music_credits() %}<p class="music-credits"><span class="mc-title">&#9835; Music made by the community</span>
-          {% for m in cfg.music_credits() %}<span class="mc-row">{{ m.track }} by {% if m.x %}<a href="https://x.com/{{ m.x }}" target="_blank" rel="noopener">{{ m.by }}</a>{% else %}{{ m.by }}{% endif %}</span>{% endfor %}
+        {% set credits = cfg.music_credits() or site_credits %}{% if credits %}<p class="music-credits"><span class="mc-title">&#9835; Music made by the community</span>
+          {% for m in credits %}<span class="mc-row">{{ m.track }} by {% if m.x %}<a href="https://x.com/{{ m.x }}" target="_blank" rel="noopener">{{ m.by }}</a>{% else %}{{ m.by }}{% endif %}</span>{% endfor %}
         </p>{% endif %}
         <a class="by-link" href="https://x.com/{{ cfg.author_x }}" target="_blank" rel="noopener"><strong>Built by Jon Wynn</strong> <span class="by-x">@{{ cfg.author_x }} on X</span></a>
       </footer>
@@ -123,7 +123,7 @@
   </a>
   {% endif %}
   <script>window.PD_SOUND = {{ {"ambience": asset('audio/meadow-ambience.m4a'),
-    "song": asset('audio/blinky-song.m4a'), "waitReady": True} | tojson }};</script>
+    "songs": site_songs(), "waitReady": True} | tojson }};</script>
   <script src="{{ asset('i18n.js') }}"></script>
   <script src="{{ asset('sound.js') }}" defer></script>
   {% if v2 %}<script src="{{ asset('theme.js') }}" defer></script>{% endif %}

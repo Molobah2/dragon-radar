@@ -51,7 +51,9 @@
     // a quiet tally of every post this device has opened on the feed, all time
     const fans = store.get("pd:authors", {}) || {};
     const past = Object.values(fans).reduce((a, v) => a + (v | 0), 0);
-    out.e = Math.max(d && d.e | 0 || 0, past);
+    // the relic tally: older saves start from the feed history once, after that only the daily allowance counts
+    out.e = d && Number.isFinite(d.e) ? d.e | 0 : past;
+    out.ed = d && d.ed && typeof d.ed === "object" ? d.ed : { day: null, n: 0 };
     return out;
   }
   let dex = load();
@@ -66,12 +68,20 @@
 
   function goalDone() { const g = store.get("pd:goal", null); return !!g && g.day === today() && (g.n || 0) >= GOAL; }
   // the goal streak: days in a row with the daily goal finished
-  function goalStreak() { const g = dex.g; return g && g.last && dayGap(g.last, today()) <= 1 ? g.count || 0 : 0; }
+  // streak freeze: one missed goal day a week is forgiven, so rares and legends stay in reach for busy Keepers
+  const freezeOk = (g) => (g.count || 0) > 1 && (!g.fz || dayGap(g.fz, today()) >= 7);
+  function goalStreak() {
+    const g = dex.g; if (!g || !g.last) return 0;
+    const gap = dayGap(g.last, today());
+    return gap <= 1 || (gap === 2 && freezeOk(g)) ? g.count || 0 : 0;
+  }
   function markGoalDay() {
     if (!goalDone()) return;
     const g = dex.g || { last: null, count: 0, best: 0 };
     if (g.last === today()) return;
-    g.count = g.last && dayGap(g.last, today()) === 1 ? (g.count || 0) + 1 : 1;
+    const gap = g.last ? dayGap(g.last, today()) : 0;
+    if (gap === 2 && freezeOk(g)) { g.fz = today(); g.count = (g.count || 0) + 1; }
+    else g.count = gap === 1 ? (g.count || 0) + 1 : 1;
     g.best = Math.max(g.best || 0, g.count); g.last = today();
     dex.g = g; save();
   }
@@ -242,14 +252,13 @@
   }
 
   // ---------- sheets ----------
-  function openSheet(el) { el.hidden = false; requestAnimationFrame(() => el.classList.add("open")); document.body.classList.add("sheet-open"); }
+  function openSheet(el) { el.hidden = false; (void el.offsetWidth, el.classList.add("open")); document.body.classList.add("sheet-open"); }
   function closeSheet(el) {
     el.classList.remove("open");
     if (!document.querySelector(".sheet-wrap.open")) document.body.classList.remove("sheet-open");
     setTimeout(() => { if (!el.classList.contains("open")) el.hidden = true; }, 250);
   }
   for (const el of [hatchEl, dexEl]) el.addEventListener("click", (e) => { if (e.target === el) closeSheet(el); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (!hatchEl.hidden) closeSheet(hatchEl); if (!dexEl.hidden) closeSheet(dexEl); } });
 
   // ---------- hatching ----------
   let shown = null;   // { entry, fresh } on the hatch sheet right now
@@ -722,7 +731,13 @@
     filmEl(entry.sp.id);
     openSheet(hatchEl);
   }
+  // only the first RELIC_DAY opens of a day move the relic tally. Never shown anywhere, so the hunt stays a mystery.
+  const RELIC_DAY = 50;
   addEventListener("pd:opened", () => {
+    const t = today();
+    if (!dex.ed || dex.ed.day !== t) dex.ed = { day: t, n: 0 };
+    if (dex.ed.n >= RELIC_DAY) return;
+    dex.ed.n += 1;
     dex.e = (dex.e | 0) + 1; save();
     if (sealDue()) setTimeout(offerSeal, 900);
   });

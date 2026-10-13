@@ -2,7 +2,8 @@
    Browsers only allow sound after the visitor touches the page, so it starts on the first
    tap, click or key press (or right away when the browser allows it). The pill in the
    header turns it on and off, and the choice is remembered on this device.
-   Nature plays clearly first; once the page settles the song fades in and nature sinks under it.
+   Nature plays clearly first; once the page settles the community songs start and nature sinks under them.
+   The songs play one after another, mixed into each other, so the music never stops between songs.
    Going to another page carries on from the same spot, and the music keeps playing while people visit X. */
 (() => {
   "use strict";
@@ -22,6 +23,16 @@
 
   let ctx = null, started = false, on = store.get() !== "off";
   const tracks = {};
+  let duckK = 1;                       // turned down for big moments (relic film)
+
+  // ---------- the playlist: community songs one after another, mixed like a DJ ----------
+  // Two decks take turns. When a song reaches its mix point (where its ending begins, worked out once by
+  // audio_prep.py) the next song starts on the other deck and the two cross over with an equal power curve,
+  // so there is never a silent gap and never a jump in loudness (every song is evened out to the same level).
+  const SONGS = (cfg.songs || (cfg.song ? [{ src: cfg.song, title: "Blinky's song", by: "" }] : [])).filter((x) => x && x.src);
+  const XF_MIN = 4, XF_MAX = 12;
+  let cur = null;                       // { t: deck, i: song index }
+  let mixing = false;
 
   // Moving between pages reloads the page, so we remember where the music was and carry on from there
   const POS_KEY = "pd:soundPos";
@@ -33,17 +44,18 @@
   })();
   function savePos() {
     if (!started) return;
-    const n = tracks.nature, g = tracks.song;
+    const n = tracks.nature;
     try {
       sessionStorage.setItem(POS_KEY, JSON.stringify({ at: Date.now(), nature: n ? n.a.currentTime : 0,
-        song: g ? g.a.currentTime : 0, songOn: !!(g && !g.a.paused) }));
+        idx: cur ? cur.i : 0, song: cur ? cur.t.a.currentTime : 0, songOn: !!(cur && !cur.t.a.paused) }));
     } catch (e) { /* private mode */ }
   }
 
-  function track(name, url) {
+  function track(name, url, loop = true) {
     const a = new Audio();
-    a.src = url; a.loop = true; a.preload = "auto"; a.crossOrigin = "anonymous";
-    const t = { a, gain: null, level: 0 };
+    if (url) a.src = url;
+    a.loop = loop; a.preload = url ? "auto" : "none"; a.crossOrigin = "anonymous";
+    const t = { a, gain: null, level: 0, live: false, name, src: url || "" };
     tracks[name] = t;
     return t;
   }
@@ -53,26 +65,116 @@
     if (ctx && !t.gain) {
       try {
         const src = ctx.createMediaElementSource(t.a);
-        t.gain = ctx.createGain(); t.gain.gain.value = t.level;
+        t.gain = ctx.createGain(); t.gain.gain.value = t.level * duckK;
         src.connect(t.gain).connect(ctx.destination);
       } catch (e) { t.gain = null; }
     }
-    if (!t.gain) t.a.volume = t.level;
+    if (!t.gain) t.a.volume = Math.min(1, t.level * duckK);
+  }
+
+  // a timer, not animation frames: animation frames stop in a background tab, timers keep going
+  function stepVolume(t, curve, secs) {
+    clearInterval(t.timer);
+    const t0 = performance.now();
+    t.timer = setInterval(() => {
+      const k = Math.min(1, (performance.now() - t0) / (secs * 1000));
+      t.a.volume = Math.max(0, Math.min(1, curve(k)));
+      if (k >= 1) clearInterval(t.timer);
+    }, 50);
   }
 
   function fade(t, to, secs) {
     t.level = to;
+    const target = to * duckK;
     if (t.gain && ctx) {
       const g = t.gain.gain, now = ctx.currentTime;
-      g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(to, now + secs);
+      g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(target, now + secs);
     } else {
-      const from = t.a.volume, t0 = performance.now();
-      const step = (n) => { const k = Math.min(1, (n - t0) / (secs * 1000)); t.a.volume = from + (to - from) * k; if (k < 1) requestAnimationFrame(step); };
-      requestAnimationFrame(step);
+      const from = t.a.volume;
+      stepVolume(t, (k) => from + (target - from) * k, secs);
+    }
+  }
+
+  // equal power curves: the two songs together stay at the same loudness through the whole mix
+  function curveTo(t, to, secs, rising) {
+    t.level = to;
+    const target = to * duckK;
+    const shape = (k) => (rising ? Math.sin(k * Math.PI / 2) : Math.cos(k * Math.PI / 2));
+    if (t.gain && ctx) {
+      const g = t.gain.gain, now = ctx.currentTime, from = g.value, n = 64, c = new Float32Array(n);
+      for (let i = 0; i < n; i++) { const k = i / (n - 1); c[i] = rising ? target * shape(k) : from * shape(k); }
+      g.cancelScheduledValues(now);
+      try { g.setValueCurveAtTime(c, now, secs); } catch (e) { g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(target, now + secs); }
+    } else {
+      const from = t.a.volume;
+      stepVolume(t, (k) => (rising ? target * shape(k) : from * shape(k)), secs);
     }
   }
 
   const play = (t) => { const p = t.a.play(); return p && p.catch ? p : Promise.resolve(); };
+  const deck = (name) => tracks[name] || track(name, "", false);
+  const other = () => (cur && cur.t.name === "deckA" ? deck("deckB") : deck("deckA"));
+  const wrap = (i) => ((i % SONGS.length) + SONGS.length) % SONGS.length;
+  const song = (i) => SONGS[wrap(i)];
+  const mixAt = (s, a) => {
+    const d = a.duration || s.dur || 0;
+    const m = typeof s.mix === "number" ? s.mix : d - 8;
+    return Math.max(0, Math.min(m, d - XF_MIN));
+  };
+
+  function load(t, i) {
+    const s = song(i);
+    if (t.src !== s.src) { t.src = s.src; t.a.src = s.src; t.a.preload = "auto"; try { t.a.load(); } catch (e) { /* fine */ } }
+  }
+
+  // start song i on the free deck, from `at` seconds, rising over `secs`
+  function startSong(i, at, secs, curved) {
+    const t = cur ? other() : deck("deckA");
+    load(t, i);
+    t.level = 0; wire(t);
+    if (t.gain && ctx) { t.gain.gain.cancelScheduledValues(ctx.currentTime); t.gain.gain.value = 0; } else { clearInterval(t.timer); t.a.volume = 0; }
+    if (at) seek(t, at); else { try { t.a.currentTime = 0; } catch (e) { /* not ready */ } }
+    t.live = true;
+    cur = { t, i: wrap(i) };
+    media();
+    return play(t).then(() => { if (curved) curveTo(t, SONG, secs, true); else fade(t, SONG, secs); });
+  }
+
+  function mixNext(secs) {
+    if (!cur || mixing || !SONGS.length) return;
+    mixing = true;
+    const out = cur.t;
+    const left = Math.max(0, (out.a.duration || 0) - out.a.currentTime);
+    const xf = Math.max(XF_MIN, Math.min(XF_MAX, secs || left || XF_MIN));
+    const was = cur;
+    startSong(cur.i + 1, 0, xf, true).then(() => {
+      curveTo(out, 0, xf, false);
+      setTimeout(() => { if (cur.t !== out) { out.a.pause(); out.live = false; } mixing = false; }, xf * 1000 + 300);
+    }).catch(() => {
+      // the next song would not start: keep the current one as the playing song so the DJ tries again
+      const failed = cur.t;
+      if (failed !== out) { failed.a.pause(); failed.live = false; }
+      cur = was; mixing = false; media();
+      if (out.a.ended || out.a.paused) setTimeout(() => mixNext(XF_MIN), 1500);
+    });
+  }
+
+  // the DJ: watches the playing song and brings in the next one at its mix point
+  function tick() {
+    if (!cur || !on || !started || mixing) return;
+    const a = cur.t.a, s = song(cur.i);
+    if (!a.duration || a.paused) return;
+    const m = mixAt(s, a);
+    if (a.currentTime >= m - 45) load(other(), cur.i + 1);        // get the next song ready ahead of time
+    if (a.currentTime >= m) mixNext(a.duration - m);
+  }
+  setInterval(tick, 250);
+  ["deckA", "deckB"].forEach((n) => {
+    const t = deck(n);
+    t.a.addEventListener("timeupdate", tick);
+    // safety net: if a song ever ends before the mix began (a frozen background tab), go straight on
+    t.a.addEventListener("ended", () => { if (cur && cur.t === t && !mixing) mixNext(XF_MIN); });
+  });
 
   function settled() {
     // Blinky's Friends: after the opening scene, and never sooner than 6 seconds of nature
@@ -86,6 +188,7 @@
     });
   }
 
+  let starting = false;   // one tap fires pointerup, touchend and click: only the first one may start the music
   function start(fromGesture) {
     if (!on) return;
     if (started) { resume(); return; }
@@ -93,38 +196,47 @@
       const AC = window.AudioContext || window.webkitAudioContext;
       if (AC) { try { ctx = new AC(); } catch (e) { ctx = null; } }
     }
+    if (ctx && ctx.state !== "running") { try { const r = ctx.resume(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* next tap */ } }
+    if (starting) return;
+    starting = true;
+    setTimeout(() => { starting = false; }, 8000);   // a stalled download never blocks the next tap for good
     const nature = tracks.nature || track("nature", cfg.ambience);
+    nature.live = true;
     const carry = saved && !started;          // coming from another page: no intro, pick up where we left off
     if (carry && saved.nature) seek(nature, saved.nature);
     wire(nature);
     play(nature).then(() => {
-      started = true;
-      unarm(); ui(); media();
-      if (carry && saved.songOn && cfg.song) {
-        const song = tracks.song || track("song", cfg.song);
-        seek(song, saved.song); wire(song);
-        play(song).then(() => { fade(nature, NATURE_UNDER, 1.2); fade(song, SONG, 1.2); }).catch(() => fade(nature, NATURE_FULL, 1.2));
+      started = true; starting = false;
+      // iPhones can leave the sound engine asleep even after play(): keep listening for a tap until it runs
+      if (!ctx || ctx.state === "running") unarm(); else setTimeout(() => { if (ctx.state === "running") { unarm(); ui(); } }, 600);
+      ui(); media();
+      if (carry && saved.songOn && SONGS.length && !cur) {
+        startSong(saved.idx | 0, saved.song || 0, 1.2, false)
+          .then(() => fade(nature, NATURE_UNDER, 1.2)).catch(() => fade(nature, NATURE_FULL, 1.2));
         return;
       }
       fade(nature, NATURE_FULL, carry ? 1.2 : 2.5);
-      if (cfg.song) {
+      if (SONGS.length) {
         settled().then(() => {
-          if (!on) return;
-          const song = tracks.song || track("song", cfg.song);
-          wire(song);
-          play(song).then(() => { fade(nature, NATURE_UNDER, 4); fade(song, SONG, 4); }).catch(() => {});
+          if (!on || cur) return;
+          startSong(0, 0, 4, false).then(() => fade(nature, NATURE_UNDER, 4)).catch(() => {});
         });
       }
-    }).catch(() => { arm(); ui(); });   // not allowed yet: the next tap starts it
+    }).catch(() => { starting = false; arm(); ui(); });   // not allowed yet: the next tap starts it
   }
   function seek(t, secs) {
-    const go = () => { try { if (t.a.duration) t.a.currentTime = secs % t.a.duration; else t.a.currentTime = secs; } catch (e) { /* not ready */ } };
+    const go = () => {
+      try {
+        const d = t.a.duration;
+        if (d) t.a.currentTime = t.a.loop ? secs % d : Math.min(secs, Math.max(0, d - 1)); else t.a.currentTime = secs;
+      } catch (e) { /* not ready */ }
+    };
     if (t.a.readyState >= 1) go(); else t.a.addEventListener("loadedmetadata", go, { once: true });
   }
 
   function resume() {
     if (ctx && ctx.state !== "running") { try { const r = ctx.resume(); if (r && r.catch) r.catch(() => arm()); } catch (e) { arm(); } }
-    Object.values(tracks).forEach((t) => play(t).then(() => { unarm(); ui(); }).catch(() => { arm(); ui(); }));
+    Object.values(tracks).filter((t) => t.live).forEach((t) => play(t).then(() => { unarm(); ui(); }).catch(() => { arm(); ui(); }));
     // iPhones can report "playing" while the sound engine is still asleep: if so, wait for the next tap
     setTimeout(() => { if (ctx && ctx.state !== "running" && on) { arm(); ui(); } }, 700);
   }
@@ -176,24 +288,33 @@
   setInterval(savePos, 3000);
 
   // Big moments (a relic film) turn the background music down, then bring it back where it was
-  const ducked = new Map();
+  function reapply(secs) {
+    Object.values(tracks).filter((t) => t.live).forEach((t) => {
+      const target = t.level * duckK;
+      if (t.gain && ctx) { const g = t.gain.gain, now = ctx.currentTime; g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(target, now + secs); }
+      else { const from = t.a.volume; stepVolume(t, (k) => from + (target - from) * k, secs); }
+    });
+  }
   window.pdSound = {
     isOn: () => on,
-    duck(secs = 0.6) {
-      Object.values(tracks).forEach((t) => { if (!ducked.has(t)) { ducked.set(t, t.level); fade(t, t.level * 0.08, secs); } });
-    },
-    unduck(secs = 1.6) {
-      ducked.forEach((level, t) => fade(t, level, secs)); ducked.clear();
-    },
+    duck(secs = 0.6) { if (duckK !== 1) return; duckK = 0.08; reapply(secs); },
+    unduck(secs = 1.6) { if (duckK === 1) return; duckK = 1; reapply(secs); },
+    now: () => (cur ? { ...song(cur.i), at: cur.t.a.currentTime } : null),
+    next: () => mixNext(3),
+    state: () => ["deckA", "deckB"].map((n) => tracks[n]).filter(Boolean).map((t) => ({ deck: t.name, src: t.src, at: t.a.currentTime,
+      playing: !t.a.paused, level: t.gain ? t.gain.gain.value : t.a.volume })),
   };
 
-  // lock screen and notification controls on phones
+  // lock screen and notification controls on phones, showing the song and its maker
   function media() {
+    dispatchEvent(new CustomEvent("pd:song", { detail: cur ? song(cur.i) : null }));
     if (!("mediaSession" in navigator)) return;
     try {
-      navigator.mediaSession.metadata = new MediaMetadata({ title: cfg.song ? "Blinky's song" : "Meadow sounds", artist: "pdtools" });
+      const s = cur ? song(cur.i) : null;
+      navigator.mediaSession.metadata = new MediaMetadata({ title: s ? s.title : "Meadow sounds", artist: s && s.by ? s.by : "pdtools" });
       navigator.mediaSession.setActionHandler("play", () => { on = true; store.set("on"); resume(); ui(); });
       navigator.mediaSession.setActionHandler("pause", () => { on = false; store.set("off"); pauseAll(); ui(); });
+      if (SONGS.length > 1) navigator.mediaSession.setActionHandler("nexttrack", () => mixNext(3));
     } catch (e) { /* older phones */ }
   }
 })();

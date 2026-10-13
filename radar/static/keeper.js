@@ -3,7 +3,9 @@
 (() => {
   "use strict";
   const KEY = "radar:keeper";
-  const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+  const read = () => {
+    try { const v = JSON.parse(localStorage.getItem(KEY)); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch (e) { return {}; }
+  };
   const write = (v) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} };
   const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -11,9 +13,10 @@
   window.keeperBump = () => {
     const s = read(), now = new Date();
     s.total = (s.total || 0) + 1;
-    s.days = s.days || {};
+    s.total = Number.isFinite(s.total) ? s.total : 1;
+    s.days = s.days && typeof s.days === "object" && !Array.isArray(s.days) ? s.days : {};
     s.days[dayKey(now)] = (s.days[dayKey(now)] || 0) + 1;
-    s.hours = s.hours || new Array(24).fill(0);
+    s.hours = Array.isArray(s.hours) && s.hours.length === 24 ? s.hours : new Array(24).fill(0);
     s.hours[now.getHours()]++;
     const keys = Object.keys(s.days).sort();
     while (keys.length > 400) delete s.days[keys.shift()];
@@ -106,7 +109,7 @@
   }
 
   async function draw(canvas, who) {
-    const [bg, av] = await Promise.all([img("/static/keeper-bg.jpg"), img(who && who.avatar ? who.avatar : "/static/blinky-avatar.jpg"),
+    const [bg, av] = await Promise.all([img("/static/keeper-bg.jpg"), img(who && who.handle && who.avatar ? `/api/avatar/${encodeURIComponent(who.handle)}` : "/static/blinky-avatar.jpg"),
       document.fonts.load(`700 60px ${F}`).catch(() => {}), document.fonts.load(`600 30px ${F}`).catch(() => {})]);
     const ctx = canvas.getContext("2d"), st = stats(), [, title, rarity] = rank(st.total);
     EDGE = RARITY[rarity];
@@ -204,10 +207,16 @@
     const st = stats();
     $("keeper-found").textContent = who && who.note ? who.note
       : handle && who && who.found && who.posts_week === "0" ? `No posts about Pocket Dragons from @${who.handle} in the last 7 days yet.` : "";
-    $("keeper-save").onclick = () => canvas.toBlob((b) => {
-      const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "keeper-card.png"; a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    }, "image/png");
+    // the avatar comes through our own address so the picture can always be saved
+    $("keeper-save").onclick = () => {
+      try {
+        canvas.toBlob((b) => {
+          if (!b) return;
+          const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "keeper-card.png"; a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        }, "image/png");
+      } catch (e) { /* a picture that could not be read: nothing to save */ }
+    };
     const text = `blinky remembers his friends. ${st.streak} day streak on pdtools.xyz 🐉`;
     $("keeper-post").href = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(location.origin)}`;
   }

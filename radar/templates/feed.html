@@ -25,15 +25,27 @@
     </div>
   </section>
 
+  {% if v2 %}<section class="start-here" id="start-here" hidden aria-labelledby="sh-title">
+    <img src="{{ asset('brand/badge-96.webp') }}" alt="" width="64" height="64" class="sh-badge">
+    <div class="sh-text">
+      <h2 id="sh-title">New here? Welcome to Blinky's Friends</h2>
+      <p>Every Pocket Dragons post the community shares, in one feed. Open a post, show it some love on X, and it leaves your list. Cheer on 20 fellow Keepers a day to hatch a dragon.</p>
+    </div>
+    <div class="sh-actions">
+      <button class="btn btn-go" id="sh-go" type="button">Start here</button>
+      <button class="btn btn-soft" id="sh-skip" type="button">I know my way</button>
+    </div>
+  </section>{% endif %}
+
   <form class="rail" method="get" action="{{ url_for('feed') }}" id="filters" aria-label="Filters">
-    <div class="group g-date" role="radiogroup" aria-label="Date range">
+    <div class="group g-date" role="group" aria-label="Date range">
       {% for key, label in [("24h","Last 24h"),("today","Today"),("yesterday","Yesterday"),("7d","7 days")] %}
         <button class="tab" type="submit" name="range" value="{{ key }}" aria-pressed="{{ 'true' if filters.range == key else 'false' }}">{{ label }}</button>
       {% endfor %}
     </div>
     <div class="right">
       <input type="hidden" name="range" value="{{ filters.range }}" disabled id="range-keep">
-      <div class="group g-who" role="radiogroup" aria-label="Who posted">
+      <div class="group g-who" role="group" aria-label="Who posted">
         {% for key, label in [("all","Everyone"),("team","Team"),("community","Community")] %}
           <button class="tab" type="submit" name="who" value="{{ key }}" aria-pressed="{{ 'true' if filters.who == key else 'false' }}">{{ label }}</button>
         {% endfor %}
@@ -79,6 +91,11 @@
     <main>
       <section class="hot pinned-row" id="pinned" hidden>
         <h2 class="hot-title">{{ ico("pin", 30) }}Pinned <span>latest from the team</span></h2>
+        {% if v2 %}<div class="rally" id="rally" hidden>
+          <span class="rally-dot" aria-hidden="true"></span>
+          <span class="rally-text" id="rally-text"></span>
+          <button class="btn btn-go rally-go" id="rally-go" type="button">Join the rally</button>
+        </div>{% endif %}
         <div class="trail" id="pinned-trail"></div>
       </section>
       <section class="hot crew-row" id="crew" hidden>
@@ -121,7 +138,8 @@
         <button class="btn btn-soft keeper-btn side-row" id="weekly-open" type="button">{{ ico("crown", 22) }}<span class="sr-text">This week's top posts</span><i class="sr-go" aria-hidden="true"></i></button>
         <button class="btn btn-soft keeper-btn side-row" id="progress-open" type="button">{{ ico("hourglass", 22) }}<span class="sr-text">My progress</span><i class="sr-go" aria-hidden="true"></i></button>
         {% if v2 %}<button class="btn btn-soft keeper-btn side-row" data-myweek type="button">{{ ico("sparkle", 22) }}<span class="sr-text">My week card</span><i class="sr-go" aria-hidden="true"></i></button>
-        <button class="btn btn-soft keeper-btn side-row" data-dex type="button">{{ ico("hatch", 22) }}<span class="sr-text">My dragons</span><i class="sr-go" aria-hidden="true"></i></button>{% endif %}
+        <button class="btn btn-soft keeper-btn side-row" data-dex type="button">{{ ico("hatch", 22) }}<span class="sr-text">My dragons</span><i class="sr-go" aria-hidden="true"></i></button>
+        <button class="btn btn-soft keeper-btn side-row" data-book type="button">{{ ico("book", 22) }}<span class="sr-text">Blinky's Book of Friends</span><i class="sr-go" aria-hidden="true"></i></button>{% endif %}
         <a class="btn btn-soft keeper-btn side-row" href="{{ url_for('keepers_page') }}">{{ ico("shield", 22) }}<span class="sr-text">Find Keepers to follow</span><i class="sr-go" aria-hidden="true"></i></a>
         <button class="btn btn-soft keeper-btn side-row" data-install type="button" hidden>{{ ico("plus", 22) }}<span class="sr-text">Add to your home screen</span><i class="sr-go" aria-hidden="true"></i></button>
         <button class="btn btn-soft replay side-row" id="replay" type="button">{{ ico("paw", 22) }}<span class="sr-text">Watch the meadow again</span><i class="sr-go" aria-hidden="true"></i></button>
@@ -145,6 +163,61 @@
       </div>
     </div>
   </div>
+  {% if v2 %}<div class="sheet-wrap" id="book" hidden>
+    <div class="sheet book-sheet" role="dialog" aria-modal="true" aria-labelledby="book-title">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <div class="book-head">{{ ico("book", 44) }}<div><h3 id="book-title">Blinky's Book of Friends</h3>
+        <p class="sheet-sub" id="book-count">Keepers who signed with their X name and support each other.</p></div></div>
+
+      <div class="book-me" id="book-me">
+        <div class="bm-step" id="bm-none">
+          <p class="bm-lead">Sign with your X name. Your name joins the book and your support starts to count.</p>
+          <p class="bm-note">Good to know: signed Keepers whose posts you open will see your name in their "Who supported you" list. Nothing is ever posted for you.</p>
+          <div class="bm-row"><input class="kp-search" id="bm-handle" type="text" placeholder="Your X name, like @blinky" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="40">
+            <button class="btn btn-go" id="bm-sign" type="button">Sign the book</button></div>
+        </div>
+        <div class="bm-step" id="bm-pending" hidden>
+          <p class="bm-lead">One quick post proves the name is yours. Post this on X, then paste the link here.</p>
+          <div class="bm-proof" id="bm-proof"></div>
+          <div class="bm-row"><a class="btn btn-go" id="bm-post" href="#" target="_blank" rel="noopener">Post it on X</a>
+            <button class="btn btn-soft" id="bm-copy" type="button">Copy the words</button></div>
+          <div class="bm-row"><input class="kp-search" id="bm-link" type="url" placeholder="Paste the link to your post" autocomplete="off" inputmode="url">
+            <button class="btn btn-go" id="bm-check" type="button">Check my post</button></div>
+          <button class="bm-other" id="bm-restart" type="button">Use a different X name</button>
+        </div>
+        <div class="bm-step" id="bm-done" hidden>
+          <div class="bm-hello"><b id="bm-name"></b><span class="tag tier" id="bm-tier" hidden></span></div>
+          <p class="bm-lead" id="bm-week"></p>
+          <div class="bm-meter"><i id="bm-meter"></i></div>
+          <div class="bm-card" id="bm-card" hidden>
+            <p class="bm-up" id="bm-up"></p>
+            <img class="bm-card-img" id="bm-card-img" alt="Your Book of Friends tier card">
+            <div class="bm-row"><button class="btn btn-go" id="bm-card-share" type="button" hidden>Share</button>
+              <button class="btn btn-soft" id="bm-card-save" type="button">Save image</button>
+              <a class="btn btn-soft" id="bm-card-post" href="#" target="_blank" rel="noopener">Post on X</a></div>
+          </div>
+          <h4>Who supported you this week</h4>
+          <ul class="bm-list" id="bm-supporters"></ul>
+          <a class="btn btn-soft bm-thank" id="bm-thank" href="#" target="_blank" rel="noopener" hidden>Thank them on X</a>
+        </div>
+        <p class="kp-msg" id="bm-msg" role="status"></p>
+      </div>
+
+      <h4>Top supporters this week</h4>
+      <ol class="bm-list bm-top" id="book-top"></ol>
+      <a class="btn btn-soft bm-thank" id="book-top-post" href="#" target="_blank" rel="noopener" hidden>Celebrate them on X</a>
+      <h4>Everyone in the book</h4>
+      <ul class="bm-names" id="book-names"></ul>
+      <p class="sheet-sub book-how">Tiers count how many different Keepers you supported this week. Bronze 10, Silver 30, Gold 60 for three weeks in a row. Opening the same person again does not add more.</p>
+      <div class="sheet-actions"><button class="btn btn-soft" id="book-close" type="button">Close</button></div>
+    </div>
+  </div>
+  <div class="book-ask" id="book-ask" role="dialog" aria-label="Sign Blinky's Book of Friends" hidden>
+    {{ ico("book", 40) }}
+    <span class="in-text"><b>Sign Blinky's Book of Friends</b><small>Add your X name so your support counts</small></span>
+    <button class="btn btn-go in-add" type="button" id="book-ask-go">Sign</button>
+    <button class="in-x" type="button" id="book-ask-x" aria-label="Not now">&times;</button>
+  </div>{% endif %}
   <div class="sheet-wrap" id="report" hidden>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="report-title">
       <div class="sheet-grip" aria-hidden="true"></div>
@@ -163,6 +236,7 @@
       <div class="sheet-grip" aria-hidden="true"></div>
       <h3 id="progress-title">My progress</h3>
       <p class="sheet-sub" id="progress-streak">Open a post today to start a streak.</p>
+      {% if v2 %}<p class="sheet-sub freeze-line" id="progress-freeze"></p>{% endif %}
       <div class="pg-block">
         <b>Move to another phone or computer</b>
         <p>Save your opened posts under a short code, then enter it on the other device. No login, works for 30 days.</p>
@@ -187,7 +261,7 @@
         <p>Cheer on 20 fellow Keepers a day to hatch an egg. Your dragons move with the code above too.</p>
         <button class="btn btn-go" data-dex type="button">See my dragons</button>
       </div>{% endif %}
-      <p class="kp-msg" id="pg-msg"></p>
+      <p class="kp-msg" id="pg-msg" role="status"></p>
       <div class="sheet-actions"><button class="btn btn-soft" id="progress-close" type="button">Close</button></div>
     </div>
   </div>
@@ -196,7 +270,7 @@
     <div class="sheet hatch-sheet" role="dialog" aria-modal="true" aria-labelledby="hatch-title">
       <div class="sheet-grip" aria-hidden="true"></div>
       <h3 id="hatch-title">Your egg is ready</h3>
-      <p class="sheet-sub" id="hatch-sub">You gave 5 quiet posts some love today. Tap the egg to hatch it.</p>
+      <p class="sheet-sub" id="hatch-sub">{% if v2 %}You cheered on 20 fellow Keepers today. Tap the egg to hatch it.{% else %}You gave 5 quiet posts some love today. Tap the egg to hatch it.{% endif %}</p>
       <div class="hatch-stage" id="hatch-stage" data-state="egg">
         <div class="hatch-rays" aria-hidden="true"></div>
         <button class="hatch-egg" id="hatch-egg" type="button" aria-label="Hatch the egg"><span class="egg-top"></span><span class="egg-bottom"></span></button>
@@ -301,16 +375,16 @@
       </section>
     </div>
   </div>
-  </div>
   {% endif %}
-  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "updated": updated, "goal": 20 if v2 else 5, "goal_rule": "keeper" if v2 else "quiet", "icons": {"bulb": cfg.icon("bulb")}} | tojson }}</script>
+  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "updated": updated, "goal": 20 if v2 else 5, "goal_rule": "keeper" if v2 else "quiet", "v2": v2, "icons": {"bulb": cfg.icon("bulb")}} | tojson }}</script>
   <script src="{{ asset('keeper.js') }}"></script>
   <script src="{{ asset('app.js') }}"></script>
   {% if v2 %}<script src="{{ asset('weekly2.js') }}" defer></script>{% else %}<script src="{{ asset('weekly.js') }}" defer></script>{% endif %}
-  {% if v2 %}<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Press+Start+2P&display=swap">
+  {% if v2 %}<link rel="stylesheet" href="{{ asset('fonts-cards.css') }}">
   <script src="{{ asset('cards-data.js') }}" defer></script>
   <script src="{{ asset('myweek.js') }}" defer></script>
   <script src="{{ asset('dex-data.js') }}" defer></script>
   <script src="{{ asset('cardkit.js') }}" defer></script>
-  <script src="{{ asset('dragons.js') }}" defer></script>{% endif %}
+  <script src="{{ asset('dragons.js') }}" defer></script>
+  <script src="{{ asset('friends.js') }}" defer></script>{% endif %}
 {% endblock %}

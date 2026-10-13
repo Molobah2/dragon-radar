@@ -148,7 +148,9 @@ def collect_discord(s, cfg, run, now: datetime, client=None, http=None) -> int:
                 run.posts_skipped += 1
                 continue
             author_id = (c.user_id if c and c.user_id else f"u:{h}")
-            if author_id in blocked or is_blocked_text(g["text"], words) or s.get(Post, pid):
+            # a block on either form of the author (X id or handle) keeps all their shared posts out
+            if author_id in blocked or f"u:{h}" in blocked or (c and c.user_id in blocked) \
+                    or is_blocked_text(g["text"], words) or s.get(Post, pid):
                 run.posts_skipped += 1
                 continue
             s.add(Post(id=pid, author_id=author_id, created_at=x_time(pid), is_quote=False, is_team=is_team,

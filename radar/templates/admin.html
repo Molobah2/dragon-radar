@@ -122,6 +122,24 @@
     {% endfor %}
   </section>
 
+  <section class="panel" id="book">
+    <h2>Blinky's Book of Friends</h2>
+    <p class="muted">{{ book.friends | length }} confirmed names, {{ book.pending }} still waiting to post their code. Remove anyone who should not be there; tick "Never again" to stop that name signing back.</p>
+    {% if book.friends %}<div class="table-wrap"><table>
+      <tr><th>Name</th><th>Signed (UTC)</th><th>Proof</th><th></th></tr>
+      {% for f in book.friends %}<tr>
+        <td><a href="https://x.com/{{ f.username }}" target="_blank" rel="noopener">@{{ f.username }}</a></td>
+        <td>{{ f.confirmed_at.strftime("%b %d %H:%M") }}</td>
+        <td>{% if f.proof_post %}<a href="https://x.com/i/status/{{ f.proof_post }}" target="_blank" rel="noopener">post</a>{% endif %}</td>
+        <td><form method="post" action="{{ url_for('admin_book') }}" class="inline-form">
+          <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="handle" value="{{ f.username }}">
+          <label class="toggle"><input type="checkbox" name="block" value="1"><span>Never again</span></label>
+          <button class="btn btn-soft">Remove</button></form></td>
+      </tr>{% endfor %}
+    </table></div>{% endif %}
+    {% if book.blocked %}<p class="muted">Not allowed to sign: {{ book.blocked | join(", ") }}</p>{% endif %}
+  </section>
+
   <section class="panel">
     <h2>Tester ratings</h2>
     <p>{{ fb_count or 0 }} ratings{% if fb_avg %}, average {{ "%.1f"|format(fb_avg) }} out of 5{% endif %}.</p>

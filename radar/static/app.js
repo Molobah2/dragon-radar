@@ -14,6 +14,9 @@
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    // stored values can be old or damaged: only a plain object or an array of the right kind is ever used
+    obj(k) { const v = this.get(k, null); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; },
+    arr(k) { const v = this.get(k, null); return Array.isArray(v) ? v : []; },
   };
   const opened = (() => {
     const raw = store.get("radar:opened", {}), map = raw && typeof raw === "object" ? raw : {};
@@ -31,8 +34,9 @@
   let showOpened = !!store.get("radar:showOpened", false);
   $("showOpened").checked = showOpened;
   const unavailable = new Set();
+  const myVid = () => { try { return localStorage.getItem("pd:vid") || ""; } catch (e) { return ""; } };
   // posts this visitor reported stay out of their feed
-  const reported = store.get("pd:reported", []) || [];
+  const reported = store.arr("pd:reported");
   reported.forEach((id) => unavailable.add(id));
   let shown = BATCH;
 
@@ -56,7 +60,7 @@
   let query = "";
   const matches = (p) => !query || `${p.name} ${p.user} ${p.text}`.toLowerCase().includes(query);
   const visible = () => pool().filter((p) => (showOpened || !opened[p.id]) && (!needsLove || !p.opens) && matches(p));
-  const HOT_MIN = 2, HOT_MAX = 4;
+  const HOT_MIN = 3, HOT_MAX = 4;
   const hotList = () => needsLove || query ? [] : visible().filter((p) => p.opens >= HOT_MIN && !pinnedIds.has(p.id))
     .sort((a, b) => b.opens - a.opens || Date.parse(b.t) - Date.parse(a.t)).slice(0, HOT_MAX);
 
@@ -103,22 +107,33 @@
   }
 
   // ---------- opening ----------
+  // posts that already moved the goal, streak and dragons today: Undo then Done again never counts twice
+  function firstToday(id) {
+    const c = store.obj("pd:counted"), ids = c.day === today() && Array.isArray(c.ids) ? c.ids : [];
+    if (ids.includes(id)) return false;
+    store.set("pd:counted", { day: today(), ids: ids.concat(id).slice(-500) });
+    return true;
+  }
   function markOpened(id, card) {
     if (opened[id]) return;
+    Object.assign(opened, store.obj("radar:opened"));   // keep what another tab opened
     opened[id] = Date.now();
     save();
-    pace();
-    bumpStreak();
-    window.keeperBump && window.keeperBump();
+    const fresh = firstToday(id);
     const post = posts.find((x) => x.id === id) || pinnedPosts.find((x) => x.id === id);
-    if (post && (KEEPER_GOAL ? !post.team : !post.opens)) bumpGoal();
-    dispatchEvent(new Event("pd:opened"));
-    if (post) {
-      post.opens = (post.opens || 0) + 1;
-      const fans = store.get("pd:authors", {}) || {}, key = (post.user || "").toLowerCase();
-      if (key) { fans[key] = (fans[key] || 0) + 1; store.set("pd:authors", fans); }
+    if (fresh) {
+      pace();
+      bumpStreak();
+      window.keeperBump && window.keeperBump();
+      if (post && (KEEPER_GOAL ? !post.team : !post.opens)) bumpGoal();
+      dispatchEvent(new Event("pd:opened"));
+      if (post) {
+        post.opens = (post.opens || 0) + 1;
+        const fans = store.obj("pd:authors"), key = (post.user || "").toLowerCase();
+        if (key) { fans[key] = (fans[key] | 0) + 1; store.set("pd:authors", fans); }
+      }
     }
-    try { fetch(`/api/open/${id}`, { method: "POST", keepalive: true, headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: (() => { try { return localStorage.getItem("pd:vid") || ""; } catch (e) { return ""; } })() }) }); } catch (e) {}
+    if (fresh) try { fetch(`/api/open/${id}`, { method: "POST", keepalive: true, headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: (() => { try { return localStorage.getItem("pd:vid") || ""; } catch (e) { return ""; } })() }) }); } catch (e) {}
     window.meadow && window.meadow.cheer();
     counts(true);
     if (!card) return;
@@ -161,34 +176,53 @@
     $("ideas-reply").href = replyUrl(id);
     $("ideas-hint").hidden = !PHONE;
     $("ideas").hidden = false;
-    requestAnimationFrame(() => $("ideas").classList.add("open"));
+    (void $("ideas").offsetWidth, $("ideas").classList.add("open"));
     document.body.classList.add("sheet-open");
   }
   function closeIdeas() {
     $("ideas").classList.remove("open");
-    document.body.classList.remove("sheet-open");
+    (document.querySelector(".sheet-wrap.open") || document.body.classList.remove("sheet-open"));
     setTimeout(() => { if (!$("ideas").classList.contains("open")) $("ideas").hidden = true; }, 250);
   }
   $("ideas-shuffle").addEventListener("click", shuffleIdeas);
   $("ideas-close").addEventListener("click", closeIdeas);
   $("ideas").addEventListener("click", (e) => { if (e.target === $("ideas")) closeIdeas(); });
-  document.addEventListener("keydown", (e) => { if (e.key !== "Escape") return; if (!$("ideas").hidden) closeIdeas(); if (!$("progress").hidden) closeSheet("progress"); });
+  // Escape closes the sheet on top (every sheet closes when its backdrop is tapped), one at a time
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const top = [...document.querySelectorAll(".sheet-wrap.open")].pop();
+    if (top) top.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
   $("ideas-reply").addEventListener("click", () => { if (ideaFor) markOpened(ideaFor.id, ideaFor.card); closeIdeas(); });
 
   // ---------- daily streak: days in a row with at least one post opened (this browser only) ----------
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
   const dayGap = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
-  let streak = store.get("pd:streak", { last: null, count: 0, best: 0 }) || { last: null, count: 0, best: 0 };
+  const readStreak = () => { const v = store.obj("pd:streak"); return { last: typeof v.last === "string" ? v.last : null, count: v.count | 0, best: v.best | 0, ...(typeof v.fz === "string" ? { fz: v.fz } : {}) }; };
+  let streak = readStreak();
+  // v2 streak freeze: one missed day a week is forgiven, so a busy Keeper keeps a long streak
+  const FREEZE = !!data.v2;
+  const freezeReady = (s) => !s.fz || dayGap(s.fz, today()) >= 7;
   function bumpStreak() {
+    streak = readStreak();                     // another tab may have moved it on
     const t = today();
     if (streak.last === t) return;
-    streak.count = streak.last && dayGap(streak.last, t) === 1 ? streak.count + 1 : 1;
+    const gap = streak.last ? dayGap(streak.last, t) : 0;
+    if (FREEZE && gap === 2 && streak.count > 1 && freezeReady(streak)) {
+      streak.fz = t; streak.count += 1;
+      setTimeout(() => toast(`\u{1F9CA} Streak freeze used. Your ${streak.count} day streak is safe. Next freeze in 7 days.`), 1200);
+    } else streak.count = gap === 1 ? streak.count + 1 : 1;
     streak.best = Math.max(streak.best || 0, streak.count);
     streak.last = t;
     store.set("pd:streak", streak);
     showStreak(true);
   }
-  function liveStreak() { return streak.last && dayGap(streak.last, today()) <= 1 ? streak.count : 0; }
+  function liveStreak() {
+    streak = readStreak();
+    if (!streak.last) return 0;
+    const gap = dayGap(streak.last, today());
+    return gap <= 1 || (FREEZE && gap === 2 && streak.count > 1 && freezeReady(streak)) ? streak.count : 0;
+  }
   function showStreak(bump) {
     const n = liveStreak(), b = $("streak");
     b.hidden = !n;
@@ -196,6 +230,9 @@
     if (bump && n) { b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump"); }
     $("progress-streak").textContent = n ? `\u{1F525} ${n} day streak \u00b7 best ${Math.max(n, streak.best || 0)}`
       : "Open a post today to start a streak.";
+    if (FREEZE && $("progress-freeze")) $("progress-freeze").textContent = freezeReady(streak)
+      ? "\u{1F9CA} Streak freeze ready: miss one day this week and your streak stays safe."
+      : `\u{1F9CA} Streak freeze used. A new one is ready in ${7 - dayGap(streak.fz, today())} days.`;
   }
 
   // ---------- my progress: save under a short code, restore on another device ----------
@@ -215,8 +252,8 @@
     if (card) { card.classList.add("leaving"); setTimeout(render, 360); } else render();
     toast("Thank you. The post is gone from your feed and Jon will take a look.");
   }));
-  function openSheet(id) { $(id).hidden = false; requestAnimationFrame(() => $(id).classList.add("open")); document.body.classList.add("sheet-open"); }
-  function closeSheet(id) { $(id).classList.remove("open"); document.body.classList.remove("sheet-open"); setTimeout(() => { if (!$(id).classList.contains("open")) $(id).hidden = true; }, 250); }
+  function openSheet(id) { $(id).hidden = false; (void $(id).offsetWidth, $(id).classList.add("open")); document.body.classList.add("sheet-open"); }
+  function closeSheet(id) { $(id).classList.remove("open"); (document.querySelector(".sheet-wrap.open") || document.body.classList.remove("sheet-open")); setTimeout(() => { if (!$(id).classList.contains("open")) $(id).hidden = true; }, 250); }
   const pgMsg = (t, ok) => { $("pg-msg").textContent = t; $("pg-msg").className = "kp-msg " + (ok ? "ok" : "no"); };
   $("progress-open").addEventListener("click", () => { showStreak(); pgMsg("", true); openSheet("progress"); });
   $("streak").addEventListener("click", () => { showStreak(); pgMsg("", true); openSheet("progress"); });
@@ -225,7 +262,7 @@
   $("pg-save").addEventListener("click", async () => {
     $("pg-save").disabled = true;
     try {
-      const r = await fetch("/api/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ opened, streak, dex: store.get("pd:dex", null) }) });
+      const r = await fetch("/api/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ opened, streak, dex: store.get("pd:dex", null), vid: myVid() }) });
       const j = await r.json();
       if (!j.ok) throw new Error(j.message);
       $("pg-code-text").textContent = j.code; $("pg-code").hidden = false;
@@ -245,7 +282,7 @@
     if (code.replace("-", "").length < 8) { pgMsg("Codes have 8 letters and numbers, like ABCD-1234.", false); return; }
     $("pg-restore").disabled = true;
     try {
-      const r = await fetch(`/api/backup/${encodeURIComponent(code)}`);
+      const r = await fetch(`/api/backup/${encodeURIComponent(code)}?vid=${encodeURIComponent(myVid())}`);
       const j = await r.json();
       if (!j.ok) throw new Error(j.message);
       let added = 0;
@@ -254,11 +291,14 @@
       const s2 = j.streak || {};
       if ((s2.best || 0) > (streak.best || 0)) streak.best = s2.best;
       if (s2.last && (!streak.last || s2.last > streak.last)) { streak.last = s2.last; streak.count = s2.count || 0; }
+      if (s2.fz && (!streak.fz || s2.fz > streak.fz)) streak.fz = s2.fz;
       store.set("pd:streak", streak);
       const dexIn = mergeDex(j.dex);
       showStreak(); render();
       const bits = [added ? `${added} opened posts` : "", dexIn ? `${dexIn} dragon${dexIn === 1 ? "" : "s"}` : ""].filter(Boolean);
+      if (j.book) bits.push("your Book of Friends name");
       pgMsg(bits.length ? `Restored ${bits.join(" and ")}.` : "All set, nothing new to restore.", true);
+      if (j.book) dispatchEvent(new Event("pd:bookchange"));
     } catch (e) { pgMsg(e.message || "Could not restore right now, please try again.", false); }
     $("pg-restore").disabled = false;
   });
@@ -266,7 +306,7 @@
   // collectible dragons from a backup code: keep the higher count of each, never lose one
   function mergeDex(inc) {
     if (!inc || typeof inc !== "object" || !inc.have || typeof inc.have !== "object") return 0;
-    const mine = store.get("pd:dex", null) || {};
+    const mine = store.obj("pd:dex");
     const have = mine.have && typeof mine.have === "object" ? mine.have : {};
     let gained = 0;
     for (const [id, h] of Object.entries(inc.have)) {
@@ -286,7 +326,7 @@
     const sIn = inc.s && typeof inc.s === "object" ? inc.s : {}, sMine = mine.s && typeof mine.s === "object" ? mine.s : {};
     const sOut = { ...sMine };
     for (const [k, v] of Object.entries(sIn)) if (typeof v === "string" && !sOut[k]) sOut[k] = v;
-    store.set("pd:dex", { have, last, n, g, e, s: sOut, log: Array.isArray(mine.log) ? mine.log : [] });
+    store.set("pd:dex", { ...mine, have, last, n, g, e, s: sOut, log: Array.isArray(mine.log) ? mine.log : [] });
     dispatchEvent(new Event("pd:dexchange"));
     return gained;
   }
@@ -295,7 +335,8 @@
   // v1: give 5 quiet posts some love. v2: cheer on 20 fellow Keepers' posts (any post that is new to you, not the team's)
   const GOAL = data.goal || 5, KEEPER_GOAL = data.goal_rule === "keeper";
   const goalWord = KEEPER_GOAL ? "Keeper posts" : "quiet posts";
-  let goal = store.get("pd:goal", { day: null, n: 0 }) || { day: null, n: 0 };
+  const readGoal = () => { const v = store.obj("pd:goal"); return { day: typeof v.day === "string" ? v.day : null, n: v.n | 0 }; };
+  let goal = readGoal();
   if (goal.day !== today()) goal = { day: today(), n: 0 };
   function showGoal() {
     const n = Math.min(goal.n, GOAL), done = n >= GOAL;
@@ -305,6 +346,7 @@
     dispatchEvent(new Event("pd:goalshow"));   // v2 dragons turn a finished goal into "hatch your egg"
   }
   function bumpGoal() {
+    goal = readGoal();                         // another tab may have counted some already
     if (goal.day !== today()) goal = { day: today(), n: 0 };
     goal.n++;
     store.set("pd:goal", goal);
@@ -402,6 +444,8 @@
     if (window.radarLang && window.radarLang !== "en" && p.text)
       chips.push(el("a", { class: "tag tr-link", href: `https://translate.google.com/?sl=auto&tl=${window.radarTranslateCode}&text=${encodeURIComponent(p.text.slice(0, 1500))}&op=translate`,
         target: "_blank", rel: "noopener" }, "Translate"));
+    if (p.tier) chips.unshift(el("span", { class: `tag tier tier-${p.tier}`, title: "Signed Blinky's Book of Friends" },
+      p.tier === "gold" ? "Gold friend" : p.tier === "silver" ? "Silver friend" : "Bronze friend"));
     const avatar = p.avatar
       ? el("img", { class: "avatar", src: p.avatar, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })
       : el("span", { class: "avatar blank" }, (p.name || "?").slice(0, 1));
@@ -494,7 +538,10 @@
     $("empty-text").textContent = query ? "No posts match your search." : "No unopened posts here. Fresh ones land every 20 minutes.";
     $("more").hidden = rest.length <= shown;
     counts();
+    dispatchEvent(new Event("pd:render"));
   }
+  window.pdFeed = { streak: () => liveStreak(), pinned: () => pinnedPosts.slice(), opened: (id) => !!opened[id], open: (id) => markOpened(id, cards.get(id)),
+                    first: () => $("trail").querySelector(".post:not(.skel)"), toast: (m) => toast(m) };
   $("more").addEventListener("click", () => { shown += BATCH; render(); });
   // keep filling while the end of the list is near the screen (the observer only fires on changes)
   let filling = false;
@@ -581,6 +628,8 @@
   // ---------- filters: keep the other choices when one changes ----------
   const params = new URLSearchParams(location.search);
   const current = { range: params.get("range") || "24h", who: params.get("who") || "all", quotes: $("quotes").checked ? "1" : "0" };
+  // a shared custom range link keeps its dates while the other filters change
+  if (current.range === "custom") { if (params.get("from")) current.from = params.get("from"); if (params.get("to")) current.to = params.get("to"); }
   // switching range or who swaps just the posts, no page reload
   let busy = null;
   function pressed() {
@@ -589,7 +638,10 @@
     $("quotes").checked = current.quotes === "1";
   }
   async function go(change, push = true) {
+    if (!navigator.onLine) { toast("You are offline. Your feed is still here, try again when you are back online."); pressed(); return; }
+    const before = { ...current };
     Object.assign(current, change);
+    if (current.range !== "custom") { delete current.from; delete current.to; }
     pressed();
     const q = new URLSearchParams(current).toString();
     if (push) history.pushState(current, "", `?${q}`);
@@ -608,7 +660,14 @@
       shown = BATCH;
       render(); renderWelcome(); pulse();
     } catch (e) {
-      location.search = q;                                // fall back to a normal page load
+      if (ticket !== busy) return;                        // an older request failing must not undo a newer filter
+      if (!navigator.onLine || e instanceof TypeError) { // no connection: keep the posts on screen and the old choice
+        Object.keys(current).forEach((k) => delete current[k]); Object.assign(current, before);
+        pressed(); render();
+        toast("You are offline. Your feed is still here, try again when you are back online.");
+        return;
+      }
+      location.search = q;                                // a server hiccup: fall back to a normal page load
     } finally { /* render() replaced the placeholders */ }
   }
   document.querySelectorAll('#filters button[name="range"]').forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); go({ range: b.value }); }));
@@ -628,7 +687,7 @@
     setTimeout(() => window.meadow && window.meadow.setLowRes(true), 1700);
   }
   function playIntro() {
-    revealed = false;
+    revealed = false; document.body.classList.remove("quick");
     window.scrollTo({ top: 0, behavior: "auto" });
     window.meadow && window.meadow.setLowRes(false);
     document.body.classList.remove("ready");
@@ -661,5 +720,7 @@
   fromHash();
   let seenIntro = false;
   try { seenIntro = sessionStorage.getItem("radar:intro") === "1"; sessionStorage.setItem("radar:intro", "1"); } catch (e) {}
+  // already watched the opening this visit: the page simply appears, no long fade
+  if (seenIntro) document.body.classList.add("quick");
   if (reduce || seenIntro) reveal(); else timer = setTimeout(reveal, INTRO_MS);
 })();

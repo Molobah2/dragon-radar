@@ -9,11 +9,11 @@ from datetime import date, timedelta
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 
-from .db import Event, Keeper, Post, Report, ReportStatus, Visitor, utcnow
+from .db import Event, Keeper, Post, Report, ReportConn, ReportStatus, Visitor, utcnow
 
 VID = re.compile(r"^[a-f0-9]{32}$")
 REF = re.compile(r"^[a-z0-9_-]{0,32}$")
-KINDS = {"open", "goal", "share", "save", "install"}
+KINDS = {"open", "popen", "goal", "share", "save", "install"}   # popen: an open on a preview device
 REASONS = {"spam": "Spam or scam", "offtopic": "Not about Pocket Dragons", "harm": "Rude or harmful"}
 KEEP_DAYS = 70          # events older than this are deleted, ten weeks is plenty for trends
 HABIT_OPENS = 5         # the north star: Keepers who open this many posts in a week
@@ -27,11 +27,10 @@ def record(s, day: date, vid: str, kind: str, ref: str = "") -> bool:
         return False
     if s.get(Event, (day, vid, kind, ref or "")) is not None:
         return False
-    s.add(Event(day=day, vid=vid, kind=kind, ref=ref or ""))
     try:
-        s.flush()
-    except IntegrityError:   # two tabs at the same moment
-        s.rollback()
+        with s.begin_nested():   # a savepoint: a clash undoes only this row, never the caller's other changes
+            s.add(Event(day=day, vid=vid, kind=kind, ref=ref or ""))
+    except IntegrityError:       # two tabs at the same moment
         return False
     return True
 
@@ -88,7 +87,10 @@ def protected(s, post: Post) -> bool:
     return bool(k and k.verified)
 
 
-def add_report(s, post_id: str, vid: str, reason: str, today: date) -> str:
+TRUSTED_DAYS = 3        # a reporter must have visited on this many different days
+
+
+def add_report(s, post_id: str, vid: str, reason: str, today: date, conn: str = "") -> str:
     """Returns ok, dup, limit or bad. May hide the post when enough returning visitors agree."""
     if not post_id.isdigit() or len(post_id) > 32 or not VID.match(vid or "") or reason not in REASONS:
         return "bad"
@@ -102,16 +104,21 @@ def add_report(s, post_id: str, vid: str, reason: str, today: date) -> str:
     if mine >= REPORTS_PER_DAY:
         return "limit"
     s.add(Report(post_id=post_id, vid=vid, reason=reason))
+    if conn:
+        s.add(ReportConn(post_id=post_id, vid=vid, conn=conn[:24]))
     st = s.get(ReportStatus, post_id)
     if st is None:
         st = ReportStatus(post_id=post_id, status="open")
         s.add(st)
     s.flush()
     if st.status == "open" and not post.hidden and not protected(s, post):
-        # only browsers that came back on another day count, so one person clearing their browser cannot hide a post
-        trusted = s.scalar(select(func.count()).select_from(Report).join(Visitor, Visitor.vid == Report.vid)
-                           .where(Report.post_id == post_id, Visitor.days >= 2)) or 0
-        if trusted >= AUTO_HIDE_AT:
+        # only browsers that came back on several different days count, and only once per connection,
+        # so one person with a few browsers or a cleared browser cannot hide a post
+        trusted = s.execute(select(func.count(func.distinct(Report.vid)), func.count(func.distinct(ReportConn.conn)))
+                            .select_from(Report).join(Visitor, Visitor.vid == Report.vid)
+                            .outerjoin(ReportConn, (ReportConn.post_id == Report.post_id) & (ReportConn.vid == Report.vid))
+                            .where(Report.post_id == post_id, Visitor.days >= TRUSTED_DAYS)).one()
+        if trusted[0] >= AUTO_HIDE_AT and trusted[1] >= AUTO_HIDE_AT:
             post.hidden, st.status, st.updated_at = True, "auto", utcnow()
     return "ok"
 

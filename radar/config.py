@@ -77,6 +77,9 @@ class Config:
     discord_channel_ids: str = field(default_factory=lambda: os.environ.get("DISCORD_CHANNEL_IDS", "").strip())
     discord_require_verified: bool = field(default_factory=lambda: _bool("DISCORD_REQUIRE_VERIFIED", "0"))
     discord_max_per_run: int = field(default_factory=lambda: int(os.environ.get("DISCORD_MAX_PER_RUN", "60")))
+    # Daily drop: one message a day in a Discord channel the team chooses. Empty means switched off.
+    drop_channel_id: str = field(default_factory=lambda: os.environ.get("DROP_CHANNEL_ID", "").strip())
+    drop_hour: int = field(default_factory=lambda: int(os.environ.get("DROP_HOUR", "18")))
     # Realistic meadow renders on a Cloudinary CDN (empty base = the hand drawn canvas meadow)
     scene_base: str = field(default_factory=lambda: os.environ.get("SCENE_BASE", "https://res.cloudinary.com/gosbi0oh").rstrip("/"))
     scene_folder: str = field(default_factory=lambda: os.environ.get("SCENE_FOLDER", "dragon-radar"))
@@ -150,14 +153,13 @@ ICONS = {
 }
 
 
-def _icon(self, name: str) -> str:
+def _icon(self, name: str, size: int = 40) -> str:
+    """The icons were cut out once and stored as their own small files (dragon-radar/ico/<name>), so a page
+    only fetches a few KB per icon in webp or avif, at twice the size it is shown."""
     if not self.scene_base or name not in ICONS:
         return ""
-    sheet, i = ICONS[name]
-    c = 683
-    h = 630 if sheet == "b" and i // 3 == 1 else c   # the middle row of sheet b sits close to the row below
-    return (f"{self.scene_base}/image/upload/c_crop,w_{c},h_{h},x_{(i % 3) * c},y_{(i // 3) * c}/"
-            f"e_background_removal/c_scale,w_160/f_png/{self.scene_folder}/icons-{sheet}")
+    w = 96 if size <= 48 else 160
+    return f"{self.scene_base}/image/upload/c_scale,w_{w}/f_auto/q_auto/{self.scene_folder}/ico/{name}"
 
 
 def _mailbox(self, kind: str = "image") -> str:
@@ -172,7 +174,22 @@ def _mailbox(self, kind: str = "image") -> str:
 Config.icon = _icon
 Config.mailbox = _mailbox
 
+# Community music makers, credited on the home page for everyone (HeartyBoi named them on 2026-10-13).
+# Which of their songs play on the site comes from static/audio/playlist.json. Avatars fall back to a letter.
+COMMUNITY_MUSIC = [
+    {"name": "The Panda", "x": "ThePanda_NFT", "songs": ["Blinky's song"],
+     "avatar": "https://pbs.twimg.com/profile_images/1794018791090708480/cd_1UKgj_200x200.jpg"},
+    {"name": "DJ", "x": "bubblegum_dee", "songs": ["The Pocket Dragon Wakes", "Four-Leaf Clover Escape"],
+     "avatar": "https://pbs.twimg.com/profile_images/2106797900298956800/QEgBWpGJ_200x200.jpg"},
+    {"name": "Boxer", "x": "Boxerr110", "songs": ["Pocket Dragon"],
+     "avatar": "https://pbs.twimg.com/profile_images/2062207325553983491/phRPGgCQ_200x200.jpg"},
+]
+
+
 def _music_credits(self) -> list[dict]:
+    """Songs heard on the site. MUSIC_CREDITS on Render overrides; otherwise the makers marked playing above."""
+    if not self.music_credits_raw:
+        return []                                  # the site playlist (playlist.json) is credited instead
     out = []
     for part in self.music_credits_raw.split(";"):
         bits = [b.strip() for b in part.split("|")]

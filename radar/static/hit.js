@@ -46,8 +46,8 @@
   addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e; show(); maybeNudge(); });
   addEventListener("appinstalled", () => { store.set("pd:installed", "1"); hide(); closeHow(); });
   const howEl = () => document.getElementById("install-how");
-  function closeHow() { const w = howEl(); if (!w) return; w.classList.remove("open"); document.body.classList.remove("sheet-open"); setTimeout(() => { w.hidden = true; }, 250); }
-  function openHow() { const w = howEl(); if (!w) return; w.hidden = false; requestAnimationFrame(() => w.classList.add("open")); document.body.classList.add("sheet-open"); }
+  function closeHow() { const w = howEl(); if (!w) return; w.classList.remove("open"); (document.querySelector(".sheet-wrap.open") || document.body.classList.remove("sheet-open")); setTimeout(() => { w.hidden = true; }, 250); }
+  function openHow() { const w = howEl(); if (!w) return; w.hidden = false; (void w.offsetWidth, w.classList.add("open")); document.body.classList.add("sheet-open"); }
   async function install() {
     store.set("pd:installNag", "done");
     const nudge = document.getElementById("install-nudge"); if (nudge) nudge.hidden = true;
@@ -59,11 +59,19 @@
     const n = document.getElementById("install-nudge");
     if (!n || store.get("pd:installNag") || store.get("pd:installed")) return;
     let days = []; try { days = JSON.parse(store.get("pd:days") || "[]"); } catch (e) { days = []; }
+    if (!Array.isArray(days)) days = [];
     if (days.length < 3) return;
-    setTimeout(() => { n.hidden = false; requestAnimationFrame(() => n.classList.add("show")); }, 4000);
+    // never on top of the Book of Friends invite: wait until that one is gone
+    const show = (tries) => {
+      const ask = document.getElementById("book-ask");
+      if (ask && !ask.hidden) { if (tries < 6) setTimeout(() => show(tries + 1), 20000); return; }
+      n.hidden = false; requestAnimationFrame(() => n.classList.add("show"));
+    };
+    setTimeout(() => show(0), 4000);
   }
   function countDay() {
     let days = []; try { days = JSON.parse(store.get("pd:days") || "[]"); } catch (e) { days = []; }
+    if (!Array.isArray(days)) days = [];
     const d = new Date(); const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
     if (!days.includes(key)) { days.push(key); store.set("pd:days", JSON.stringify(days.slice(-10))); }
   }

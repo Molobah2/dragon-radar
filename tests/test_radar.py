@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -45,6 +46,13 @@ class FakeClient:
 
     def users_by_usernames(self, names):
         return getattr(self, "team", [])
+
+
+@pytest.fixture(autouse=True)
+def _fast_hands(monkeypatch):
+    """Tests open posts much faster than a person can; the human pace rule has its own test."""
+    import radar.web as _w
+    monkeypatch.setattr(_w, "HABIT_GAP_S", 0)
 
 
 @pytest.fixture
@@ -416,11 +424,14 @@ def test_open_counter_counts_once_per_address(cfg, Session):
         s.add(Post(id="42", author_id="a", author_username="u", text="hi", created_at=utcnow()))
         s.commit()
     c = app.test_client()
-    assert c.post("/api/open/42").get_json() == {"counted": True, "opens": 1}
-    assert c.post("/api/open/42").get_json() == {"counted": False}
-    assert c.post("/api/open/42", headers={"X-Forwarded-For": "9.9.9.9"}).get_json()["opens"] == 2
+    op = lambda vid, **h: c.post("/api/open/42", data=json.dumps({"vid": vid}), content_type="text/plain", headers=h).get_json()
+    assert op("a" * 32) == {"counted": True, "opens": 1}
+    assert op("a" * 32) == {"counted": False}
+    assert op("a" * 32, **{"CF-Connecting-IP": "9.9.9.9"})["opens"] == 2
+    assert c.post("/api/open/42").get_json()["opens"] == 3                 # a browser that cannot store an id: once per connection
+    assert op("not a browser id") == {"counted": False}
     assert c.post("/api/open/abc").status_code == 400
-    assert c.get("/api/posts?range=24h").get_json()["posts"][0]["opens"] == 2
+    assert c.get("/api/posts?range=24h").get_json()["posts"][0]["opens"] == 3
 
 
 def test_keeper_card_locked_by_default(cfg, Session):
@@ -732,7 +743,8 @@ def test_premium_icons_and_mailbox(cfg, Session):
     feed = c.get("/friends").get_data(as_text=True)
     keepers = c.get("/friends/keepers").get_data(as_text=True)
     hub = c.get("/").get_data(as_text=True)
-    assert feed.count('class="ico') >= 10 and "e_background_removal" in feed
+    assert feed.count('class="ico') >= 10 and "/ico/book" in feed and "e_background_removal" not in feed   # small stored icons, no cut out on each view
+    assert "c_scale,w_96/f_auto" in feed and "c_scale,w_160/f_auto" in feed and 'loading="lazy"' in feed
     assert 'class="mb-clip"' in feed and "mailbox-hover" in feed and "mailbox.js" in feed and "<svg viewBox=\"0 0 64 64\"" not in feed
     assert keepers.count('class="ico') >= 4 and 'class="ico egg"' in hub
 
@@ -840,7 +852,7 @@ def test_every_element_the_scripts_use_exists(cfg, Session):
     for page, script in (("/friends", "app.js"), ("/friends/keepers", "keepers.js")):
         html = c.get(page).get_data(as_text=True)
         ids = set(re.findall(r'\$\("([\w-]+)"\)', (static / script).read_text()))
-        optional = {"keeper-open", "keeper"}          # only there when the Keeper card is switched on
+        optional = {"keeper-open", "keeper", "progress-freeze"}   # only there when the Keeper card / v2 is on
         missing = sorted(i for i in ids - optional if f'id="{i}"' not in html)
         assert not missing, (page, missing)
 
@@ -998,7 +1010,7 @@ def test_backup_carries_dragons_and_drops_junk(cfg, Session):
     assert back["dex"]["last"] == "2026-10-11" and back["dex"]["n"] == 0
     r3 = c.post("/api/backup", json={"opened": {}, "streak": {}, "dex": dex2}).get_json()
     d3 = c.get(f"/api/backup/{r3['code']}").get_json()["dex"]
-    assert d3["n"] == 41 and d3["g"] == {"last": "2026-10-11", "count": 12, "best": 0}
+    assert d3["n"] == 41 and d3["g"] == {"last": "2026-10-11", "count": 12, "best": 0, "fz": None}
     # an old style save without dragons still works
     r2 = c.post("/api/backup", json={"opened": {"123": 1}, "streak": {}}).get_json()
     assert "dex" not in c.get(f"/api/backup/{r2['code']}").get_json()
@@ -1115,16 +1127,17 @@ def test_secret_relics_stay_secret_and_travel_with_backups(cfg, Session):
     assert back["dex"]["e"] == 1234 and back["dex"]["s"] == {"moon": "2026-10-12"}
 
 
-def test_music_credits_show_in_v2_only_and_only_when_set(cfg, Session):
-    cfg.preview_key = "secret-preview-phrase-123"
-    cfg.music_credits_raw = "Blinky's song|Sample Maker|samplemaker;Bad|<x>|not a handle!"
+def test_music_makers_are_credited_for_everyone(cfg, Session):
     c = create_app(cfg).test_client()
-    assert "Music made by the community" not in c.get("/friends").get_data(as_text=True)
-    c.get("/preview/secret-preview-phrase-123")
+    hub = c.get("/").get_data(as_text=True)                      # the public home page, no preview needed
+    for name, handle in (("The Panda", "ThePanda_NFT"), ("DJ", "bubblegum_dee"), ("Boxer", "Boxerr110")):
+        assert f'<b class="mk-name">{name}</b>' in hub and f"https://x.com/{handle}" in hub
+    assert "Now playing on Blinky" in hub and "Four-Leaf Clover Escape" in hub
+    feed = c.get("/friends").get_data(as_text=True)               # the song heard on the feed is credited there too
+    assert "Music made by the community" in feed and "s song by" in feed and "https://x.com/ThePanda_NFT" in feed
+    cfg.music_credits_raw = "Another song|Sample Maker|samplemaker;Bad|<x>|not a handle!"
     page = c.get("/friends").get_data(as_text=True)
-    assert "Music made by the community" in page and "https://x.com/samplemaker" in page and "&lt;x&gt;" in page
-    cfg.music_credits_raw = ""
-    assert "Music made by the community" not in c.get("/friends").get_data(as_text=True)
+    assert "https://x.com/samplemaker" in page and "&lt;x&gt;" in page
 
 
 def test_keepers_page_says_when_everyone_is_shown(cfg, Session):
@@ -1283,7 +1296,8 @@ def test_preview_devices_do_not_count_toward_habits(cfg, Session):
     assert c.post("/api/ev", data=json.dumps({"vid": "a" * 32, "kind": "goal"}), content_type="text/plain").get_json()["counted"] is False
     from radar.db import Event
     with Session() as s:
-        assert s.scalar(select(func.count()).select_from(Event)) == 0
+        # only a preview open for the book; nothing that reaches the admin numbers
+        assert s.scalars(select(Event.kind)).all() == ["popen"]
 
 
 def test_reports_hide_a_post_only_when_returning_visitors_agree(cfg, Session):
@@ -1294,11 +1308,12 @@ def test_reports_hide_a_post_only_when_returning_visitors_agree(cfg, Session):
         s.add(Post(id="51", author_id="k", author_username="goodkeeper", text="gm", created_at=utcnow()))
         s.add(Keeper(key="goodkeeper", username="goodkeeper", verified=True))
         for ch in "abcde":
-            s.add(Visitor(vid=ch * 32, days=2 if ch in "abcd" else 1))
+            s.add(Visitor(vid=ch * 32, days=3 if ch in "abcd" else 1))
         s.commit()
     c = app.test_client()
     rep = lambda pid, vid, why="spam": c.post("/api/report", data=json.dumps({"post": pid, "vid": vid, "reason": why}),
-                                              content_type="text/plain").get_json()
+                                              content_type="text/plain",
+                                              headers={"CF-Connecting-IP": "10.0.0." + str(ord(vid[0]))}).get_json()
     assert rep("50", "e" * 32)["ok"] is True                             # a brand new browser
     assert rep("50", "a" * 32)["ok"] is True and rep("50", "a" * 32)["why"] == "dup"
     assert rep("50", "b" * 32, "offtopic")["ok"] is True
@@ -1334,3 +1349,335 @@ def test_report_button_and_install_invite_are_on_the_page(cfg, Session):
     assert 'id="report"' in page and 'data-why="spam"' in page and "data-install" in page and 'id="install-nudge"' in page
     man = json.loads(open("radar/static/manifest.webmanifest").read())
     assert any(i["sizes"] == "512x512" for i in man["icons"]) and man["start_url"] == "/friends"
+
+
+def v2_client(cfg):
+    cfg.preview_key = "secret-preview-phrase-123"
+    c = create_app(cfg).test_client()
+    c.get("/preview/secret-preview-phrase-123")
+    return c
+
+
+def test_book_is_v2_only(cfg, Session):
+    c = create_app(cfg).test_client()
+    assert c.get("/api/book").status_code == 404 and c.post("/api/book/sign", data="{}").status_code == 404
+    page = c.get("/friends").get_data(as_text=True)
+    assert 'id="book"' not in page and "friends.js" not in page and 'id="start-here"' not in page
+
+
+def test_book_signing_proves_the_name_with_one_post(cfg, Session, monkeypatch):
+    c = v2_client(cfg)
+    a = "a" * 32
+    post = lambda url, body: c.post(url, data=json.dumps(body), content_type="text/plain").get_json()
+    assert post("/api/book/sign", {"vid": a, "handle": "not a name!"})["ok"] is False
+    j = post("/api/book/sign", {"vid": a, "handle": "@Blinky_Fan"})
+    assert j["ok"] and j["status"] == "pending" and j["code"].startswith("PD") and j["code"] in j["text"]
+    code = j["code"]
+    fake = {}
+    monkeypatch.setattr("radar.oembed.fetch", lambda pid, **k: fake.get(pid))
+    assert post("/api/book/check", {"vid": a, "link": "hello"})["why"] == "link"
+    import time as _t
+    fresh = lambda n: str(((int(_t.time() * 1000) - 1288834974657) << 22) + n)   # an X post id made just now
+    fake["1111111111"] = {"username": "Blinky_Fan", "text": f"Signing {code}", "name": "x"}
+    assert post("/api/book/check", {"vid": a, "link": "https://x.com/Blinky_Fan/status/1111111111"})["why"] == "old"
+    p1, p2, p3 = fresh(1), fresh(2), fresh(3)
+    fake[p1] = {"username": "someone_else", "text": f"Signing {code}", "name": "x"}
+    r = post("/api/book/check", {"vid": a, "link": f"https://x.com/someone_else/status/{p1}"})
+    assert r["why"] == "other" and r["found"] == "someone_else"
+    fake[p2] = {"username": "Blinky_Fan", "text": "forgot the code", "name": "Fan"}
+    assert post("/api/book/check", {"vid": a, "link": f"https://x.com/Blinky_Fan/status/{p2}"})["why"] == "nocode"
+    fake[p3] = {"username": "Blinky_Fan", "text": f"Signing Blinky's Book of Friends {code.lower()} #PocketDragons", "name": "Fan"}
+    assert post("/api/book/check", {"vid": a, "link": f"https://twitter.com/Blinky_Fan/status/{p3}?s=20"})["ok"] is True
+    assert len(code) == 8                                                  # PD plus 6: far too many to guess
+    me = c.get(f"/api/book/me?vid={a}").get_json()
+    assert me["status"] == "confirmed" and me["handle"] == "Blinky_Fan" and me["week"] == 0
+    book = c.get("/api/book").get_json()
+    assert book["count"] == 1 and book["friends"][0]["handle"] == "Blinky_Fan"
+
+
+def test_tiers_supporters_and_top(cfg, Session):
+    from datetime import date, timedelta
+    from radar.book import me, public_book, tier_of
+    from radar.db import Event, Friend, FriendDevice
+    assert tier_of([60, 60, 60]) == "gold" and tier_of([60, 59, 60]) == "silver" and tier_of([30]) == "silver"
+    assert tier_of([10]) == "bronze" and tier_of([9]) == ""
+    today = date(2026, 10, 20)
+    with Session() as s:
+        for i in range(40):
+            s.add(Post(id=str(500 + i), author_id=f"au{i}", author_username=f"maker{i}", text="hi", created_at=utcnow()))
+        s.add(Post(id="900", author_id="star", author_username="Star_Keeper", text="mine", created_at=utcnow()))
+        for key, vid, inv in [("star_keeper", "5" * 32, ""), ("helper", "4" * 32, "star_keeper"), ("pal", "7" * 32, "star_keeper"),
+                              ("third", "3" * 32, "star_keeper")]:
+            s.add(Friend(key=key, username=key.title(), invited_by=inv))
+            s.add(FriendDevice(vid=vid, key=key, username=key, code="PDAAAA", confirmed=True))
+        s.add(FriendDevice(vid="4b" * 16, key="helper", username="helper", code="PDBBBB", confirmed=True))   # helper's phone
+        for i in range(25):                                                   # helper: 25 people on the computer
+            s.add(Event(day=today, vid="4" * 32, kind="open", ref=str(500 + i)))
+        for i in range(20, 40):                                               # and 20 on the phone, 5 overlap: 40 in all
+            s.add(Event(day=today - timedelta(days=1), vid="4b" * 16, kind="open", ref=str(500 + i)))
+        s.add(Event(day=today, vid="4" * 32, kind="open", ref="900"))         # helper opened star's post
+        s.add(Event(day=today, vid="7" * 32, kind="open", ref="900"))
+        s.add(Event(day=today - timedelta(days=9), vid="3" * 32, kind="open", ref="900"))   # too old for this week
+        s.commit()
+        book = public_book(s, today)
+        helper = next(f for f in book["friends"] if f["handle"] == "Helper")
+        assert helper["week"] == 41 and helper["tier"] == "silver"
+        assert book["top"][0]["handle"] == "Helper"
+        star = me(s, "5" * 32, today)
+        assert [x["handle"] for x in star["supporters"]] == ["Helper", "Pal"]
+        assert "gatherer" not in star and "invited" not in star                 # no referrals: a friendly book, not a race
+        assert me(s, "7" * 32, today)["next"] == {"tier": "bronze", "need": 10}
+
+
+def test_feed_cards_carry_tier_tags_in_v2(cfg, Session):
+    from datetime import timedelta
+    from radar.db import Event, Friend, FriendDevice
+    today = datetime.now(ZoneInfo(cfg.timezone)).date()
+    with Session() as s:
+        s.add(Post(id="777", author_id="g", author_username="GoodKeeper", text="gm dragons", created_at=utcnow()))
+        for i in range(12):
+            s.add(Post(id=str(800 + i), author_id=f"o{i}", author_username=f"o{i}", text="x", created_at=utcnow() - timedelta(days=1)))
+            s.add(Event(day=today, vid="g" * 32, kind="open", ref=str(800 + i)))
+        s.add(Friend(key="goodkeeper", username="GoodKeeper"))
+        s.add(FriendDevice(vid="g" * 32, key="goodkeeper", username="GoodKeeper", code="PDCCCC", confirmed=True))
+        s.commit()
+    c = v2_client(cfg)
+    card = next(p for p in c.get("/api/posts?range=24h").get_json()["posts"] if p["id"] == "777")
+    assert card["tier"] == "bronze"
+    plain = create_app(cfg).test_client().get("/api/posts?range=24h").get_json()["posts"]
+    assert "tier" not in next(p for p in plain if p["id"] == "777")
+
+
+def test_v2_feed_has_start_here_rally_and_book(cfg, Session):
+    page = v2_client(cfg).get("/friends").get_data(as_text=True)
+    for bit in ['id="start-here"', 'id="rally"', 'id="book"', 'data-book', 'id="book-ask"', "friends.js", 'id="progress-freeze"', '"v2": true']:
+        assert bit in page, bit
+    import re
+    from pathlib import Path
+    script = (Path(__file__).resolve().parents[1] / "radar" / "static" / "friends.js").read_text()
+    missing = sorted(i for i in set(re.findall(r'\$\("([\w-]+)"\)', script)) if f'id="{i}"' not in page)
+    assert not missing, missing
+
+
+def test_discord_drop_is_off_until_set_and_posts_once_a_day(cfg, Session):
+    from radar.discord_drop import build, run_drop
+    now = datetime(2026, 10, 20, 19, 0)
+    with Session() as s:
+        assert run_drop(s, cfg, now)["reason"] == "off"
+        cfg.drop_channel_id, cfg.discord_bot_token, cfg.drop_hour = "123", "tok", 18
+        assert run_drop(s, cfg, now.replace(hour=9))["reason"] == "too early"
+        assert run_drop(s, cfg, now)["reason"] == "nothing today"
+        s.add(Post(id="1", author_id=TEAM_ID, author_username="Pocket_Dragons_", is_team=True, text="news", created_at=utcnow()))
+        for i, n in enumerate([5, 9, 2, 7]):
+            s.add(Post(id=str(10 + i), author_id=f"k{i}", author_username=f"keeper{i}", text="x", opens=n, created_at=utcnow()))
+        s.commit()
+        text = build(s, utcnow())
+        assert "x.com/Pocket_Dragons_/status/1" in text and text.index("@keeper1") < text.index("@keeper3") < text.index("@keeper0")
+        assert "@keeper2" not in text and "pdtools.xyz/friends" in text and " - " not in text
+        sent = []
+
+        class R:
+            status_code = 200
+            text = ""
+        out = run_drop(s, cfg, now, post=lambda url, **k: sent.append((url, k["json"])) or R())
+        assert out == {"sent": True} and sent[0][0].endswith("/channels/123/messages") and sent[0][1]["allowed_mentions"] == {"parse": []}
+        assert run_drop(s, cfg, now, post=lambda *a, **k: R())["reason"] == "already sent today"
+
+
+def test_audit_fixes_preview_opens_proof_posts_moderation_and_backups(cfg, Session, monkeypatch):
+    from radar.db import Event, Friend, FriendDevice
+    c = v2_client(cfg)
+    a, b = "a" * 32, "b" * 32
+    with Session() as s:
+        s.add(Post(id="61", author_id="x", author_username="maker", text="gm", created_at=utcnow()))
+        s.add(Post(id="62", author_id="y", author_username="signer", text="Signing Blinky's Book of Friends PDAAAA #PocketDragons",
+                   created_at=utcnow()))
+        s.add(Friend(key="pal", username="Pal"))
+        s.add(FriendDevice(vid=a, key="pal", username="Pal", code="PDAAAA", confirmed=True))
+        s.commit()
+    # preview opens count for the book (popen) but never for the admin habit number
+    c.post("/api/open/61", data=json.dumps({"vid": a}), content_type="text/plain")
+    with Session() as s:
+        assert s.scalars(select(Event.kind)).all() == ["popen"]
+    assert c.get(f"/api/book/me?vid={a}").get_json()["week"] == 1
+    # signing proof posts never show in the feed
+    ids = [p["id"] for p in c.get("/api/posts?range=24h").get_json()["posts"]]
+    assert "61" in ids and "62" not in ids
+    # backups carry the book name to another device, and the freeze date
+    r = c.post("/api/backup", json={"opened": {"61": 1}, "streak": {"last": "2026-10-10", "count": 5, "best": 5, "fz": "2026-10-09"}, "vid": a})
+    code = r.get_json()["code"]
+    j = c.get(f"/api/backup/{code}?vid={b}").get_json()
+    assert j["book"] is True and j["streak"]["fz"] == "2026-10-09" and "book_vid" not in j
+    assert c.get(f"/api/book/me?vid={b}").get_json()["handle"] == "Pal"
+    # Jon removes a name and blocks it from signing again
+    with c.session_transaction() as sess:
+        sess["admin"] = True; sess["csrf"] = "t"
+    assert "@Pal" in c.get("/admin").get_data(as_text=True)
+    c.post("/admin/book", data={"csrf": "t", "handle": "Pal", "block": "1"})
+    with Session() as s:
+        assert s.get(Friend, "pal") is None and s.get(FriendDevice, a) is None
+    out = c.post("/api/book/sign", data=json.dumps({"vid": a, "handle": "pal"}), content_type="text/plain").get_json()
+    assert out == {"ok": False, "why": "blocked"}
+    page = c.get("/friends").get_data(as_text=True)
+    assert "What is Blinky's Book of Friends?" in page and 'id="bm-card"' in page and "Nothing is ever posted for you" in page
+    assert "Bring a friend" not in page and "Gatherer" not in page and "?by=" not in page
+
+
+def test_people_sharing_one_connection_each_count(cfg, Session):
+    from radar.db import Event
+    app = create_app(cfg)
+    with Session() as s:
+        s.add(Post(id="4242", author_id="a", author_username="u", text="hi", created_at=utcnow()))
+        s.commit()
+    c = app.test_client()
+    op = lambda vid: c.post("/api/open/4242", data=json.dumps({"vid": vid}), content_type="text/plain").get_json()
+    assert op("a" * 32)["opens"] == 1 and op("b" * 32)["opens"] == 2       # two people on the same Wi-Fi
+    assert op("a" * 32) == {"counted": False}                                # the same browser again
+    for ch in "cde":
+        op(ch * 32)
+    assert op("f" * 32) == {"counted": False}                                # a 4th browser on one connection is ignored
+    with Session() as s:
+        assert s.get(Post, "4242").opens == 3
+        assert s.scalar(select(func.count()).select_from(Event).where(Event.kind == "open")) == 6   # but every browser's own habit counts
+
+
+def test_opens_stop_counting_quietly_after_50_a_day(cfg, Session):
+    from radar.db import Event
+    from radar.web import OPENS_PER_DAY
+    assert OPENS_PER_DAY == 50
+    app = create_app(cfg)
+    with Session() as s:
+        for i in range(55):
+            s.add(Post(id=str(5000 + i), author_id=f"a{i}", author_username=f"u{i}", text="hi", created_at=utcnow()))
+        s.commit()
+    c = app.test_client()
+    for i in range(55):
+        r = c.post(f"/api/open/{5000 + i}", data=json.dumps({"vid": "c" * 32}), content_type="text/plain")
+        assert r.status_code == 200 and "limit" not in r.get_data(as_text=True).lower()   # nothing tells the visitor
+    with Session() as s:
+        assert s.scalar(select(func.count()).select_from(Event).where(Event.vid == "c" * 32)) == 50
+    js = (Path(__file__).parent.parent / "radar" / "static" / "dragons.js").read_text()
+    assert "RELIC_DAY = 50" in js and "dex.ed.n >= RELIC_DAY" in js
+
+
+def test_feed_is_shared_for_a_short_while_and_admin_actions_refresh_it(cfg, Session):
+    app = create_app(cfg)
+    c = app.test_client()
+    with Session() as s:
+        s.add(Post(id="7001", author_id="a", author_username="u", text="one", created_at=utcnow()))
+        s.commit()
+    assert len(c.get("/api/posts").get_json()["posts"]) == 1
+    with Session() as s:
+        s.add(Post(id="7002", author_id="b", author_username="v", text="two", created_at=utcnow()))
+        s.commit()
+    assert len(c.get("/api/posts").get_json()["posts"]) == 1          # the same minute: served from memory
+    assert len(c.get("/api/posts?who=community").get_json()["posts"]) == 2   # other filters have their own entry
+    c.post("/api/report", data="{}", content_type="text/plain")
+    c.post("/admin/nope")
+    assert len(c.get("/api/posts").get_json()["posts"]) == 1          # strangers cannot empty the cache
+    c.post("/api/report", data=json.dumps({"post": "7001", "vid": "a" * 32, "reason": "spam"}), content_type="text/plain")
+    assert len(c.get("/api/posts").get_json()["posts"]) == 2          # an accepted report (or admin action) refreshes it
+    assert len(c.get("/api/posts?after=2099-01-01T00:00:00&after=").get_json()["posts"]) == 0
+    assert len(c.get("/api/posts").get_json()["posts"]) == 2          # a repeated filter never poisons another key
+
+
+def test_english_readers_get_no_translations_and_others_get_one_pack(cfg, Session):
+    c = create_app(cfg).test_client()
+    core = c.get("/static/i18n.js").get_data(as_text=True)
+    assert len(core.encode()) < 4000 and "Algo se mueve" not in core and "document.write" in core
+    es = c.get("/i18n/es.js")
+    body = es.get_data(as_text=True)
+    assert es.status_code == 200 and "javascript" in es.content_type
+    assert "Algo se mueve" in body and "Something stirs" in body and "孵化场" not in body and "MutationObserver" in body
+    assert c.get("/i18n/en.js").status_code == 404 and c.get("/i18n/xx.js").status_code == 404
+    page = c.get("/friends").get_data(as_text=True)
+    assert "fonts.googleapis" not in page and "fonts.css" in page
+
+
+def test_speed_budget(cfg, Session):
+    """pdtools must stay smooth and fast: a new feature that makes pages much heavier fails here first.
+    Numbers are compressed sizes, as phones receive them. Raise a budget only on purpose."""
+    import gzip
+    import re
+    c = v2_client(cfg)
+    budgets = {"/friends": (120_000, 60_000), "/": (15_000, 40_000), "/friends/keepers": (60_000, 40_000)}
+    for path, (code_max, html_max) in budgets.items():
+        html = c.get(path).get_data(as_text=True)
+        assert "fonts.googleapis" not in html and "fonts.gstatic" not in html, path
+        assert len(gzip.compress(html.encode())) < html_max, path
+        refs = re.findall(r'(?:src|href)="(/static/[^"?]+\.(?:js|css))', html)
+        size = sum(len(gzip.compress(c.get(r).get_data())) for r in refs)
+        assert size < code_max, f"{path}: scripts and styles {size} bytes"
+    assert len(c.get("/static/i18n.js").get_data()) < 4000
+    for lang in ("es", "ru", "zh"):
+        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 22_000, lang
+    page = c.get("/friends").get_data(as_text=True)
+    assert "e_background_removal" not in page            # icons are small stored files, not cut out per view
+
+
+def test_feed_plays_the_community_playlist(cfg, Session):
+    import json as _json
+    from pathlib import Path as _P
+    songs = _json.loads((_P(__file__).parent.parent / "radar" / "static" / "audio" / "playlist.json").read_text())
+    assert songs and all(s["mix"] < s["dur"] and s["src"].startswith("audio/") for s in songs)
+    page = create_app(cfg).test_client().get("/friends").get_data(as_text=True)
+    assert '"songs": [' in page and "audio/blinky-song.m4a?v=" in page and "Music made by the community" in page
+    js = (_P(__file__).parent.parent / "radar" / "static" / "sound.js").read_text()
+    assert "mixNext" in js and "setValueCurveAtTime" in js and '"ended"' in js     # crossfades, with a safety net
+
+
+
+def test_odd_requests_never_crash(cfg, Session):
+    c = create_app(cfg).test_client()
+    for path in ("/api/hit", "/api/ev", "/api/report", "/api/feedback", "/api/backup", "/api/keepers/add", "/api/open/5"):
+        for body in ("[]", "[1]", "5", "null", '{"handle": 5}', '{"handle": null}', '{"opened": {"1": Infinity}}',
+                     '{"dex": {"have": {"ice": {"c": NaN}}}}', '{"opened": {"1": 1e400}}', "not json"):
+            r = c.post(path, data=body, content_type="application/json")
+            assert r.status_code < 500, (path, body, r.status_code)
+    for q in ("range=custom&from=2026-10-01&to=9999-12-31", "range=custom&from=0001-01-01&to=0001-01-02",
+              "range=custom&from=nope", "who=team&who=community", "after=bad"):
+        assert c.get("/api/posts?" + q).status_code == 200, q
+        assert c.get("/friends?" + q).status_code == 200, q
+
+
+def test_opens_cannot_be_sent_through_the_moments_beacon(cfg, Session):
+    from radar.db import Event
+    c = create_app(cfg).test_client()
+    r = c.post("/api/ev", data=json.dumps({"vid": "a" * 32, "kind": "open", "ref": "1"}), content_type="text/plain")
+    assert r.get_json() == {"counted": False}
+    with Session() as s:
+        assert s.scalar(select(func.count()).select_from(Event)) == 0
+
+
+def test_spoofed_forwarded_for_does_not_beat_cloudflare_address(cfg, Session):
+    c = create_app(cfg).test_client()
+    codes = [c.get(f"/api/backup/ABCD-EFGH", headers={"CF-Connecting-IP": "1.2.3.4", "X-Forwarded-For": f"5.6.7.{i}"}).status_code
+             for i in range(35)]
+    assert 429 in codes
+
+
+
+def test_spotlight_rules_against_scripts(cfg, Session, monkeypatch):
+    """A script cannot open posts faster than a person, old posts never raise a tier, and reports from one
+    connection never hide a post, however many browsers it uses."""
+    import radar.web as w
+    from radar.db import Event, ReportStatus, Visitor
+    monkeypatch.setattr(w, "HABIT_GAP_S", 4)
+    with Session() as s:
+        for i in range(3):
+            s.add(Post(id=str(900 + i), author_id=f"x{i}", author_username=f"x{i}", text="gm", created_at=utcnow()))
+        s.add(Post(id="990", author_id="sp", author_username="rival", text="gm", created_at=utcnow()))
+        for ch in "abcd":
+            s.add(Visitor(vid=ch * 32, days=5))
+        s.commit()
+    c = create_app(cfg).test_client()
+    for i in range(3):
+        c.post(f"/api/open/{900 + i}", data=json.dumps({"vid": "a" * 32}), content_type="text/plain")
+    with Session() as s:
+        assert s.scalar(select(func.count()).select_from(Event).where(Event.vid == "a" * 32)) == 1   # 3 opens in a blink: 1 counted
+    for ch in "abcd":                                                      # four browsers, one connection
+        c.post("/api/report", data=json.dumps({"post": "990", "vid": ch * 32, "reason": "spam"}), content_type="text/plain")
+    with Session() as s:
+        assert s.get(Post, "990").hidden is False
+    assert c.post("/api/open/1", headers={"Host": "dragon-radar.onrender.com"}).status_code in (403, 400) or not cfg.canonical_host
+    assert c.get("/healthz", headers={"CF-Connecting-IP": "1.2.3.4"}).get_json()["via"] == "cf"

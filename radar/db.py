@@ -158,6 +158,15 @@ class Report(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
 
 
+class ReportConn(Base):
+    """Which connection a report came from, as a salted hash only (never the address itself), so reports from one
+    person with several browsers count once. Kept in the database so a restart never forgets it."""
+    __tablename__ = "report_conns"
+    post_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    vid: Mapped[str] = mapped_column(String(32), primary_key=True)
+    conn: Mapped[str] = mapped_column(String(24), index=True)
+
+
 class ReportStatus(Base):
     """What happened to a reported post: open (waiting for Jon), auto (hidden by the community until Jon looks),
     hidden (Jon hid it) or kept (Jon looked and kept it, new reports no longer hide it)."""
@@ -165,6 +174,30 @@ class ReportStatus(Base):
     post_id: Mapped[str] = mapped_column(String(32), primary_key=True)
     status: Mapped[str] = mapped_column(String(8), default="open")
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class Friend(Base):
+    """A Keeper who signed Blinky's Book of Friends and proved the X name is theirs with one post."""
+    __tablename__ = "friends"
+    key: Mapped[str] = mapped_column(String(32), primary_key=True)          # lower-case handle
+    username: Mapped[str] = mapped_column(String(32))
+    name: Mapped[str] = mapped_column(String(100), default="")
+    proof_post: Mapped[str] = mapped_column(String(32), default="")         # the post that carried the code
+    invited_by: Mapped[str] = mapped_column(String(32), default="")         # lower-case handle of the friend who invited them
+    confirmed_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class FriendDevice(Base):
+    """A browser that asked to sign as a handle. Confirmed once the proof post is checked.
+    One person can link a phone and a computer; each one proves the name with its own code."""
+    __tablename__ = "friend_devices"
+    vid: Mapped[str] = mapped_column(String(32), primary_key=True)
+    key: Mapped[str] = mapped_column(String(32), index=True)
+    username: Mapped[str] = mapped_column(String(32))
+    code: Mapped[str] = mapped_column(String(8))
+    confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
+    invited_by: Mapped[str] = mapped_column(String(32), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class Setting(Base):
@@ -179,9 +212,10 @@ def make_session_factory(database_url: str) -> sessionmaker:
         kwargs["connect_args"] = {"check_same_thread": False}
     else:
         # Small pool: Supabase's free tier allows a limited number of connections
-        kwargs.update(pool_size=3, max_overflow=2, pool_recycle=300)
+        kwargs.update(pool_size=5, max_overflow=3, pool_recycle=300)
     engine = create_engine(database_url, **kwargs)
     Base.metadata.create_all(engine)
+    ensure_indexes(engine)
     return sessionmaker(bind=engine, expire_on_commit=False)
 
 
@@ -203,3 +237,25 @@ def month_spend(s: Session, now: datetime) -> float:
     total = s.scalar(select(func.coalesce(func.sum(CollectorRun.est_cost_usd), 0.0))
                      .where(CollectorRun.started_at >= start))
     return float(total or 0.0)
+
+
+# Indexes for the busiest lookups. create_all only makes indexes for brand new tables, so these are added
+# here with IF NOT EXISTS: safe to run on every start, on SQLite and on Postgres.
+EXTRA_INDEXES = (
+    "CREATE INDEX IF NOT EXISTS ix_posts_lower_user ON posts (lower(author_username))",
+    "CREATE INDEX IF NOT EXISTS ix_posts_author_time ON posts (author_id, created_at)",
+    "CREATE INDEX IF NOT EXISTS ix_backups_created ON progress_backups (created_at)",
+    "CREATE INDEX IF NOT EXISTS ix_events_vid_day ON events (vid, day)",
+    "CREATE INDEX IF NOT EXISTS ix_events_ref_day ON events (ref, day)",
+    "CREATE INDEX IF NOT EXISTS ix_reports_vid_time ON reports (vid, created_at)",
+)
+
+
+def ensure_indexes(engine) -> None:
+    from sqlalchemy import text
+    for sql in EXTRA_INDEXES:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(sql))
+        except Exception:  # noqa: BLE001  an index is a speed up, never a reason to fail the start
+            pass
