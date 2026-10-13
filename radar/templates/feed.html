@@ -137,7 +137,7 @@
         {% endif %}
         <button class="btn btn-soft keeper-btn side-row" id="weekly-open" type="button">{{ ico("crown", 22) }}<span class="sr-text">This week's top posts</span><i class="sr-go" aria-hidden="true"></i></button>
         <button class="btn btn-soft keeper-btn side-row" id="progress-open" type="button">{{ ico("hourglass", 22) }}<span class="sr-text">My progress</span><i class="sr-go" aria-hidden="true"></i></button>
-        {% if v2 %}<button class="btn btn-soft keeper-btn side-row" data-myweek type="button">{{ ico("sparkle", 22) }}<span class="sr-text">My week card</span><i class="sr-go" aria-hidden="true"></i></button>
+        {% if v2 %}<button class="btn {{ 'btn-soft' if wk_open else 'keeper-locked' }} keeper-btn side-row" data-myweek data-mw-side type="button">{{ ico("sparkle", 22) }}<span class="sr-text">My week card</span><span class="sr-pill mw-pill">{{ 'today only' if wk_open else 'opens Friday' }}</span></button>
         <button class="btn btn-soft keeper-btn side-row" data-dex type="button">{{ ico("hatch", 22) }}<span class="sr-text">My dragons</span><i class="sr-go" aria-hidden="true"></i></button>
         <button class="btn btn-soft keeper-btn side-row" data-book type="button">{{ ico("book", 22) }}<span class="sr-text">Blinky's Book of Friends</span><i class="sr-go" aria-hidden="true"></i></button>{% endif %}
         <a class="btn btn-soft keeper-btn side-row" href="{{ url_for('keepers_page') }}">{{ ico("shield", 22) }}<span class="sr-text">Find Keepers to follow</span><i class="sr-go" aria-hidden="true"></i></a>
@@ -254,7 +254,8 @@
       {% if v2 %}<div class="pg-block">
         <b>My week card</b>
         <p>A card of the Keepers you supported this week, ready to share on X.</p>
-        <button class="btn btn-go" data-myweek type="button">Make my card</button>
+        <p class="mw-when">Opens every Friday from 00:00 UTC, for the whole day.</p>
+        <button class="btn {{ 'btn-go' if wk_open else 'btn-soft' }}" data-myweek data-mw-main type="button">{{ 'Make my card' if wk_open else 'Opens Friday' }}</button>
       </div>
       <div class="pg-block">
         <b>My dragons</b>
@@ -382,6 +383,7 @@
   {% if v2 %}<script src="{{ asset('weekly2.js') }}" defer></script>{% else %}<script src="{{ asset('weekly.js') }}" defer></script>{% endif %}
   {% if v2 %}<link rel="stylesheet" href="{{ asset('fonts-cards.css') }}">
   <script src="{{ asset('cards-data.js') }}" defer></script>
+  <script>window.PD_WEEK = {{ {"open": wk_open, "now": now_ms, "always": cfg.myweek_always} | tojson }};</script>
   <script src="{{ asset('myweek.js') }}" defer></script>
   <script src="{{ asset('dex-data.js') }}" defer></script>
   <script src="{{ asset('cardkit.js') }}" defer></script>

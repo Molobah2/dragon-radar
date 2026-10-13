@@ -249,7 +249,39 @@
     }, 300);
   }
 
+  // ---------- Friday only: open from Friday 00:00 UTC for the whole day, locked Saturday to Thursday ----------
+  // The server's clock decides (a phone set to the wrong day changes nothing), and the buttons flip by
+  // themselves at midnight UTC if the page is left open.
+  const WK = window.PD_WEEK || { open: true, now: Date.now() };
+  const skew = (WK.now || Date.now()) - Date.now();
+  const weekOpen = () => !!WK.always || new Date(Date.now() + skew).getUTCDay() === 5;
+  let shownOpen = null;
+  function paintLock() {
+    const isOpen = weekOpen();
+    if (isOpen === shownOpen) return;
+    shownOpen = isOpen;
+    document.querySelectorAll("[data-mw-side]").forEach((b) => {
+      b.classList.toggle("btn-soft", isOpen); b.classList.toggle("keeper-locked", !isOpen);
+      const pill = b.querySelector(".mw-pill"); if (pill) pill.textContent = isOpen ? "today only" : "opens Friday";
+    });
+    document.querySelectorAll("[data-mw-main]").forEach((b) => {
+      b.classList.toggle("btn-go", isOpen); b.classList.toggle("btn-soft", !isOpen);
+      b.textContent = isOpen ? "Make my card" : "Opens Friday";
+    });
+  }
+  function lockedNote() {
+    const t = $("toast"), text = "🔒 My week card opens every Friday from 00:00 UTC, for the whole day.";
+    if (!t) return;
+    t.textContent = text; t.hidden = false;
+    requestAnimationFrame(() => t.classList.add("show"));
+    clearTimeout(lockedNote.timer);
+    lockedNote.timer = setTimeout(() => { t.classList.remove("show"); setTimeout(() => { t.hidden = true; }, 300); }, 5000);
+  }
+  paintLock();
+  setInterval(paintLock, 20000);
+
   async function open() {
+    if (!weekOpen()) { paintLock(); lockedNote(); return; }
     wrap.hidden = false; (void wrap.offsetWidth, wrap.classList.add("open")); document.body.classList.add("sheet-open");
     pickers(); mark();
     msg("Drawing your card...");

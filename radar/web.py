@@ -377,11 +377,18 @@ def create_app(cfg: Config | None = None) -> Flask:
     def keepers_old():
         return redirect(url_for("keepers_page"), code=301)
 
+    def week_card_open(now: "datetime | None" = None) -> bool:
+        """My week card is a Friday treat: open from Friday 00:00 UTC until Saturday 00:00 UTC."""
+        now = now or datetime.now(timezone.utc)
+        return cfg.myweek_always or now.astimezone(timezone.utc).weekday() == 4
+    app.week_card_open = week_card_open
+
     @app.get("/friends")
     def feed():
         items, pinned_items, filters, updated, newcomers = feed_query(request.args)
         return render_template("feed.html", cfg=cfg, items=items, pinned=pinned_items, filters=filters, updated=updated,
-                               newcomers=newcomers)
+                               newcomers=newcomers, wk_open=week_card_open(),
+                               now_ms=int(datetime.now(timezone.utc).timestamp() * 1000))
 
     @app.get("/api/posts")
     def api_posts():

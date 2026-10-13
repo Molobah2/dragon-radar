@@ -113,11 +113,13 @@
     xPerDay14: "People each day for the last 14 days", xHowMany: "How many people use pdtools", xQuick: "Quick links", xSeeAll: "See all tools",
     pxTodayN: "Today: {n}", pxCounted: "Counted since {a}. Each browser counts once, so one Keeper on a phone and a laptop counts as two. No names or X accounts are stored.", xSrvSaves: "Too many saves for now, try again later.", xSrvBig: "That is too much to save at once.",
     xSrvTries: "Too many tries for now, try again later.", xSrvRated: "Thanks, we already got your rating.",
-    offlineMsg: "You are offline. Your feed is still here, try again when you are back online.", bkOldPost: "That post is older than your code. Post the words again now, then paste the new link."
+    offlineMsg: "You are offline. Your feed is still here, try again when you are back online.", bkOldPost: "That post is older than your code. Post the words again now, then paste the new link.",
+    mwToday: "today only", mwFri: "opens Friday", mwFriB: "Opens Friday", mwWhen: "Opens every Friday from 00:00 UTC, for the whole day.", mwLocked: "🔒 My week card opens every Friday from 00:00 UTC, for the whole day.",
   };
 
   const T = {
     es: {
+      mwToday: "solo hoy", mwFri: "abre el viernes", mwFriB: "Abre el viernes", mwWhen: "Abre cada viernes desde las 00:00 UTC, durante todo el día.", mwLocked: "🔒 Mi tarjeta de la semana abre cada viernes desde las 00:00 UTC, durante todo el día.",
       offlineMsg: "Estás sin conexión. Tu feed sigue aquí, vuelve a intentarlo cuando tengas conexión.", bkOldPost: "Esa publicación es más antigua que tu código. Publica las palabras de nuevo ahora y pega el nuevo enlace.",
       xAllPd: "Todo pdtools", xLang: "Idioma", xSound: "Sonido", xRating: "Valoración",
       xSections: "Secciones", xSite: "Sitio", pxOf5: "{n} de 5", pxGoalK: "{n}/20 publicaciones de Keepers hoy",
@@ -222,6 +224,7 @@
       h1Feed: "Algo se mueve<br>en el <span class=\"pop\">Criadero.</span>", h1Keepers: "Cada dragón<br>reconoce <span class=\"pop\">a los suyos.</span>",
     },
     fr: {
+      mwToday: "aujourd'hui seulement", mwFri: "ouvre vendredi", mwFriB: "Ouvre vendredi", mwWhen: "Ouvre chaque vendredi dès 00:00 UTC, toute la journée.", mwLocked: "🔒 Ma carte de la semaine ouvre chaque vendredi dès 00:00 UTC, toute la journée.",
       offlineMsg: "Tu es hors ligne. Ton fil est toujours là, réessaie quand tu seras reconnecté.", bkOldPost: "Cette publication est plus ancienne que ton code. Publie à nouveau le texte maintenant, puis colle le nouveau lien.",
       xAllPd: "Tout pdtools", xLang: "Langue", xSound: "Son", xRating: "Note",
       xSections: "Sections", xSite: "Site", pxOf5: "{n} sur 5", pxGoalK: "{n}/20 posts de Keepers aujourd'hui",
@@ -326,6 +329,7 @@
       h1Feed: "Quelque chose bouge<br>dans <span class=\"pop\">l'Écloserie.</span>", h1Keepers: "Chaque dragon<br>reconnaît <span class=\"pop\">les siens.</span>",
     },
     pt: {
+      mwToday: "só hoje", mwFri: "abre na sexta", mwFriB: "Abre na sexta", mwWhen: "Abre toda sexta a partir das 00:00 UTC, o dia inteiro.", mwLocked: "🔒 Meu cartão da semana abre toda sexta a partir das 00:00 UTC, o dia inteiro.",
       offlineMsg: "Você está offline. Seu feed continua aqui, tente de novo quando voltar a ter conexão.", bkOldPost: "Essa publicação é mais antiga que o seu código. Publique as palavras de novo agora e cole o novo link.",
       xAllPd: "Todo o pdtools", xLang: "Idioma", xSound: "Som", xRating: "Avaliação",
       xSections: "Seções", xSite: "Site", pxOf5: "{n} de 5", pxGoalK: "{n}/20 posts de Keepers hoje",
@@ -430,6 +434,7 @@
       h1Feed: "Algo se agita<br>no <span class=\"pop\">Viveiro.</span>", h1Keepers: "Todo dragão<br>reconhece <span class=\"pop\">os seus.</span>",
     },
     tr: {
+      mwToday: "sadece bugün", mwFri: "cuma açılır", mwFriB: "Cuma açılır", mwWhen: "Her cuma 00:00 UTC'den itibaren gün boyu açık.", mwLocked: "🔒 Haftam kartı her cuma 00:00 UTC'den itibaren gün boyu açık.",
       offlineMsg: "Çevrimdışısın. Akışın hâlâ burada, bağlantın geri gelince tekrar dene.", bkOldPost: "Bu gönderi kodundan daha eski. Metni şimdi yeniden paylaş, sonra yeni bağlantıyı yapıştır.",
       xAllPd: "Tüm pdtools", xLang: "Dil", xSound: "Ses", xRating: "Puan",
       xSections: "Bölümler", xSite: "Site", pxOf5: "5 üzerinden {n}", pxGoalK: "Bugün {n}/20 Keeper gönderisi",
@@ -534,6 +539,7 @@
       h1Feed: "Bir şeyler kıpırdıyor<br><span class=\"pop\">Kuluçkada.</span>", h1Keepers: "Her ejderha<br><span class=\"pop\">kendinden olanı</span> tanır.",
     },
     ru: {
+      mwToday: "только сегодня", mwFri: "откроется в пятницу", mwFriB: "Откроется в пятницу", mwWhen: "Открывается каждую пятницу с 00:00 UTC на весь день.", mwLocked: "🔒 Карточка недели открывается каждую пятницу с 00:00 UTC на весь день.",
       offlineMsg: "Нет соединения. Твоя лента на месте, попробуй снова, когда появится интернет.", bkOldPost: "Этот пост старше твоего кода. Опубликуй текст ещё раз сейчас и вставь новую ссылку.",
       xAllPd: "Весь pdtools", xLang: "Язык", xSound: "Звук", xRating: "Оценка",
       xSections: "Разделы", xSite: "Сайт", pxOf5: "{n} из 5", pxGoalK: "{n}/20 постов Keepers сегодня",
@@ -638,6 +644,7 @@
       h1Feed: "Что то шевелится<br>в <span class=\"pop\">Инкубаторе.</span>", h1Keepers: "Каждый дракон<br>узнаёт <span class=\"pop\">своих.</span>",
     },
     vi: {
+      mwToday: "chỉ hôm nay", mwFri: "mở vào thứ Sáu", mwFriB: "Mở vào thứ Sáu", mwWhen: "Mở mỗi thứ Sáu từ 00:00 UTC, suốt cả ngày.", mwLocked: "🔒 Thẻ tuần của tôi mở mỗi thứ Sáu từ 00:00 UTC, suốt cả ngày.",
       offlineMsg: "Bạn đang ngoại tuyến. Bảng tin vẫn còn đây, hãy thử lại khi có mạng.", bkOldPost: "Bài đăng đó cũ hơn mã của bạn. Hãy đăng lại đoạn chữ ngay bây giờ rồi dán liên kết mới.",
       xAllPd: "Tất cả pdtools", xLang: "Ngôn ngữ", xSound: "Âm thanh", xRating: "Đánh giá",
       xSections: "Mục", xSite: "Trang", pxOf5: "{n} trên 5", pxGoalK: "{n}/20 bài của Keeper hôm nay",
@@ -742,6 +749,7 @@
       h1Feed: "Có gì đó đang cựa quậy<br>trong <span class=\"pop\">Lò Ấp.</span>", h1Keepers: "Mỗi chú rồng<br>đều nhận ra <span class=\"pop\">đồng loại.</span>",
     },
     id: {
+      mwToday: "hanya hari ini", mwFri: "buka hari Jumat", mwFriB: "Buka hari Jumat", mwWhen: "Buka setiap Jumat mulai 00:00 UTC, sepanjang hari.", mwLocked: "🔒 Kartu mingguanku buka setiap Jumat mulai 00:00 UTC, sepanjang hari.",
       offlineMsg: "Kamu sedang offline. Feed kamu masih di sini, coba lagi saat sudah online.", bkOldPost: "Postingan itu lebih lama dari kodemu. Posting ulang teksnya sekarang, lalu tempel tautan barunya.",
       xAllPd: "Semua pdtools", xLang: "Bahasa", xSound: "Suara", xRating: "Penilaian",
       xSections: "Bagian", xSite: "Situs", pxOf5: "{n} dari 5", pxGoalK: "{n}/20 postingan Keeper hari ini",
@@ -846,6 +854,7 @@
       h1Feed: "Ada yang bergerak<br>di <span class=\"pop\">Penetasan.</span>", h1Keepers: "Setiap naga<br>mengenali <span class=\"pop\">sesamanya.</span>",
     },
     ko: {
+      mwToday: "오늘만", mwFri: "금요일에 열림", mwFriB: "금요일에 열려요", mwWhen: "매주 금요일 00:00 UTC부터 하루 종일 열려요.", mwLocked: "🔒 내 주간 카드는 매주 금요일 00:00 UTC부터 하루 종일 열려요.",
       offlineMsg: "오프라인 상태예요. 피드는 그대로 있으니 다시 연결되면 시도해 주세요.", bkOldPost: "그 게시물은 코드보다 먼저 올라온 거예요. 지금 문구를 다시 올리고 새 링크를 붙여 넣어 주세요.",
       xAllPd: "pdtools 전체", xLang: "언어", xSound: "소리", xRating: "평점",
       xSections: "섹션", xSite: "사이트", pxOf5: "5점 중 {n}점", pxGoalK: "오늘 Keeper 게시물 {n}/20",
@@ -950,6 +959,7 @@
       h1Feed: "<span class=\"pop\">부화장</span>에서<br>무언가 꿈틀거려요.", h1Keepers: "모든 드래곤은<br><span class=\"pop\">자기 편</span>을 알아봐요.",
     },
     zh: {
+      mwToday: "仅限今天", mwFri: "周五开放", mwFriB: "周五开放", mwWhen: "每周五 00:00 UTC 起全天开放。", mwLocked: "🔒 我的每周卡片每周五 00:00 UTC 起全天开放。",
       offlineMsg: "你现在离线了。你的动态还在，联网后再试一次。", bkOldPost: "那条帖子比你的代码更早。请现在重新发布这段文字，然后粘贴新链接。",
       xAllPd: "全部 pdtools", xLang: "语言", xSound: "声音", xRating: "评分",
       xSections: "栏目", xSite: "网站", pxOf5: "{n} 分，满分 5", pxGoalK: "今天 {n}/20 条 Keeper 帖子",

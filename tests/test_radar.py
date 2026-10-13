@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -1681,3 +1681,25 @@ def test_spotlight_rules_against_scripts(cfg, Session, monkeypatch):
         assert s.get(Post, "990").hidden is False
     assert c.post("/api/open/1", headers={"Host": "dragon-radar.onrender.com"}).status_code in (403, 400) or not cfg.canonical_host
     assert c.get("/healthz", headers={"CF-Connecting-IP": "1.2.3.4"}).get_json()["via"] == "cf"
+
+
+def test_my_week_card_opens_only_on_friday_utc(cfg, Session):
+    cfg.v2_public = True
+    app = create_app(cfg)
+    o = app.week_card_open
+    utc = timezone.utc
+    assert o(datetime(2026, 10, 16, 0, 0, tzinfo=utc))                 # Friday 00:00 UTC: opens
+    assert o(datetime(2026, 10, 16, 23, 59, 59, tzinfo=utc))           # all of Friday
+    assert not o(datetime(2026, 10, 17, 0, 0, tzinfo=utc))             # Saturday 00:00 UTC: locked again
+    assert not o(datetime(2026, 10, 15, 23, 59, 59, tzinfo=utc))       # Thursday night: still locked
+    for d in range(10, 16):                                              # Saturday through Thursday
+        assert not o(datetime(2026, 10, d, 12, tzinfo=utc))
+    # Ghana is UTC, but a Friday in Tokyo is not enough: only the UTC day counts
+    tokyo = timezone(timedelta(hours=9))
+    assert not o(datetime(2026, 10, 16, 8, 0, tzinfo=tokyo))           # Thursday 23:00 UTC
+    page = app.test_client().get("/friends").get_data(as_text=True)
+    assert "window.PD_WEEK" in page and "Opens every Friday from 00:00 UTC" in page
+    is_fri = datetime.now(utc).weekday() == 4
+    assert ("today only" in page) == is_fri and ("opens Friday" in page) == (not is_fri)
+    cfg.myweek_always = True
+    assert create_app(cfg).week_card_open(datetime(2026, 10, 13, tzinfo=utc))

@@ -46,6 +46,8 @@ class Config:
     # turns them on for that device only. V2_PUBLIC=1 is the launch switch that shows them to everyone.
     preview_key: str = field(default_factory=lambda: os.environ.get("PREVIEW_KEY", "").strip())
     v2_public: bool = field(default_factory=lambda: _bool("V2_PUBLIC", "0"))
+    # My week card opens every Friday (UTC) for the whole day. MYWEEK_ALWAYS=1 keeps it open (local testing only)
+    myweek_always: bool = field(default_factory=lambda: _bool("MYWEEK_ALWAYS", "0"))
     # test copies of the site ask search engines to stay away
     noindex: bool = field(default_factory=lambda: _bool("NOINDEX", "0"))
     author_x: str = field(default_factory=lambda: os.environ.get("AUTHOR_X", "jonwynnx").lstrip("@"))
