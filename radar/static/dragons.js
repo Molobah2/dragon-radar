@@ -415,11 +415,11 @@
     $("hatch-post").href = `https://x.com/intent/post?text=${encodeURIComponent(postText(entry, mode))}`;
     $("hatch-actions").hidden = false;
     if ($("hatch-film")) $("hatch-film").hidden = true;
-    // one post a day is plenty: a copy of a common goes on the daily card instead of its own card
+    // cards pop up for moments worth sharing (a new dragon, a rare, a legend), never for every copy, so nothing feels farmed
     const worth = mode !== "copy" || t !== "common";
     ["hatch-post", "hatch-save"].forEach((id) => { if ($(id)) $(id).hidden = !worth; });
     if (xField) xField.hidden = !worth;
-    if (!worth) $("hatch-sub").textContent = `Your ${entry.sp.name} has company. It will be on today's daily card.`;
+    if (!worth) $("hatch-sub").textContent = `Your ${entry.sp.name} has company. ${nextNews()}`;
     if (worth) prepShare(entry); else if ($("hatch-share")) $("hatch-share").hidden = true;
   }
   if ($("hatch-film")) $("hatch-film").addEventListener("click", () => { if (shown && shown.entry.tier === "secret") relicFilm(shown.entry); });

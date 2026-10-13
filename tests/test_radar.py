@@ -1213,18 +1213,6 @@ def test_team_spotlight_failure_does_not_stop_the_run(cfg, Session):
         assert run.status != "error"
 
 
-def test_daily_goal_card_is_v2_only(cfg, Session):
-    cfg.preview_key = "secret-preview-phrase-123"
-    c = create_app(cfg).test_client()
-    page = c.get("/friends").get_data(as_text=True)
-    assert 'id="daycard"' not in page and "goalcard.js" not in page
-    c.get("/preview/secret-preview-phrase-123")
-    page = c.get("/friends").get_data(as_text=True)
-    assert 'id="daycard"' in page and "goalcard.js" in page and 'id="hatch-daycard"' in page
-    js = c.get("/static/goalcard.js").get_data(as_text=True)
-    assert js.count('["') >= 12 and "dragon-radar/blinky/" in js
-
-
 def test_relic_films_play_between_the_seal_and_the_relic(cfg, Session):
     c = create_app(cfg).test_client()
     js = c.get("/static/dragons.js").get_data(as_text=True)
@@ -1236,23 +1224,16 @@ def test_relic_films_play_between_the_seal_and_the_relic(cfg, Session):
     assert "window.pdSound" in snd and "duck(" in snd and "unduck(" in snd
 
 
-def test_legends_use_2d_art_and_daily_card_carries_todays_hatch(cfg, Session):
-    c = create_app(cfg).test_client()
-    data = c.get("/static/dex-data.js").get_data(as_text=True)
-    for k in ("ruby-l", "sapphire-l", "emerald-l", "amethyst-l", "diamond-l"):
-        assert f'"{k}"' in data.split("art2d")[1].split("}")[0]
-    js = c.get("/static/dragons.js").get_data(as_text=True)
-    assert "dragon-radar/dex2d/" in js and "todayHatch" in js and "HATCHED BY" in js
-    assert "todayHatch" in c.get("/static/goalcard.js").get_data(as_text=True)
 
-
-def test_cards_share_one_horizontal_kit(cfg, Session):
+def test_cards_pop_up_for_moments_not_every_day(cfg, Session):
     cfg.preview_key = "secret-preview-phrase-123"
     c = create_app(cfg).test_client()
     c.get("/preview/secret-preview-phrase-123")
     page = c.get("/friends").get_data(as_text=True)
-    assert page.index("cardkit.js") < page.index("dragons.js") < page.index("goalcard.js")
-    kit = c.get("/static/cardkit.js").get_data(as_text=True)
-    assert "W = 1200, H = 675" in kit and "window.pdCard" in kit
-    for f in ("dragons.js", "goalcard.js"):
-        assert "window.pdCard" in c.get(f"/static/{f}").get_data(as_text=True)
+    assert 'id="daycard"' not in page and "goalcard.js" not in page and "hatch-daycard" not in page
+    assert page.index("cardkit.js") < page.index("dragons.js")
+    data = c.get("/static/dex-data.js").get_data(as_text=True)
+    for k in ("ruby-l", "sapphire-l", "emerald-l", "amethyst-l", "diamond-l"):
+        assert f'"{k}"' in data.split("art2d")[1].split("}")[0]
+    js = c.get("/static/dragons.js").get_data(as_text=True)
+    assert "window.pdCard" in js and "HATCHED BY" in js and "daily card" not in js

@@ -109,7 +109,6 @@ def create_app(cfg: Config | None = None) -> Flask:
         {"name": "Hatchery numbers", "url": "/#numbers", "note": "Home page, under the tools: how many people have visited pdtools, this week, who came back, and a 14 day chart."},
         {"name": "Weekly top posts designs", "url": "/friends#weekly", "note": "Blinky's Friends, This week's top posts: 7 painted card styles with bigger, easy to read text."},
         {"name": "Secret relics", "url": "/friends#dragons", "note": "My dragons: three sealed relics nobody can see how to earn. They appear on their own when a Keeper earns one."},
-        {"name": "Daily goal cards", "url": "/friends", "note": "Blinky's Friends: after the daily goal and the hatch, tap the goal button for a card with Blinky, a scene, a colour and three caption ideas for the day. Twelve official poses, four to start and one more every five eggs."},
         {"name": "Dark mode", "url": "/friends", "note": "Every Blinky's Friends page: the Dark and Light button at the top. Follows the phone's own setting until someone picks."},
     ]
 
