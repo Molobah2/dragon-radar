@@ -621,6 +621,8 @@
     if (row) x.fillText(row, left, y);
   }
   let shareFile = null, cardBlob = null;
+  const track = (kind, ref) => { try { window.pdTrack && window.pdTrack(kind, ref); } catch (e) {} };
+  const cardRef = (e) => (e && e.tier === "secret" ? "relic" : (e && e.tier) || "dragon");
   async function prepShare(entry) {
     shareFile = null; cardBlob = null; $("hatch-share").hidden = true;
     const c = await card(entry);
@@ -632,7 +634,7 @@
   }
   $("hatch-share").addEventListener("click", async () => {
     if (!shareFile || !shown) return;
-    try { await navigator.share({ files: [shareFile], text: postText(shown.entry, "view") }); } catch (e) {}
+    try { await navigator.share({ files: [shareFile], text: postText(shown.entry, "view") }); track("share", cardRef(shown.entry)); } catch (e) {}
   });
   $("hatch-save").addEventListener("click", async () => {
     if (!shown) return;
@@ -645,9 +647,11 @@
       btn.textContent = label; btn.disabled = false;
     }
     if (!b) return;
+    track("save", cardRef(entry));
     const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `pdtools-${entry.key}-dragon.png`;
     document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   });
+  $("hatch-post").addEventListener("click", () => { if (shown) track("share", cardRef(shown.entry)); });
   $("hatch-shelf").addEventListener("click", () => { closeSheet(hatchEl); setTimeout(openDex, 260); });
   $("hatch-close").addEventListener("click", () => closeSheet(hatchEl));
 

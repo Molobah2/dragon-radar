@@ -233,13 +233,14 @@
   const msg = (t) => { $("myweek-msg").textContent = t; };
   const blob = () => new Promise((res) => { try { cv.toBlob(res, "image/png"); } catch (e) { res(null); } });
   let shareTimer = 0;
+  const track = (kind, ref) => { try { window.pdTrack && window.pdTrack(kind, ref); } catch (e) {} };
   function refreshShare() {
     clearTimeout(shareTimer);
     shareTimer = setTimeout(async () => {
       const b = await blob();
       const file = b && new File([b], "my-week-pdtools.png", { type: "image/png" });
       $("myweek-share").hidden = !(file && navigator.canShare && navigator.canShare({ files: [file] }));
-      $("myweek-share").onclick = async () => { try { await navigator.share({ files: [file], text: postText() }); } catch (e) { /* cancelled */ } };
+      $("myweek-share").onclick = async () => { try { await navigator.share({ files: [file], text: postText() }); track("share", "myweek"); } catch (e) { /* cancelled */ } };
     }, 300);
   }
 
@@ -255,10 +256,12 @@
   function close() { wrap.classList.remove("open"); document.body.classList.remove("sheet-open"); setTimeout(() => { if (!wrap.classList.contains("open")) wrap.hidden = true; }, 250); }
   document.querySelectorAll("[data-myweek]").forEach((b) => b.addEventListener("click", open));
   $("myweek-close").addEventListener("click", close);
+  $("myweek-post").addEventListener("click", () => track("share", "myweek"));
   wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
   $("myweek-save").addEventListener("click", async () => {
     const b = await blob();
     if (!b) { msg("Long press the card to save it."); return; }
+    track("save", "myweek");
     const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "my-week-pdtools.png";
     document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
     msg("Saved. Attach it to your post on X.");

@@ -342,8 +342,77 @@ def create_app(cfg: Config | None = None) -> Flask:
             if post is None or post.hidden:
                 return {"counted": False}
             post.opens = (post.opens or 0) + 1
+            habit(s, post_id)
             s.commit()
             return {"counted": True, "opens": post.opens}
+
+    def habit(s, post_id: str) -> None:
+        """Remember that this browser opened this post today (for the weekly habit number)."""
+        import json
+        from .events import record
+        if g.get("v2") and not cfg.v2_public:      # Jon's preview devices never count
+            return
+        try:
+            vid = str(json.loads(request.get_data(as_text=True)[:500] or "{}").get("vid", ""))[:32]
+        except (ValueError, AttributeError):
+            return
+        record(s, datetime.now(tz).date(), vid, "open", post_id)
+
+    # Anonymous moments: daily goal finished, a card shared or saved, the app installed.
+    ev_seen: dict[str, list[float]] = {}
+    pruned: dict = {"day": None}
+
+    @app.post("/api/ev")
+    def api_ev():
+        import json
+        from .events import prune, record
+        if g.get("v2") and not cfg.v2_public:
+            return {"counted": False}
+        try:
+            data = json.loads(request.get_data(as_text=True)[:500] or "{}")
+        except ValueError:
+            return {"counted": False}, 400
+        vid = str(data.get("vid", ""))[:32]
+        now_ts = time.time()
+        recent = [t for t in ev_seen.get(vid, []) if now_ts - t < 3600]
+        if len(recent) >= 120:                      # a person never does this many things in an hour
+            return {"counted": False}
+        if len(ev_seen) > 50000:
+            ev_seen.clear()
+        ev_seen[vid] = recent + [now_ts]
+        today = datetime.now(tz).date()
+        with Session() as s:
+            ok = record(s, today, vid, str(data.get("kind", ""))[:12], str(data.get("ref", ""))[:32])
+            if pruned["day"] != today:
+                prune(s, today)
+                pruned["day"] = today
+            s.commit()
+        return {"counted": ok}
+
+    # Visitor reports: a quiet flag on each card. Enough returning visitors hide a post until Jon looks.
+    report_ips: dict[str, list[float]] = {}
+
+    @app.post("/api/report")
+    def api_report():
+        import json
+        from .events import add_report
+        try:
+            data = json.loads(request.get_data(as_text=True)[:500] or "{}")
+        except ValueError:
+            return {"ok": False}, 400
+        ip = (request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0]).strip()
+        now_ts = time.time()
+        recent = [t for t in report_ips.get(ip, []) if now_ts - t < 86400]
+        if len(recent) >= 20:
+            return {"ok": False, "why": "limit"}
+        if len(report_ips) > 50000:
+            report_ips.clear()
+        report_ips[ip] = recent + [now_ts]
+        with Session() as s:
+            res = add_report(s, str(data.get("post", ""))[:32], str(data.get("vid", ""))[:32],
+                             str(data.get("reason", ""))[:12], datetime.now(tz).date())
+            s.commit()
+        return {"ok": res in ("ok", "dup"), "why": res}
 
     # Keeper card lookup. Uses only posts already in our database, so it costs nothing on X.
     @app.get("/api/keeper/<handle>")
@@ -776,6 +845,9 @@ def create_app(cfg: Config | None = None) -> Flask:
             fb_count = s.scalar(select(func.count()).select_from(Feedback))
             from .visits import summary
             visits = summary(s, datetime.now(tz).date())
+            from .events import report_queue, summary as habit_summary
+            habits = habit_summary(s, datetime.now(tz).date())
+            reports = report_queue(s)
         stale_after = cfg.stale_after_minutes
         if cfg.daily_post_cap > 0:  # testing mode only reads every few hours
             stale_after += int(24 * 60 * 10 / cfg.daily_post_cap)
@@ -783,7 +855,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         return render_template("admin.html", cfg=cfg, runs=runs, spend=spend, total_posts=total_posts,
                                hidden=hidden, blocked=blocked, keywords=keywords, stale=stale,
                                last_ok=last_ok, csrf=session.get("csrf"), feedback=feedback_rows,
-                               fb_avg=fb_avg, fb_count=fb_count, visits=visits)
+                               fb_avg=fb_avg, fb_count=fb_count, visits=visits,
+                               habits=habits, reports=reports)
 
     def post_id_from(value: str) -> str:
         # Accept a raw id or a full x.com / twitter.com status link
@@ -806,6 +879,23 @@ def create_app(cfg: Config | None = None) -> Flask:
                     s.add(BlockedAuthor(author_id=post.author_id))
                 s.commit()
         return redirect(url_for("admin"))
+
+    @app.post("/admin/report")
+    def admin_report():
+        require_admin(); check_csrf()
+        from .events import decide
+        pid = post_id_from(request.form.get("post", ""))
+        action = request.form.get("action", "")
+        if action not in ("hide", "keep"):
+            abort(400)
+        with Session() as s:
+            decide(s, pid, action)
+            if action == "hide" and request.form.get("block_author") == "1":
+                post = s.get(Post, pid)
+                if post and not s.get(BlockedAuthor, post.author_id):
+                    s.add(BlockedAuthor(author_id=post.author_id))
+            s.commit()
+        return redirect(url_for("admin") + "#reports")
 
     @app.post("/admin/unblock")
     def admin_unblock():

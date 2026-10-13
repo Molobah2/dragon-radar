@@ -138,6 +138,35 @@ class DailyCount(Base):
     count: Mapped[int] = mapped_column(Integer, default=0)
 
 
+class Event(Base):
+    """Anonymous moments that tell us if the site works: a post opened, the daily goal finished, a card shared,
+    the app added to a home screen. Keyed by the browser's own random number, never a name or an address.
+    One row per browser, day, kind and item, so repeats never inflate anything."""
+    __tablename__ = "events"
+    day: Mapped[datetime] = mapped_column(Date, primary_key=True)
+    vid: Mapped[str] = mapped_column(String(32), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(12), primary_key=True)
+    ref: Mapped[str] = mapped_column(String(32), primary_key=True, default="")
+
+
+class Report(Base):
+    """A visitor flagged a post (spam, off topic, harmful). One report per browser per post."""
+    __tablename__ = "reports"
+    post_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    vid: Mapped[str] = mapped_column(String(32), primary_key=True)
+    reason: Mapped[str] = mapped_column(String(12), default="spam")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+
+
+class ReportStatus(Base):
+    """What happened to a reported post: open (waiting for Jon), auto (hidden by the community until Jon looks),
+    hidden (Jon hid it) or kept (Jon looked and kept it, new reports no longer hide it)."""
+    __tablename__ = "report_status"
+    post_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    status: Mapped[str] = mapped_column(String(8), default="open")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class Setting(Base):
     __tablename__ = "settings"
     key: Mapped[str] = mapped_column(String(64), primary_key=True)

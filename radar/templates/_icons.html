@@ -2,6 +2,9 @@
   {% endif %}<link rel="icon" href="{{ asset('brand/badge-64.png') }}" type="image/png" sizes="64x64">
   <link rel="icon" href="{{ asset('brand/badge-32.png') }}" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="{{ asset('brand/badge-180.png') }}">
+  <meta name="apple-mobile-web-app-title" content="PD Tools">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
   {% set share_title = og_title | default("PD Tools · free community tools for Pocket Dragons Keepers") %}
   {% set share_desc = og_desc | default("Every Pocket Dragons post the community shares, Keepers to follow and handy helpers, all in one place. Free, unofficial and made by a fellow Keeper.") %}

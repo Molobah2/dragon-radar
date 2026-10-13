@@ -1237,3 +1237,100 @@ def test_cards_pop_up_for_moments_not_every_day(cfg, Session):
         assert f'"{k}"' in data.split("art2d")[1].split("}")[0]
     js = c.get("/static/dragons.js").get_data(as_text=True)
     assert "window.pdCard" in js and "HATCHED BY" in js and "daily card" not in js
+
+
+def test_habit_number_counts_keepers_who_open_five_posts(cfg, Session):
+    app = create_app(cfg)
+    with Session() as s:
+        for i in range(6):
+            s.add(Post(id=str(100 + i), author_id="a", author_username="u", text="hi", created_at=utcnow()))
+        s.commit()
+    c = app.test_client()
+    a, b = "a" * 32, "b" * 32
+    for i in range(5):
+        c.post(f"/api/open/{100 + i}", data=json.dumps({"vid": a}), content_type="text/plain",
+               headers={"X-Forwarded-For": f"1.1.1.{i}"})
+    for i in range(3):
+        c.post(f"/api/open/{100 + i}", data=json.dumps({"vid": b}), content_type="text/plain",
+               headers={"X-Forwarded-For": f"2.2.2.{i}"})
+    c.post("/api/open/105", headers={"X-Forwarded-For": "3.3.3.3"})       # old pages without a vid still count opens
+    ev = lambda kind, ref="", vid=a: c.post("/api/ev", data=json.dumps({"vid": vid, "kind": kind, "ref": ref}),
+                                            content_type="text/plain").get_json()["counted"]
+    assert ev("goal") is True and ev("goal") is False                  # once a day
+    assert ev("share", "rare") is True and ev("save", "myweek") is True and ev("install") is True
+    assert ev("hack") is False and ev("share", "<script>") is False and ev("goal", vid="nope") is False
+    from radar.events import summary
+    today = datetime.now(ZoneInfo(cfg.timezone)).date()
+    with Session() as s:
+        out = summary(s, today)
+    assert out["habit"] == 1 and out["openers"] == 2 and out["goals_today"] == 1
+    assert dict(out["shares"]) == {"rare": 1} and dict(out["saves"]) == {"myweek": 1} and out["installs_week"] == 1
+    with c.session_transaction() as sess:
+        sess["admin"] = True
+    page = c.get("/admin").get_data(as_text=True)
+    assert "Is it becoming a habit?" in page and "Reported posts" in page
+
+
+def test_preview_devices_do_not_count_toward_habits(cfg, Session):
+    cfg.preview_key = "secret-preview-phrase-123"
+    app = create_app(cfg)
+    with Session() as s:
+        s.add(Post(id="7", author_id="a", author_username="u", text="hi", created_at=utcnow()))
+        s.commit()
+    c = app.test_client()
+    c.get("/preview/secret-preview-phrase-123")
+    c.post("/api/open/7", data=json.dumps({"vid": "a" * 32}), content_type="text/plain")
+    assert c.post("/api/ev", data=json.dumps({"vid": "a" * 32, "kind": "goal"}), content_type="text/plain").get_json()["counted"] is False
+    from radar.db import Event
+    with Session() as s:
+        assert s.scalar(select(func.count()).select_from(Event)) == 0
+
+
+def test_reports_hide_a_post_only_when_returning_visitors_agree(cfg, Session):
+    from radar.db import Keeper, ReportStatus, Visitor
+    app = create_app(cfg)
+    with Session() as s:
+        s.add(Post(id="50", author_id="s", author_username="spammer", text="claim now", created_at=utcnow()))
+        s.add(Post(id="51", author_id="k", author_username="goodkeeper", text="gm", created_at=utcnow()))
+        s.add(Keeper(key="goodkeeper", username="goodkeeper", verified=True))
+        for ch in "abcde":
+            s.add(Visitor(vid=ch * 32, days=2 if ch in "abcd" else 1))
+        s.commit()
+    c = app.test_client()
+    rep = lambda pid, vid, why="spam": c.post("/api/report", data=json.dumps({"post": pid, "vid": vid, "reason": why}),
+                                              content_type="text/plain").get_json()
+    assert rep("50", "e" * 32)["ok"] is True                             # a brand new browser
+    assert rep("50", "a" * 32)["ok"] is True and rep("50", "a" * 32)["why"] == "dup"
+    assert rep("50", "b" * 32, "offtopic")["ok"] is True
+    with Session() as s:
+        assert s.get(Post, "50").hidden is False                         # only 2 returning visitors so far
+    rep("50", "c" * 32)
+    with Session() as s:
+        assert s.get(Post, "50").hidden is True and s.get(ReportStatus, "50").status == "auto"
+    for ch in "abc":
+        rep("51", ch * 32, "harm")
+    with Session() as s:
+        assert s.get(Post, "51").hidden is False                         # verified Keepers are never hidden by reports
+    assert rep("50", "x" * 32)["ok"] is False and rep("abc", "a" * 32)["ok"] is False
+    assert rep("50", "d" * 32, "nonsense")["ok"] is False
+    # Jon keeps it: it comes back and new reports no longer hide it
+    with c.session_transaction() as sess:
+        sess["admin"] = True; sess["csrf"] = "t"
+    page = c.get("/admin").get_data(as_text=True)
+    assert "Hidden by reports, please check" in page and "@spammer" in page
+    c.post("/admin/report", data={"csrf": "t", "post": "50", "action": "keep"})
+    with Session() as s:
+        assert s.get(Post, "50").hidden is False and s.get(ReportStatus, "50").status == "kept"
+    rep("50", "d" * 32)
+    with Session() as s:
+        assert s.get(Post, "50").hidden is False
+    c.post("/admin/report", data={"csrf": "t", "post": "50", "action": "hide", "block_author": "1"})
+    with Session() as s:
+        assert s.get(Post, "50").hidden is True and s.get(BlockedAuthor, "s") is not None
+
+
+def test_report_button_and_install_invite_are_on_the_page(cfg, Session):
+    page = create_app(cfg).test_client().get("/friends").get_data(as_text=True)
+    assert 'id="report"' in page and 'data-why="spam"' in page and "data-install" in page and 'id="install-nudge"' in page
+    man = json.loads(open("radar/static/manifest.webmanifest").read())
+    assert any(i["sizes"] == "512x512" for i in man["icons"]) and man["start_url"] == "/friends"

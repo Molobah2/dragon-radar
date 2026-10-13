@@ -163,10 +163,13 @@
   function close() { wrap.classList.remove("open"); document.body.classList.remove("sheet-open"); setTimeout(() => { if (!wrap.classList.contains("open")) wrap.hidden = true; }, 250); }
   $("weekly-open").addEventListener("click", open);
   $("weekly-close").addEventListener("click", close);
+  const track = (kind) => { try { window.pdTrack && window.pdTrack(kind, "weekly"); } catch (e) {} };
+  $("weekly-post").addEventListener("click", () => track("share"));
   wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
   $("weekly-save").addEventListener("click", () => {
     cv.toBlob((blob) => {
       if (!blob) { $("weekly-msg").textContent = "Long press the card to save it."; return; }
+      track("save");
       const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "pdtools-week.png";
       document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
       $("weekly-msg").textContent = "Saved. Attach it to your post on X.";

@@ -88,6 +88,24 @@
       </footer>
     </div></div>
   </div>
+  <div class="install-nudge" id="install-nudge" role="dialog" aria-label="Add to your home screen" hidden>
+    <img src="{{ asset('brand/badge-96.webp') }}" alt="" width="40" height="40">
+    <span class="in-text"><b>Keep PD Tools one tap away</b><small>Add it to your home screen, next to X</small></span>
+    <button class="btn btn-go in-add" type="button" data-install>Add</button>
+    <button class="in-x" type="button" data-nudge-close aria-label="Not now">&times;</button>
+  </div>
+  <div class="sheet-wrap" id="install-how" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="install-title">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <h3 id="install-title">Add to your home screen</h3>
+      <ol class="steps install-steps">
+        <li>Tap the Share button in Safari, the square with an arrow.</li>
+        <li>Scroll down and choose Add to Home Screen.</li>
+        <li>Tap Add. PD Tools now opens like an app.</li>
+      </ol>
+      <div class="sheet-actions"><button class="btn btn-go" type="button" data-install-close>Got it</button></div>
+    </div>
+  </div>
   {% set here = request.path %}
   <nav class="tabbar" aria-label="Sections">
     <a href="{{ url_for('hub') }}" class="tab-i"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="26" height="26" class="tb-logo"><span>Home</span></a>

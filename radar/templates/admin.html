@@ -56,6 +56,72 @@
     .vcols .list li { display: flex; justify-content: space-between; }
   </style>
 
+  <section class="panel visitors" id="habit">
+    <h2>Is it becoming a habit?</h2>
+    <div class="stats">
+      <div class="stat stat-star"><span class="stat-num">{{ habits.habit }}</span><span class="muted">Keepers who opened {{ habits.habit_opens }}+ posts in the last 7 days</span></div>
+      <div class="stat"><span class="stat-num">{{ habits.openers }}</span><span class="muted">people who opened any post (7 days)</span></div>
+      <div class="stat"><span class="stat-num">{{ habits.goals_today }}</span><span class="muted">daily goals finished today</span></div>
+      <div class="stat"><span class="stat-num">{{ habits.goals_week }}</span><span class="muted">daily goals finished (7 days)</span></div>
+      <div class="stat"><span class="stat-num">{{ habits.installs_week }}</span><span class="muted">added to a home screen (7 days, {{ habits.installs_all }} in all)</span></div>
+    </div>
+    <div class="vcols">
+      <div><h3>The main number, week by week</h3>
+        <div class="hbars">{% for t in habits.habit_trend %}<div class="vbar"><b>{{ t.n }}</b><i style="height: {{ (100 * t.n / habits.habit_peak) | round(1) }}%"></i><span>to {{ t.end.strftime('%d %b') }}</span></div>{% endfor %}</div></div>
+      <div><h3>Daily goals finished (14 days)</h3>
+        <div class="vbars">{% for d in habits.goals %}<div class="vbar"><b>{{ d.n }}</b><i style="height: {{ (100 * d.n / habits.goals_peak) | round(1) }}%"></i><span>{{ d.day.strftime('%d') }}</span></div>{% endfor %}</div></div>
+    </div>
+    <div class="vcols">
+      <div><h3>Cards shared to X (7 days)</h3>
+        <ul class="list">{% for k, n in habits.shares %}<li>{{ k }} <b>{{ n }}</b></li>{% else %}<li class="muted">None yet</li>{% endfor %}</ul></div>
+      <div><h3>Cards saved as images (7 days)</h3>
+        <ul class="list">{% for k, n in habits.saves %}<li>{{ k }} <b>{{ n }}</b></li>{% else %}<li class="muted">None yet</li>{% endfor %}</ul></div>
+    </div>
+    <p class="muted">Counting started with this update. Each browser counts once per post, goal or card per day. Your own preview devices are not counted.</p>
+  </section>
+  <style>
+    .stat-star { background: linear-gradient(135deg, rgba(255,179,71,.18), rgba(240,100,63,.12)); }
+    .hbars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: end; height: 170px; margin: 10px 0 18px; }
+    .rep { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid rgba(29,36,51,.08); }
+    .rep:first-child { border-top: 0; }
+    .rep-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .rep-pill { font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: rgba(29,36,51,.08); }
+    .rep-pill.auto { background: #ffe1d6; color: #a2361a; } .rep-pill.open { background: #fff2c9; color: #7a5600; }
+    .rep-pill.hidden { background: #e3e6ee; } .rep-pill.kept { background: #dff3e3; color: #1d6b33; }
+    .rep-text { white-space: normal; color: var(--ink-soft); }
+    .rep-act { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .rep-act form { display: inline-flex; gap: 8px; align-items: center; }
+  </style>
+
+  <section class="panel" id="reports">
+    <h2>Reported posts</h2>
+    <p class="muted">Visitors can flag a post as spam, off topic or harmful. When {{ 3 }} people who came back on another day agree, the post steps aside until you decide. Team posts and verified Keepers are never hidden by reports alone.</p>
+    {% for r in reports %}
+      <div class="rep">
+        <div class="rep-top">
+          <span class="rep-pill {{ r.status }}">{{ {"auto": "Hidden by reports, please check", "open": "Waiting", "hidden": "You hid it", "kept": "You kept it"}[r.status] }}</span>
+          <b>{{ r.count }} report{{ "" if r.count == 1 else "s" }}</b>
+          <span class="muted">{% for name, c in r.reasons %}{{ name }} ({{ c }}){% if not loop.last %}, {% endif %}{% endfor %}</span>
+          <a href="https://x.com/i/status/{{ r.id }}" target="_blank" rel="noopener">@{{ r.user }}</a>
+        </div>
+        <div class="rep-text">{{ r.text }}</div>
+        <div class="rep-act">
+          {% if r.status != "hidden" %}<form method="post" action="{{ url_for('admin_report') }}">
+            <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="post" value="{{ r.id }}"><input type="hidden" name="action" value="hide">
+            <label class="toggle"><input type="checkbox" name="block_author" value="1"><span>Also block author</span></label>
+            <button class="btn btn-go">Hide</button>
+          </form>{% endif %}
+          {% if r.status != "kept" %}<form method="post" action="{{ url_for('admin_report') }}">
+            <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="post" value="{{ r.id }}"><input type="hidden" name="action" value="keep">
+            <button class="btn btn-soft">{{ "Keep and show again" if r.hidden else "Keep" }}</button>
+          </form>{% endif %}
+        </div>
+      </div>
+    {% else %}
+      <p class="muted">No reports. Quiet meadow.</p>
+    {% endfor %}
+  </section>
+
   <section class="panel">
     <h2>Tester ratings</h2>
     <p>{{ fb_count or 0 }} ratings{% if fb_avg %}, average {{ "%.1f"|format(fb_avg) }} out of 5{% endif %}.</p>

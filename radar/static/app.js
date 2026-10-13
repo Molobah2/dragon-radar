@@ -31,6 +31,9 @@
   let showOpened = !!store.get("radar:showOpened", false);
   $("showOpened").checked = showOpened;
   const unavailable = new Set();
+  // posts this visitor reported stay out of their feed
+  const reported = store.get("pd:reported", []) || [];
+  reported.forEach((id) => unavailable.add(id));
   let shown = BATCH;
 
   // ---------- helpers ----------
@@ -45,6 +48,7 @@
     for (const k of kids) n.append(k);
     return n;
   };
+  const FLAG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>';
   const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 11L11 5M6 5h5v5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const pool = () => posts.filter((p) => !unavailable.has(p.id));
   let needsLove = !!store.get("radar:needsLove", false);
@@ -114,7 +118,7 @@
       const fans = store.get("pd:authors", {}) || {}, key = (post.user || "").toLowerCase();
       if (key) { fans[key] = (fans[key] || 0) + 1; store.set("pd:authors", fans); }
     }
-    try { fetch(`/api/open/${id}`, { method: "POST", keepalive: true }); } catch (e) {}
+    try { fetch(`/api/open/${id}`, { method: "POST", keepalive: true, headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: (() => { try { return localStorage.getItem("pd:vid") || ""; } catch (e) { return ""; } })() }) }); } catch (e) {}
     window.meadow && window.meadow.cheer();
     counts(true);
     if (!card) return;
@@ -195,6 +199,22 @@
   }
 
   // ---------- my progress: save under a short code, restore on another device ----------
+  // ---------- report a post: spam, off topic or harmful. Jon reviews every one ----------
+  let reportId = null;
+  function openReport(id) { reportId = id; openSheet("report"); }
+  $("report-close").addEventListener("click", () => closeSheet("report"));
+  $("report").addEventListener("click", (e) => { if (e.target === $("report")) closeSheet("report"); });
+  document.querySelectorAll("#report [data-why]").forEach((b) => b.addEventListener("click", () => {
+    const id = reportId; if (!id) return;
+    let vid = ""; try { vid = localStorage.getItem("pd:vid") || ""; } catch (e) { /* private mode */ }
+    fetch("/api/report", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ post: id, vid, reason: b.dataset.why }) }).catch(() => {});
+    closeSheet("report");
+    reported.push(id); store.set("pd:reported", reported.slice(-300));
+    unavailable.add(id);
+    const card = cards.get(id);
+    if (card) { card.classList.add("leaving"); setTimeout(render, 360); } else render();
+    toast("Thank you. The post is gone from your feed and Jon will take a look.");
+  }));
   function openSheet(id) { $(id).hidden = false; requestAnimationFrame(() => $(id).classList.add("open")); document.body.classList.add("sheet-open"); }
   function closeSheet(id) { $(id).classList.remove("open"); document.body.classList.remove("sheet-open"); setTimeout(() => { if (!$(id).classList.contains("open")) $(id).hidden = true; }, 250); }
   const pgMsg = (t, ok) => { $("pg-msg").textContent = t; $("pg-msg").className = "kp-msg " + (ok ? "ok" : "no"); };
@@ -391,7 +411,9 @@
       el("header", { class: "card-head" }, avatar,
         el("a", { class: "who", href: `https://x.com/${p.user}`, target: "_blank", rel: "noopener" },
           el("b", { class: "name" }, p.name || p.user), el("span", { class: "handle" }, `@${p.user}`)),
-        el("a", { class: "xmark", href: url, target: "_blank", rel: "noopener", title: "View on X", html: xLogo })),
+        el("a", { class: "xmark", href: url, target: "_blank", rel: "noopener", title: "View on X", html: xLogo }),
+        p.team ? "" : el("button", { class: "flag", type: "button", title: "Report this post", "aria-label": "Report this post", html: FLAG,
+          onclick: () => openReport(p.id) })),
       el("a", { class: "text", href: url, target: "_blank", rel: "noopener", onclick: () => markOpened(p.id, card) },
         text || "(no text)"),
       el("div", { class: "meta" }, ...chips, el("span", { class: "reach" + (p.opens ? "" : " none"), title: p.opens ? `${p.opens} Keeper${p.opens === 1 ? "" : "s"} opened this post` : "Nobody has opened this yet. Be the first!" },

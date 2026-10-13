@@ -123,6 +123,7 @@
         {% if v2 %}<button class="btn btn-soft keeper-btn side-row" data-myweek type="button">{{ ico("sparkle", 22) }}<span class="sr-text">My week card</span><i class="sr-go" aria-hidden="true"></i></button>
         <button class="btn btn-soft keeper-btn side-row" data-dex type="button">{{ ico("hatch", 22) }}<span class="sr-text">My dragons</span><i class="sr-go" aria-hidden="true"></i></button>{% endif %}
         <a class="btn btn-soft keeper-btn side-row" href="{{ url_for('keepers_page') }}">{{ ico("shield", 22) }}<span class="sr-text">Find Keepers to follow</span><i class="sr-go" aria-hidden="true"></i></a>
+        <button class="btn btn-soft keeper-btn side-row" data-install type="button" hidden>{{ ico("plus", 22) }}<span class="sr-text">Add to your home screen</span><i class="sr-go" aria-hidden="true"></i></button>
         <button class="btn btn-soft replay side-row" id="replay" type="button">{{ ico("paw", 22) }}<span class="sr-text">Watch the meadow again</span><i class="sr-go" aria-hidden="true"></i></button>
       </div>
     </aside>
@@ -142,6 +143,19 @@
         <button class="btn btn-soft" id="ideas-shuffle" type="button">Shuffle</button>
         <button class="btn btn-soft" id="ideas-close" type="button">Close</button>
       </div>
+    </div>
+  </div>
+  <div class="sheet-wrap" id="report" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="report-title">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <h3 id="report-title">Report this post</h3>
+      <p class="sheet-sub">Thank you for keeping the meadow clean. Jon checks every report.</p>
+      <div class="report-why">
+        <button class="btn btn-soft" type="button" data-why="spam">Spam or scam</button>
+        <button class="btn btn-soft" type="button" data-why="offtopic">Not about Pocket Dragons</button>
+        <button class="btn btn-soft" type="button" data-why="harm">Rude or harmful</button>
+      </div>
+      <div class="sheet-actions"><button class="btn btn-soft" id="report-close" type="button">Cancel</button></div>
     </div>
   </div>
   <div class="sheet-wrap" id="progress" hidden>
