@@ -20,7 +20,11 @@
   // line up on all 7. Positions are fractions of the card. Each background has its own aura effect.
   // The safe area for the name: inside the page's printed frame, clear of the corner ornaments, the slanted
   // outer edge and the paw print. Measured on the artwork; every name is fitted inside it by its real ink.
-  const SAFE = { x0: 0.5134, x1: 0.6045, y0: 0.5, y1: 0.592 };
+  // The page is drawn in slight perspective: its printed frame rises about 4.5 degrees to the right. The name is
+  // centred on the page's middle line (the paw print sits on it too) and written along that slope, inside a
+  // safe area clear of the frame, the corner ornaments and the paw print. At most 10 letters on a line.
+  const PAGE = { cx: 0.5636, cy: 0.546, w: 0.0911, h: 0.092, tilt: -4.5 * Math.PI / 180 };
+  const MAX_LINE = 10;
   const PAW = { x: 0.566, y: 0.636 };
   const BOOK = { x0: 0.345, y0: 0.432, x1: 0.655, y1: 0.752 };
   const CARDS = [
@@ -115,52 +119,42 @@
     });
   }
 
-  // ---------- fitting the name inside the safe area ----------
-  // Sizes come from the ink itself (script letters curl past their nominal width). A name that would be too
-  // small on one line moves onto two, split at a natural point (after _, before a capital, before numbers);
-  // a word is only cut in half when the name would otherwise be too small to read.
+  // ---------- fitting the name on the page ----------
+  // Names longer than 10 letters drop to a second line, at a natural point when one fits (after _, before a
+  // capital, before numbers; the most balanced one wins), otherwise after the 10th letter. Sizes come from the
+  // ink itself, so curly script letters never spill past the safe area.
   const inkBox = (t) => { const m = ctx.measureText(t); return { w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight, l: m.actualBoundingBoxLeft, a: m.actualBoundingBoxAscent, d: m.actualBoundingBoxDescent }; };
   const nameFont = (sz) => `700 ${sz}px "PD Script", "Georgia", serif`;
-  function fitLines(lines, W, H) {
-    const bw = (SAFE.x1 - SAFE.x0) * W, bh = (SAFE.y1 - SAFE.y0) * H;
-    let sz = H * 0.085;
-    for (let i = 0; i < 40; i++) {
-      ctx.font = nameFont(sz);
-      const bs = lines.map(inkBox), gap = sz * 0.12;
-      const w = Math.max(...bs.map((b) => b.w)), h = bs.reduce((t, b) => t + b.a + b.d, 0) + gap * (lines.length - 1);
-      if (w <= bw && h <= bh) return { sz, bs, gap, h };
-      sz *= Math.min(0.97, Math.sqrt(Math.min(bw / w, bh / h)));
+  function splitName(text) {
+    const h = text.replace(/^@/, "");
+    if (h.length <= MAX_LINE) return ["@" + h];
+    let best = -1, score = 1e9;
+    for (let i = 2; i < h.length; i++) {
+      const p = h[i - 1], c = h[i];
+      const natural = p === "_" || (/[a-z]/.test(p) && /[A-Z]/.test(c)) || (/\D/.test(p) && /\d/.test(c));
+      const sc = Math.abs(h.length / 2 - i) - (p === "_" ? 0.5 : 0);             // an underscore wins a tie
+      if (natural && i <= MAX_LINE && h.length - i <= MAX_LINE && sc < score) { best = i; score = sc; }
     }
-    ctx.font = nameFont(sz);
-    return { sz, bs: lines.map(inkBox), gap: sz * 0.12, h: bh };
+    // no natural break: 10 letters, then the rest; but never leave one or two letters alone on a line
+    const cut = best > 0 ? best : (h.length - MAX_LINE <= 2 ? Math.ceil(h.length / 2) : MAX_LINE);
+    const rest = h.slice(cut);
+    return ["@" + h.slice(0, cut), ...(rest.length > MAX_LINE ? [rest.slice(0, MAX_LINE), rest.slice(MAX_LINE)] : [rest])];
   }
-  let laidFor = "";
-  let laid = null;
+  let laidFor = "", laid = null;
   function layoutName(text, W, H) {
     const key = `${text}|${W}|${H}`;
     if (laidFor === key) return laid;
-    let lines = [text], r = fitLines(lines, W, H);
-    if (r.sz < H * 0.04 && text.length > 5) {
-      const h = text.replace(/^@/, ""), n = h.length, natural = [];
-      for (let i = 2; i < n; i++) {
-        const p = h[i - 1], c = h[i];
-        if (p === "_" || (/[a-z]/.test(p) && /[A-Z]/.test(c)) || (/\D/.test(p) && /\d/.test(c))) natural.push(i);
-      }
-      let best = null;
-      natural.forEach((i) => {
-        const two = ["@" + h.slice(0, i), h.slice(i)], r2 = fitLines(two, W, H);
-        if (!best || r2.sz > best.r.sz + 0.5 || (Math.abs(r2.sz - best.r.sz) <= 0.5 && h[i - 1] === "_")) best = { two, r: r2 };
-      });
-      if (best && best.r.sz > r.sz * 1.15) { lines = best.two; r = best.r; }
-      else if (r.sz < H * 0.026) {
-        const k = Math.ceil(n / 2), two = ["@" + h.slice(0, k), h.slice(k)], r2 = fitLines(two, W, H);
-        if (r2.sz > r.sz) { lines = two; r = r2; }
-      }
+    const lines = splitName(text), bw = PAGE.w * W, bh = PAGE.h * H;
+    let sz = H * 0.07, bs = [], gap = 0, hh = 0;
+    for (let i = 0; i < 40; i++) {
+      ctx.font = nameFont(sz); bs = lines.map(inkBox); gap = sz * 0.14;
+      const w = Math.max(...bs.map((q) => q.w)); hh = bs.reduce((t, q) => t + q.a + q.d, 0) + gap * (lines.length - 1);
+      if (w <= bw && hh <= bh) break;
+      sz *= Math.min(0.97, Math.sqrt(Math.min(bw / w, bh / hh)));
     }
-    const cx = (SAFE.x0 + SAFE.x1) / 2 * W;
-    let y = (SAFE.y0 + SAFE.y1) / 2 * H - r.h / 2;
-    const rows = lines.map((t, i) => { const b = r.bs[i]; y += b.a; const row = { t, x: cx - b.w / 2 + b.l, left: cx - b.w / 2, y, w: b.w, a: b.a, d: b.d }; y += b.d + r.gap; return row; });
-    laidFor = key; laid = { sz: r.sz, rows };
+    let y = -hh / 2;                       // positions are relative to the page's centre, before the tilt
+    const rows = lines.map((t, i) => { const q = bs[i]; y += q.a; const row = { t, x: -q.w / 2 + q.l, left: -q.w / 2, y, w: q.w, a: q.a, d: q.d }; y += q.d + gap; return row; });
+    laidFor = key; laid = { sz, rows };
     return laid;
   }
 
@@ -199,6 +193,8 @@
     if (write > 0 && handle) {
       const L = layoutName(`@${handle}`, W, H), sz = L.sz, n = L.rows.length;
       const pulse = 0.75 + 0.25 * Math.sin(t * 2);
+      ctx.save();
+      ctx.translate(PAGE.cx * W, PAGE.cy * H); ctx.rotate(PAGE.tilt);     // write along the page's slope
       L.rows.forEach((row, i) => {
         const k = Math.max(0, Math.min(1, write * n - i));          // lines are written one after the other
         if (k <= 0) return;
@@ -221,6 +217,7 @@
           ctx.fillStyle = ng; ctx.beginPath(); ctx.arc(nx, ny, sz * 0.7, 0, Math.PI * 2); ctx.fill(); ctx.restore();
         }
       });
+      ctx.restore();
     }
 
     // the paw print glows like a seal once the name is written
