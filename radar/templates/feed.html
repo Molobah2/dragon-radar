@@ -189,6 +189,17 @@
           <div class="bm-hello"><b id="bm-name"></b><span class="tag tier" id="bm-tier" hidden></span></div>
           <p class="bm-lead" id="bm-week"></p>
           <div class="bm-meter"><i id="bm-meter"></i></div>
+          <div class="sc" id="sc" hidden>
+            <h4>Your signing card</h4>
+            <p class="sheet-sub">Pick a background. Your X name is written into Blinky's book, ready to share on X.</p>
+            <div class="mw-designs sc-picks" id="sc-picks" role="group" aria-label="Card background"></div>
+            <canvas class="sc-canvas" id="sc-canvas" width="1280" height="724" role="img" aria-label="Your Book of Friends signing card"></canvas>
+            <div class="bm-row"><button class="btn btn-go" id="sc-share" type="button" hidden>Share</button>
+              <button class="btn btn-go" id="sc-video" type="button">Save video</button>
+              <button class="btn btn-soft" id="sc-image" type="button">Save image</button>
+              <a class="btn btn-soft" id="sc-post" href="#" target="_blank" rel="noopener">Post on X</a></div>
+            <p class="kp-msg" id="sc-msg" role="status"></p>
+          </div>
           <div class="bm-card" id="bm-card" hidden>
             <p class="bm-up" id="bm-up"></p>
             <img class="bm-card-img" id="bm-card-img" alt="Your Book of Friends tier card">
@@ -388,5 +399,6 @@
   <script src="{{ asset('dex-data.js') }}" defer></script>
   <script src="{{ asset('cardkit.js') }}" defer></script>
   <script src="{{ asset('dragons.js') }}" defer></script>
-  <script src="{{ asset('friends.js') }}" defer></script>{% endif %}
+  <script src="{{ asset('friends.js') }}" defer></script>
+  <script src="{{ asset('signcard.js') }}" defer></script>{% endif %}
 {% endblock %}

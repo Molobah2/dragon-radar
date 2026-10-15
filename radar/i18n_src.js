@@ -115,10 +115,12 @@
     xSrvTries: "Too many tries for now, try again later.", xSrvRated: "Thanks, we already got your rating.",
     offlineMsg: "You are offline. Your feed is still here, try again when you are back online.", bkOldPost: "That post is older than your code. Post the words again now, then paste the new link.",
     mwToday: "today only", mwFri: "opens Friday", mwFriB: "Opens Friday", mwWhen: "Opens every Friday from 00:00 UTC, for the whole day.", mwLocked: "🔒 My week card opens every Friday from 00:00 UTC, for the whole day.",
+    scT: "Your signing card", scSub: "Pick a background. Your X name is written into Blinky's book, ready to share on X.", scVid: "Save video", scN1: "Starry night", scN2: "Sunrise meadow", scN3: "Cherry blossom", scN4: "Candy clouds", scN5: "Emerald glass", scN6: "Autumn paper", scN7: "Golden hoard", scBg: "Card background", scAria: "Your Book of Friends signing card", scArt: "The card art did not load. Check your connection and try again.", pScMake: "Making your video... {n}", scVOk: "Video saved. Attach it to your post on X.", scVWebm: "Video saved. If X does not take it, save the image instead.", scVErr: "Could not make the video. Save the image instead.", scVNo: "This browser cannot make videos. Save the image instead.",
   };
 
   const T = {
     es: {
+      scT: "Tu tarjeta de firma", scSub: "Elige un fondo. Tu nombre de X queda escrito en el libro de Blinky, listo para compartir en X.", scVid: "Guardar video", scN1: "Noche estrellada", scN2: "Prado al amanecer", scN3: "Flor de cerezo", scN4: "Nubes de caramelo", scN5: "Vitral esmeralda", scN6: "Papel de otoño", scN7: "Tesoro dorado", scBg: "Fondo de la tarjeta", scAria: "Tu tarjeta de firma del Libro de Amigos", scArt: "No se cargó la imagen de la tarjeta. Revisa tu conexión e inténtalo de nuevo.", pScMake: "Creando tu video... {n}", scVOk: "Video guardado. Adjúntalo a tu publicación en X.", scVWebm: "Video guardado. Si X no lo acepta, guarda la imagen.", scVErr: "No se pudo crear el video. Guarda la imagen.", scVNo: "Este navegador no puede crear videos. Guarda la imagen.",
       mwToday: "solo hoy", mwFri: "abre el viernes", mwFriB: "Abre el viernes", mwWhen: "Abre cada viernes desde las 00:00 UTC, durante todo el día.", mwLocked: "🔒 Mi tarjeta de la semana abre cada viernes desde las 00:00 UTC, durante todo el día.",
       offlineMsg: "Estás sin conexión. Tu feed sigue aquí, vuelve a intentarlo cuando tengas conexión.", bkOldPost: "Esa publicación es más antigua que tu código. Publica las palabras de nuevo ahora y pega el nuevo enlace.",
       xAllPd: "Todo pdtools", xLang: "Idioma", xSound: "Sonido", xRating: "Valoración",
@@ -224,6 +226,7 @@
       h1Feed: "Algo se mueve<br>en el <span class=\"pop\">Criadero.</span>", h1Keepers: "Cada dragón<br>reconoce <span class=\"pop\">a los suyos.</span>",
     },
     fr: {
+      scT: "Ta carte de signature", scSub: "Choisis un fond. Ton nom X est écrit dans le livre de Blinky, prêt à partager sur X.", scVid: "Enregistrer la vidéo", scN1: "Nuit étoilée", scN2: "Prairie à l'aube", scN3: "Fleur de cerisier", scN4: "Nuages bonbon", scN5: "Vitrail émeraude", scN6: "Papier d'automne", scN7: "Trésor doré", scBg: "Fond de la carte", scAria: "Ta carte de signature du Livre des Amis", scArt: "L'image de la carte n'a pas chargé. Vérifie ta connexion et réessaie.", pScMake: "Création de ta vidéo... {n}", scVOk: "Vidéo enregistrée. Joins-la à ton post sur X.", scVWebm: "Vidéo enregistrée. Si X ne l'accepte pas, enregistre plutôt l'image.", scVErr: "Impossible de créer la vidéo. Enregistre plutôt l'image.", scVNo: "Ce navigateur ne peut pas créer de vidéos. Enregistre plutôt l'image.",
       mwToday: "aujourd'hui seulement", mwFri: "ouvre vendredi", mwFriB: "Ouvre vendredi", mwWhen: "Ouvre chaque vendredi dès 00:00 UTC, toute la journée.", mwLocked: "🔒 Ma carte de la semaine ouvre chaque vendredi dès 00:00 UTC, toute la journée.",
       offlineMsg: "Tu es hors ligne. Ton fil est toujours là, réessaie quand tu seras reconnecté.", bkOldPost: "Cette publication est plus ancienne que ton code. Publie à nouveau le texte maintenant, puis colle le nouveau lien.",
       xAllPd: "Tout pdtools", xLang: "Langue", xSound: "Son", xRating: "Note",
@@ -329,6 +332,7 @@
       h1Feed: "Quelque chose bouge<br>dans <span class=\"pop\">l'Écloserie.</span>", h1Keepers: "Chaque dragon<br>reconnaît <span class=\"pop\">les siens.</span>",
     },
     pt: {
+      scT: "Seu cartão de assinatura", scSub: "Escolha um fundo. Seu nome do X fica escrito no livro do Blinky, pronto para compartilhar no X.", scVid: "Salvar vídeo", scN1: "Noite estrelada", scN2: "Campo ao amanhecer", scN3: "Flor de cerejeira", scN4: "Nuvens de algodão doce", scN5: "Vitral esmeralda", scN6: "Papel de outono", scN7: "Tesouro dourado", scBg: "Fundo do cartão", scAria: "Seu cartão de assinatura do Livro de Amigos", scArt: "A arte do cartão não carregou. Verifique sua conexão e tente de novo.", pScMake: "Criando seu vídeo... {n}", scVOk: "Vídeo salvo. Anexe à sua publicação no X.", scVWebm: "Vídeo salvo. Se o X não aceitar, salve a imagem.", scVErr: "Não foi possível criar o vídeo. Salve a imagem.", scVNo: "Este navegador não cria vídeos. Salve a imagem.",
       mwToday: "só hoje", mwFri: "abre na sexta", mwFriB: "Abre na sexta", mwWhen: "Abre toda sexta a partir das 00:00 UTC, o dia inteiro.", mwLocked: "🔒 Meu cartão da semana abre toda sexta a partir das 00:00 UTC, o dia inteiro.",
       offlineMsg: "Você está offline. Seu feed continua aqui, tente de novo quando voltar a ter conexão.", bkOldPost: "Essa publicação é mais antiga que o seu código. Publique as palavras de novo agora e cole o novo link.",
       xAllPd: "Todo o pdtools", xLang: "Idioma", xSound: "Som", xRating: "Avaliação",
@@ -434,6 +438,7 @@
       h1Feed: "Algo se agita<br>no <span class=\"pop\">Viveiro.</span>", h1Keepers: "Todo dragão<br>reconhece <span class=\"pop\">os seus.</span>",
     },
     tr: {
+      scT: "İmza kartın", scSub: "Bir arka plan seç. X adın Blinky'nin kitabına yazılır, X'te paylaşmaya hazır.", scVid: "Videoyu kaydet", scN1: "Yıldızlı gece", scN2: "Gün doğumu çayırı", scN3: "Kiraz çiçeği", scN4: "Şeker bulutlar", scN5: "Zümrüt vitray", scN6: "Sonbahar kağıdı", scN7: "Altın hazine", scBg: "Kart arka planı", scAria: "Dostlar Kitabı imza kartın", scArt: "Kart görseli yüklenmedi. Bağlantını kontrol edip tekrar dene.", pScMake: "Videon hazırlanıyor... {n}", scVOk: "Video kaydedildi. X gönderine ekle.", scVWebm: "Video kaydedildi. X kabul etmezse görseli kaydet.", scVErr: "Video oluşturulamadı. Görseli kaydet.", scVNo: "Bu tarayıcı video oluşturamıyor. Görseli kaydet.",
       mwToday: "sadece bugün", mwFri: "cuma açılır", mwFriB: "Cuma açılır", mwWhen: "Her cuma 00:00 UTC'den itibaren gün boyu açık.", mwLocked: "🔒 Haftam kartı her cuma 00:00 UTC'den itibaren gün boyu açık.",
       offlineMsg: "Çevrimdışısın. Akışın hâlâ burada, bağlantın geri gelince tekrar dene.", bkOldPost: "Bu gönderi kodundan daha eski. Metni şimdi yeniden paylaş, sonra yeni bağlantıyı yapıştır.",
       xAllPd: "Tüm pdtools", xLang: "Dil", xSound: "Ses", xRating: "Puan",
@@ -539,6 +544,7 @@
       h1Feed: "Bir şeyler kıpırdıyor<br><span class=\"pop\">Kuluçkada.</span>", h1Keepers: "Her ejderha<br><span class=\"pop\">kendinden olanı</span> tanır.",
     },
     ru: {
+      scT: "Твоя карточка подписи", scSub: "Выбери фон. Твоё имя в X будет вписано в книгу Blinky, готово для X.", scVid: "Сохранить видео", scN1: "Звёздная ночь", scN2: "Луг на рассвете", scN3: "Цветущая вишня", scN4: "Сахарные облака", scN5: "Изумрудный витраж", scN6: "Осенняя бумага", scN7: "Золотой клад", scBg: "Фон карточки", scAria: "Твоя карточка подписи Книги друзей", scArt: "Картинка карточки не загрузилась. Проверь соединение и попробуй ещё раз.", pScMake: "Создаём видео... {n}", scVOk: "Видео сохранено. Прикрепи его к посту в X.", scVWebm: "Видео сохранено. Если X его не примет, сохрани картинку.", scVErr: "Не удалось создать видео. Сохрани картинку.", scVNo: "Этот браузер не умеет создавать видео. Сохрани картинку.",
       mwToday: "только сегодня", mwFri: "откроется в пятницу", mwFriB: "Откроется в пятницу", mwWhen: "Открывается каждую пятницу с 00:00 UTC на весь день.", mwLocked: "🔒 Карточка недели открывается каждую пятницу с 00:00 UTC на весь день.",
       offlineMsg: "Нет соединения. Твоя лента на месте, попробуй снова, когда появится интернет.", bkOldPost: "Этот пост старше твоего кода. Опубликуй текст ещё раз сейчас и вставь новую ссылку.",
       xAllPd: "Весь pdtools", xLang: "Язык", xSound: "Звук", xRating: "Оценка",
@@ -644,6 +650,7 @@
       h1Feed: "Что то шевелится<br>в <span class=\"pop\">Инкубаторе.</span>", h1Keepers: "Каждый дракон<br>узнаёт <span class=\"pop\">своих.</span>",
     },
     vi: {
+      scT: "Thẻ ký tên của bạn", scSub: "Chọn một nền. Tên X của bạn được viết vào sách của Blinky, sẵn sàng chia sẻ trên X.", scVid: "Lưu video", scN1: "Đêm đầy sao", scN2: "Đồng cỏ bình minh", scN3: "Hoa anh đào", scN4: "Mây kẹo bông", scN5: "Kính màu ngọc lục bảo", scN6: "Giấy mùa thu", scN7: "Kho báu vàng", scBg: "Nền thẻ", scAria: "Thẻ ký tên Sách Bạn Bè của bạn", scArt: "Ảnh thẻ chưa tải được. Kiểm tra kết nối rồi thử lại.", pScMake: "Đang tạo video... {n}", scVOk: "Đã lưu video. Đính kèm vào bài đăng trên X.", scVWebm: "Đã lưu video. Nếu X không nhận, hãy lưu ảnh.", scVErr: "Không tạo được video. Hãy lưu ảnh.", scVNo: "Trình duyệt này không tạo được video. Hãy lưu ảnh.",
       mwToday: "chỉ hôm nay", mwFri: "mở vào thứ Sáu", mwFriB: "Mở vào thứ Sáu", mwWhen: "Mở mỗi thứ Sáu từ 00:00 UTC, suốt cả ngày.", mwLocked: "🔒 Thẻ tuần của tôi mở mỗi thứ Sáu từ 00:00 UTC, suốt cả ngày.",
       offlineMsg: "Bạn đang ngoại tuyến. Bảng tin vẫn còn đây, hãy thử lại khi có mạng.", bkOldPost: "Bài đăng đó cũ hơn mã của bạn. Hãy đăng lại đoạn chữ ngay bây giờ rồi dán liên kết mới.",
       xAllPd: "Tất cả pdtools", xLang: "Ngôn ngữ", xSound: "Âm thanh", xRating: "Đánh giá",
@@ -749,6 +756,7 @@
       h1Feed: "Có gì đó đang cựa quậy<br>trong <span class=\"pop\">Lò Ấp.</span>", h1Keepers: "Mỗi chú rồng<br>đều nhận ra <span class=\"pop\">đồng loại.</span>",
     },
     id: {
+      scT: "Kartu tanda tanganmu", scSub: "Pilih latar. Nama X kamu ditulis di buku Blinky, siap dibagikan di X.", scVid: "Simpan video", scN1: "Malam berbintang", scN2: "Padang saat fajar", scN3: "Bunga sakura", scN4: "Awan permen", scN5: "Kaca zamrud", scN6: "Kertas musim gugur", scN7: "Harta emas", scBg: "Latar kartu", scAria: "Kartu tanda tangan Buku Teman milikmu", scArt: "Gambar kartu tidak termuat. Periksa koneksi lalu coba lagi.", pScMake: "Membuat videomu... {n}", scVOk: "Video tersimpan. Lampirkan ke postinganmu di X.", scVWebm: "Video tersimpan. Jika X tidak menerimanya, simpan gambarnya saja.", scVErr: "Video tidak bisa dibuat. Simpan gambarnya saja.", scVNo: "Browser ini tidak bisa membuat video. Simpan gambarnya saja.",
       mwToday: "hanya hari ini", mwFri: "buka hari Jumat", mwFriB: "Buka hari Jumat", mwWhen: "Buka setiap Jumat mulai 00:00 UTC, sepanjang hari.", mwLocked: "🔒 Kartu mingguanku buka setiap Jumat mulai 00:00 UTC, sepanjang hari.",
       offlineMsg: "Kamu sedang offline. Feed kamu masih di sini, coba lagi saat sudah online.", bkOldPost: "Postingan itu lebih lama dari kodemu. Posting ulang teksnya sekarang, lalu tempel tautan barunya.",
       xAllPd: "Semua pdtools", xLang: "Bahasa", xSound: "Suara", xRating: "Penilaian",
@@ -854,6 +862,7 @@
       h1Feed: "Ada yang bergerak<br>di <span class=\"pop\">Penetasan.</span>", h1Keepers: "Setiap naga<br>mengenali <span class=\"pop\">sesamanya.</span>",
     },
     ko: {
+      scT: "내 서명 카드", scSub: "배경을 고르세요. 내 X 이름이 Blinky의 책에 적혀 X에 공유할 준비가 돼요.", scVid: "영상 저장", scN1: "별이 빛나는 밤", scN2: "해돋이 초원", scN3: "벚꽃", scN4: "솜사탕 구름", scN5: "에메랄드 스테인드글라스", scN6: "가을 종이", scN7: "황금 보물", scBg: "카드 배경", scAria: "내 친구의 책 서명 카드", scArt: "카드 그림을 불러오지 못했어요. 연결을 확인하고 다시 시도해 주세요.", pScMake: "영상을 만드는 중... {n}", scVOk: "영상이 저장됐어요. X 게시물에 첨부하세요.", scVWebm: "영상이 저장됐어요. X에서 받지 않으면 이미지를 저장하세요.", scVErr: "영상을 만들지 못했어요. 이미지를 저장하세요.", scVNo: "이 브라우저는 영상을 만들 수 없어요. 이미지를 저장하세요.",
       mwToday: "오늘만", mwFri: "금요일에 열림", mwFriB: "금요일에 열려요", mwWhen: "매주 금요일 00:00 UTC부터 하루 종일 열려요.", mwLocked: "🔒 내 주간 카드는 매주 금요일 00:00 UTC부터 하루 종일 열려요.",
       offlineMsg: "오프라인 상태예요. 피드는 그대로 있으니 다시 연결되면 시도해 주세요.", bkOldPost: "그 게시물은 코드보다 먼저 올라온 거예요. 지금 문구를 다시 올리고 새 링크를 붙여 넣어 주세요.",
       xAllPd: "pdtools 전체", xLang: "언어", xSound: "소리", xRating: "평점",
@@ -959,6 +968,7 @@
       h1Feed: "<span class=\"pop\">부화장</span>에서<br>무언가 꿈틀거려요.", h1Keepers: "모든 드래곤은<br><span class=\"pop\">자기 편</span>을 알아봐요.",
     },
     zh: {
+      scT: "你的签名卡", scSub: "选一个背景。你的 X 名字会写进 Blinky 的书里，可以直接分享到 X。", scVid: "保存视频", scN1: "星空之夜", scN2: "日出草原", scN3: "樱花", scN4: "糖果云朵", scN5: "翡翠彩窗", scN6: "秋日纸艺", scN7: "黄金宝藏", scBg: "卡片背景", scAria: "你的好友之书签名卡", scArt: "卡片图片没有加载。请检查网络后再试。", pScMake: "正在制作视频... {n}", scVOk: "视频已保存。把它附到你在 X 的帖子里。", scVWebm: "视频已保存。如果 X 不接受，请改为保存图片。", scVErr: "无法制作视频。请改为保存图片。", scVNo: "这个浏览器无法制作视频。请改为保存图片。",
       mwToday: "仅限今天", mwFri: "周五开放", mwFriB: "周五开放", mwWhen: "每周五 00:00 UTC 起全天开放。", mwLocked: "🔒 我的每周卡片每周五 00:00 UTC 起全天开放。",
       offlineMsg: "你现在离线了。你的动态还在，联网后再试一次。", bkOldPost: "那条帖子比你的代码更早。请现在重新发布这段文字，然后粘贴新链接。",
       xAllPd: "全部 pdtools", xLang: "语言", xSound: "声音", xRating: "评分",

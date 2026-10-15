@@ -1703,3 +1703,18 @@ def test_my_week_card_opens_only_on_friday_utc(cfg, Session):
     assert ("today only" in page) == is_fri and ("opens Friday" in page) == (not is_fri)
     cfg.myweek_always = True
     assert create_app(cfg).week_card_open(datetime(2026, 10, 13, tzinfo=utc))
+
+
+def test_book_signing_card_is_ready(cfg, Session):
+    c = v2_client(cfg)
+    page = c.get("/friends").get_data(as_text=True)
+    assert 'id="sc-canvas"' in page and "signcard.js" in page and "Your signing card" in page
+    js = c.get("/static/signcard.js").get_data(as_text=True)
+    assert "sign-cards/sign-" in js and "pdtools.xyz" in js
+    for i in range(1, 8):                                   # all 7 backgrounds are offered
+        assert f"id: {i}," in js
+    assert "avc1" in js                                     # X takes H.264 video, so that is tried first
+    font = c.get("/static/fonts/dancing-script-latin-700-normal.woff2")
+    assert font.status_code == 200 and len(font.get_data()) > 10_000
+    friends = c.get("/static/friends.js").get_data(as_text=True)
+    assert "pd:bookme" in friends                           # the book tells the card who signed

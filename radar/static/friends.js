@@ -77,6 +77,7 @@
 
   function showMe() {
     const st = (me && me.status) || "none";
+    window.pdBookMe = me; dispatchEvent(new CustomEvent("pd:bookme", { detail: me }));   // the signing card listens
     $("bm-none").hidden = st !== "none";
     $("bm-pending").hidden = st !== "pending";
     $("bm-done").hidden = st !== "confirmed";
