@@ -127,7 +127,11 @@
         </ol>
         <a class="faq-link" href="#faq">Is it safe? No login, nothing posts for you. Read the FAQ</a>
       </div>
-      <div class="side-actions">
+      <div class="side-menu" id="side-menu">
+      <button class="side-menu-btn" id="side-menu-btn" type="button" aria-expanded="false" aria-controls="side-actions" aria-haspopup="true">
+        {{ ico("egg", 30) }}<span class="smb-text"><b>My tools</b><small>Progress, dragons, Book of Friends and more</small></span><i class="smb-chev" aria-hidden="true"></i>
+      </button>
+      <div class="side-actions" id="side-actions">
         {% if cfg.keeper_card_open %}
         <button class="btn btn-go keeper-btn" id="keeper-open" type="button">My Keeper card</button>
         {% else %}
@@ -143,6 +147,7 @@
         <a class="btn btn-soft keeper-btn side-row" href="{{ url_for('keepers_page') }}">{{ ico("shield", 22) }}<span class="sr-text">Find Keepers to follow</span><i class="sr-go" aria-hidden="true"></i></a>
         <button class="btn btn-soft keeper-btn side-row" data-install type="button" hidden>{{ ico("plus", 22) }}<span class="sr-text">Add to your home screen</span><i class="sr-go" aria-hidden="true"></i></button>
         <button class="btn btn-soft replay side-row" id="replay" type="button">{{ ico("paw", 22) }}<span class="sr-text">Watch the meadow again</span><i class="sr-go" aria-hidden="true"></i></button>
+      </div>
       </div>
     </aside>
   </div>

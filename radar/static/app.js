@@ -271,6 +271,17 @@
       : `\u{1F9CA} Streak freeze used. A new one is ready in ${7 - dayGap(streak.fz, today())} days.`;
   }
 
+  // ---------- the tools menu: one button opens the list; choosing something, tapping outside or Escape closes it ----------
+  const sideMenu = $("side-menu");
+  if (sideMenu) {
+    const smBtn = $("side-menu-btn");
+    const setMenu = (open) => { sideMenu.classList.toggle("open", open); smBtn.setAttribute("aria-expanded", String(open)); };
+    smBtn.addEventListener("click", (e) => { e.stopPropagation(); setMenu(!sideMenu.classList.contains("open")); });
+    $("side-actions").addEventListener("click", (e) => { if (e.target.closest(".side-row, .keeper-btn")) setTimeout(() => setMenu(false), 0); });
+    document.addEventListener("click", (e) => { if (sideMenu.classList.contains("open") && !sideMenu.contains(e.target)) setMenu(false); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sideMenu.classList.contains("open")) { setMenu(false); smBtn.focus(); } });
+  }
+
   // ---------- my progress: save under a short code, restore on another device ----------
   // ---------- report a post: spam, off topic or harmful. Jon reviews every one ----------
   let reportId = null;
