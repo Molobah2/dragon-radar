@@ -1542,7 +1542,7 @@ def test_people_sharing_one_connection_each_count(cfg, Session):
         assert s.scalar(select(func.count()).select_from(Event).where(Event.kind == "open")) == 6   # but every browser's own habit counts
 
 
-def test_opens_stop_counting_quietly_after_50_a_day(cfg, Session):
+def test_opens_stop_counting_after_50_a_day_and_the_visitor_is_told(cfg, Session):
     from radar.db import Event
     from radar.web import OPENS_PER_DAY
     assert OPENS_PER_DAY == 50
@@ -1552,9 +1552,21 @@ def test_opens_stop_counting_quietly_after_50_a_day(cfg, Session):
             s.add(Post(id=str(5000 + i), author_id=f"a{i}", author_username=f"u{i}", text="hi", created_at=utcnow()))
         s.commit()
     c = app.test_client()
-    for i in range(55):
-        r = c.post(f"/api/open/{5000 + i}", data=json.dumps({"vid": "c" * 32}), content_type="text/plain")
-        assert r.status_code == 200 and "limit" not in r.get_data(as_text=True).lower()   # nothing tells the visitor
+    import radar.web as _w
+    _w.HABIT_GAP_S, gap = 0, _w.HABIT_GAP_S
+    try:
+        full = []
+        for i in range(55):
+            r = c.post(f"/api/open/{5000 + i}", data=json.dumps({"vid": "c" * 32}), content_type="text/plain")
+            assert r.status_code == 200
+            full.append(bool(r.get_json().get("full")))
+        # the 50 that count say nothing; every new one past the limit gets the friendly note
+        assert full == [False] * 50 + [True] * 5
+        # opening one that already counted today is not news
+        r = c.post("/api/open/5000", data=json.dumps({"vid": "c" * 32}), content_type="text/plain")
+        assert not r.get_json().get("full")
+    finally:
+        _w.HABIT_GAP_S = gap
     with Session() as s:
         assert s.scalar(select(func.count()).select_from(Event).where(Event.vid == "c" * 32)) == 50
     js = (Path(__file__).parent.parent / "radar" / "static" / "dragons.js").read_text()
@@ -1812,3 +1824,26 @@ def test_dragon_art_never_hatches_into_a_broken_picture():
     assert "imgCache.delete(key)" in js and "loadOnce" in js
     assert "await untilReady(entry, imgP)" in js and "pic.src = await imgP" not in js
     assert js.count("if (!art) return null;") == 2
+
+
+def test_gold_progress_says_how_many_weeks_are_done(cfg, Session):
+    """60 different Keepers in one week is Gold week 1 of 3, not Gold yet: the book says so plainly."""
+    from datetime import date
+    from radar.book import me
+    from radar.db import Event, Friend, FriendDevice
+    today = date(2026, 10, 20)
+    with Session() as s:
+        for i in range(61):
+            s.add(Post(id=str(7000 + i), author_id=f"g{i}", author_username=f"maker{i}", text="hi", created_at=utcnow()))
+        s.add(Friend(key="nastya", username="Nastya"))
+        s.add(FriendDevice(vid="9" * 32, key="nastya", username="Nastya", code="PDAAAA", confirmed=True))
+        for i in range(59):
+            s.add(Event(day=today, vid="9" * 32, kind="popen", ref=str(7000 + i)))
+        s.commit()
+        out = me(s, "9" * 32, today)
+        assert out["week"] == 59 and out["next"] == {"tier": "gold", "need": 60} and out["goldRun"] == 0 and out["goldWeeks"] == 3
+        s.add(Event(day=today, vid="9" * 32, kind="popen", ref="7059")); s.commit()
+        out = me(s, "9" * 32, today)
+        assert out["week"] == 60 and out["next"] is None and out["tier"] == "silver" and out["goldRun"] == 1
+    js = open("radar/static/friends.js", encoding="utf-8").read()
+    assert "Gold week ${me.goldRun} of ${gw} done" in js and "me.full" in js

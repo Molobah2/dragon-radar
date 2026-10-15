@@ -1236,3 +1236,5 @@ ol.bm-top li.bm-empty::before { content: none; }
 .bm-up { margin: 0 0 8px; font-weight: 800; font-size: 17px; color: var(--ink); }
 .bm-card-img { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; background: rgba(29, 36, 51, .08); box-shadow: 0 16px 34px -20px rgba(29, 36, 51, .7); }
 .bm-thank { display: flex; justify-content: center; width: 100%; margin-top: 10px; }
+#bm-week .bm-full { display: block; margin-top: 6px; font-weight: 700; color: #b4561a; }
+html.theme-dark #bm-week .bm-full { color: #ffb37a; }

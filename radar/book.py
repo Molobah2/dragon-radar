@@ -214,7 +214,12 @@ def one_tier(s, key: str, today: date) -> dict:
     devices = {key: [v for (v,) in s.execute(select(FriendDevice.vid).where(FriendDevice.key == key,
                                                                         FriendDevice.confirmed.is_(True))).all()]}
     w = [friend_breadth(s, today - timedelta(days=7 * i), devices).get(key, 0) for i in range(GOLD_WEEKS)]
-    return {"week": w[0], "tier": tier_of(w)}
+    run = 0                                       # weeks in a row at the Gold number, this week first
+    for n in w:
+        if n < TIERS[0][1]:
+            break
+        run += 1
+    return {"week": w[0], "tier": tier_of(w), "run": run}
 
 
 def public_book(s, today: date) -> dict:
@@ -254,4 +259,5 @@ def me(s, vid: str, today: date) -> dict:
     nxt = next(((name, need) for name, need in reversed(TIERS) if t.get("week", 0) < need), None)
     return {"status": "confirmed", "handle": dev.username, "tier": t.get("tier", ""), "week": t.get("week", 0),
             "next": {"tier": nxt[0], "need": nxt[1]} if nxt else None,
+            "goldRun": t.get("run", 0), "goldWeeks": GOLD_WEEKS,
             "supporters": supporters_of(s, dev.key, today)}

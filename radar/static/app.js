@@ -173,8 +173,18 @@
         if (key) { fans[key] = (fans[key] | 0) + 1; store.set("pd:authors", fans); }
       }
     }
-    if (fresh) try { fetch(`/api/open/${id}`, { method: "POST", keepalive: true, headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: (() => { try { return localStorage.getItem("pd:vid") || ""; } catch (e) { return ""; } })() }) }); } catch (e) {}
+    if (fresh) try {
+      fetch(`/api/open/${id}`, { method: "POST", keepalive: true, headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: (() => { try { return localStorage.getItem("pd:vid") || ""; } catch (e) { return ""; } })() }) })
+        .then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.full) dayFull(); }).catch(() => {});
+    } catch (e) {}
     counts(true);
+  }
+  // each device counts 50 opens a day toward tiers and relics; past that, say so once a day instead of staying silent
+  function dayFull() {
+    const day = new Date().toISOString().slice(0, 10);
+    if (store.get("pd:fullDay", "") === day) return;
+    store.set("pd:fullDay", day);
+    toast("\u{1F409} You reached today's 50 counted opens on this device. Your opens still show on each post, and they count toward your tiers again after midnight UTC.", 9000);
   }
   function undo(id) { delete opened[id]; save(); render(); }
   function setFoot(card, id) {

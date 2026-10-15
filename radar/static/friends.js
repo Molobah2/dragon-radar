@@ -96,8 +96,14 @@
     $("bm-tier").hidden = !me.tier;
     if (me.tier) { $("bm-tier").textContent = TIER[me.tier]; $("bm-tier").className = `tag tier tier-${me.tier}`; }
     const nx = me.next;
+    // Gold asks for its number three weeks running, so the line says exactly where they stand
+    const gw = me.goldWeeks || 3, extra = [];
+    if (nx) extra.push(el("span", "", `${nx.need - me.week} more for ${TIER[nx.tier]}.`));
+    if (nx && nx.tier === "gold") extra.push(el("span", "", `Gold needs ${nx.need} different Keepers ${gw} weeks in a row.`));
+    if (!nx && me.tier !== "gold" && me.goldRun) extra.push(el("span", "", `Gold week ${me.goldRun} of ${gw} done. Keep it up next week to stay on track.`));
+    if (me.full) extra.push(el("span", "bm-full", "You reached today's 50 counted opens on this device. They count again after midnight UTC."));
     $("bm-week").replaceChildren(el("span", "", me.week === 1 ? "This week you supported 1 Keeper." : `This week you supported ${me.week} different Keepers.`),
-      ...(nx ? [document.createTextNode(" "), el("span", "", `${nx.need - me.week} more for ${TIER[nx.tier]}.`)] : []));
+      ...extra.flatMap((x) => [document.createTextNode(" "), x]));
     $("bm-meter").style.width = `${Math.min(100, Math.round(100 * me.week / (nx ? nx.need : Math.max(1, me.week))))}%`;
     const list = $("bm-supporters");
     list.replaceChildren(...(me.supporters || []).map((s) => {

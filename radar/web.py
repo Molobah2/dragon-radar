@@ -512,44 +512,50 @@ def create_app(cfg: Config | None = None) -> Flask:
             seen_opens[key] = seen
             if bump:
                 s.execute(update(Post).where(Post.id == post_id).values(opens=func.coalesce(Post.opens, 0) + 1))
-            habit(s, post_id)                       # the weekly numbers count each browser, whatever the connection
+            full = habit(s, post_id) == "full"      # the weekly numbers count each browser, whatever the connection
             s.commit()
-            if not bump:
-                return {"counted": False}
-            return {"counted": True, "opens": s.scalar(select(Post.opens).where(Post.id == post_id))}
+            out = {"counted": bump}
+            if bump:
+                out["opens"] = s.scalar(select(Post.opens).where(Post.id == post_id))
+            if full:
+                out["full"] = True                  # today's counted opens are used up: the page says so kindly
+            return out
 
     habit_last: dict[str, float] = {}
     habit_conn: dict[tuple, int] = {}
 
-    def habit(s, post_id: str) -> None:
-        """Remember that this browser opened this post today (for the weekly habit number)."""
+    def habit(s, post_id: str) -> str:
+        """Remember that this browser opened this post today (for the weekly habit number).
+        Returns "full" when this browser has used up today's counted opens, otherwise ""."""
         import json
         from .events import record
         preview = bool(g.get("v2") and not cfg.v2_public)   # preview devices: counted for the book only, never in the admin numbers
         try:
             vid = str(_body(500).get("vid", ""))[:32]
         except (ValueError, AttributeError):
-            return
+            return ""
         today = datetime.now(tz).date()
         from .db import Event
         from .events import VID as VID_RE
         now_ts = time.time()
         if not VID_RE.match(vid) or now_ts - habit_last.get(vid, 0) < HABIT_GAP_S:
-            return                                  # faster than a person can open a post and read it
+            return ""                               # faster than a person can open a post and read it
         if len(habit_last) > 50000:
             for k in list(habit_last)[:10000]:
                 habit_last.pop(k, None)
         habit_last[vid] = now_ts
         day_key = (client_ip(), str(today))
         if habit_conn.get(day_key, 0) >= HABIT_PER_CONNECTION:
-            return
+            return ""
         if len(habit_conn) > 50000:
             habit_conn.clear()
         habit_conn[day_key] = habit_conn.get(day_key, 0) + 1
         if VID_RE.match(vid) and (s.scalar(select(func.count()).select_from(Event).where(
                 Event.day == today, Event.vid == vid, Event.kind.in_(("open", "popen")))) or 0) >= OPENS_PER_DAY:
-            return                                  # quietly: never shown to anyone
+            # an open already counted today is not news; a new one past the limit gets a friendly note
+            return "" if s.get(Event, (today, vid, "popen" if preview else "open", post_id)) else "full"
         record(s, today, vid, "popen" if preview else "open", post_id)
+        return ""
 
     # ---------- Blinky's Book of Friends (v2) ----------
     book_cache: dict = {"at": 0.0, "data": None, "tags": {}}
@@ -598,8 +604,16 @@ def create_app(cfg: Config | None = None) -> Flask:
     @v2_only
     def api_book_me():
         from .book import me
+        vid = request.args.get("vid", "")[:32]
         with Session() as s:
-            return jsonify(me(s, request.args.get("vid", "")[:32], datetime.now(tz).date()))
+            today = datetime.now(tz).date()
+            data = me(s, vid, today)
+            if data.get("status") == "confirmed":
+                from .db import Event
+                used = s.scalar(select(func.count()).select_from(Event).where(
+                    Event.day == today, Event.vid == vid, Event.kind.in_(("open", "popen")))) or 0
+                data["full"] = used >= OPENS_PER_DAY      # today's counted opens used up on this device
+            return jsonify(data)
 
     @app.post("/api/book/sign")
     @v2_only
