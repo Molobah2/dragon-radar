@@ -987,7 +987,11 @@ def create_app(cfg: Config | None = None) -> Flask:
                    "e": num(dex_in.get("e"), 1_000_000),
                    "s": {k: day(v) for k, v in s_in.items() if k in ("moon", "ember", "star") and day(v)}}
         book_vid = str(body.get("vid", ""))[:32] if g.get("v2") else ""
+        # today's daily goal count travels too, so a new device shows the same "x/20 Keeper posts today"
+        goal_in = body.get("goal") if isinstance(body.get("goal"), dict) else {}
+        goal_out = {"day": day(goal_in.get("day")), "n": num(goal_in.get("n"), 200)}
         data = _json.dumps({"opened": clean, "streak": {k: streak.get(k) for k in ("last", "count", "best", "fz")},
+                            **({"goal": goal_out} if goal_out["day"] and goal_out["n"] else {}),
                             **({"book_vid": book_vid} if book_vid else {}),
                             **({"dex": dex_out} if have or dex_out["e"] or dex_out["s"] else {})})
         if len(data) > 150_000:

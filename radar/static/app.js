@@ -262,7 +262,7 @@
   $("pg-save").addEventListener("click", async () => {
     $("pg-save").disabled = true;
     try {
-      const r = await fetch("/api/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ opened, streak, dex: store.get("pd:dex", null), vid: myVid() }) });
+      const r = await fetch("/api/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ opened, streak, goal: readGoal(), dex: store.get("pd:dex", null), vid: myVid() }) });
       const j = await r.json();
       if (!j.ok) throw new Error(j.message);
       $("pg-code-text").textContent = j.code; $("pg-code").hidden = false;
@@ -294,6 +294,14 @@
       if (s2.fz && (!streak.fz || s2.fz > streak.fz)) streak.fz = s2.fz;
       store.set("pd:streak", streak);
       const dexIn = mergeDex(j.dex);
+      // today's goal count: saved today on the other device, keep the higher number (yesterday's count never carries)
+      const gIn = j.goal || {};
+      if (gIn.day === today() && (gIn.n | 0) > 0) {
+        goal = readGoal();
+        if (goal.day !== today()) goal = { day: today(), n: 0 };
+        if ((gIn.n | 0) > goal.n) { goal.n = Math.min(200, gIn.n | 0); store.set("pd:goal", goal); }
+        showGoal();
+      }
       showStreak(); render();
       const bits = [added ? `${added} opened posts` : "", dexIn ? `${dexIn} dragon${dexIn === 1 ? "" : "s"}` : ""].filter(Boolean);
       if (j.book) bits.push("your Book of Friends name");

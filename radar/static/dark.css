@@ -124,8 +124,8 @@ html.theme-dark .stat:nth-child(3) b { color: #ffc94a; }
 /* phones: the header row has one more button in v2, so the sky pill keeps just its sun or moon to make room */
 @media (max-width: 560px) { .sky-pill #sky-time { display: none; } .sky-pill { padding: 8px 9px; gap: 0; } }
 html.theme-dark .lang-pick select { background: transparent; border: 0; }
-html.theme-dark .star { color: rgba(255, 255, 255, .22); }
-html.theme-dark .star.on { color: #ffb020; }
+html.theme-dark .stars .star { color: rgba(255, 255, 255, .22); }
+html.theme-dark .stars .star.on { color: #ffb020; }
 html.theme-dark .lab-list a { background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07); color: var(--ink); }
 html.theme-dark .lab-list a:hover { background: rgba(255, 255, 255, .1); }
 html.theme-dark .lab-empty { background: rgba(255, 255, 255, .05); }

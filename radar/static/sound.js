@@ -42,12 +42,16 @@
       return v && Date.now() - v.at < 30 * 60 * 1000 ? v : null;
     } catch (e) { return null; }
   })();
+  // Where the playlist is, kept even while no song plays (the home page, or sound turned off), so coming back to
+  // the feed carries on with the same song instead of starting the playlist over.
+  let lastIdx = saved ? saved.idx | 0 : 0, lastPos = saved ? +saved.song || 0 : 0;
   function savePos() {
     if (!started) return;
     const n = tracks.nature;
+    if (cur) { lastIdx = cur.i; lastPos = cur.t.a.currentTime || 0; }
     try {
       sessionStorage.setItem(POS_KEY, JSON.stringify({ at: Date.now(), nature: n ? n.a.currentTime : 0,
-        idx: cur ? cur.i : 0, song: cur ? cur.t.a.currentTime : 0, songOn: !!(cur && !cur.t.a.paused) }));
+        idx: lastIdx, song: lastPos, songOn: !!(cur && !cur.t.a.paused) }));
     } catch (e) { /* private mode */ }
   }
 
@@ -205,24 +209,33 @@
     const carry = saved && !started;          // coming from another page: no intro, pick up where we left off
     if (carry && saved.nature) seek(nature, saved.nature);
     wire(nature);
+    // coming from another page with a song playing: start the song together with nature, not after it,
+    // so the gap between pages is as short as the browser allows
+    // (if the phone blocked sound until a tap, the song already set up on the first try simply plays on the tap)
+    const carrySong = carry && saved.songOn && SONGS.length && !cur;
+    const songP = carrySong ? startSong(saved.idx | 0, saved.song || 0, 0.8, false)
+      : (cur && cur.t.a.paused ? play(cur.t).then(() => fade(cur.t, SONG, 0.8)) : null);
+    if (songP) songP.catch(() => {});
     play(nature).then(() => {
       started = true; starting = false;
       // iPhones can leave the sound engine asleep even after play(): keep listening for a tap until it runs
       if (!ctx || ctx.state === "running") unarm(); else setTimeout(() => { if (ctx.state === "running") { unarm(); ui(); } }, 600);
       ui(); media();
-      if (carry && saved.songOn && SONGS.length && !cur) {
-        startSong(saved.idx | 0, saved.song || 0, 1.2, false)
-          .then(() => fade(nature, NATURE_UNDER, 1.2)).catch(() => fade(nature, NATURE_FULL, 1.2));
+      if (songP) {
+        songP.then(() => fade(nature, NATURE_UNDER, 0.8)).catch(() => fade(nature, NATURE_FULL, 1.2));
         return;
       }
       fade(nature, NATURE_FULL, carry ? 1.2 : 2.5);
-      if (SONGS.length) {
-        settled().then(() => {
-          if (!on || cur) return;
-          startSong(0, 0, 4, false).then(() => fade(nature, NATURE_UNDER, 4)).catch(() => {});
-        });
-      }
+      if (SONGS.length && !cfg.carryOnly) settled().then(ensureSong);
     }).catch(() => { starting = false; arm(); ui(); });   // not allowed yet: the next tap starts it
+  }
+  // The playlist must never be skipped for good: whenever sound is on and no song is playing (sound was turned
+  // off before the first song, or the page settled while it was off), the next song starts where the playlist was.
+  // The home page only carries a song that was already playing; it never starts one by itself.
+  function ensureSong() {
+    if (!on || !started || cur || !SONGS.length || cfg.carryOnly) return;
+    const nature = tracks.nature;
+    startSong(lastIdx, lastPos, 4, false).then(() => nature && fade(nature, NATURE_UNDER, 4)).catch(() => {});
   }
   function seek(t, secs) {
     const go = () => {
@@ -237,6 +250,7 @@
   function resume() {
     if (ctx && ctx.state !== "running") { try { const r = ctx.resume(); if (r && r.catch) r.catch(() => arm()); } catch (e) { arm(); } }
     Object.values(tracks).filter((t) => t.live).forEach((t) => play(t).then(() => { unarm(); ui(); }).catch(() => { arm(); ui(); }));
+    if (SONGS.length && !cur && !cfg.carryOnly) setTimeout(ensureSong, 1500);   // nature first, then the song comes back
     // iPhones can report "playing" while the sound engine is still asleep: if so, wait for the next tap
     setTimeout(() => { if (ctx && ctx.state !== "running" && on) { arm(); ui(); } }, 700);
   }

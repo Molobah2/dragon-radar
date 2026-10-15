@@ -808,7 +808,8 @@ def test_sound_on_pages(cfg, Session):
     feed = c.get("/friends").get_data(as_text=True)
     hub = c.get("/").get_data(as_text=True)
     assert "meadow-ambience.m4a" in feed and "blinky-song.m4a" in feed and 'id="sound-btn"' in feed
-    assert "forest-ambience.m4a" in hub and "blinky-song" not in hub and "sound.js" in hub
+    # the home page carries a song that was already playing (so the playlist never resets), but never starts one
+    assert "forest-ambience.m4a" in hub and "sound.js" in hub and '"carryOnly": true' in hub
     assert c.get("/static/audio/blinky-song.m4a").status_code == 200
 
 
@@ -1731,3 +1732,15 @@ def test_signing_card_posts_rotate_and_fit_on_x(cfg, Session):
         assert "pdtools.xyz/friends" in p and "@Pocket_Dragons_" in p and "every" in p
         assert "-" not in p.replace("Pocket_Dragons_", "")   # no dashes in Jon's posts
         assert len(p) < 300
+
+
+def test_progress_code_carries_todays_goal_count(cfg, Session):
+    c = v2_client(cfg)
+    j = c.post("/api/backup", json={"opened": {"123": 1}, "streak": {}, "goal": {"day": "2026-10-15", "n": 20}}).get_json()
+    back = c.get(f"/api/backup/{j['code']}").get_json()
+    assert back["goal"] == {"day": "2026-10-15", "n": 20}
+    # nonsense is cleaned, never stored
+    j2 = c.post("/api/backup", json={"opened": {"1": 1}, "goal": {"day": "<x>", "n": 1e9}}).get_json()
+    assert "goal" not in c.get(f"/api/backup/{j2['code']}").get_json()
+    j3 = c.post("/api/backup", json={"opened": {"1": 1}, "goal": {"day": "2026-10-15", "n": 99999}}).get_json()
+    assert c.get(f"/api/backup/{j3['code']}").get_json()["goal"]["n"] == 200
