@@ -291,7 +291,18 @@
   const mark = () => document.querySelectorAll("#sc-picks .mw-design").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.id === pick)));
   const msg = (text) => { $("sc-msg").textContent = text; };
   const track = (kind) => { try { window.pdTrack && window.pdTrack(kind, "signcard"); } catch (e) { /* ignore */ } };
-  const postText = () => "I signed Blinky's Book of Friends \u{1F409}\u{1F4D6} Keepers supporting Keepers. Sign yours at pdtools.xyz/friends";
+  // The words that go with the card on X. Each signer gets one of five at random (kept on their device, so
+  // pressing Post again shows the same words), so the timeline sees fresh words instead of one copied line.
+  const POSTS = [
+    "Just signed Blinky's Book of Friends \u{1F409}\u{1F4D6} My name is in, and now the job is simple: carry Blinky and @Pocket_Dragons_ into every corner of CT. Come sign yours and let's do it together \u{1F447} pdtools.xyz/friends",
+    "My name is officially in Blinky's Book of Friends \u{1F409}\u2728 This little yellow dragon deserves to be seen on every timeline in CT, and that starts with us showing up for each other. Your page is waiting \u{1F447} pdtools.xyz/friends @Pocket_Dragons_",
+    "Signed, sealed and stamped with a paw \u{1F43E} I'm in Blinky's Book of Friends. Next stop, every corner of CT. Keepers, come sign with me \u{1F409} pdtools.xyz/friends @Pocket_Dragons_",
+    "Blinky keeps a book of every Keeper who has his back, and today I signed it \u{1F409}\u{1F4D6} We're taking @Pocket_Dragons_ to every corner of CT, one friend at a time. Add your name \u{1F447} pdtools.xyz/friends",
+    "New quest unlocked: put Blinky in front of every corner of CT \u{1F409}\u{1F30D} First step done, I signed Blinky's Book of Friends. Grab your quill and join me, Keeper \u{1F447} pdtools.xyz/friends @Pocket_Dragons_",
+  ];
+  let postPick = Number(store.get("pd:signPost"));
+  if (!(postPick >= 0 && postPick < POSTS.length)) { postPick = Math.floor(Math.random() * POSTS.length); store.set("pd:signPost", String(postPick)); }
+  const postText = () => POSTS[postPick];
 
   // ---------- saving: an image, or a short looping video made right here ----------
   async function stillBlob() {

@@ -1718,3 +1718,16 @@ def test_book_signing_card_is_ready(cfg, Session):
     assert font.status_code == 200 and len(font.get_data()) > 10_000
     friends = c.get("/static/friends.js").get_data(as_text=True)
     assert "pd:bookme" in friends                           # the book tells the card who signed
+
+
+def test_signing_card_posts_rotate_and_fit_on_x(cfg, Session):
+    import re
+    js = v2_client(cfg).get("/static/signcard.js").get_data(as_text=True)
+    block = js[js.index("const POSTS = ["):js.index("];", js.index("const POSTS = ["))]
+    posts = re.findall(r'^\s+"(.+)",$', block, re.M)
+    assert len(posts) == 5                                   # five different words, one picked at random
+    assert "Math.random() * POSTS.length" in js and "pd:signPost" in js
+    for p in posts:
+        assert "pdtools.xyz/friends" in p and "@Pocket_Dragons_" in p and "every" in p
+        assert "-" not in p.replace("Pocket_Dragons_", "")   # no dashes in Jon's posts
+        assert len(p) < 300
