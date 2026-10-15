@@ -114,11 +114,51 @@
     store.set("pd:counted", { day: today(), ids: ids.concat(id).slice(-500) });
     return true;
   }
-  function markOpened(id, card) {
+  // Support needs real time on X. The site can not see likes or replies, so an open only counts (daily goal,
+  // streak, dragons, Book of Friends) once the visitor has spent at least 8 seconds away on X and comes back.
+  // The card leaves the list straight away as before; a quick bounce brings it back with a friendly note.
+  // "Done" only tidies a post away, it never counts as support.
+  const DWELL_MS = 8000, AWAY_KEY = "pd:away";
+  let away = null;                                   // { id, at: when Open was pressed, gone: when the page lost sight }
+  const keepAway = () => { try { away ? sessionStorage.setItem(AWAY_KEY, JSON.stringify(away)) : sessionStorage.removeItem(AWAY_KEY); } catch (e) { /* private mode */ } };
+  function waitForReturn(id) {
+    if (away && !away.gone && away.id !== id && opened[away.id]) undo(away.id);   // that one was never actually visited
+    away = { id, at: Date.now(), gone: null }; keepAway();
+  }
+  function leftPage() { if (away && !away.gone) { away.gone = Date.now(); keepAway(); } }
+  function backOnPage() {
+    if (!away || !away.gone) return;
+    const a = away; away = null; keepAway();
+    if (Date.now() - a.gone >= DWELL_MS) { credit(a.id); return; }
+    if (opened[a.id]) undo(a.id);
+    toast("\u{1F409} Give the post a few seconds on X so your support counts. It is back in your list.");
+  }
+  document.addEventListener("visibilitychange", () => (document.hidden ? leftPage() : backOnPage()));
+  addEventListener("blur", leftPage);                // desktop: X opened in another window
+  addEventListener("focus", backOnPage);
+  addEventListener("pagehide", leftPage);
+  // the browser may have reloaded this page while the visitor was on X (phones do that): count it on the way back
+  addEventListener("pd:render", function resumeAway() {
+    removeEventListener("pd:render", resumeAway);
+    let a = null; try { a = JSON.parse(sessionStorage.getItem(AWAY_KEY) || "null"); } catch (e) { a = null; }
+    try { sessionStorage.removeItem(AWAY_KEY); } catch (e) { /* fine */ }
+    if (a && a.id && opened[a.id] && Date.now() - (a.gone || a.at) >= DWELL_MS && Date.now() - a.at < 6 * 3600e3) credit(a.id);
+  });
+
+  function markOpened(id, card, how = "open") {
     if (opened[id]) return;
     Object.assign(opened, store.obj("radar:opened"));   // keep what another tab opened
     opened[id] = Date.now();
     save();
+    if (how === "open") waitForReturn(id);
+    window.meadow && window.meadow.cheer();
+    counts(true);
+    if (!card) return;
+    if (showOpened || pinnedIds.has(id)) { card.classList.add("opened"); setFoot(card, id); return; }
+    setTimeout(() => { card.classList.add("leaving"); setTimeout(render, 360); }, 120);
+  }
+  // the support itself: goal, streak, dragons, Book of Friends and the server count, once per post per day
+  function credit(id) {
     const fresh = firstToday(id);
     const post = posts.find((x) => x.id === id) || pinnedPosts.find((x) => x.id === id);
     if (fresh) {
@@ -134,11 +174,7 @@
       }
     }
     if (fresh) try { fetch(`/api/open/${id}`, { method: "POST", keepalive: true, headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: (() => { try { return localStorage.getItem("pd:vid") || ""; } catch (e) { return ""; } })() }) }); } catch (e) {}
-    window.meadow && window.meadow.cheer();
     counts(true);
-    if (!card) return;
-    if (showOpened || pinnedIds.has(id)) { card.classList.add("opened"); setFoot(card, id); return; }
-    setTimeout(() => { card.classList.add("leaving"); setTimeout(render, 360); }, 120);
   }
   function undo(id) { delete opened[id]; save(); render(); }
   function setFoot(card, id) {
@@ -147,7 +183,7 @@
                 onclick: () => markOpened(id, card), onauxclick: () => markOpened(id, card) }),
       opened[id]
         ? el("button", { class: "btn btn-soft", type: "button", onclick: () => undo(id) }, "Undo")
-        : el("button", { class: "btn btn-soft", type: "button", onclick: () => markOpened(id, card) }, "Done"),
+        : el("button", { class: "btn btn-soft", type: "button", onclick: () => markOpened(id, card, "done") }, "Done"),
       el("button", { class: "btn btn-soft btn-idea", type: "button", title: "Reply ideas", "aria-label": "Reply ideas",
         html: ICON_BULB ? `<img src="${ICON_BULB}" alt="" width="22" height="22">` : "\u{1F4A1}", onclick: () => openIdeas(id, card) })));
   }

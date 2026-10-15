@@ -141,7 +141,18 @@
     t.live = true;
     cur = { t, i: wrap(i) };
     media();
-    return play(t).then(() => { if (curved) curveTo(t, SONG, secs, true); else fade(t, SONG, secs); });
+    return play(t).then(() => { if (curved) curveTo(t, SONG, secs, true); else fade(t, SONG, secs); preloadNext(secs); });
+  }
+  // Get the next song ready long before its turn: once this song is playing (and any crossfade has finished),
+  // the free deck starts downloading the next one, so a slow connection or a sleepy background tab never
+  // leaves a silent gap at the mix.
+  function preloadNext(secs) {
+    const mine = cur;
+    setTimeout(() => {
+      if (!cur || cur !== mine || mixing || SONGS.length < 2) return;
+      const free = other();
+      if (!free.live) load(free, cur.i + 1);
+    }, (secs || 0) * 1000 + 3000);
   }
 
   function mixNext(secs) {

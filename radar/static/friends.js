@@ -78,6 +78,12 @@
   function showMe() {
     const st = (me && me.status) || "none";
     window.pdBookMe = me; dispatchEvent(new CustomEvent("pd:bookme", { detail: me }));   // the signing card listens
+    // the signing card's code only loads for people who have signed, so the feed stays light for everyone else
+    const sc = $("sc");
+    if (st === "confirmed" && sc && sc.dataset.src && !window.pdSignCardLoading) {
+      window.pdSignCardLoading = true;
+      const js = document.createElement("script"); js.src = sc.dataset.src; js.defer = true; document.head.append(js);
+    }
     $("bm-none").hidden = st !== "none";
     $("bm-pending").hidden = st !== "pending";
     $("bm-done").hidden = st !== "confirmed";

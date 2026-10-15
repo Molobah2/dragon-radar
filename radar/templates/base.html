@@ -39,6 +39,7 @@
           <a class="brand crumb" href="{{ url_for('feed') }}" style="text-decoration:none">{{ cfg.site_name }}</a>
         </nav>
         <div class="bar-right">
+          <a class="home-pill" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="20" height="20"><span>Home</span></a>
           <label class="lang-pick" title="Language">
             {{ ico("globe", 20) if cfg.scene_base else "" }}
             <select id="lang-select" aria-label="Language"></select>

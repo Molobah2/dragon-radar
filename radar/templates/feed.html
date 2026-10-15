@@ -189,7 +189,7 @@
           <div class="bm-hello"><b id="bm-name"></b><span class="tag tier" id="bm-tier" hidden></span></div>
           <p class="bm-lead" id="bm-week"></p>
           <div class="bm-meter"><i id="bm-meter"></i></div>
-          <div class="sc" id="sc" hidden>
+          <div class="sc" id="sc" data-src="{{ asset('signcard.js') }}" hidden>
             <h4>Your signing card</h4>
             <p class="sheet-sub">Pick a background. Your X name is written into Blinky's book, ready to share on X.</p>
             <div class="mw-designs sc-picks" id="sc-picks" role="group" aria-label="Card background"></div>
@@ -400,5 +400,5 @@
   <script src="{{ asset('cardkit.js') }}" defer></script>
   <script src="{{ asset('dragons.js') }}" defer></script>
   <script src="{{ asset('friends.js') }}" defer></script>
-  <script src="{{ asset('signcard.js') }}" defer></script>{% endif %}
+{% endif %}
 {% endblock %}

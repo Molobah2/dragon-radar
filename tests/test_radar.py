@@ -1606,12 +1606,12 @@ def test_speed_budget(cfg, Session):
         html = c.get(path).get_data(as_text=True)
         assert "fonts.googleapis" not in html and "fonts.gstatic" not in html, path
         assert len(gzip.compress(html.encode())) < html_max, path
-        refs = re.findall(r'(?:src|href)="(/static/[^"?]+\.(?:js|css))', html)
+        refs = re.findall(r'(?<![\w-])(?:src|href)="(/static/[^"?]+\.(?:js|css))', html)   # files the page loads (not data-src)
         size = sum(len(gzip.compress(c.get(r).get_data())) for r in refs)
         assert size < code_max, f"{path}: scripts and styles {size} bytes"
     assert len(c.get("/static/i18n.js").get_data()) < 4000
     for lang in ("es", "ru", "zh"):
-        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 22_000, lang
+        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 24_000, lang   # raised on purpose: the full v2 translations
     page = c.get("/friends").get_data(as_text=True)
     assert "e_background_removal" not in page            # icons are small stored files, not cut out per view
 
@@ -1710,6 +1710,7 @@ def test_book_signing_card_is_ready(cfg, Session):
     c = v2_client(cfg)
     page = c.get("/friends").get_data(as_text=True)
     assert 'id="sc-canvas"' in page and "signcard.js" in page and "Your signing card" in page
+    assert '<script src="/static/signcard.js' not in page   # loaded only once someone has signed
     js = c.get("/static/signcard.js").get_data(as_text=True)
     assert "sign-cards/sign-" in js and "pdtools.xyz" in js
     for i in range(1, 8):                                   # all 7 backgrounds are offered
