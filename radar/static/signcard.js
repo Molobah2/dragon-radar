@@ -35,6 +35,14 @@
     { id: 5, name: "Emerald glass", glow: [150, 255, 200], kind: "leaf", cols: ["#9dffcb", "#d4ffb0", "#7ff0e0"] },
     { id: 6, name: "Autumn paper", glow: [255, 190, 110], kind: "leaf", cols: ["#ffb35c", "#ff8f4a", "#ffd27a"] },
     { id: 7, name: "Golden hoard", glow: [255, 215, 120], kind: "glint", cols: ["#fff2b0", "#ffd56a", "#ffb3d9", "#9ff0f0", "#d9b8ff"] },
+    // the relic series: the same Blinky, each one standing in a shrine of its own
+    { id: 8, name: "Moonsilver reliquary", glow: [205, 220, 255], kind: "star", cols: ["#ffffff", "#e3ecff", "#c4d4ff"] },
+    { id: 9, name: "Ember forge", glow: [255, 180, 140], kind: "glint", cols: ["#ffd2b0", "#ffb07a", "#ffe3a8", "#ff9a8a"] },
+    { id: 10, name: "Sakura shrine", glow: [255, 205, 225], kind: "petal", cols: ["#ffd0e2", "#ffb8d2", "#fff0f6"] },
+    { id: 11, name: "Prism geode", glow: [235, 220, 255], kind: "prism", cols: ["#ffc6e4", "#fff1a8", "#c6f5dc", "#c4e2ff"] },
+    { id: 12, name: "Jade temple", glow: [160, 255, 205], kind: "leaf", cols: ["#a8ffd0", "#d4ffb0", "#8ff0d8"] },
+    { id: 13, name: "Amber clockwork", glow: [255, 200, 120], kind: "glint", cols: ["#ffe2a0", "#ffc76a", "#fff0c8"] },
+    { id: 14, name: "Golden hoard vault", glow: [255, 220, 130], kind: "glint", cols: ["#fff2b0", "#ffd56a", "#ff9fb0", "#9fd8ff", "#b8f0c0"] },
   ];
   const img = (w, id) => `${BASE}/image/upload/c_scale,w_${w}/f_jpg/q_90/dragon-radar/sign-cards/sign-${id}`;
   const thumb = (id) => `${BASE}/image/upload/c_fill,w_320,h_181/f_auto/q_auto/dragon-radar/sign-cards/sign-${id}`;
@@ -230,12 +238,12 @@
     // particles of the aura
     parts.forEach((p) => drawPart(p, c, W, H, t));
 
-    // the site, small and clear at the bottom
+    // the site, small and clear in the bottom right corner
     ctx.save(); ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
     const fs = Math.round(H * 0.03);
-    ctx.font = `600 ${fs}px "Fredoka", "Nunito", sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-    ctx.shadowColor = "rgba(0,0,0,.45)"; ctx.shadowBlur = fs * 0.5; ctx.fillStyle = "#ffffff";
-    ctx.fillText("pdtools.xyz", W / 2, H - fs * 0.9);
+    ctx.font = `600 ${fs}px "Fredoka", "Nunito", sans-serif`; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
+    ctx.shadowColor = "rgba(0,0,0,.55)"; ctx.shadowBlur = fs * 0.6; ctx.fillStyle = "#ffffff";
+    ctx.fillText("pdtools.xyz", W - fs * 1.6, H - fs * 1.1);
     ctx.restore();
   }
 
