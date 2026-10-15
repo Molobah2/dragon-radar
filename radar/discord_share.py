@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 from sqlalchemy import select
 
-from .db import AuthorCheck, BlockedAuthor, Post, get_setting, month_spend, set_setting
+from .db import AuthorCheck, BlockedAuthor, Keeper, Post, get_setting, month_spend, set_setting
 
 log = logging.getLogger(__name__)
 API = "https://discord.com/api/v10"
@@ -158,6 +158,11 @@ def collect_discord(s, cfg, run, now: datetime, client=None, http=None) -> int:
                        author_username=g["username"][:32], author_avatar=(c.avatar if c and c.avatar else known_avatar(s, g["username"])),
                        has_media=bool(g["media"])))
             added += 1
+            # a shared post is a dragon post too: the Keeper directory shows them as active from it
+            k = s.get(Keeper, h)
+            made = x_time(pid)
+            if k is not None and made and (k.last_post_at is None or made > k.last_post_at):
+                k.last_post_at = made
         run.posts_new += added
         set_setting(s, "discord_last", json.dumps({"at": now.isoformat(), "added": added, "queued": len(rest)}))
         return added

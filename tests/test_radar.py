@@ -1847,3 +1847,24 @@ def test_gold_progress_says_how_many_weeks_are_done(cfg, Session):
         assert out["week"] == 60 and out["next"] is None and out["tier"] == "silver" and out["goldRun"] == 1
     js = open("radar/static/friends.js", encoding="utf-8").read()
     assert "Gold week ${me.goldRun} of ${gw} done" in js and "me.full" in js
+
+
+def test_directory_shows_the_newest_dragon_post_from_any_source(cfg, Session):
+    """A Keeper whose newest posts reached the feed through Discord shares (not the search) still shows
+    as posting today, not on the day the directory last noted them."""
+    from radar.db import Keeper
+    now = utcnow()
+    with Session() as s:
+        s.add(Keeper(key="bugaenkonastya", username="BugaenkoNastya", name="Anastasiya \U0001F409", verified=True, tagged=True,
+                     first_seen=now - timedelta(days=9), last_checked=now - timedelta(days=3),
+                     last_post_at=now - timedelta(days=3)))
+        s.add(Post(id="88001", author_id="u:bugaenkonastya", author_username="BugaenkoNastya", text="dragons",
+                   created_at=now - timedelta(hours=2)))
+        s.add(Post(id="88002", author_id="u:bugaenkonastya", author_username="BugaenkoNastya", text="hidden one",
+                   created_at=now - timedelta(minutes=5), hidden=True))   # a hidden post never counts
+        s.commit()
+    data = create_app(cfg).test_client().get("/api/keepers").get_json()
+    got = next(k for k in data["keepers"] if k["username"] == "BugaenkoNastya")
+    assert got["last_post"] == (now - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    src = open("radar/discord_share.py", encoding="utf-8").read()
+    assert "k.last_post_at = made" in src

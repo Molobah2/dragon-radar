@@ -871,8 +871,17 @@ def create_app(cfg: Config | None = None) -> Flask:
         for t in team:
             t["avatar"] = f"/api/avatar/{t['username']}" if t.get("avatar") else None
         fmt = lambda d: d.strftime("%Y-%m-%dT%H:%M:%SZ") if d else None  # noqa: E731
+        # "Posted about the dragons" uses the newest of: what the directory noted, and every post in the feed
+        # (posts arrive by search and by Discord shares, so the feed itself is the full record)
+        with Session() as s:
+            handle = func.lower(Post.author_username)
+            newest = dict(s.execute(select(handle, func.max(Post.created_at))
+                                    .where(Post.hidden.is_(False), Post.created_at >= now - timedelta(days=45),
+                                           handle.in_([k.key for k in rows] or [""]))
+                                    .group_by(handle)).all())
+        latest = lambda k: max((d for d in (k.last_post_at, newest.get(k.key)) if d), default=None)  # noqa: E731
         keepers = [{"username": k.username, "name": k.name, "avatar": f"/api/avatar/{k.username}" if k.avatar else None,
-                    "last_post": fmt(k.last_post_at), "since": fmt(k.first_seen)}
+                    "last_post": fmt(latest(k)), "since": fmt(k.first_seen)}
                    for k in rows if k.key not in team_keys]
         return jsonify({"team": team, "keepers": keepers})
 
