@@ -18,7 +18,9 @@
 
   // Every card has the same book in the same place (measured on the artwork), so the name and the paw print
   // line up on all 7. Positions are fractions of the card. Each background has its own aura effect.
-  const NAME = { x: 0.568, y: 0.535, w: 0.12 };
+  // The safe area for the name: inside the page's printed frame, clear of the corner ornaments, the slanted
+  // outer edge and the paw print. Measured on the artwork; every name is fitted inside it by its real ink.
+  const SAFE = { x0: 0.5134, x1: 0.6045, y0: 0.5, y1: 0.592 };
   const PAW = { x: 0.566, y: 0.636 };
   const BOOK = { x0: 0.345, y0: 0.432, x1: 0.655, y1: 0.752 };
   const CARDS = [
@@ -113,6 +115,55 @@
     });
   }
 
+  // ---------- fitting the name inside the safe area ----------
+  // Sizes come from the ink itself (script letters curl past their nominal width). A name that would be too
+  // small on one line moves onto two, split at a natural point (after _, before a capital, before numbers);
+  // a word is only cut in half when the name would otherwise be too small to read.
+  const inkBox = (t) => { const m = ctx.measureText(t); return { w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight, l: m.actualBoundingBoxLeft, a: m.actualBoundingBoxAscent, d: m.actualBoundingBoxDescent }; };
+  const nameFont = (sz) => `700 ${sz}px "PD Script", "Georgia", serif`;
+  function fitLines(lines, W, H) {
+    const bw = (SAFE.x1 - SAFE.x0) * W, bh = (SAFE.y1 - SAFE.y0) * H;
+    let sz = H * 0.085;
+    for (let i = 0; i < 40; i++) {
+      ctx.font = nameFont(sz);
+      const bs = lines.map(inkBox), gap = sz * 0.12;
+      const w = Math.max(...bs.map((b) => b.w)), h = bs.reduce((t, b) => t + b.a + b.d, 0) + gap * (lines.length - 1);
+      if (w <= bw && h <= bh) return { sz, bs, gap, h };
+      sz *= Math.min(0.97, Math.sqrt(Math.min(bw / w, bh / h)));
+    }
+    ctx.font = nameFont(sz);
+    return { sz, bs: lines.map(inkBox), gap: sz * 0.12, h: bh };
+  }
+  let laidFor = "";
+  let laid = null;
+  function layoutName(text, W, H) {
+    const key = `${text}|${W}|${H}`;
+    if (laidFor === key) return laid;
+    let lines = [text], r = fitLines(lines, W, H);
+    if (r.sz < H * 0.04 && text.length > 5) {
+      const h = text.replace(/^@/, ""), n = h.length, natural = [];
+      for (let i = 2; i < n; i++) {
+        const p = h[i - 1], c = h[i];
+        if (p === "_" || (/[a-z]/.test(p) && /[A-Z]/.test(c)) || (/\D/.test(p) && /\d/.test(c))) natural.push(i);
+      }
+      let best = null;
+      natural.forEach((i) => {
+        const two = ["@" + h.slice(0, i), h.slice(i)], r2 = fitLines(two, W, H);
+        if (!best || r2.sz > best.r.sz + 0.5 || (Math.abs(r2.sz - best.r.sz) <= 0.5 && h[i - 1] === "_")) best = { two, r: r2 };
+      });
+      if (best && best.r.sz > r.sz * 1.15) { lines = best.two; r = best.r; }
+      else if (r.sz < H * 0.026) {
+        const k = Math.ceil(n / 2), two = ["@" + h.slice(0, k), h.slice(k)], r2 = fitLines(two, W, H);
+        if (r2.sz > r.sz) { lines = two; r = r2; }
+      }
+    }
+    const cx = (SAFE.x0 + SAFE.x1) / 2 * W;
+    let y = (SAFE.y0 + SAFE.y1) / 2 * H - r.h / 2;
+    const rows = lines.map((t, i) => { const b = r.bs[i]; y += b.a; const row = { t, x: cx - b.w / 2 + b.l, left: cx - b.w / 2, y, w: b.w, a: b.a, d: b.d }; y += b.d + r.gap; return row; });
+    laidFor = key; laid = { sz: r.sz, rows };
+    return laid;
+  }
+
   // ---------- one frame of the card ----------
   // The loop: the name writes itself in, the paw print glows like a seal, a sheen passes over the pages,
   // then the ink fades and it begins again. 8 seconds, so a saved video loops smoothly on X.
@@ -146,30 +197,30 @@
     // the name, written in glowing gold ink from left to right
     const write = ease((lt - 0.5) / 1.9), fade = lt > LOOP - 0.7 ? 1 - (lt - (LOOP - 0.7)) / 0.7 : 1;
     if (write > 0 && handle) {
-      const text = `@${handle}`;
-      let size = H * 0.078;
-      ctx.font = `700 ${size}px "PD Script", "Georgia", serif`;
-      const tw = ctx.measureText(text).width, max = NAME.w * W;
-      if (tw > max) { size *= max / tw; ctx.font = `700 ${size}px "PD Script", "Georgia", serif`; }
-      const w = Math.min(ctx.measureText(text).width, max), x0 = NAME.x * W - w / 2, y = NAME.y * H;
-      ctx.save();
-      ctx.beginPath(); ctx.rect(x0 - size, y - size * 1.2, (w + size * 2) * write, size * 2.4); ctx.clip();
-      ctx.globalAlpha = fade; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      const L = layoutName(`@${handle}`, W, H), sz = L.sz, n = L.rows.length;
       const pulse = 0.75 + 0.25 * Math.sin(t * 2);
-      ctx.shadowColor = `rgba(255, 190, 60, ${0.7 * pulse})`; ctx.shadowBlur = size * 0.35;
-      const ink = ctx.createLinearGradient(x0, y - size / 2, x0, y + size / 2);
-      ink.addColorStop(0, "#c07a08"); ink.addColorStop(0.55, "#8f5306"); ink.addColorStop(1, "#6e3c04");
-      ctx.fillStyle = ink; ctx.fillText(text, x0, y);
-      ctx.shadowBlur = 0; ctx.fillText(text, x0, y);          // a second pass keeps the strokes crisp over the glow
-      ctx.globalAlpha = fade * 0.35; ctx.fillStyle = "#ffe7a6"; ctx.fillText(text, x0 - size * 0.012, y - size * 0.03);
-      ctx.restore();
-      if (write < 1) {                          // the glowing nib at the tip of the ink
-        const nx = x0 + (w + size) * write - size * 0.4;
-        ctx.save(); ctx.globalCompositeOperation = "lighter";
-        const ng = ctx.createRadialGradient(nx, y, 0, nx, y, size * 0.9);
-        ng.addColorStop(0, "rgba(255,245,200,.95)"); ng.addColorStop(1, "rgba(255,200,80,0)");
-        ctx.fillStyle = ng; ctx.beginPath(); ctx.arc(nx, y, size * 0.9, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-      }
+      L.rows.forEach((row, i) => {
+        const k = Math.max(0, Math.min(1, write * n - i));          // lines are written one after the other
+        if (k <= 0) return;
+        ctx.save();
+        ctx.font = nameFont(sz); ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+        ctx.beginPath(); ctx.rect(row.left - sz * 0.3, row.y - row.a - sz * 0.4, (row.w + sz * 0.6) * k, row.a + row.d + sz * 0.8); ctx.clip();
+        ctx.globalAlpha = fade;
+        ctx.shadowColor = `rgba(255, 190, 60, ${0.7 * pulse})`; ctx.shadowBlur = sz * 0.35;
+        const ink = ctx.createLinearGradient(0, row.y - row.a, 0, row.y + row.d);
+        ink.addColorStop(0, "#c07a08"); ink.addColorStop(0.55, "#8f5306"); ink.addColorStop(1, "#6e3c04");
+        ctx.fillStyle = ink; ctx.fillText(row.t, row.x, row.y);
+        ctx.shadowBlur = 0; ctx.fillText(row.t, row.x, row.y);           // a second pass keeps the strokes crisp over the glow
+        ctx.globalAlpha = fade * 0.35; ctx.fillStyle = "#ffe7a6"; ctx.fillText(row.t, row.x - sz * 0.012, row.y - sz * 0.03);
+        ctx.restore();
+        if (k < 1) {                                                   // the glowing nib at the tip of the ink
+          const nx = row.left + row.w * k, ny = row.y - row.a * 0.4;
+          ctx.save(); ctx.globalCompositeOperation = "lighter";
+          const ng = ctx.createRadialGradient(nx, ny, 0, nx, ny, sz * 0.7);
+          ng.addColorStop(0, "rgba(255,245,200,.95)"); ng.addColorStop(1, "rgba(255,200,80,0)");
+          ctx.fillStyle = ng; ctx.beginPath(); ctx.arc(nx, ny, sz * 0.7, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        }
+      });
     }
 
     // the paw print glows like a seal once the name is written
