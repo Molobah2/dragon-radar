@@ -1611,7 +1611,7 @@ def test_speed_budget(cfg, Session):
         assert size < code_max, f"{path}: scripts and styles {size} bytes"
     assert len(c.get("/static/i18n.js").get_data()) < 4000
     for lang in ("es", "ru", "zh"):
-        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 24_000, lang   # raised on purpose: the full v2 translations
+        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 26_000, lang   # raised on purpose: the full v2 translations, then the lab and error pages
     page = c.get("/friends").get_data(as_text=True)
     assert "e_background_removal" not in page            # icons are small stored files, not cut out per view
 
@@ -1745,3 +1745,35 @@ def test_progress_code_carries_todays_goal_count(cfg, Session):
     assert "goal" not in c.get(f"/api/backup/{j2['code']}").get_json()
     j3 = c.post("/api/backup", json={"opened": {"1": 1}, "goal": {"day": "2026-10-15", "n": 99999}}).get_json()
     assert c.get(f"/api/backup/{j3['code']}").get_json()["goal"]["n"] == 200
+
+
+def test_lab_preview_and_error_pages_are_translated(cfg, Session):
+    """Every sentence on the v2 lab, the preview pill and the error pages has a translation key,
+    so these pages follow the visitor's language like the rest of pdtools."""
+    import json as _json
+    from dataclasses import replace
+    src = open("radar/i18n_src.js", encoding="utf-8").read()
+    en = src[:src.index("const T = {")]
+    def has(text):
+        return _json.dumps(text, ensure_ascii=False) in en
+    priv = replace(cfg, preview_key="test-key", v2_public=False)
+    c = create_app(priv).test_client()
+    assert c.get("/lab").status_code == 404                        # hidden until preview is on
+    c.get("/preview/test-key")
+    lab = c.get("/lab").get_data(as_text=True)
+    import re as _re
+    texts = set()
+    for page in (lab, c.get("/no-such-page").get_data(as_text=True)):
+        body = " ".join(_re.findall(r'<section class="panel (?:lab|lost)">.*?</section>|<div class="v2-pill".*?</div>', page, flags=_re.S))
+        body = _re.sub(r"<(script|style)\b.*?</\1>", " ", body, flags=_re.S)
+        for t in _re.split(r"<[^>]+>", body):
+            t = " ".join(t.split()).replace("&#39;", "'").replace("&amp;", "&")
+            if len(_re.findall(r"[A-Za-z]{2,}", t)) >= 2:
+                texts.add(t)
+        for m in _re.findall(r'aria-label="([^"]+)"', body):
+            texts.add(m)
+    assert "Turn preview off" in texts and "This page wandered off" in texts
+    missing = sorted(t for t in texts if not has(t))
+    assert not missing, missing
+    assert c.get("/no-such-page").status_code == 404
+    assert c.get("/api/no-such-thing").get_data(as_text=True) == "This page wandered off"

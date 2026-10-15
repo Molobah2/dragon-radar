@@ -176,6 +176,26 @@ def create_app(cfg: Config | None = None) -> Flask:
                         httponly=True, samesite="Lax")
         return resp
 
+    # Friendly error pages that match the site (and get translated like every other page).
+    # API calls keep plain answers so scripts reading them are not handed a full page.
+    def _error_page(code, title, text):
+        if request.path.startswith(("/api", "/i18n", "/static")):
+            return (title, code)
+        try:
+            return render_template("error.html", cfg=cfg, err_title=title, err_text=text), code
+        except Exception:   # never let the error page itself fail
+            return (title, code)
+
+    @app.errorhandler(404)
+    def not_found(_e):
+        return _error_page(404, "This page wandered off",
+                           "The page you were looking for is not here. It may have moved, or the link has a small typo.")
+
+    @app.errorhandler(500)
+    def server_error(_e):
+        return _error_page(500, "Something went wrong",
+                           "Blinky is looking into it. Please try again in a moment.")
+
     @app.get("/lab")
     @v2_only
     def lab():
