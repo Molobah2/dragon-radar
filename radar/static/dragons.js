@@ -151,7 +151,24 @@
     o.getContext("2d").drawImage(c, x0 - 2, y0 - 2, o.width, o.height, 0, 0, o.width, o.height);
     return o;
   }
-  const loadImg = (src) => new Promise((res) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+  // one try: gives up after 20 s so a stalled phone connection can be retried instead of waiting forever
+  const loadOnce = (src) => new Promise((res) => {
+    const im = new Image(); let over = false;
+    const end = (v) => { if (over) return; over = true; clearTimeout(t); res(v); };
+    const t = setTimeout(() => end(null), 20000);
+    im.crossOrigin = "anonymous"; im.onload = () => end(im.naturalWidth ? im : null); im.onerror = () => end(null); im.src = src;
+  });
+  const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+  const backOnline = () => new Promise((r) => { if (navigator.onLine !== false) return r(); addEventListener("online", r, { once: true }); setTimeout(r, 12000); });
+  // a phone that drops signal for a moment must still get its dragon: up to 5 tries, waiting a little longer each time
+  async function loadImg(src) {
+    for (let i = 0; i < 5; i++) {
+      if (i) { await backOnline(); await pause(800 * i); }
+      const im = await loadOnce(src);
+      if (im) return im;
+    }
+    return null;
+  }
   // the sheets sit on flat grey and every sticker has a white border, so the grey is lifted off from the edges in
   function cutOut(im) {
     const W = im.naturalWidth, H = im.naturalHeight;
@@ -239,16 +256,24 @@
   }
   function sticker(entry, h = 360) {
     const key = entry.key + ":" + h;
-    if (!imgCache.has(key)) imgCache.set(key, loadImg(rawUrl(entry, h)).then((im) => (im ? (flat(entry) ? edge(im) : cutOut(im)) : null)));
+    if (!imgCache.has(key)) {
+      const job = loadImg(rawUrl(entry, h)).then((im) => {
+        if (!im) return null;
+        try { return flat(entry) ? edge(im) : cutOut(im); } catch (e) { return null; }
+      });
+      // only a finished sticker is kept: a failed load is forgotten so the next ask tries again
+      job.then((c) => { if (!c && imgCache.get(key) === job) imgCache.delete(key); });
+      imgCache.set(key, job);
+    }
     return imgCache.get(key);
   }
   async function stickerUrl(entry, h, dark) {
     const c = await sticker(entry, h);
     if (!c) return "";
-    if (!dark) return c.toDataURL("image/png");
+    try { if (!dark) return c.toDataURL("image/png"); } catch (e) { return ""; }
     const s = document.createElement("canvas"); s.width = c.width; s.height = c.height;
     const x = s.getContext("2d"); x.drawImage(c, 0, 0); x.globalCompositeOperation = "source-in"; x.fillStyle = "#2a3150"; x.fillRect(0, 0, s.width, s.height);
-    return s.toDataURL("image/png");
+    try { return s.toDataURL("image/png"); } catch (e) { return ""; }
   }
 
   // ---------- sheets ----------
@@ -367,6 +392,41 @@
     });
   }
 
+  // the dragon picture for the sheet: never a broken image. Tries the cut out sticker again a few times,
+  // and as a last resort uses the plain art, which is still the right dragon.
+  async function picUrl(entry, first) {
+    let u = first ? await first : "";
+    for (let i = 0; !u && i < 3; i++) { await pause(2500); u = await stickerUrl(entry, 520); }
+    return u || rawUrl(entry, 520);
+  }
+  // on a slow connection the egg keeps wiggling until the dragon has really arrived, instead of hatching into nothing
+  async function untilReady(entry, first) {
+    const job = picUrl(entry, first);
+    const quick = await Promise.race([job, pause(60).then(() => "")]);
+    if (quick) return quick;
+    const sub = $("hatch-sub"), was = sub.textContent;
+    stage.dataset.state = "wait"; sub.textContent = "Your dragon is almost here. Hold on a moment.";
+    const u = await job;
+    sub.textContent = was;
+    return u;
+  }
+  pic.addEventListener("error", () => {
+    const src = pic.getAttribute("src") || "";
+    if (!shown || !src || src.startsWith("data:")) return;
+    const e = shown.entry, n = +(pic.dataset.tries || 0);
+    pic.alt = "";                                   // no broken picture or stray words while it retries
+    if (n >= 6) return;
+    pic.dataset.tries = String(n + 1);
+    setTimeout(async () => { if (shown && shown.entry === e) pic.src = (await stickerUrl(e, 520)) || `${rawUrl(e, 520)}?r=${n + 1}`; }, 2800);
+  });
+  pic.addEventListener("load", () => { pic.dataset.tries = "0"; });
+  // signal came back while the sheet shows an empty spot: fetch the dragon again straight away
+  addEventListener("online", async () => {
+    if (!shown || pic.hidden || pic.naturalWidth) return;
+    const e = shown.entry, u = await stickerUrl(e, 520);
+    if (u && shown && shown.entry === e) pic.src = u;
+  });
+
   egg.addEventListener("click", async () => {
     if (!shown || egg.disabled) return;
     egg.disabled = true;
@@ -374,10 +434,11 @@
     const imgP = stickerUrl(entry, 520);
     if (entry.tier === "secret") {   // a slower, grander reveal: the seal breaks, the film plays, then the relic
       stage.dataset.state = "wobble"; await wait(1200);
+      const url = await untilReady(entry, imgP);
       stage.dataset.state = "crack"; await wait(520);
       keep(entry);
       await relicFilm(entry);
-      pic.src = await imgP; pic.alt = `${entry.sp.name}, a secret relic`;
+      pic.src = url; pic.alt = `${entry.sp.name}, a secret relic`;
       egg.hidden = true; pic.hidden = false;
       setStage("reveal", "secret-" + entry.sp.id);
       showName(entry, "new");
@@ -385,10 +446,11 @@
       return;
     }
     stage.dataset.state = "wobble"; await wait(1300);
+    const url = await untilReady(entry, imgP);
     stage.dataset.state = "crack"; await wait(380);
     keep(entry);
     try { localStorage.removeItem("pd:dexEgg"); } catch (e) {}
-    pic.src = await imgP; pic.alt = `${RARITY[entry.tier]} ${entry.sp.name} dragon`;
+    pic.src = url; pic.alt = `${RARITY[entry.tier]} ${entry.sp.name} dragon`;
     egg.hidden = true; pic.hidden = false;
     setStage("reveal", entry.tier);
     showName(entry, fresh ? "new" : "copy");
@@ -439,7 +501,9 @@
     egg.hidden = true; pic.hidden = true;
     setStage("reveal", entry.tier === "secret" ? "secret-" + entry.sp.id : entry.tier);
     openSheet(hatchEl);
-    pic.src = await stickerUrl(entry, 520); pic.alt = `${RARITY[entry.tier]} ${entry.sp.name} dragon`; pic.hidden = false;
+    const url = await picUrl(entry, stickerUrl(entry, 520));
+    if (!shown || shown.entry !== entry) return;
+    pic.src = url; pic.alt = `${RARITY[entry.tier]} ${entry.sp.name} dragon`; pic.hidden = false;
     showName(entry, "view");
   }
 
@@ -453,6 +517,9 @@
   };
   async function card(entry) {
     if (entry.tier === "secret") return secretCard(entry);
+    // a card is never made without its dragon: no art yet means no card yet (the caller tries again)
+    const art = await sticker(entry, 1000);
+    if (!art) return null;
     const K = window.pdCard, t = entry.tier, sp = entry.sp;
     await K.fonts();
     const { c, x } = K.canvas(2), W = K.W, H = K.H, P = K.P;
@@ -485,7 +552,7 @@
       ["#ff8ad8", "#8fd3ff", "#b77bff", "#6ee7d8", "#ffd76a"].forEach((col, i) => h.addColorStop(i / 4, col));
       x.save(); x.globalAlpha = 0.14; x.fillStyle = h; x.fillRect(0, 0, W, H); x.restore(); }
     K.vignette(x, 0.4);
-    K.hero(x, await sticker(entry, 1000), { glow: t === "legend" ? "255, 214, 110" : t === "rare" ? "200, 220, 255" : "255, 245, 225" });
+    K.hero(x, art, { glow: t === "legend" ? "255, 214, 110" : t === "rare" ? "200, 220, 255" : "255, 245, 225" });
     K.panel(x, t === "legend" ? "rgba(255, 214, 110, .75)" : "rgba(255, 255, 255, .32)");
     const X = P.x + 40, inner = P.w - 80;
     K.pill(x, RARITY[t].toUpperCase(), X, P.y + 40, t === "legend" ? { bg: "#ffd76a", ink: "#3a2606" } : t === "rare" ? { bg: "rgba(168, 220, 255, .24)" } : {});
@@ -526,6 +593,8 @@
       frame: ["#fff1b8", "#e0a21a", "#ffd76a", "#8a5a0a"], kicker: "SECRET RELIC  III" },
   };
   async function secretCard(entry) {
+    const art = await sticker(entry, 1000);
+    if (!art) return null;
     const W = 1200, H = 675, id = entry.sp.id, L = LOOKS[id] || LOOKS.moon, r = seeded(id.length * 7919 + 17);
     // drawn at twice the size so the 4K art stays crisp when shared
     const c = document.createElement("canvas"); c.width = W * 2; c.height = H * 2;
@@ -579,7 +648,7 @@
     // the glow and the relic itself
     const halo = x.createRadialGradient(340, 337, 10, 340, 337, 330); halo.addColorStop(0, L.glow); halo.addColorStop(1, "rgba(0,0,0,0)");
     x.fillStyle = halo; x.fillRect(0, 0, W, H);
-    const s = await sticker(entry, 1000);
+    const s = art;
     if (s) {
       const k = Math.min(560 / s.height, 540 / s.width), w = s.width * k, hh = s.height * k;
       x.save(); x.shadowColor = L.glow; x.shadowBlur = 50; x.drawImage(s, 340 - w / 2, 337 - hh / 2, w, hh); x.restore();
@@ -632,9 +701,13 @@
   let shareFile = null, cardBlob = null;
   const track = (kind, ref) => { try { window.pdTrack && window.pdTrack(kind, ref); } catch (e) {} };
   const cardRef = (e) => (e && e.tier === "secret" ? "relic" : (e && e.tier) || "dragon");
-  async function prepShare(entry) {
-    shareFile = null; cardBlob = null; $("hatch-share").hidden = true;
+  async function prepShare(entry, tries = 0) {
+    if (!tries) { shareFile = null; cardBlob = null; $("hatch-share").hidden = true; }
     const c = await card(entry);
+    if (!c) {   // the art did not arrive yet: try again quietly while the sheet is still showing this dragon
+      if (tries < 4 && shown && shown.entry === entry) setTimeout(() => { if (shown && shown.entry === entry) prepShare(entry, tries + 1); }, 4000);
+      return;
+    }
     const blob = await new Promise((r) => { try { c.toBlob(r, "image/png"); } catch (e) { r(null); } });
     if (!blob || !shown || shown.entry !== entry) return;
     cardBlob = blob;
@@ -652,10 +725,15 @@
     if (!b) {
       btn.textContent = "Making your picture..."; btn.disabled = true;
       const c = await card(entry);
-      b = await new Promise((r) => { try { c.toBlob(r, "image/png"); } catch (e) { r(null); } });
+      b = c ? await new Promise((r) => { try { c.toBlob(r, "image/png"); } catch (e) { r(null); } }) : null;
       btn.textContent = label; btn.disabled = false;
     }
-    if (!b) return;
+    if (!b) {   // said on the button itself, then it goes back to normal
+      btn.textContent = "Still drawing, try again in a moment"; btn.disabled = true;
+      setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 3200);
+      if (shown && shown.entry === entry) prepShare(entry);
+      return;
+    }
     track("save", cardRef(entry));
     const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `pdtools-${entry.key}-dragon.png`;
     document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);

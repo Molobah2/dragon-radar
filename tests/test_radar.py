@@ -1777,3 +1777,38 @@ def test_lab_preview_and_error_pages_are_translated(cfg, Session):
     assert not missing, missing
     assert c.get("/no-such-page").status_code == 404
     assert c.get("/api/no-such-thing").get_data(as_text=True) == "This page wandered off"
+
+
+def test_every_language_pack_is_consistent():
+    """A key written twice silently replaces the first one, and a translation that uses a different
+    placeholder from the English prints "undefined" (this once broke the dragon card in Russian).
+    Every language must have each key once, and use the same placeholders as the English."""
+    import re as _re
+    from collections import Counter
+    src = open("radar/i18n_src.js", encoding="utf-8").read()
+    t_at = src.index("const T = {")
+    blocks = {"en": src[src.index("const EN = {"):t_at]}
+    rest = src[t_at:]
+    for lang in _re.findall(r"\n    ([a-z]{2}): \{\n", rest):
+        a = rest.index(f"\n    {lang}: {{\n"); blocks[lang] = rest[a:rest.index("\n    },", a)]
+    pair = _re.compile(r'(?:^|[\s,{])([A-Za-z][A-Za-z0-9_]*): "((?:[^"\\]|\\.)*)"')
+    ph = lambda v: sorted(set(_re.findall(r"\{([nahs])\}", v)))
+    en = dict(pair.findall(blocks["en"]))
+    assert len(blocks) == 10
+    for lang, blk in blocks.items():
+        found = pair.findall(blk)
+        twice = [k for k, n in Counter(k for k, _ in found).items() if n > 1]
+        assert not twice, (lang, twice)
+        if lang == "en":
+            continue
+        for k, v in found:
+            assert k in en, (lang, k)
+            assert ph(v) == ph(en[k]), (lang, k, en[k], v)
+
+
+def test_dragon_art_never_hatches_into_a_broken_picture():
+    """A failed art load must never be remembered, the egg waits for the art, and no card is drawn without it."""
+    js = open("radar/static/dragons.js", encoding="utf-8").read()
+    assert "imgCache.delete(key)" in js and "loadOnce" in js
+    assert "await untilReady(entry, imgP)" in js and "pic.src = await imgP" not in js
+    assert js.count("if (!art) return null;") == 2

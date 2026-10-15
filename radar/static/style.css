@@ -887,6 +887,8 @@ body.dark-sky .home-pill { background: rgba(20, 26, 69, .72); color: #f2f4ff; }
 .hatch-stage[data-rarity="legend-egg"] .hatch-egg { filter: drop-shadow(0 0 22px rgba(255, 200, 60, .95)) drop-shadow(0 14px 14px rgba(0, 0, 0, .35)); }
 @keyframes eggBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 .hatch-stage[data-state="wobble"] .hatch-egg { animation: eggWobble .42s ease-in-out 3; }
+.hatch-stage[data-state="wait"] .hatch-egg { animation: eggWobble .9s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .hatch-stage[data-state="wait"] .hatch-egg { animation: none; } }
 @keyframes eggWobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-11deg); } 75% { transform: rotate(11deg); } }
 .hatch-stage[data-state="crack"] .egg-top { transform: translate(-18px, -60px) rotate(-28deg); opacity: 0; }
 .hatch-stage[data-state="crack"] .egg-bottom { transform: translateY(40px); opacity: 0; }
