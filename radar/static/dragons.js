@@ -820,7 +820,166 @@
     if (sealDue()) setTimeout(offerSeal, 900);
   });
 
-  function openDex() { renderDex(); openSheet(dexEl); }
+  // ---------- the book: turning pages ----------
+  const book = $("dex-book"), dots = $("dex-dots") ? [...$("dex-dots").children] : [];
+  function bookPage() {   // which page sits at the left edge, and how many fit side by side
+    if (!book || !book.children.length) return { at: 0, per: 1, last: 0 };
+    const pw = book.children[0].getBoundingClientRect().width || 1, gap = parseFloat(getComputedStyle(book).columnGap) || 0;
+    const per = Math.max(1, Math.round((book.clientWidth + gap) / (pw + gap)));
+    const at = Math.round(book.scrollLeft / (pw + gap)), last = Math.max(0, book.children.length - per);
+    return { at: Math.min(at, last), per, last, step: pw + gap };
+  }
+  function paintTurn() {
+    const p = bookPage();
+    dots.forEach((d, i) => { d.classList.toggle("on", i >= p.at && i < p.at + p.per); d.hidden = p.per >= dots.length; });
+    if ($("dex-prev")) $("dex-prev").disabled = p.at <= 0;
+    if ($("dex-next-page")) $("dex-next-page").disabled = p.at >= p.last;
+    if ($("dex-turn")) $("dex-turn").hidden = p.last === 0;
+  }
+  function turn(d) { const p = bookPage(); if (book) book.scrollTo({ left: Math.max(0, Math.min(p.last, p.at + d)) * p.step, behavior: "smooth" }); }
+  if (book) {
+    let raf = 0;
+    book.addEventListener("scroll", () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(paintTurn); }, { passive: true });
+    book.addEventListener("keydown", (e) => { if (e.key === "ArrowRight") { e.preventDefault(); turn(1); } if (e.key === "ArrowLeft") { e.preventDefault(); turn(-1); } });
+    addEventListener("resize", () => { if (!dexEl.hidden) paintTurn(); });
+  }
+  if ($("dex-prev")) $("dex-prev").addEventListener("click", () => turn(-1));
+  if ($("dex-next-page")) $("dex-next-page").addEventListener("click", () => turn(1));
+
+  // ---------- the whole book as one picture to save and post ----------
+  const bookText = () => {
+    const f = found(), gs = goalStreak(), r = foundIn("rare"), l = foundIn("legend");
+    const extra = [r ? `${r} rare holo` : "", l ? `${l} golden legend${l > 1 ? "s" : ""}` : ""].filter(Boolean).join(" and ");
+    const tail = gs > 1 ? (extra ? `, with ${extra.replace(" and ", ", ")} and a ${gs} day streak` : ` with a ${gs} day streak`) : extra ? `, with ${extra}` : "";
+    return `My dragon book on pdtools \u{1F409} ${f} of ${TOTAL} found${tail}. Cheer on ${GOAL} fellow Keepers a day and start yours at pdtools.xyz`;
+  };
+  function shade(src) {   // the dark silhouette of a dragon not found yet
+    const s = document.createElement("canvas"); s.width = src.width; s.height = src.height;
+    const x = s.getContext("2d"); x.drawImage(src, 0, 0); x.globalCompositeOperation = "source-in"; x.fillStyle = "rgba(255, 255, 255, .16)"; x.fillRect(0, 0, s.width, s.height);
+    return s;
+  }
+  async function bookCard() {
+    const K = window.pdCard;
+    const arts = await Promise.all(ENTRIES.map((e) => sticker(e, 220)));
+    // every dragon found must be drawn: if one has not arrived yet, the picture waits (the caller says so kindly)
+    if (ENTRIES.some((e, i) => owned(e) && !arts[i])) return null;
+    const relics = await Promise.all(SECRETS.map((e) => (sealed(e) ? sticker(e, 220) : null)));
+    if (SECRETS.some((e, i) => sealed(e) && !relics[i])) return null;
+    await K.fonts();
+    const { c, x } = K.canvas(2.5), W = K.W, H = K.H;
+    // a calm night sky with soft warm light, the same family as every pdtools card
+    const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#2a1f5c"); g.addColorStop(0.55, "#16123a"); g.addColorStop(1, "#0a0820");
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    const r = seeded(TOTAL * 7919 + found());
+    for (let i = 0; i < 120; i++) { x.globalAlpha = 0.15 + r() * 0.6; x.fillStyle = "#fff"; x.beginPath(); x.arc(r() * W, r() * H, r() * 1.6 + 0.3, 0, 7); x.fill(); }
+    x.globalAlpha = 1;
+    [["rgba(255, 190, 90, .22)", 180, 90, 380], ["rgba(150, 110, 255, .22)", 980, 560, 420], ["rgba(110, 200, 255, .14)", 640, 300, 360]].forEach(([col, cx, cy, rad]) => {
+      const n = x.createRadialGradient(cx, cy, 0, cx, cy, rad); n.addColorStop(0, col); n.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = n; x.fillRect(0, 0, W, H); });
+    // the header: whose book it is and how far along
+    const f = found(), gs = goalStreak(), who = xName();
+    x.textAlign = "left"; K.label(x, "MY DRAGON BOOK", 48, 64);
+    x.fillStyle = K.INK; K.fit(x, who ? "@" + who : "A proud Keeper", 48, 112, 380, 44, 28);
+    x.textAlign = "right"; x.fillStyle = K.SOFT; x.font = '800 16px "Nunito", sans-serif'; x.fillText("FOUND", W - 48, 64);
+    x.fillStyle = K.INK; x.font = '700 46px "Fredoka", sans-serif'; x.fillText(`${f} of ${TOTAL}`, W - 48, 112);
+    x.textAlign = "left";
+    if (gs > 1) { x.font = '800 19px "Nunito", system-ui, sans-serif'; const cw = x.measureText(`\u{1F525} ${gs} day goal streak`).width + 34; K.chip(x, `\u{1F525} ${gs} day goal streak`, (W - cw) / 2, 80); }
+    // the collection bar across the top
+    K.rr(x, 48, 136, W - 96, 10, 5); x.fillStyle = "rgba(255, 255, 255, .14)"; x.fill();
+    const bg = x.createLinearGradient(48, 0, W - 48, 0); bg.addColorStop(0, "#ffe08a"); bg.addColorStop(1, "#ff9f5a");
+    K.rr(x, 48, 136, Math.max(10, (W - 96) * f / TOTAL), 10, 5); x.fillStyle = bg; x.fill();
+    // three open pages, side by side
+    const top = 170, ph = 445, gap = 18, pw = (W - 96 - gap * 2) / 3;
+    const page = (i, title, count, edge) => {
+      const X = 48 + i * (pw + gap);
+      x.save(); x.shadowColor = "rgba(0, 0, 0, .35)"; x.shadowBlur = 30; x.shadowOffsetY = 12;
+      K.rr(x, X, top, pw, ph, 26); x.fillStyle = "rgba(14, 10, 34, .46)"; x.fill(); x.restore();
+      K.rr(x, X, top, pw, ph, 26); x.strokeStyle = edge; x.lineWidth = 2; x.stroke();
+      x.textAlign = "left"; x.fillStyle = K.INK; x.font = '800 16px "Nunito", sans-serif'; x.fillText(title, X + 22, top + 36);
+      x.textAlign = "right"; x.fillStyle = K.SOFT; x.fillText(count, X + pw - 22, top + 36); x.textAlign = "left";
+      return X;
+    };
+    const slot = (X, Y, s, art, have, tier, n, name) => {
+      K.rr(x, X, Y, s, s, 14);
+      if (have && tier === "rare") { const h = x.createLinearGradient(X, Y, X + s, Y + s); ["#6aa8ff", "#b77bff", "#ff8ad8", "#ffd76a", "#6ee7d8"].forEach((col, i) => h.addColorStop(i / 4, col)); x.fillStyle = "rgba(255, 255, 255, .1)"; x.fill(); x.strokeStyle = h; x.lineWidth = 2.5; x.stroke(); }
+      else if (have && tier === "legend") { x.fillStyle = "rgba(255, 214, 110, .14)"; x.fill(); x.strokeStyle = "#ffd76a"; x.lineWidth = 2.5; x.save(); x.shadowColor = "rgba(255, 200, 60, .8)"; x.shadowBlur = 14; x.stroke(); x.restore(); }
+      else { x.fillStyle = have ? "rgba(255, 255, 255, .1)" : "rgba(255, 255, 255, .04)"; x.fill(); x.strokeStyle = have ? "rgba(255, 255, 255, .28)" : "rgba(255, 255, 255, .1)"; x.lineWidth = 1.5; x.stroke(); }
+      if (art) {
+        const im = have ? art : shade(art), pad = s * 0.1, k = Math.min((s - pad * 2) / im.width, (s - pad * 2) / im.height), w = im.width * k, h = im.height * k;
+        x.save(); if (have) { x.shadowColor = "rgba(0, 0, 0, .4)"; x.shadowBlur = 8; x.shadowOffsetY = 3; }
+        x.drawImage(im, X + (s - w) / 2, Y + (s - h) / 2, w, h); x.restore();
+      } else if (!have) { x.fillStyle = "rgba(255, 255, 255, .22)"; x.font = `700 ${Math.round(s * 0.36)}px "Fredoka", sans-serif`; x.textAlign = "center"; x.fillText("?", X + s / 2, Y + s * 0.62); x.textAlign = "left"; }
+      if (name) { x.textAlign = "center"; x.fillStyle = have ? K.INK : "rgba(255, 255, 255, .38)"; K.fit(x, name, X + s / 2, Y + s + 15, s + 6, 13, 9, 800, "Nunito"); x.textAlign = "left"; }
+      if (n > 1) { x.font = '800 12px "Nunito", sans-serif'; const tw = x.measureText("x" + n).width + 12; K.rr(x, X + s - tw - 4, Y + 4, tw, 18, 9); x.fillStyle = "#1d2433"; x.fill(); x.fillStyle = "#fff"; x.fillText("x" + n, X + s - tw + 2, Y + 17); }
+    };
+    const grid = (X, Y, list, cols, s, sp) => list.forEach((it, i) => slot(X + (i % cols) * (s + sp), Y + Math.floor(i / cols) * (s + sp + 18), s, it.art, it.have, it.tier, it.n, it.name));
+    const items = (tier) => ENTRIES.map((e, i) => ({ e, art: arts[i] })).filter((o) => o.e.tier === tier)
+      .map((o) => ({ art: o.art, have: owned(o.e), tier, n: (dex.have[o.e.sp.id] || {})[TK[tier]] || 0, name: owned(o.e) || tier !== "legend" ? o.e.sp.name : "???" }));
+    const cols = 4, sp = 10, s = Math.floor((pw - 44 - sp * (cols - 1)) / cols);
+    const gx = (X) => X + (pw - (s * cols + sp * (cols - 1))) / 2;
+    const tierCount = (t) => `${foundIn(t)} OF ${ENTRIES.filter((e) => e.tier === t).length}`;
+    let X = page(0, "DRAGONS", tierCount("common"), "rgba(255, 255, 255, .26)"); grid(gx(X), top + 58, items("common"), cols, s, sp);
+    X = page(1, "RARE HOLO", tierCount("rare"), "rgba(200, 170, 255, .5)"); grid(gx(X), top + 58, items("rare"), cols, s, sp);
+    X = page(2, "GOLDEN LEGENDS", tierCount("legend"), "rgba(255, 214, 110, .6)"); grid(gx(X), top + 58, items("legend"), cols, s, sp);
+    // the relics share the last page, sealed until earned
+    const ry = top + 58 + (s + sp + 18) * 2 + 22, nSeal = SECRETS.filter(sealed).length;
+    x.fillStyle = K.INK; x.font = '800 16px "Nunito", sans-serif'; x.fillText("SECRET RELICS", X + 22, ry);
+    x.textAlign = "right"; x.fillStyle = K.SOFT; x.fillText(nSeal ? `${nSeal} OF ${SECRETS.length}` : "???", X + pw - 22, ry); x.textAlign = "left";
+    const rs = Math.min(s * 1.5, (pw - 44 - sp * 2) / 3), rx = X + (pw - (rs * 3 + sp * 2)) / 2;
+    SECRETS.forEach((e, i) => {
+      const RX = rx + i * (rs + sp), RY = ry + 20;
+      if (sealed(e)) { slot(RX, RY, rs, relics[i], true, "legend", 0); return; }
+      K.rr(x, RX, RY, rs, rs, 14); x.fillStyle = "rgba(255, 255, 255, .04)"; x.fill(); x.strokeStyle = "rgba(255, 255, 255, .12)"; x.lineWidth = 1.5; x.setLineDash([5, 5]); x.stroke(); x.setLineDash([]);
+      x.fillStyle = "rgba(255, 255, 255, .3)"; x.font = `700 ${Math.round(rs * 0.3)}px "Fredoka", sans-serif`; x.textAlign = "center"; x.fillText("?", RX + rs / 2, RY + rs * 0.6); x.textAlign = "left";
+    });
+    // the footer, signed like every pdtools card
+    x.fillStyle = K.SOFT; x.font = '700 18px "Nunito", sans-serif'; x.textAlign = "left";
+    x.fillText(`Cheer on ${GOAL} fellow Keepers a day and hatch a new dragon`, 48, H - 30);
+    x.textAlign = "right"; x.font = '800 20px "Nunito", sans-serif'; x.fillText("pdtools.xyz", W - 48, H - 30); x.textAlign = "left";
+    if (foundIn("legend")) K.foil(x);
+    K.grain(x, 0.05);
+    return c;
+  }
+  let bookBlob = null, bookFile = null, bookStamp = "";
+  const bookKey = () => JSON.stringify([dex.have, dex.s, goalStreak(), xName()]);
+  async function makeBook() {
+    const key = bookKey();
+    if (bookBlob && bookStamp === key) return bookBlob;
+    const c = await bookCard();
+    const b = c ? await new Promise((r) => { try { c.toBlob(r, "image/png"); } catch (e) { r(null); } }) : null;
+    if (b) { bookBlob = b; bookStamp = key; bookFile = new File([b], "pdtools-my-dragon-book.png", { type: "image/png" }); }
+    return b;
+  }
+  async function prepBook(tries = 0) {
+    $("dex-post").href = `https://x.com/intent/post?text=${encodeURIComponent(bookText())}`;
+    const b = await makeBook();
+    if (!b) { if (tries < 4 && !dexEl.hidden) setTimeout(() => { if (!dexEl.hidden) prepBook(tries + 1); }, 4000); return; }
+    $("dex-share").hidden = !(navigator.canShare && navigator.canShare({ files: [bookFile] }));
+  }
+  $("dex-save").addEventListener("click", async () => {
+    const btn = $("dex-save"), label = "Save my book";
+    btn.textContent = "Making your picture..."; btn.disabled = true;
+    const b = await makeBook();
+    if (!b) {   // said on the button itself, then it goes back to normal
+      btn.textContent = "Still drawing, try again in a moment";
+      setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 3200);
+      return;
+    }
+    btn.textContent = label; btn.disabled = false;
+    track("save", "book");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "pdtools-my-dragon-book.png";
+    document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  });
+  $("dex-share").addEventListener("click", async () => {
+    const b = await makeBook(); if (!b || !bookFile) return;
+    try { await navigator.share({ files: [bookFile], text: bookText() }); track("share", "book"); } catch (e) {}
+  });
+  $("dex-post").addEventListener("click", () => { $("dex-post").href = `https://x.com/intent/post?text=${encodeURIComponent(bookText())}`; track("share", "book"); });
+
+  function openDex() {
+    renderDex(); openSheet(dexEl);
+    if (book) { book.scrollLeft = 0; requestAnimationFrame(paintTurn); }
+    prepBook();
+  }
   $("dex-hatch").addEventListener("click", () => { closeSheet(dexEl); setTimeout(openHatch, 260); });
   $("dex-close").addEventListener("click", () => closeSheet(dexEl));
   document.querySelectorAll("[data-dex]").forEach((b) => b.addEventListener("click", openDex));

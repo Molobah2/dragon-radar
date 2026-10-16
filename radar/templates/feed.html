@@ -307,23 +307,41 @@
     </div>
   </div>
   <div class="sheet-wrap" id="dex" hidden>
-    <div class="sheet sheet-wide" role="dialog" aria-modal="true" aria-labelledby="dex-title">
+    <div class="sheet sheet-wide sheet-book" role="dialog" aria-modal="true" aria-labelledby="dex-title">
       <div class="sheet-grip" aria-hidden="true"></div>
       <h3 id="dex-title">My dragons</h3>
       <p class="sheet-sub" id="dex-sub"></p>
       <div class="dex-bar" id="dex-bar" aria-hidden="true"><i></i></div>
       <button class="btn btn-go dex-ready" id="dex-hatch" type="button" hidden>Your egg is ready, hatch it</button>
       <p class="dex-next" id="dex-next"></p>
-      <p class="dex-sec"><span>Dragons</span><span id="dex-count-common"></span></p>
-      <div class="dex-grid" id="dex-grid"></div>
-      <p class="dex-sec rare"><span>Rare holo</span><span id="dex-count-rare"></span></p>
-      <div class="dex-grid" id="dex-rares"></div>
-      <p class="dex-sec legend"><span>Golden legends</span><span id="dex-count-legend"></span></p>
-      <div class="dex-grid" id="dex-legends"></div>
-      <p class="dex-sec secret"><span>Secret relics</span><span id="dex-count-secret"></span></p>
-      <div class="dex-grid dex-secrets" id="dex-secrets"></div>
+      <div class="dex-book" id="dex-book" tabindex="0" aria-label="My dragon book, swipe to turn the page">
+        <section class="dex-page" aria-label="Dragons">
+          <p class="dex-sec"><span>Dragons</span><span id="dex-count-common"></span></p>
+          <div class="dex-grid" id="dex-grid"></div>
+        </section>
+        <section class="dex-page" aria-label="Rare holo">
+          <p class="dex-sec rare"><span>Rare holo</span><span id="dex-count-rare"></span></p>
+          <div class="dex-grid" id="dex-rares"></div>
+        </section>
+        <section class="dex-page" aria-label="Golden legends and secret relics">
+          <p class="dex-sec legend"><span>Golden legends</span><span id="dex-count-legend"></span></p>
+          <div class="dex-grid" id="dex-legends"></div>
+          <p class="dex-sec secret"><span>Secret relics</span><span id="dex-count-secret"></span></p>
+          <div class="dex-grid dex-secrets" id="dex-secrets"></div>
+        </section>
+      </div>
+      <div class="dex-turn" id="dex-turn">
+        <button class="dex-arrow" id="dex-prev" type="button" aria-label="Previous page">&#8249;</button>
+        <span class="dex-dots" id="dex-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <button class="dex-arrow" id="dex-next-page" type="button" aria-label="Next page">&#8250;</button>
+      </div>
       <p class="dex-how">Cheer on 20 fellow Keepers a day to hatch one egg. New dragons come at a steady pace, so keep showing up every day. Rare holo dragons need a 3 day goal streak and golden legends need 7, so do not break the chain. Your dragons live on this device, and the code in My progress moves them to another one.</p>
-      <div class="sheet-actions"><button class="btn btn-soft" id="dex-close" type="button">Close</button></div>
+      <div class="sheet-actions dex-actions">
+        <button class="btn btn-go" id="dex-save" type="button">Save my book</button>
+        <button class="btn btn-go" id="dex-share" type="button" hidden>Share</button>
+        <a class="btn btn-soft" id="dex-post" href="https://x.com/intent/post" target="_blank" rel="noopener">Post on X</a>
+        <button class="btn btn-soft" id="dex-close" type="button">Close</button>
+      </div>
     </div>
   </div>
   <div class="sheet-wrap" id="myweek" hidden>
