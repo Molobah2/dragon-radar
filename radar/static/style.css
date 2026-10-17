@@ -346,6 +346,8 @@ body.modal-open { overflow: hidden; }
 .kp-card { padding: 14px; gap: 12px; grid-template-rows: auto auto auto; }
 .kp-card .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .kp-card .btn { padding: 8px 14px; font-size: 13.5px; }
+.kp-already { margin-left: auto; padding: 8px 4px; border: 0; background: none; font: 700 12.5px var(--font-body); color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.kp-already:hover { color: var(--ink); }
 .kp-when { font-size: 13px; font-weight: 700; color: var(--leaf); }
 .kp-when.quiet { color: var(--ink-soft); }
 .kp-search { border: 2px solid #e3e7f2; border-radius: 999px; padding: 8px 14px; font: 700 14px var(--font-body); min-width: 0; width: min(260px, 100%); outline: none; background: #fff; }
@@ -810,7 +812,14 @@ body.dark-sky .home-pill { background: rgba(20, 26, 69, .72); color: #f2f4ff; }
 .status-line.stale::before { background: #f59e0b; animation: none; }
 .pulse-head { flex-wrap: wrap; row-gap: 4px; }
 .pulse-head .status-line { margin-left: auto; text-transform: none; letter-spacing: 0; }
-@media (max-width: 640px) { .pulse-head .status-line { margin-left: 0; width: 100%; } }
+.refresh-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 6px 13px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, .75); color: var(--ink); font: 800 12.5px var(--font-body); text-transform: none; letter-spacing: 0; cursor: pointer; box-shadow: 0 2px 8px -4px rgba(10, 8, 30, .35); }
+.refresh-btn:hover { background: #fff; }
+.pulse-head .refresh-btn span { font: inherit; color: inherit; text-transform: none; letter-spacing: 0; }
+.refresh-btn:disabled { opacity: .75; cursor: default; }
+.refresh-btn.spin svg { animation: rfspin .7s linear infinite; }
+@keyframes rfspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .refresh-btn.spin svg { animation: none; } }
+@media (max-width: 640px) { .pulse-head .status-line { margin-left: 0; width: auto; flex: 1 1 auto; } }
 
 /* ---------- filter rail: two tidy rows, both edges used ---------- */
 .rail { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "date search" "who toggles";

@@ -1979,3 +1979,18 @@ def test_ama_library_lists_every_ama_newest_first(cfg, Session):
     assert "Watch the recording on X" in page and "1,020" in page
     assert "AMA Library" in c.get("/").get_data(as_text=True)
     assert 'href="/friends/ama"' in c.get("/friends").get_data(as_text=True)
+
+
+def test_mailbox_ideas_refresh_and_already_following():
+    """Mailbox ideas: a feed refresh button, and Keepers you follow on X can be marked so they stop being suggested."""
+    ks = open("radar/static/keepers.js", encoding="utf-8").read()
+    assert "Already following" in ks and "function already(k)" in ks
+    assert "followed[k.username.toLowerCase()] = 1" in ks          # old timestamp, never trips the pacing note
+    assert ".concat(list.filter((k) => followed[" in ks              # followed Keepers sink to the bottom
+    app = open("radar/static/app.js", encoding="utf-8").read()
+    assert 'rbtn = $("refresh")' in app and "await poll()" in app and "pill.click()" in app
+    feed = open("radar/templates/feed.html", encoding="utf-8").read()
+    assert 'id="refresh"' in feed
+    src = open("radar/i18n_src.js", encoding="utf-8").read()
+    for k in ("kAlready:", "fRefresh:", "fRefreshL:", "fCaught:"):
+        assert src.count(k) == 10, k

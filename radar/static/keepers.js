@@ -46,6 +46,9 @@
     window.meadow && window.meadow.cheer && window.meadow.cheer();
     pace(); setTimeout(render, 400);
   }
+  // followed straight on X, outside pdtools: mark it so they stop showing up as someone to follow
+  // (an old timestamp, so it never counts toward the follow pacing note)
+  function already(k) { followed[k.username.toLowerCase()] = 1; store.set("radar:followed", followed); render(); }
   function unfollow(k) { delete followed[k.username.toLowerCase()]; store.set("radar:followed", followed); render(); }
 
   function card(k, isTeam) {
@@ -67,7 +70,8 @@
           ? el("button", { class: "btn btn-soft", type: "button", onclick: () => unfollow(k) }, "Followed · undo")
           : el("a", { class: "btn btn-go", href: `https://x.com/intent/follow?screen_name=${encodeURIComponent(k.username)}`,
               target: "_blank", rel: "noopener", onclick: () => follow(k) }, "Follow on X"),
-        el("a", { class: "btn btn-soft", href: url, target: "_blank", rel: "noopener" }, "Profile")));
+        el("a", { class: "btn btn-soft", href: url, target: "_blank", rel: "noopener" }, "Profile"),
+        done ? null : el("button", { class: "kp-already", type: "button", onclick: () => already(k) }, "Already following")));
   }
 
   function render() {
@@ -92,6 +96,8 @@
         return recentFirst(a, b);
       });
     }
+    // people you follow sink to the bottom so they are never suggested again (sort keeps the order otherwise)
+    list = list.filter((k) => !followed[k.username.toLowerCase()]).concat(list.filter((k) => followed[k.username.toLowerCase()]));
     $("k-list").replaceChildren(...list.map((k) => card(k, false)));
     $("k-empty").hidden = list.length > 0;
     // the whole list is always on one page: say so at the bottom, so nobody thinks there is a page 2

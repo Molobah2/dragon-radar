@@ -705,6 +705,19 @@
     window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
   });
   setInterval(poll, 120000);
+  // Refresh button: checks right away and adds any new posts on the spot, or says the feed is up to date
+  const rbtn = $("refresh");
+  if (rbtn) rbtn.addEventListener("click", async () => {
+    if (rbtn.disabled) return;
+    if (!navigator.onLine) { toast("You are offline. Your feed is still here, try again when you are back online."); return; }
+    rbtn.disabled = true; rbtn.classList.add("spin");
+    const t0 = Date.now();
+    await poll();
+    await new Promise((r) => setTimeout(r, Math.max(0, 600 - (Date.now() - t0))));   // a short spin so the tap feels heard
+    rbtn.disabled = false; rbtn.classList.remove("spin");
+    if (pending.length) pill.click();
+    else toast("You are all caught up. New posts arrive every 20 minutes.", 4000);
+  });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
 
   // ---------- filters: keep the other choices when one changes ----------
