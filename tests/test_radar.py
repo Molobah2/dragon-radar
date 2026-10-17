@@ -1977,6 +1977,7 @@ def test_ama_library_lists_every_ama_newest_first(cfg, Session):
     assert "This library was Ismail's idea." in page and "https://x.com/IsmailHA279" in page
     assert "collecting" not in page.lower()
     assert "Watch the recording on X" in page and "1,020" in page
+    assert "About 900 live" in page and "on its way" not in page   # every AMA, including 6, has its recap now
     assert "AMA Library" in c.get("/").get_data(as_text=True)
     assert 'href="/friends/ama"' in c.get("/friends").get_data(as_text=True)
 

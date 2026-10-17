@@ -7,7 +7,16 @@ of each call; everything said on a call is team stated and plans can change. Add
 from datetime import date
 
 AMAS = [
-    {"n": 6, "day": date(2026, 10, 16), "post": "2111347128580653444", "live": None, "title": "AMA number six", "points": []},
+    {"n": 6, "day": date(2026, 10, 16), "post": "2111347128580653444", "live": 900,
+     "title": "Badges, burning and honor",
+     "points": [
+         "Around 900 joined live, after the team cleared bots from Discord and X.",
+         "The AMA badge now runs to five AMAs, with a new badge waiting at five out of five.",
+         "A new Dragon Space badge for X Spaces is coming soon.",
+         "Burning needs at least two dragons: you keep one, and the burn button will not burn a single dragon.",
+         "Honor score is the dragons you own plus the badges you earn. Owned dragons give a higher quality badge than ones you held before.",
+         "TJ said another speed update for the 3D Hatchery is coming soon.",
+     ]},
     {"n": 5, "day": date(2026, 10, 9), "post": "2108889370434633957", "live": 1020,
      "title": "Burn odds, Godwin and pre-sale",
      "points": [
