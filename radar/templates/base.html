@@ -82,8 +82,8 @@
       {% include "_faq.html" %}
       <footer>
         <span>Unofficial community tool. Not affiliated with or endorsed by Pocket Dragons. Every post links back to X.</span>
-        {% set credits = cfg.music_credits() or site_credits %}{% if credits %}<p class="music-credits"><span class="mc-title">&#9835; Music made by the community</span>
-          {% for m in credits %}<span class="mc-row">{{ m.track }} by {% if m.x %}<a href="https://x.com/{{ m.x }}" target="_blank" rel="noopener">{{ m.by }}</a>{% else %}{{ m.by }}{% endif %}</span>{% endfor %}
+        {% set credits = cfg.music_credits() or site_credits %}{% if credits %}<p class="music-credits"><button class="mc-title mc-btn" type="button" data-music>&#9835; Music made by the community</button>
+          {% for m in credits %}<span class="mc-row"><button class="mc-song" type="button" data-song="{{ m.track }}" title="Play this song">{{ m.track }}</button> by {% if m.x %}<a href="https://x.com/{{ m.x }}" target="_blank" rel="noopener">{{ m.by }}</a> <button class="mc-all" type="button" data-music data-music-by="{{ m.x }}">All songs</button>{% else %}{{ m.by }}{% endif %}</span>{% endfor %}
         </p>{% endif %}
         <a class="by-link" href="https://x.com/{{ cfg.author_x }}" target="_blank" rel="noopener"><strong>Built by Jon Wynn</strong> <span class="by-x">@{{ cfg.author_x }} on X</span></a>
       </footer>
@@ -124,7 +124,7 @@
   </a>
   {% endif %}
   <script>window.PD_SOUND = {{ {"ambience": asset('audio/meadow-ambience.m4a'),
-    "songs": site_songs(), "waitReady": True} | tojson }};</script>
+    "songs": site_songs(), "waitReady": True, "picker": asset('music.js')} | tojson }};</script>
   <script src="{{ asset('i18n.js') }}"></script>
   <script src="{{ asset('sound.js') }}" defer></script>
   {% if v2 %}<script src="{{ asset('theme.js') }}" defer></script>{% endif %}

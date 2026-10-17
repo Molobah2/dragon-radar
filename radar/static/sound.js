@@ -33,6 +33,14 @@
   const XF_MIN = 4, XF_MAX = 12;
   let cur = null;                       // { t: deck, i: song index }
   let mixing = false;
+  // A Keeper can pick a song, or play only one maker's songs. After a song ends the next one in that list plays.
+  let only = null;                      // the X handle of the maker whose songs are playing, or null for everyone
+  let pickNext = null;                  // a song picked before the sound engine was allowed to start
+  const inList = (i) => !only || (SONGS[i] && (SONGS[i].x || "").toLowerCase() === only);
+  function nextIdx(from) {
+    for (let k = 1; k <= SONGS.length; k++) { const j = wrap(from + k); if (inList(j)) return j; }
+    return wrap(from + 1);
+  }
 
   // Moving between pages reloads the page, so we remember where the music was and carry on from there
   const POS_KEY = "pd:soundPos";
@@ -42,6 +50,7 @@
       return v && Date.now() - v.at < 30 * 60 * 1000 ? v : null;
     } catch (e) { return null; }
   })();
+  if (saved && typeof saved.only === "string") only = saved.only || null;
   // Where the playlist is, kept even while no song plays (the home page, or sound turned off), so coming back to
   // the feed carries on with the same song instead of starting the playlist over.
   let lastIdx = saved ? saved.idx | 0 : 0, lastPos = saved ? +saved.song || 0 : 0;
@@ -51,7 +60,7 @@
     if (cur) { lastIdx = cur.i; lastPos = cur.t.a.currentTime || 0; }
     try {
       sessionStorage.setItem(POS_KEY, JSON.stringify({ at: Date.now(), nature: n ? n.a.currentTime : 0,
-        idx: lastIdx, song: lastPos, songOn: !!(cur && !cur.t.a.paused) }));
+        idx: lastIdx, song: lastPos, songOn: !!(cur && !cur.t.a.paused), only: only || "" }));
     } catch (e) { /* private mode */ }
   }
 
@@ -151,18 +160,19 @@
     setTimeout(() => {
       if (!cur || cur !== mine || mixing || SONGS.length < 2) return;
       const free = other();
-      if (!free.live) load(free, cur.i + 1);
+      if (!free.live) load(free, nextIdx(cur.i));
     }, (secs || 0) * 1000 + 3000);
   }
 
-  function mixNext(secs) {
+  // `to` is a song the Keeper picked: it comes in with a short, quick mix instead of waiting for the ending
+  function mixNext(secs, to) {
     if (!cur || mixing || !SONGS.length) return;
     mixing = true;
     const out = cur.t;
     const left = Math.max(0, (out.a.duration || 0) - out.a.currentTime);
-    const xf = Math.max(XF_MIN, Math.min(XF_MAX, secs || left || XF_MIN));
+    const xf = to != null ? secs : Math.max(XF_MIN, Math.min(XF_MAX, secs || left || XF_MIN));
     const was = cur;
-    startSong(cur.i + 1, 0, xf, true).then(() => {
+    startSong(to != null ? to : nextIdx(cur.i), 0, xf, true).then(() => {
       curveTo(out, 0, xf, false);
       setTimeout(() => { if (cur.t !== out) { out.a.pause(); out.live = false; } mixing = false; }, xf * 1000 + 300);
     }).catch(() => {
@@ -180,7 +190,7 @@
     const a = cur.t.a, s = song(cur.i);
     if (!a.duration || a.paused) return;
     const m = mixAt(s, a);
-    if (a.currentTime >= m - 45) load(other(), cur.i + 1);        // get the next song ready ahead of time
+    if (a.currentTime >= m - 45) load(other(), nextIdx(cur.i));   // get the next song ready ahead of time
     if (a.currentTime >= m) mixNext(a.duration - m);
   }
   setInterval(tick, 250);
@@ -224,7 +234,9 @@
     // so the gap between pages is as short as the browser allows
     // (if the phone blocked sound until a tap, the song already set up on the first try simply plays on the tap)
     const carrySong = carry && saved.songOn && SONGS.length && !cur;
-    const songP = carrySong ? startSong(saved.idx | 0, saved.song || 0, 0.8, false)
+    const chosen = pickNext != null && !cur;
+    const songP = chosen ? startSong(pickNext, 0, 1, false).finally(() => { pickNext = null; })
+      : carrySong ? startSong(saved.idx | 0, saved.song || 0, 0.8, false)
       : (cur && cur.t.a.paused ? play(cur.t).then(() => fade(cur.t, SONG, 0.8)) : null);
     if (songP) songP.catch(() => {});
     play(nature).then(() => {
@@ -234,6 +246,11 @@
       ui(); media();
       if (songP) {
         songP.then(() => fade(nature, NATURE_UNDER, 0.8)).catch(() => fade(nature, NATURE_FULL, 1.2));
+        return;
+      }
+      if (pickNext != null && !cur) {          // a song was picked while the sound was still waking up
+        const k = pickNext; pickNext = null;
+        startSong(k, 0, 1, false).then(() => fade(nature, NATURE_UNDER, 1.2)).catch(() => fade(nature, NATURE_FULL, 1.2));
         return;
       }
       fade(nature, NATURE_FULL, carry ? 1.2 : 2.5);
@@ -294,7 +311,8 @@
   // so we listen to those, and keep listening until the sound is really playing.
   let armed = false;
   const GESTURES = ["touchend", "pointerup", "click", "keydown"];
-  const gesture = (e) => { if (on && !(btn && btn.contains(e.target))) start(true); };
+  // taps on the sound pill and the music picker start the sound their own way (a picked song first)
+  const gesture = (e) => { if (on && !(btn && btn.contains(e.target)) && !(e.target.closest && e.target.closest("[data-music],[data-song],.mp-wrap"))) start(true); };
   function arm() { if (armed) return; armed = true; GESTURES.forEach((ev) => addEventListener(ev, gesture, { passive: true, capture: true })); }
   function unarm() { if (!armed) return; armed = false; GESTURES.forEach((ev) => removeEventListener(ev, gesture, { capture: true })); }
   arm();
@@ -326,9 +344,79 @@
     unduck(secs = 1.6) { if (duckK === 1) return; duckK = 1; reapply(secs); },
     now: () => (cur ? { ...song(cur.i), at: cur.t.a.currentTime } : null),
     next: () => mixNext(3),
+    pick: (i, by) => pick(i, by),
+    open: (by) => openPanel(by),
+    only: () => only,
+    songs: () => SONGS,
+    playing: () => (cur && !cur.t.a.paused ? cur.i : -1),
+    after: (i) => nextIdx(i),
+    last: () => lastIdx,
+    seekNow: (secs) => { if (cur) seek(cur.t, secs); },
+    skip: () => { if (cur && !cur.t.a.paused) mixNext(2.5, nextIdx(cur.i)); else pick(nextIdx(lastIdx)); },
     state: () => ["deckA", "deckB"].map((n) => tracks[n]).filter(Boolean).map((t) => ({ deck: t.name, src: t.src, at: t.a.currentTime,
       playing: !t.a.paused, level: t.gain ? t.gain.gain.value : t.a.volume })),
   };
+
+  // ---------- the music picker: pick any song, or play one maker's songs ----------
+  // Any button with data-music opens it (data-music-by="handle" opens that maker's songs),
+  // and any button with data-song="Title" plays that song straight away.
+  function pick(i, by) {
+    if (!SONGS[i]) return;
+    if (by !== undefined) only = by ? String(by).toLowerCase() : null;
+    if (!inList(i)) only = null;
+    if (!on) { on = true; store.set("on"); }
+    lastIdx = i; lastPos = 0;
+    if (!started) { pickNext = i; start(true); ui(); return; }
+    if (ctx && ctx.state !== "running") { try { ctx.resume(); } catch (e) { /* next tap */ } }
+    const nature = tracks.nature;
+    if (nature && nature.a.paused) play(nature).then(() => fade(nature, NATURE_UNDER, 1.2)).catch(() => {});
+    if (cur && cur.i === i && !cur.t.a.paused) return;   // already playing it
+    const go = (tries) => {
+      if (mixing) { if (tries < 20) setTimeout(() => go(tries + 1), 300); return; }
+      if (cur && !cur.t.a.paused) { mixNext(2.5, i); return; }
+      if (cur) { cur.t.a.pause(); cur.t.live = false; cur = null; }
+      startSong(i, 0, 1.2, false).then(() => nature && fade(nature, NATURE_UNDER, 1.5)).catch(() => {});
+    };
+    go(0);
+    ui(); savePos();
+  }
+  // The picker's look and list live in music.js, loaded only the first time someone opens it,
+  // so the feed stays light for everyone who never does.
+  let pickerP = null;
+  function openPanel(by) {
+    if (!SONGS.length) return;
+    if (!pickerP) {
+      pickerP = new Promise((res, rej) => {
+        const js = document.createElement("script"); js.src = cfg.picker || "/static/music.js"; js.async = true;
+        js.onload = () => res(window.pdMusicPicker); js.onerror = () => { pickerP = null; rej(); };
+        document.head.append(js);
+      });
+    }
+    pickerP.then((m) => m && m.open(by)).catch(() => {});
+  }
+  const pillCss = () => {
+    if (document.getElementById("sp-css")) return;
+    const st = document.createElement("style"); st.id = "sp-css";
+    st.textContent = `.song-pill{border:0;cursor:pointer;display:inline-flex;align-items:center;gap:7px;padding:7px 13px 7px 11px;border-radius:999px;font-family:inherit;font-weight:800;font-size:13px;line-height:1;color:#1d2433;background:rgba(255,255,255,.72);box-shadow:inset 0 0 0 1px rgba(29,36,51,.1);transition:transform .2s}
+.song-pill:hover{transform:translateY(-1px)}.song-pill .sp-note{font-size:15px;line-height:1}
+html.theme-dark .song-pill,body.dark-sky .song-pill{background:rgba(20,26,69,.72);color:#f2f4ff}
+@media (max-width:560px){.song-pill .sp-label{display:none}.song-pill{padding:8px 10px}}`;
+    document.head.append(st);
+  };
+
+  // buttons anywhere on the page: the header pill, the credits and the music makers
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest && e.target.closest("[data-music],[data-song]");
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    if (el.hasAttribute("data-song")) {
+      const i = SONGS.findIndex((x) => x.title === el.getAttribute("data-song"));
+      if (i >= 0) { pick(i, null); openPanel(null); }
+      return;
+    }
+    openPanel(el.getAttribute("data-music-by") || null);
+  }, true);
+  if (SONGS.length) { pillCss(); document.querySelectorAll("[data-music-pill]").forEach((b) => { b.hidden = false; }); }
 
   // lock screen and notification controls on phones, showing the song and its maker
   function media() {

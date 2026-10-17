@@ -1135,7 +1135,9 @@ def test_music_makers_are_credited_for_everyone(cfg, Session):
         assert f'<b class="mk-name">{name}</b>' in hub and f"https://x.com/{handle}" in hub
     assert "Now playing on Blinky" in hub and "Four-Leaf Clover Escape" in hub
     feed = c.get("/friends").get_data(as_text=True)               # the song heard on the feed is credited there too
-    assert "Music made by the community" in feed and "s song by" in feed and "https://x.com/ThePanda_NFT" in feed
+    assert "Music made by the community" in feed and "s song</button> by" in feed and "https://x.com/ThePanda_NFT" in feed
+    assert "music.js" not in "".join(__import__("re").findall(r'<script src="([^"]+)"', feed))   # loaded only when opened
+    assert 'data-music-by="ThePanda_NFT"' in feed and "data-song=" in feed and 'data-music-by="bubblegum_dee"' in hub
     cfg.music_credits_raw = "Another song|Sample Maker|samplemaker;Bad|<x>|not a handle!"
     page = c.get("/friends").get_data(as_text=True)
     assert "https://x.com/samplemaker" in page and "&lt;x&gt;" in page
@@ -1613,7 +1615,9 @@ def test_speed_budget(cfg, Session):
     import gzip
     import re
     c = v2_client(cfg)
-    budgets = {"/friends": (120_000, 60_000), "/": (15_000, 40_000), "/friends/keepers": (60_000, 40_000)}
+    # /friends raised on purpose (120k to 124k): the song picker controls and the dragon book; the picker's
+    # list itself (music.js) only loads when someone opens it
+    budgets = {"/friends": (124_000, 60_000), "/": (15_000, 40_000), "/friends/keepers": (60_000, 40_000)}
     for path, (code_max, html_max) in budgets.items():
         html = c.get(path).get_data(as_text=True)
         assert "fonts.googleapis" not in html and "fonts.gstatic" not in html, path
@@ -1623,7 +1627,7 @@ def test_speed_budget(cfg, Session):
         assert size < code_max, f"{path}: scripts and styles {size} bytes"
     assert len(c.get("/static/i18n.js").get_data()) < 4000
     for lang in ("es", "ru", "zh"):
-        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 26_000, lang   # raised on purpose: the full v2 translations, then the lab and error pages
+        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 28_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker
     page = c.get("/friends").get_data(as_text=True)
     assert "e_background_removal" not in page            # icons are small stored files, not cut out per view
 

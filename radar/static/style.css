@@ -1113,6 +1113,11 @@ html.theme-dark .kp-end { color: rgba(242, 244, 255, .8); text-shadow: 0 1px 8px
 .music-credits { display: grid; gap: 4px; justify-items: center; margin: 0 0 6px; font-size: 13.5px; font-weight: 700; }
 .music-credits .mc-title { font-weight: 800; letter-spacing: .02em; }
 .music-credits a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.music-credits button { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.music-credits .mc-btn { font-weight: 800; letter-spacing: .02em; text-decoration: underline dotted; text-underline-offset: 4px; }
+.music-credits .mc-song { font-weight: 800; text-decoration: underline dotted; text-underline-offset: 3px; }
+.music-credits .mc-all { margin-left: 2px; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 800; background: rgba(29, 36, 51, .08); }
+.music-credits button:hover { color: #c2410c; }
 
 /* the X name field on a secret relic */
 .hatch-xname { display: grid; gap: 6px; margin: -2px auto 12px; max-width: 320px; text-align: center; font: 800 12px var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }

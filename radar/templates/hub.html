@@ -179,6 +179,12 @@
     .mk-x { display: block; font-weight: 800; font-size: 14px; color: var(--teal); }
     .mk-songs { display: block; margin-top: 6px; font-weight: 800; font-size: 15px; line-height: 1.35; }
     .mk-songs i { font-style: normal; color: var(--coral); }
+    .mk-song { display: block; border: 0; background: none; padding: 2px 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+    button.mk-song:hover { color: var(--coral); }
+    a.mk-x, a.mk-av { text-decoration: none; }
+    .mk-play { margin-top: 10px; border: 0; cursor: pointer; padding: 9px 16px; border-radius: 999px; font: 800 14px var(--display, inherit);
+      color: #fff; background: linear-gradient(180deg, #ff8a5c, #f0643f); box-shadow: 0 8px 16px -8px rgba(240, 100, 63, .7); }
+    .mk-play:hover { transform: translateY(-1px); }
     .mk-now { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 4px 10px; border-radius: 999px; background: var(--ink); color: var(--card);
       font-weight: 800; font-size: 12px; letter-spacing: .03em; }
     .mk-now .snd-bars i { animation: eq 1.1s ease-in-out infinite; } .mk-now .snd-bars i:nth-child(2) { animation-delay: -.35s; } .mk-now .snd-bars i:nth-child(3) { animation-delay: -.7s; }
@@ -251,12 +257,13 @@
       <h2 class="music-title" id="music-title"><span class="mt-note" aria-hidden="true">&#9835;</span> <span>Music by the community</span></h2>
       <p class="music-lede">The Keepers who make Pocket Dragons music. Thank you for filling the meadow with sound.</p>
       <div class="makers">
-        {% for m in music_makers %}<a class="maker{{ ' playing' if m.playing }}" href="https://x.com/{{ m.x }}" target="_blank" rel="noopener">
-          <span class="mk-av" aria-hidden="true">{{ m.name[:1] }}<img src="{{ m.avatar }}" alt="" width="64" height="64" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()"></span>
-          <span class="mk-text"><b class="mk-name">{{ m.name }}</b><span class="mk-x">@{{ m.x }}</span>
-            <span class="mk-songs">{% for song in m.songs %}<i>&#9835;</i> {{ song }}{% if not loop.last %}<br>{% endif %}{% endfor %}</span>
+        {% for m in music_makers %}<div class="maker{{ ' playing' if m.playing }}">
+          <a class="mk-av" href="https://x.com/{{ m.x }}" target="_blank" rel="noopener" aria-label="@{{ m.x }} on X">{{ m.name[:1] }}<img src="{{ m.avatar }}" alt="" width="64" height="64" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()"></a>
+          <span class="mk-text"><b class="mk-name">{{ m.name }}</b><a class="mk-x" href="https://x.com/{{ m.x }}" target="_blank" rel="noopener">@{{ m.x }}</a>
+            <span class="mk-songs">{% for song in m.songs %}{% if song in m.on_site %}<button class="mk-song" type="button" data-song="{{ song }}" title="Play this song"><i>&#9654;</i> {{ song }}</button>{% else %}<span class="mk-song"><i>&#9835;</i> {{ song }}</span>{% endif %}{% endfor %}</span>
+            {% if m.on_site %}<button class="mk-play" type="button" data-music data-music-by="{{ m.x }}">&#9835; Play songs</button>{% endif %}
             {% if m.playing %}<span class="mk-now"><span class="snd-bars" aria-hidden="true"><i></i><i></i><i></i></span><span>Now playing on Blinky's Friends</span></span>{% endif %}</span>
-        </a>{% endfor %}
+        </div>{% endfor %}
       </div>
     </section>
 
@@ -284,7 +291,7 @@
       <a class="by-link" href="https://x.com/{{ cfg.author_x }}" target="_blank" rel="noopener"><strong>Built by Jon Wynn</strong> <span class="by-x">@{{ cfg.author_x }} on X</span></a>
     </footer>
   </div>
-  <script>window.PD_SOUND = {{ {"ambience": asset('audio/forest-ambience.m4a'), "songs": site_songs(), "carryOnly": True} | tojson }};</script>
+  <script>window.PD_SOUND = {{ {"ambience": asset('audio/forest-ambience.m4a'), "songs": site_songs(), "carryOnly": True, "picker": asset('music.js')} | tojson }};</script>
   <script src="{{ asset('i18n.js') }}"></script>
   <script src="{{ asset('sound.js') }}" defer></script>
   {% if cfg.scene_base %}<script src="{{ asset('forest.js') }}" defer></script>{% endif %}
