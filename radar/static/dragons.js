@@ -1018,7 +1018,20 @@
     publishBook();
     try { await navigator.share({ files: [bookFile], text: bookText() }); track("share", "book"); } catch (e) {}
   });
-  $("dex-post").addEventListener("click", () => { $("dex-post").href = `https://x.com/intent/post?text=${encodeURIComponent(bookText())}`; track("share", "book"); publishBook(); });
+  // X looks at the link the moment the post box opens, so a signed Keeper's book picture is sent first.
+  // The new tab opens right away (inside the tap, so it is never blocked) and goes to X once the picture is up.
+  $("dex-post").addEventListener("click", (e) => {
+    const url = () => `https://x.com/intent/post?text=${encodeURIComponent(bookText())}`;
+    $("dex-post").href = url(); track("share", "book");
+    if (!(bookMe && bookMe.status === "confirmed") || sentKey === bookKey()) { publishBook(); return; }
+    e.preventDefault();
+    const w = window.open("", "_blank");
+    if (w) { try { w.opener = null; } catch (err) { /* fine */ } }
+    let went = false;
+    const go = () => { if (went) return; went = true; if (w && !w.closed) w.location.href = url(); else location.href = url(); };
+    const wait = setTimeout(go, 4000);                         // never keep anyone waiting long
+    publishBook().finally(() => { clearTimeout(wait); go(); });
+  });
 
   function openDex() {
     renderDex(); openSheet(dexEl);

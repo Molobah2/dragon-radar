@@ -59,6 +59,8 @@ def remove(s, key: str, block: bool = False) -> None:
     from .db import set_setting
     from sqlalchemy import delete
     s.execute(delete(FriendDevice).where(FriendDevice.key == key))
+    from .db import BookPage
+    s.execute(delete(BookPage).where(BookPage.key == key))        # their public dragon book page goes with them
     f = s.get(Friend, key)
     if f:
         s.delete(f)

@@ -152,6 +152,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         cookie = request.cookies.get(PREVIEW_COOKIE, "")
         g.v2 = cfg.v2_public or bool(cfg.preview_key and cookie and hmac.compare_digest(cookie, preview_token()))
 
+    app.config.setdefault("MAX_CONTENT_LENGTH", 2_000_000)   # no request body on this site is ever near this
+
     def v2_only(view):
         """Pages and APIs that belong to v2: invisible (404) to anyone without the preview turned on."""
         @wraps(view)
@@ -665,11 +667,34 @@ def create_app(cfg: Config | None = None) -> Flask:
             return 0
         return max(0, min(top, n))
 
+    def _jpeg_size(b: bytes) -> tuple[int, int]:
+        """Width and height from a JPEG's frame header, or (0, 0) when it is not a readable JPEG."""
+        i = 2
+        while i + 9 < len(b):
+            if b[i] != 0xFF:
+                return 0, 0
+            m = b[i + 1]
+            if m in (0xC0, 0xC1, 0xC2):
+                return int.from_bytes(b[i + 7:i + 9], "big"), int.from_bytes(b[i + 5:i + 7], "big")
+            i += 2 + int.from_bytes(b[i + 2:i + 4], "big")
+        return 0, 0
+
+    page_ips: dict[str, list[float]] = {}
+
     @app.post("/api/book/page")
     @v2_only
     def api_book_page():
         import base64
         from .db import BookPage, Friend, FriendDevice
+        if (request.content_length or 0) > BOOK_IMG_MAX * 4 // 3 + 2000:
+            return {"ok": False, "why": "big"}, 413
+        ip, now_ip = client_ip(), time.time()
+        recent = [t for t in page_ips.get(ip, []) if now_ip - t < 3600]
+        if len(page_ips) > 20000:
+            page_ips.clear()
+        page_ips[ip] = recent + [now_ip]
+        if len(recent) >= 40:
+            return {"ok": False, "why": "limit"}, 429
         try:
             data = _body(BOOK_IMG_MAX * 4 // 3 + 2000)
         except ValueError:
@@ -690,7 +715,8 @@ def create_app(cfg: Config | None = None) -> Flask:
                 img = base64.b64decode(raw, validate=True) if raw else b""
             except ValueError:
                 return {"ok": False, "why": "bad"}, 400
-            if not img.startswith(b"\xff\xd8\xff") or len(img) > BOOK_IMG_MAX:
+            # only the book picture the site draws (1200 by 675) is kept, never any other image
+            if not img.startswith(b"\xff\xd8\xff") or len(img) > BOOK_IMG_MAX or _jpeg_size(img) != (1200, 675):
                 return {"ok": False, "why": "bad"}, 400
             if len(page_writes) > 20000:
                 page_writes.clear()

@@ -1881,13 +1881,19 @@ def test_signed_keeper_gets_a_dragon_book_page(cfg, Session):
         s.add(FriendDevice(vid="c" * 32, key="waiting", username="Waiting", code="PDEEEE", confirmed=False))
         s.commit()
     c = v2_client(cfg)
-    jpeg = b"\xff\xd8\xff\xe0" + b"0" * 200
+    def fake_jpeg(w, h):   # a JPEG start, one APP0 block, then the frame header that carries the size
+        app0 = b"\xff\xe0\x00\x10" + b"JFIF\x00" + b"\x00" * 9
+        sof = b"\xff\xc0\x00\x11\x08" + h.to_bytes(2, "big") + w.to_bytes(2, "big") + b"\x03" + b"\x00" * 9
+        return b"\xff\xd8" + app0 + sof + b"0" * 200
+    jpeg = fake_jpeg(1200, 675)
+    other = "data:image/jpeg;base64," + base64.b64encode(fake_jpeg(800, 800)).decode()
     img = "data:image/jpeg;base64," + base64.b64encode(jpeg).decode()
     post = lambda body: c.post("/api/book/page", data=json.dumps(body), content_type="text/plain")
     assert post({"vid": "c" * 32, "img": img}).status_code == 403                  # not confirmed yet
     assert post({"vid": "d" * 32, "img": img}).status_code == 403                  # never signed
     png = "data:image/jpeg;base64," + base64.b64encode(b"\x89PNG....").decode()
     assert post({"vid": "b" * 32, "img": png}).status_code == 400                  # not a JPEG
+    assert post({"vid": "b" * 32, "img": other}).status_code == 400                # not the book picture size
     r = post({"vid": "b" * 32, "img": img, "found": 12, "rare": 99, "legend": 2, "streak": 6}).get_json()
     assert r["ok"] and r["url"] == "https://pdtools.xyz/k/BookKeeper"
     page = c.get("/k/bookkeeper").get_data(as_text=True)
@@ -1898,6 +1904,12 @@ def test_signed_keeper_gets_a_dragon_book_page(cfg, Session):
     assert pic.status_code == 200 and pic.data == jpeg and pic.mimetype == "image/jpeg"
     assert c.get("/k/nobody").status_code == 404 and c.get("/k/waiting").status_code == 404
     assert create_app(cfg).test_client().get("/k/bookkeeper").status_code == 404   # v2 only
+    from radar.book import remove
+    from radar.db import BookPage
+    with Session() as s:                                                      # Jon removes a name: the page goes too
+        remove(s, "bookkeeper"); s.commit()
+        assert s.get(BookPage, "bookkeeper") is None
+    assert c.get("/k/bookkeeper").status_code == 404
 
 
 def test_week_funnel_counts_each_step(cfg, Session):

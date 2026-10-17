@@ -231,6 +231,7 @@ def make_session_factory(database_url: str) -> sessionmaker:
     engine = create_engine(database_url, **kwargs)
     Base.metadata.create_all(engine)
     ensure_indexes(engine)
+    lock_tables(engine)
     return sessionmaker(bind=engine, expire_on_commit=False)
 
 
@@ -264,6 +265,21 @@ EXTRA_INDEXES = (
     "CREATE INDEX IF NOT EXISTS ix_events_ref_day ON events (ref, day)",
     "CREATE INDEX IF NOT EXISTS ix_reports_vid_time ON reports (vid, created_at)",
 )
+
+
+def lock_tables(engine) -> None:
+    """Supabase also offers every table through its public REST API. The site talks to Postgres directly, so row level
+    security is switched on for every table (with no policies, nobody can read or write them through that API).
+    The older tables were locked by hand; this keeps any new table locked the moment it is created."""
+    if engine.dialect.name != "postgresql":
+        return
+    from sqlalchemy import text
+    for table in Base.metadata.sorted_tables:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(f'ALTER TABLE "{table.name}" ENABLE ROW LEVEL SECURITY'))
+        except Exception:  # noqa: BLE001  never a reason to fail the start
+            pass
 
 
 def ensure_indexes(engine) -> None:
