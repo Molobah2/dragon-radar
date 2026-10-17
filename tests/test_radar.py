@@ -1941,3 +1941,16 @@ def test_admin_shows_the_week_funnel(client):
     client.post("/admin/login", data={"password": "pw"})
     page = client.get("/admin").get_data(as_text=True)
     assert "The week, step by step" in page and "Hatched an egg" in page and "Came back on another day" in page
+
+
+def test_safety_headers_and_login_limits(client):
+    r = client.get("/friends")
+    assert r.headers["X-Content-Type-Options"] == "nosniff" and r.headers["X-Frame-Options"] == "SAMEORIGIN"
+    assert "frame-ancestors 'self'" in r.headers["Content-Security-Policy"]
+    assert r.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
+    assert client.get("/admin/login").headers["Cache-Control"] == "no-store"
+    # guesses from many faked addresses still hit the shared limit
+    codes = [client.post("/admin/login", data={"password": "nope"}, headers={"CF-Connecting-IP": f"10.0.0.{i}"}).status_code
+             for i in range(45)]
+    assert codes[0] == 200 and codes[-1] == 429
+    assert client.post("/admin/login", data={"password": "pw"}, headers={"CF-Connecting-IP": "10.9.9.9"}).status_code == 429

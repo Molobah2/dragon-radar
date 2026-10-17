@@ -170,6 +170,8 @@ def create_app(cfg: Config | None = None) -> Flask:
             resp = redirect(url_for("hub"))
             resp.delete_cookie(PREVIEW_COOKIE, path="/")
             return resp
+        if _too_many("preview:" + client_ip(), limit=20, window=3600) or _too_many("preview:all", limit=200, window=3600):
+            abort(429)
         if not cfg.preview_key or not hmac.compare_digest(key.encode(), cfg.preview_key.encode()):
             abort(404)
         resp = redirect(url_for("lab"))
@@ -234,6 +236,18 @@ def create_app(cfg: Config | None = None) -> Flask:
                 resp.headers["Cache-Control"] = "private, no-store"
         if cfg.noindex or request.path.startswith(("/preview", "/lab")):
             resp.headers["X-Robots-Tag"] = "noindex, nofollow"
+        # Safety headers on every answer: no other site can show pdtools inside a frame (so nobody can trick a
+        # click on the admin page), browsers never guess a file type, and links to other sites only share the address
+        h = resp.headers
+        h.setdefault("X-Content-Type-Options", "nosniff")
+        h.setdefault("X-Frame-Options", "SAMEORIGIN")
+        h.setdefault("Content-Security-Policy", "frame-ancestors 'self'; base-uri 'self'; object-src 'none'")
+        h.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        h.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
+        if os.environ.get("RENDER"):
+            h.setdefault("Strict-Transport-Security", "max-age=31536000")
+        if request.path.startswith("/admin"):
+            h["Cache-Control"] = "no-store"
         return resp
 
     # The feed costs several database round trips. Everyone sees the same posts, so the result is kept
@@ -849,6 +863,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         key, now = f"keeper:{handle.lower()}", utcnow()
         with Session() as s:
             cached = get_setting(s, key)
+        if not cached and _too_many("kc:" + client_ip(), limit=20):
+            return {"found": False, "handle": handle, "note": "That is a lot of lookups. Try again in a little while."}
         if cached:
             data = json.loads(cached)
             if now - datetime.fromisoformat(data["at"]) < timedelta(hours=cfg.keeper_cache_hours):
@@ -951,12 +967,14 @@ def create_app(cfg: Config | None = None) -> Flask:
         if not url or not url.startswith("https://pbs.twimg.com/"):
             abort(404)
         try:
-            r = requests.get(url, timeout=8)
+            r = requests.get(url, timeout=8, allow_redirects=False)   # X's image host only, never a hop elsewhere
         except requests.RequestException:
             abort(404)
         if r.status_code != 200 or len(r.content) > 500_000:
             abort(404)
-        ctype = r.headers.get("Content-Type", "image/jpeg")
+        ctype = r.headers.get("Content-Type", "image/jpeg").split(";")[0].strip().lower()
+        if ctype not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
+            abort(404)
         if len(avatar_cache) > 2000:
             avatar_cache.clear()
         avatar_cache[key] = (datetime.now().timestamp(), r.content, ctype)
@@ -1265,12 +1283,21 @@ def create_app(cfg: Config | None = None) -> Flask:
         if not token or not hmac.compare_digest(token, session.get("csrf", "")):
             abort(400)
 
+    def jon_device() -> bool:
+        """Jon's own preview devices carry a cookie only the preview key can make, so a flood of guesses
+        from strangers never locks Jon himself out of the admin page."""
+        c = request.cookies.get(PREVIEW_COOKIE, "")
+        return bool(cfg.preview_key and c and hmac.compare_digest(c, preview_token()))
+
     @app.route("/admin/login", methods=["GET", "POST"])
     def admin_login():
         if not cfg.admin_password:
             abort(404)
         error = None
-        if request.method == "POST" and _too_many("login:" + client_ip(), limit=10, window=900):
+        # per address, and for everyone together: an address header can be faked by calling Render directly,
+        # so the shared limit keeps password guessing slow no matter where the tries come from
+        if request.method == "POST" and (_too_many("login:" + client_ip(), limit=10, window=900)
+                                         or (not jon_device() and _too_many("login:all", limit=40, window=900))):
             return render_template("login.html", cfg=cfg, error="Too many tries. Wait 15 minutes."), 429
         if request.method == "POST":
             if hmac.compare_digest(request.form.get("password", ""), cfg.admin_password):
