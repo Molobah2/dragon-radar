@@ -251,8 +251,15 @@
       </a>
       <a class="tool reveal" href="{{ url_for('ama_page') }}">
         <div class="art art-ama">
+          {% if cfg.scene_base %}
+          <img src="{{ cfg.scene_base }}/image/upload/c_fill,g_auto,h_540,w_960/f_auto/q_auto/v1792252414/{{ cfg.scene_folder }}/ama-library"
+               srcset="{{ cfg.scene_base }}/image/upload/c_fill,g_auto,h_360,w_640/f_auto/q_auto/v1792252414/{{ cfg.scene_folder }}/ama-library 640w,
+                       {{ cfg.scene_base }}/image/upload/c_fill,g_auto,h_540,w_960/f_auto/q_auto/v1792252414/{{ cfg.scene_folder }}/ama-library 960w"
+               sizes="(max-width: 720px) 100vw, 480px" alt="Blinky with headphones and a microphone in a cozy dragon library" width="960" height="540" loading="lazy" decoding="async">
+          {% else %}
           <span class="ama-art-glow" aria-hidden="true"></span>
           {{ ico("chat", 104, "ama-art-ico") }}
+          {% endif %}
           <span class="ama-art-tag">{{ ama_count }} AMAs</span>
         </div>
         <div class="body">
