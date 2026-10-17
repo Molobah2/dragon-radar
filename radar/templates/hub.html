@@ -188,6 +188,8 @@
     .mk-songs i { font-style: normal; color: var(--coral); }
     .mk-song { display: block; border: 0; background: none; padding: 2px 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
     button.mk-song:hover { color: var(--coral); }
+    .mk-more { display: block; margin-top: 2px; padding: 2px 0; border: 0; background: none; font: 700 13.5px var(--font-body, inherit); color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+    .mk-more:hover { color: var(--coral); }
     a.mk-x, a.mk-av { text-decoration: none; }
     .mk-play { margin-top: 10px; border: 0; cursor: pointer; padding: 9px 16px; border-radius: 999px; font: 800 14px var(--display, inherit);
       color: #fff; background: linear-gradient(180deg, #ff8a5c, #f0643f); box-shadow: 0 8px 16px -8px rgba(240, 100, 63, .7); }
@@ -287,7 +289,8 @@
         {% for m in music_makers %}<div class="maker{{ ' playing' if m.playing }}">
           <a class="mk-av" href="https://x.com/{{ m.x }}" target="_blank" rel="noopener" aria-label="@{{ m.x }} on X">{{ m.name[:1] }}<img src="{{ m.avatar }}" alt="" width="64" height="64" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()"></a>
           <span class="mk-text"><b class="mk-name">{{ m.name }}</b><a class="mk-x" href="https://x.com/{{ m.x }}" target="_blank" rel="noopener">@{{ m.x }}</a>
-            <span class="mk-songs">{% for song in m.songs %}{% if song in m.on_site %}<button class="mk-song" type="button" data-song="{{ song }}" title="Play this song"><i>&#9654;</i> {{ song }}</button>{% else %}<span class="mk-song"><i>&#9835;</i> {{ song }}</span>{% endif %}{% endfor %}</span>
+            <span class="mk-songs">{% for song in m.songs[:1] %}{% if song in m.on_site %}<button class="mk-song" type="button" data-song="{{ song }}" title="Play this song"><i>&#9654;</i> {{ song }}</button>{% else %}<span class="mk-song"><i>&#9835;</i> {{ song }}</span>{% endif %}{% endfor %}</span>
+            {% if m.songs | length > 1 %}<button class="mk-more" type="button" data-music data-music-by="{{ m.x }}">+{{ m.songs | length - 1 }} more songs</button>{% endif %}
             {% if m.on_site %}<button class="mk-play" type="button" data-music data-music-by="{{ m.x }}">&#9835; Play songs</button>{% endif %}
             {% if m.playing %}<span class="mk-now"><span class="snd-bars" aria-hidden="true"><i></i><i></i><i></i></span><span>Now playing on Blinky's Friends</span></span>{% endif %}</span>
         </div>{% endfor %}
