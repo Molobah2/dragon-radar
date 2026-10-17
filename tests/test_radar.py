@@ -1958,3 +1958,9 @@ def test_safety_headers_and_login_limits(client):
              for i in range(45)]
     assert codes[0] == 200 and codes[-1] == 429
     assert client.post("/admin/login", data={"password": "pw"}, headers={"CF-Connecting-IP": "10.9.9.9"}).status_code == 429
+
+
+def test_closed_song_picker_never_blocks_the_page():
+    """A closed picker must be truly gone: its full screen layer once stayed invisible on top and ate every tap."""
+    js = open("radar/static/music.js", encoding="utf-8").read()
+    assert ".mp-wrap[hidden]" in js and "display:none!important" in js and ".mp-wrap:not(.open){pointer-events:none}" in js

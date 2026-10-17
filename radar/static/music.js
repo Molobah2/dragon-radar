@@ -12,6 +12,7 @@
     const st = document.createElement("style"); st.id = "mp-css";
     st.textContent = `
 .mp-wrap{position:fixed;inset:0;z-index:140;display:grid;place-items:center;padding:16px;background:rgba(8,10,28,0);transition:background .25s}
+.mp-wrap[hidden],.mp [hidden]{display:none!important}.mp-wrap:not(.open){pointer-events:none}
 .mp-wrap.open{background:rgba(8,10,28,.5)}
 .mp{width:min(460px,100%);max-height:min(640px,calc(100dvh - 32px));display:flex;flex-direction:column;border-radius:26px;color:#f4f6ff;
  background:linear-gradient(160deg,#2a2160,#141235 60%,#0c0b24);box-shadow:0 30px 70px -20px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.12);
