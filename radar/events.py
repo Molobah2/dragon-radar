@@ -13,7 +13,7 @@ from .db import Event, Keeper, Post, Report, ReportConn, ReportStatus, VisitDay,
 
 VID = re.compile(r"^[a-f0-9]{32}$")
 REF = re.compile(r"^[a-z0-9_-]{0,32}$")
-KINDS = {"open", "popen", "goal", "share", "save", "install", "hatch", "arrive"}   # popen: an open on a preview device
+KINDS = {"open", "popen", "goal", "share", "save", "install", "hatch", "arrive", "ama"}   # popen: an open on a preview device
 # hatch: an egg hatched (ref is the tier). arrive: someone landed from a shared link (ref says which kind)
 REASONS = {"spam": "Spam or scam", "offtopic": "Not about Pocket Dragons", "harm": "Rude or harmful"}
 KEEP_DAYS = 70          # events older than this are deleted, ten weeks is plenty for trends

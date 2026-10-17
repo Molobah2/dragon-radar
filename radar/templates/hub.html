@@ -69,6 +69,13 @@
     a.tool:hover { transform: translateY(-4px); box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 34px 60px -34px rgba(27, 33, 48, .55); }
     .tool .art { aspect-ratio: 16 / 9; background: linear-gradient(135deg, #bfe6ff, #c9efc2); overflow: hidden; }
     .tool .art img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(1.02); transition: transform .8s cubic-bezier(.2, .8, .2, 1); }
+    .tool .art-ama { position: relative; display: grid; place-items: center; background: radial-gradient(120% 90% at 30% 20%, #6b4fd8, #2a1f6b 55%, #120f33); }
+    .tool .art-ama .ama-art-ico { width: 104px; height: 104px; object-fit: contain; transform: none; filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .45)); animation: amaFloat 5s ease-in-out infinite; }
+    .ama-art-glow { position: absolute; width: 60%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 200, 110, .45), transparent); animation: amaGlow 5s ease-in-out infinite; }
+    .ama-art-tag { position: absolute; right: 14px; bottom: 12px; padding: 5px 12px; border-radius: 999px; font: 800 13px var(--display, inherit); color: #2a1a00; background: linear-gradient(180deg, #ffe08a, #ffb347); }
+    @keyframes amaFloat { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-8px) rotate(3deg); } }
+    @keyframes amaGlow { 0%, 100% { opacity: .7; transform: scale(.95); } 50% { opacity: 1; transform: scale(1.08); } }
+    @media (prefers-reduced-motion: reduce) { .tool .art-ama .ama-art-ico, .ama-art-glow { animation: none; } }
     a.tool:hover .art img { transform: scale(1.06); }
     .tool .body { padding: 18px 20px 20px; display: grid; gap: 8px; flex: 1; }
     .tool h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; }
@@ -239,6 +246,19 @@
           <h2>{{ cfg.site_name }}</h2>
           <p>Every Pocket Dragons post the community shares, in one feed, plus a directory of 🐉 Keepers to follow.</p>
           <div class="row"><span class="chip">Live</span>
+            <span class="go"><span>Open tool</span><svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11m-4-4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+        </div>
+      </a>
+      <a class="tool reveal" href="{{ url_for('ama_page') }}">
+        <div class="art art-ama">
+          <span class="ama-art-glow" aria-hidden="true"></span>
+          {{ ico("chat", 104, "ama-art-ico") }}
+          <span class="ama-art-tag">{{ ama_count }} AMAs</span>
+        </div>
+        <div class="body">
+          <h2>AMA Library</h2>
+          <p>Every Pocket Dragons AMA in one place: the recordings, what was shared and how the room grew.</p>
+          <div class="row"><span class="chip">New</span>
             <span class="go"><span>Open tool</span><svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11m-4-4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
         </div>
       </a>

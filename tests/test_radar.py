@@ -1964,3 +1964,18 @@ def test_closed_song_picker_never_blocks_the_page():
     """A closed picker must be truly gone: its full screen layer once stayed invisible on top and ate every tap."""
     js = open("radar/static/music.js", encoding="utf-8").read()
     assert ".mp-wrap[hidden]" in js and "display:none!important" in js and ".mp-wrap:not(.open){pointer-events:none}" in js
+
+
+def test_ama_library_lists_every_ama_newest_first(cfg, Session):
+    from radar.ama import AMAS
+    c = create_app(cfg).test_client()
+    page = c.get("/friends/ama").get_data(as_text=True)
+    order = [page.index(f'id="ama-{a["n"]}"') for a in AMAS]
+    assert order == sorted(order) and [a["n"] for a in AMAS] == sorted((a["n"] for a in AMAS), reverse=True)
+    for a in AMAS:
+        assert f'https://x.com/djsamwithers/status/{a["post"]}' in page
+    assert "This library was Ismail's idea." in page and "https://x.com/IsmailHA279" in page
+    assert "collecting" not in page.lower()
+    assert "Watch the recording on X" in page and "1,020" in page
+    assert "AMA Library" in c.get("/").get_data(as_text=True)
+    assert 'href="/friends/ama"' in c.get("/friends").get_data(as_text=True)

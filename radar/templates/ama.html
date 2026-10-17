@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% from "_ico.html" import ico with context %}
+{% block title %}AMA Library · {{ cfg.site_name }}{% endblock %}
+{% block body_class %}ready static-page{% endblock %}
+{% block header_right %}<a class="btn btn-soft" data-i18n-html="back" href="{{ url_for('feed') }}"><span class="wide-only">Back to the </span>feed</a>{% endblock %}
+{% block main %}
+{% set held = amas | selectattr("points") | list %}
+<section class="ama-hero">
+  <div class="ama-hero-main ama-rise">
+    <p class="ama-kicker"><span class="ama-live-dot" aria-hidden="true"></span>Every call, in one place</p>
+    <h1>The AMA <span class="pop">Library</span></h1>
+    <p class="lede">Missed a Pocket Dragons AMA? Catch up on every call here: the recording, what was shared and how the room grew week by week.</p>
+    <div class="ama-meta">
+      <span class="ama-tag"><b>{{ amas | length }}</b> AMAs so far</span>
+      <span class="ama-tag"><b>Every Friday</b> on Discord</span>
+      <span class="ama-tag ama-tag-hot"><b data-count="{{ peak }}">{{ "{:,}".format(peak) }}</b> peak live</span>
+    </div>
+  </div>
+  <div class="ama-chart ama-rise" style="--d: .12s" aria-label="How many people joined each AMA live">
+    <h2>How the room grew</h2>
+    <div class="ama-bars">
+      {% for a in amas | reverse %}
+      <div class="ama-bar{{ ' none' if not a.live }}{{ ' soon' if not a.points }}" style="--h: {{ ((a.live or 0) / peak * 100) | round(1) if a.live else 18 }}%; --i: {{ loop.index0 }}">
+        <b>{% if a.live %}<span data-count="{{ a.live }}">{{ "{:,}".format(a.live) }}</span>{% elif not a.points %}soon{% else %}not shared{% endif %}</b>
+        <i></i><span>AMA {{ a.n }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="ama-note">Live counts were shared by the team during each call.</p>
+  </div>
+</section>
+
+<a class="ama-thanks ama-rise" style="--d: .2s" href="https://x.com/IsmailHA279" target="_blank" rel="noopener">
+  <span class="ama-av" aria-hidden="true">I<img src="https://pbs.twimg.com/profile_images/2023680543871926272/Rv0wREMK_200x200.jpg" alt="" width="52" height="52" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"></span>
+  <span class="ama-thanks-text"><b>This library was Ismail's idea.</b> Thank you <span class="ama-handle">@IsmailHA279</span> for helping bring it to pdtools.</span>
+  <span class="ama-heart" aria-hidden="true">&#10084;</span>
+</a>
+
+<section class="ama-line" id="ama-line" aria-label="Every AMA, newest first">
+  <div class="ama-track" aria-hidden="true"><i id="ama-fill"></i></div>
+  {% for a in amas %}
+  <article class="ama-item{{ ' latest' if loop.first }}{{ ' pending' if not a.points }}" id="ama-{{ a.n }}">
+    <div class="ama-node" aria-hidden="true"><span>{{ a.n }}</span></div>
+    <div class="ama-card">
+      <div class="ama-top">
+        <span class="ama-pill">AMA {{ a.n }}</span>
+        {% if loop.first %}<span class="ama-pill ama-new">Latest</span>{% endif %}
+        <span class="ama-date">{{ a.label }}</span>
+        {% if a.live %}<span class="ama-chip">{{ ico("pulse", 22) }}{{ a.about }} {{ "{:,}".format(a.live) }} live</span>{% endif %}
+      </div>
+      <h2>{{ a.title }}</h2>
+      {% if a.points %}
+      <ul class="ama-points">
+        {% for p in a.points %}<li style="--j: {{ loop.index0 }}">{{ p }}</li>{% endfor %}
+      </ul>
+      {% else %}
+      <p class="ama-soon">The recording is ready to watch. A short recap of this call is on its way.</p>
+      <div class="ama-shimmer" aria-hidden="true"><i></i><i></i><i></i></div>
+      {% endif %}
+      <a class="ama-watch" href="{{ a.url }}" target="_blank" rel="noopener">
+        <span class="ama-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
+        <span>Watch the recording on X</span>
+      </a>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+<p class="ama-foot">Shared by the team on each call. Plans can change, so the newest call is always the latest word.</p>
+
+<style>
+  .ama-hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 22px; align-items: stretch; padding-block: 40px 18px; }
+  .ama-hero-main, .ama-chart, .ama-card, .ama-thanks { background: var(--glass); backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3);
+    border: 1px solid rgba(255, 255, 255, .55); box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 30px 60px -34px rgba(27, 33, 48, .55); }
+  .ama-hero-main { padding: 34px; border-radius: 32px; }
+  .ama-kicker { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 10px; font: 800 13px var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--coral-deep); }
+  .ama-live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 0 rgba(255, 122, 89, .6); animation: amaPing 2.2s ease-out infinite; }
+  @keyframes amaPing { 0% { box-shadow: 0 0 0 0 rgba(255, 122, 89, .6); } 70%, 100% { box-shadow: 0 0 0 12px rgba(255, 122, 89, 0); } }
+  .ama-hero h1 { margin: 0 0 12px; font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 6vw, 68px); line-height: .98; letter-spacing: -.02em; }
+  .ama-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .ama-tag { padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: 14px; color: var(--ink-soft); background: rgba(255, 255, 255, .6); box-shadow: inset 0 0 0 1px var(--line); }
+  .ama-tag b { color: var(--ink); font-weight: 900; }
+  .ama-tag-hot { color: #fff; background: linear-gradient(135deg, var(--coral), #ff9b6b); box-shadow: 0 10px 22px -12px rgba(232, 86, 58, .8); }
+  .ama-tag-hot b { color: #fff; }
+
+  .ama-chart { padding: 24px 24px 18px; border-radius: 32px; display: flex; flex-direction: column; }
+  .ama-chart h2 { margin: 0 0 14px; font: 700 20px var(--font-display); }
+  .ama-bars { flex: 1; min-height: 190px; display: grid; grid-template-columns: repeat({{ amas | length }}, 1fr); gap: 10px; align-items: end; }
+  .ama-bar { height: 100%; display: grid; grid-template-rows: auto 1fr auto; justify-items: center; gap: 6px; }
+  .ama-bar b { font: 800 13px var(--font-body); color: var(--ink); white-space: nowrap; }
+  .ama-bar.none b, .ama-bar.soon b { color: var(--ink-soft); font-weight: 700; font-size: 11.5px; }
+  .ama-bar i { align-self: end; width: 100%; max-width: 46px; height: var(--h); border-radius: 12px 12px 6px 6px;
+    background: linear-gradient(180deg, #ffd76a, var(--coral) 70%, var(--coral-deep)); box-shadow: 0 10px 18px -10px rgba(232, 86, 58, .7);
+    transform-origin: bottom; transform: scaleY(0); transition: transform 1.1s cubic-bezier(.2, .8, .2, 1) calc(var(--i) * .09s + .2s); }
+  .ama-bar.none i, .ama-bar.soon i { background: none; box-shadow: none; border: 2px dashed rgba(74, 84, 104, .35); }
+  .ama-bar > span { font: 800 11.5px var(--font-body); color: var(--ink-soft); letter-spacing: .03em; }
+  .ama-chart.in .ama-bar i { transform: scaleY(1); }
+  .ama-note { margin: 12px 0 0; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+
+  .ama-thanks { display: flex; align-items: center; gap: 14px; margin: 4px 0 30px; padding: 14px 18px; border-radius: 22px; text-decoration: none; color: var(--ink);
+    transition: transform .35s cubic-bezier(.2, .8, .2, 1); }
+  .ama-thanks:hover { transform: translateY(-2px); }
+  .ama-av { position: relative; flex: none; width: 52px; height: 52px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
+    font: 700 22px var(--font-display); color: #fff; background: linear-gradient(135deg, #3aa8f0, #6b4fd8); box-shadow: 0 0 0 3px #fff, 0 8px 18px -8px rgba(0, 0, 0, .45); }
+  .ama-av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .ama-thanks-text { flex: 1; font-weight: 600; line-height: 1.4; }
+  .ama-handle { font-weight: 900; color: var(--sky-deep); }
+  .ama-heart { color: var(--coral); font-size: 22px; animation: amaBeat 2.4s ease-in-out infinite; }
+  @keyframes amaBeat { 0%, 60%, 100% { transform: scale(1); } 70% { transform: scale(1.22); } 80% { transform: scale(.96); } 90% { transform: scale(1.12); } }
+
+  .ama-line { position: relative; display: grid; gap: 22px; padding-left: 74px; }
+  .ama-track { position: absolute; left: 31px; top: 12px; bottom: 12px; width: 4px; border-radius: 4px; background: rgba(255, 255, 255, .45); overflow: hidden; }
+  .ama-track i { position: absolute; left: 0; top: 0; width: 100%; height: var(--fill, 0%); border-radius: inherit; background: linear-gradient(180deg, #ffd76a, var(--coral), var(--plum)); transition: height .25s linear; }
+  .ama-item { position: relative; opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .8s cubic-bezier(.2, .8, .2, 1); }
+  .ama-item.in { opacity: 1; transform: none; }
+  .ama-node { position: absolute; left: -74px; top: 22px; width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center;
+    background: linear-gradient(160deg, #fff, #f2f4fb); box-shadow: 0 0 0 5px rgba(255, 255, 255, .5), 0 14px 26px -14px rgba(27, 33, 48, .6); }
+  .ama-node span { font: 700 26px var(--font-display); background: linear-gradient(160deg, var(--coral), var(--plum)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .latest .ama-node { background: linear-gradient(160deg, #ffe08a, var(--coral)); box-shadow: 0 0 0 5px rgba(255, 215, 106, .45), 0 0 30px rgba(255, 170, 60, .55); }
+  .latest .ama-node span { color: #fff; background: none; -webkit-text-fill-color: #fff; }
+  .latest .ama-node::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid rgba(255, 170, 60, .6); animation: amaRing 2.6s ease-out infinite; }
+  @keyframes amaRing { 0% { transform: scale(.9); opacity: 1; } 100% { transform: scale(1.35); opacity: 0; } }
+  .ama-card { padding: 22px 24px 22px; border-radius: 28px; transition: transform .4s cubic-bezier(.2, .8, .2, 1), box-shadow .4s; }
+  .ama-card:hover { transform: translateY(-3px); box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 40px 70px -36px rgba(27, 33, 48, .6); }
+  .latest .ama-card { border-color: rgba(255, 190, 90, .75); box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 0 0 2px rgba(255, 190, 90, .25), 0 30px 60px -30px rgba(232, 120, 40, .45); }
+  .ama-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .ama-pill { padding: 4px 11px; border-radius: 999px; font: 800 12px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: #fff; background: var(--ink); }
+  .ama-new { background: linear-gradient(90deg, #ffb347, var(--coral)); }
+  .ama-date { font-weight: 800; color: var(--ink-soft); font-size: 14px; }
+  .ama-chip { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px 4px 6px; border-radius: 999px; font-weight: 800; font-size: 13px;
+    color: #9a3412; background: rgba(255, 179, 71, .2); box-shadow: inset 0 0 0 1px rgba(232, 120, 40, .25); }
+  .ama-chip img { width: 22px; height: 22px; }
+  .ama-card h2 { margin: 0 0 12px; font: 700 clamp(22px, 3vw, 28px)/1.15 var(--font-display); letter-spacing: -.01em; }
+  .ama-points { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 9px; }
+  .ama-points li { position: relative; padding-left: 26px; font-weight: 600; color: var(--ink); line-height: 1.45;
+    opacity: 0; transform: translateX(-8px); transition: opacity .5s ease calc(var(--j) * .08s + .25s), transform .6s cubic-bezier(.2, .8, .2, 1) calc(var(--j) * .08s + .25s); }
+  .ama-item.in .ama-points li { opacity: 1; transform: none; }
+  .ama-points li::before { content: ""; position: absolute; left: 4px; top: .5em; width: 10px; height: 10px; border-radius: 50%;
+    background: linear-gradient(135deg, #ffd76a, var(--coral)); box-shadow: 0 0 0 4px rgba(255, 179, 71, .18); }
+  .ama-soon { margin: 0 0 12px; font-weight: 700; color: var(--ink-soft); }
+  .ama-shimmer { display: grid; gap: 9px; margin-bottom: 18px; }
+  .ama-shimmer i { display: block; height: 12px; border-radius: 6px; background: linear-gradient(90deg, rgba(74, 84, 104, .12), rgba(74, 84, 104, .24), rgba(74, 84, 104, .12));
+    background-size: 200% 100%; animation: amaShimmer 1.8s linear infinite; }
+  .ama-shimmer i:nth-child(1) { width: 92%; } .ama-shimmer i:nth-child(2) { width: 76%; } .ama-shimmer i:nth-child(3) { width: 58%; }
+  @keyframes amaShimmer { to { background-position: -200% 0; } }
+  .ama-watch { display: inline-flex; align-items: center; gap: 12px; padding: 8px 20px 8px 8px; border-radius: 999px; text-decoration: none; font-weight: 800; color: #fff;
+    background: linear-gradient(180deg, #2b2f45, #141726); box-shadow: 0 14px 26px -14px rgba(20, 23, 38, .85); transition: transform .25s, box-shadow .25s; }
+  .ama-watch:hover { transform: translateY(-2px); box-shadow: 0 18px 30px -14px rgba(20, 23, 38, .9); }
+  .ama-play { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #2a1a00; background: linear-gradient(180deg, #ffe08a, #ffb347);
+    box-shadow: 0 0 0 0 rgba(255, 200, 80, .6); }
+  .ama-watch:hover .ama-play { animation: amaPing 1.4s ease-out infinite; }
+  .ama-foot { margin: 24px 0 40px; text-align: center; font-weight: 700; font-size: 13.5px; color: var(--on-sky-soft, rgba(29, 36, 51, .7)); }
+  .ama-rise { opacity: 0; transform: translateY(18px); animation: amaRise .9s cubic-bezier(.2, .8, .2, 1) var(--d, 0s) forwards; }
+  @keyframes amaRise { to { opacity: 1; transform: none; } }
+
+  html.theme-dark .ama-hero-main, html.theme-dark .ama-chart, html.theme-dark .ama-card, html.theme-dark .ama-thanks { border-color: rgba(255, 255, 255, .1); box-shadow: 0 30px 60px -34px rgba(0, 0, 0, .8); }
+  html.theme-dark .ama-tag:not(.ama-tag-hot) { background: rgba(255, 255, 255, .08); }
+  html.theme-dark .ama-node { background: linear-gradient(160deg, #262c4a, #171b31); box-shadow: 0 0 0 5px rgba(255, 255, 255, .08), 0 14px 26px -14px rgba(0, 0, 0, .8); }
+  html.theme-dark .ama-track { background: rgba(255, 255, 255, .12); }
+  html.theme-dark .ama-chip { color: #ffd7a8; }
+  html.theme-dark .ama-pill { background: #f2f4ff; color: #141726; }
+  html.theme-dark .ama-new { color: #fff; }
+  html.theme-dark .ama-watch { background: linear-gradient(180deg, #f2f4ff, #d9ddef); color: #141726; }
+
+  @media (max-width: 860px) {
+    .ama-hero { grid-template-columns: 1fr; padding-block: 24px 12px; }
+    .ama-hero-main { padding: 24px; border-radius: 26px; }
+  }
+  @media (max-width: 640px) {
+    .ama-line { padding-left: 50px; gap: 16px; }
+    .ama-track { left: 20px; }
+    .ama-node { left: -50px; top: 18px; width: 44px; height: 44px; box-shadow: 0 0 0 4px rgba(255, 255, 255, .5), 0 10px 20px -12px rgba(27, 33, 48, .6); }
+    .ama-node span { font-size: 19px; }
+    .ama-card { padding: 18px 16px; border-radius: 22px; }
+    .ama-chip { margin-left: 0; }
+    .ama-watch { width: 100%; justify-content: center; font-size: 15px; white-space: nowrap; padding-right: 16px; }
+    .ama-bars { gap: 6px; min-height: 160px; }
+    .ama-bar b { font-size: 11.5px; } .ama-bar.none b, .ama-bar.soon b { font-size: 10px; white-space: normal; text-align: center; line-height: 1.1; }
+    .ama-thanks { padding: 12px 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ama-rise, .ama-item, .ama-points li, .ama-bar i { animation: none !important; transition: none !important; opacity: 1 !important; transform: none !important; }
+    .ama-live-dot, .ama-heart, .latest .ama-node::after, .ama-shimmer i { animation: none !important; }
+  }
+</style>
+<script>
+(() => {
+  "use strict";
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const fmt = (n) => n.toLocaleString("en-US");
+  // numbers count up the first time they come into view
+  function countUp(el) {
+    const to = +el.dataset.count; if (!to || reduce) return;
+    const t0 = performance.now(), dur = 1200;
+    const step = (t) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = fmt(Math.round(to * e)); if (k < 1) requestAnimationFrame(step); };
+    el.textContent = "0"; requestAnimationFrame(step);
+  }
+  const seen = new IntersectionObserver((list) => {
+    for (const en of list) {
+      if (!en.isIntersecting) continue;
+      en.target.classList.add("in");
+      en.target.querySelectorAll("[data-count]").forEach(countUp);
+      seen.unobserve(en.target);
+    }
+  }, { threshold: 0.18, rootMargin: "0px 0px -6% 0px" });
+  document.querySelectorAll(".ama-item, .ama-chart").forEach((el) => (reduce ? el.classList.add("in") : seen.observe(el)));
+  document.querySelectorAll(".ama-meta [data-count]").forEach((el) => setTimeout(() => countUp(el), 350));
+  // the timeline fills as you read down the page
+  const line = document.getElementById("ama-line"), fill = document.getElementById("ama-fill");
+  let raf = 0;
+  function paint() {
+    raf = 0; if (!line || !fill) return;
+    const r = line.getBoundingClientRect(), vh = innerHeight;
+    const k = Math.max(0, Math.min(1, (vh * 0.62 - r.top) / Math.max(1, r.height)));
+    fill.style.setProperty("--fill", `${(reduce ? 1 : k) * 100}%`);
+  }
+  addEventListener("scroll", () => { if (!raf) raf = requestAnimationFrame(paint); }, { passive: true });
+  addEventListener("resize", paint); paint();
+  // count which recordings people open, anonymously, like every other tool on pdtools
+  document.querySelectorAll(".ama-watch").forEach((a) => a.addEventListener("click", () => {
+    try { window.pdTrack && window.pdTrack("ama", "n" + a.closest(".ama-item").id.replace("ama-", "")); } catch (e) { /* fine */ }
+  }));
+})();
+</script>
+{% endblock %}

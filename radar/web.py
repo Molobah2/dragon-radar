@@ -407,7 +407,9 @@ def create_app(cfg: Config | None = None) -> Flask:
         on_site = {x["title"] for x in playlist}
         makers = [{**m, "playing": any(t in on_site for t in m["songs"]), "on_site": [t for t in m["songs"] if t in on_site]}
                   for m in COMMUNITY_MUSIC]
-        return render_template("hub.html", cfg=cfg, stats=public_stats() if g.get("v2") else None, music_makers=makers)
+        from .ama import AMAS
+        return render_template("hub.html", cfg=cfg, stats=public_stats() if g.get("v2") else None, music_makers=makers,
+                               ama_count=len(AMAS))
 
     @app.get("/keepers")
     def keepers_old():
@@ -981,6 +983,13 @@ def create_app(cfg: Config | None = None) -> Flask:
         return r.content, 200, {"Content-Type": ctype, "Cache-Control": "public, max-age=86400"}
 
     # ---------- follow directory ----------
+    @app.get("/friends/ama")
+    def ama_page():
+        from .ama import AMAS, PEAK
+        return render_template("ama.html", cfg=cfg, amas=AMAS, peak=PEAK,
+                               og_title="AMA Library · every Pocket Dragons AMA in one place",
+                               og_desc="Catch up on every Pocket Dragons AMA: the recordings, what was shared and how the room grew week by week.")
+
     @app.get("/friends/keepers")
     def keepers_page():
         return render_template("keepers.html", cfg=cfg)
