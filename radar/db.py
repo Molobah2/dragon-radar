@@ -6,7 +6,7 @@ recent posts once a day and clears text older than the feed window.
 """
 from datetime import datetime, timezone
 
-from sqlalchemy import (Boolean, Date, DateTime, Float, Integer, String, Text, create_engine, func, select)
+from sqlalchemy import (Boolean, Date, DateTime, Float, Integer, LargeBinary, String, Text, create_engine, func, select)
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 
@@ -198,6 +198,21 @@ class FriendDevice(Base):
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
     invited_by: Mapped[str] = mapped_column(String(32), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class BookPage(Base):
+    """A signed Keeper's public dragon book page (pdtools.xyz/k/<name>): the picture they chose to share and the
+    counts printed on it. Sent from their own device, only after they share or save their book."""
+    __tablename__ = "book_pages"
+    key: Mapped[str] = mapped_column(String(32), primary_key=True)          # lower-case handle, same as friends.key
+    username: Mapped[str] = mapped_column(String(32))
+    found: Mapped[int] = mapped_column(Integer, default=0)
+    rare: Mapped[int] = mapped_column(Integer, default=0)
+    legend: Mapped[int] = mapped_column(Integer, default=0)
+    relics: Mapped[int] = mapped_column(Integer, default=0)
+    streak: Mapped[int] = mapped_column(Integer, default=0)
+    image: Mapped[bytes] = mapped_column(LargeBinary, default=b"")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class Setting(Base):

@@ -949,6 +949,9 @@ button.dex-card:hover { transform: translateY(-3px); }
 .dex-dots i { width: 8px; height: 8px; border-radius: 4px; background: #d8dde7; transition: width .25s, background .25s; }
 .dex-dots i.on { width: 22px; background: linear-gradient(90deg, #ffd76a, #f0643f); }
 .dex-actions .btn { justify-content: center; }
+.dex-link { margin: 12px 0 0; font-weight: 700; font-size: 13.5px; color: var(--ink-soft); }
+.dex-link a { color: #c2410c; font-weight: 800; overflow-wrap: anywhere; }
+.dex-sign-btn { border: 0; background: none; padding: 0; font: inherit; font-weight: 800; color: #c2410c; text-decoration: underline; cursor: pointer; }
 @media (max-width: 900px) { .dex-page { flex-basis: 100%; } }
 @media (max-width: 640px) {
   .dex-book { gap: 12px; }

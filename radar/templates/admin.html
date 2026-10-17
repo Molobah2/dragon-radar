@@ -79,6 +79,24 @@
     </div>
     <p class="muted">Counting started with this update. Each browser counts once per post, goal or card per day. Your own preview devices are not counted.</p>
   </section>
+  <section class="panel visitors" id="funnel">
+    <h2>The week, step by step</h2>
+    <p class="muted">People (browsers) in the last 7 days at each step. The gap between two steps shows where Keepers stop.</p>
+    <div class="funnel">{% for st in habits.funnel.steps %}
+      <div class="fstep"><span>{{ st.label }}</span><i style="width: {{ st.pct }}%"></i><b>{{ st.n }}</b></div>{% endfor %}
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="stat-num">{{ habits.funnel.new }}</span><span class="muted">first time visitors (7 days)</span></div>
+      <div class="stat"><span class="stat-num">{{ habits.funnel.from_book }}</span><span class="muted">arrived from a shared dragon book link (7 days)</span></div>
+    </div>
+    <p class="muted">Hatches and book link arrivals started counting with this update.</p>
+  </section>
+  <style>
+    .funnel { display: grid; gap: 8px; margin: 12px 0 16px; }
+    .fstep { display: grid; grid-template-columns: minmax(150px, 220px) 1fr 48px; align-items: center; gap: 12px; font-weight: 700; }
+    .fstep i { display: block; height: 14px; border-radius: 7px; background: linear-gradient(90deg, #ffd76a, #f0643f); min-width: 4px; }
+    .fstep b { text-align: right; }
+  </style>
   <style>
     .stat-star { background: linear-gradient(135deg, rgba(255,179,71,.18), rgba(240,100,63,.12)); }
     .hbars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: end; height: 170px; margin: 10px 0 18px; }

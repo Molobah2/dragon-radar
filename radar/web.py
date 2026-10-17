@@ -652,6 +652,92 @@ def create_app(cfg: Config | None = None) -> Flask:
             book_cache["at"] = 0                    # show the new name right away
         return out
 
+    # ---------- a signed Keeper's own dragon book page: pdtools.xyz/k/<name> ----------
+    # The book lives on the Keeper's device. When they save or share it, the picture and its counts are sent here,
+    # so the link they post shows their book to anyone who taps it, with a button to start their own.
+    page_writes: dict[str, float] = {}
+    BOOK_IMG_MAX = 450_000
+
+    def _count(v, top: int) -> int:
+        try:
+            n = int(v)
+        except (TypeError, ValueError):
+            return 0
+        return max(0, min(top, n))
+
+    @app.post("/api/book/page")
+    @v2_only
+    def api_book_page():
+        import base64
+        from .db import BookPage, Friend, FriendDevice
+        try:
+            data = _body(BOOK_IMG_MAX * 4 // 3 + 2000)
+        except ValueError:
+            return {"ok": False, "why": "bad"}, 400
+        vid = str(data.get("vid", ""))[:32]
+        with Session() as s:
+            dev = s.get(FriendDevice, vid) if vid else None
+            friend = s.get(Friend, dev.key) if dev is not None and dev.confirmed else None
+            if friend is None:
+                return {"ok": False, "why": "unsigned"}, 403
+            now_ts = time.time()
+            if now_ts - page_writes.get(friend.key, 0) < 20:          # one picture every 20 seconds is plenty
+                return {"ok": True, "url": f"https://pdtools.xyz/k/{friend.username}", "same": True}
+            raw = str(data.get("img", ""))
+            if raw.startswith("data:image/jpeg;base64,"):
+                raw = raw.split(",", 1)[1]
+            try:
+                img = base64.b64decode(raw, validate=True) if raw else b""
+            except ValueError:
+                return {"ok": False, "why": "bad"}, 400
+            if not img.startswith(b"\xff\xd8\xff") or len(img) > BOOK_IMG_MAX:
+                return {"ok": False, "why": "bad"}, 400
+            if len(page_writes) > 20000:
+                page_writes.clear()
+            page_writes[friend.key] = now_ts
+            row = s.get(BookPage, friend.key) or BookPage(key=friend.key)
+            row.username = friend.username
+            row.found, row.rare, row.legend = _count(data.get("found"), 35), _count(data.get("rare"), 15), _count(data.get("legend"), 5)
+            row.relics, row.streak = _count(data.get("relics"), 3), _count(data.get("streak"), 9999)
+            row.image, row.updated_at = img, utcnow()
+            s.merge(row)
+            s.commit()
+            return {"ok": True, "url": f"https://pdtools.xyz/k/{friend.username}"}
+
+    def _book_row(name: str):
+        from .db import BookPage, Friend
+        key = (name or "").lstrip("@").lower()[:32]
+        if not key.replace("_", "").isalnum():
+            return None, None
+        with Session() as s:
+            return s.get(Friend, key), s.get(BookPage, key)
+
+    @app.get("/k/<name>")
+    @v2_only
+    def keeper_book(name):
+        friend, page = _book_row(name)
+        if friend is None:
+            abort(404)
+        stamp = int(page.updated_at.timestamp()) if page is not None and page.image else 0
+        img = f"https://pdtools.xyz/k/{friend.username}/book.jpg?v={stamp}" if stamp else None
+        return render_template("keeperbook.html", cfg=cfg, friend=friend, page=page,
+                               img=f"/k/{friend.username}/book.jpg?v={stamp}" if stamp else None,
+                               og_title=f"@{friend.username}'s dragon book on PD Tools",
+                               og_desc=(f"{page.found} of 35 dragons found by cheering on fellow Pocket Dragons Keepers. "
+                                        "Start your own book, free." if page else
+                                        "A Keeper in Blinky's Book of Friends. Start your own dragon book, free."),
+                               og_img=img)
+
+    @app.get("/k/<name>/book.jpg")
+    @v2_only
+    def keeper_book_img(name):
+        friend, page = _book_row(name)
+        if page is None or not page.image:
+            abort(404)
+        r = app.response_class(page.image, mimetype="image/jpeg")
+        r.headers["Cache-Control"] = "public, max-age=300"
+        return r
+
     # ---------- Discord daily drop (off until DROP_CHANNEL_ID is set on Render) ----------
     @app.post("/cron/discord-drop")
     def cron_discord_drop():

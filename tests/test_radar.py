@@ -1868,3 +1868,64 @@ def test_directory_shows_the_newest_dragon_post_from_any_source(cfg, Session):
     assert got["last_post"] == (now - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
     src = open("radar/discord_share.py", encoding="utf-8").read()
     assert "k.last_post_at = made" in src
+
+
+def test_signed_keeper_gets_a_dragon_book_page(cfg, Session):
+    """Only a Keeper who signed the Book of Friends can publish a book page, only a real JPEG is kept,
+    and pdtools.xyz/k/<name> shows the picture as its X preview with a way to start your own."""
+    import base64
+    from radar.db import Friend, FriendDevice
+    with Session() as s:
+        s.add(Friend(key="bookkeeper", username="BookKeeper"))
+        s.add(FriendDevice(vid="b" * 32, key="bookkeeper", username="BookKeeper", code="PDDDDD", confirmed=True))
+        s.add(FriendDevice(vid="c" * 32, key="waiting", username="Waiting", code="PDEEEE", confirmed=False))
+        s.commit()
+    c = v2_client(cfg)
+    jpeg = b"\xff\xd8\xff\xe0" + b"0" * 200
+    img = "data:image/jpeg;base64," + base64.b64encode(jpeg).decode()
+    post = lambda body: c.post("/api/book/page", data=json.dumps(body), content_type="text/plain")
+    assert post({"vid": "c" * 32, "img": img}).status_code == 403                  # not confirmed yet
+    assert post({"vid": "d" * 32, "img": img}).status_code == 403                  # never signed
+    png = "data:image/jpeg;base64," + base64.b64encode(b"\x89PNG....").decode()
+    assert post({"vid": "b" * 32, "img": png}).status_code == 400                  # not a JPEG
+    r = post({"vid": "b" * 32, "img": img, "found": 12, "rare": 99, "legend": 2, "streak": 6}).get_json()
+    assert r["ok"] and r["url"] == "https://pdtools.xyz/k/BookKeeper"
+    page = c.get("/k/bookkeeper").get_data(as_text=True)
+    assert "@BookKeeper&#39;s dragon book" in page or "@BookKeeper's dragon book" in page
+    assert "12 of 35 dragons found" in page and "6 day goal streak" in page
+    assert 'content="https://pdtools.xyz/k/BookKeeper/book.jpg?v=' in page and "?from=book#dragons" in page
+    pic = c.get("/k/BookKeeper/book.jpg")
+    assert pic.status_code == 200 and pic.data == jpeg and pic.mimetype == "image/jpeg"
+    assert c.get("/k/nobody").status_code == 404 and c.get("/k/waiting").status_code == 404
+    assert create_app(cfg).test_client().get("/k/bookkeeper").status_code == 404   # v2 only
+
+
+def test_week_funnel_counts_each_step(cfg, Session):
+    from radar.db import VisitDay
+    from radar.events import funnel, record
+    today = datetime.now(ZoneInfo(cfg.timezone)).date()
+    with Session() as s:
+        for v, days in (("1" * 32, 2), ("2" * 32, 1), ("3" * 32, 1)):
+            for d in range(days):
+                s.add(VisitDay(day=today - timedelta(days=d), vid=v))
+        record(s, today, "1" * 32, "open", "5")
+        record(s, today, "2" * 32, "open", "5")
+        record(s, today, "1" * 32, "goal")
+        assert record(s, today, "1" * 32, "hatch", "common") is True
+        assert record(s, today, "3" * 32, "arrive", "book") is True
+        s.commit()
+        f = funnel(s, today)
+    assert [x["n"] for x in f["steps"]] == [3, 2, 1, 1, 1] and f["from_book"] == 1
+
+
+def test_new_keepers_get_a_starter_goal_and_a_nudge():
+    js = open("radar/static/app.js", encoding="utf-8").read()
+    assert "window.pdGoalNow = goalNow" in js and "Math.round(GOAL / 2)" in js and 'store.get("pd:nudge"' in js
+    dragons = open("radar/static/dragons.js", encoding="utf-8").read()
+    assert "window.pdGoalNow" in dragons and 'track("hatch", entry.tier)' in dragons
+
+
+def test_admin_shows_the_week_funnel(client):
+    client.post("/admin/login", data={"password": "pw"})
+    page = client.get("/admin").get_data(as_text=True)
+    assert "The week, step by step" in page and "Hatched an egg" in page and "Came back on another day" in page

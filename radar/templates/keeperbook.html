@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}@{{ friend.username }}'s dragon book · {{ cfg.hub_name }}{% endblock %}
+{% block body_class %}ready static-page{% endblock %}
+{% block main %}
+<section class="panel kbook">
+  <p class="kb-kicker">Blinky's Book of Friends</p>
+  <h2>@{{ friend.username }}'s dragon book</h2>
+  {% if page %}
+  <p class="kb-line">{{ page.found }} of 35 dragons found{% if page.streak > 1 %} · 🔥 {{ page.streak }} day goal streak{% endif %}</p>
+  {% if img %}<img class="kb-pic" src="{{ img }}" width="1200" height="675" alt="@{{ friend.username }}'s dragon book with every dragon they have found">{% endif %}
+  {% else %}
+  <p class="kb-line">This Keeper has not shared a book picture yet.</p>
+  {% endif %}
+  <p class="kb-how">Every dragon here hatched from cheering on fellow Pocket Dragons Keepers on pdtools. Free, no wallet needed. Open posts from fellow Keepers, finish the daily goal, and an egg hatches.</p>
+  <div class="kb-go">
+    <a class="kb-btn kb-main" href="{{ url_for('feed') }}?from=book#dragons">Start your own dragon book</a>
+    <a class="kb-btn" href="https://x.com/{{ friend.username }}" target="_blank" rel="noopener">Say hi to @{{ friend.username }} on X</a>
+  </div>
+</section>
+<style>
+  .kbook { padding: 34px 26px 30px; margin-bottom: 26px; text-align: center; }
+  .kb-kicker { margin: 0 0 6px; font: 800 12.5px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: #a87412; }
+  .kbook h2 { margin: 0 0 6px; font-family: var(--font-display); font-size: clamp(26px, 5vw, 34px); overflow-wrap: anywhere; }
+  .kb-line { margin: 0 0 18px; font-weight: 700; color: var(--ink-soft); }
+  .kb-pic { display: block; width: 100%; max-width: 960px; height: auto; margin: 0 auto 18px; border-radius: 18px; box-shadow: 0 24px 50px -24px rgba(10, 8, 30, .6); }
+  .kb-how { margin: 0 auto 20px; max-width: 540px; color: var(--ink-soft); font-weight: 600; }
+  .kb-go { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .kb-btn { padding: 12px 20px; border-radius: 999px; font-weight: 800; text-decoration: none; color: var(--ink); background: rgba(255, 255, 255, .7); }
+  .kb-main { background: linear-gradient(180deg, #ff8a5c, #f0643f); color: #fff; }
+  @media (max-width: 640px) { .kbook { padding: 24px 14px 22px; } .kb-btn { flex: 1 1 100%; text-align: center; } }
+</style>
+{% endblock %}

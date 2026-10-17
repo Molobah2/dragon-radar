@@ -403,11 +403,22 @@
   const readGoal = () => { const v = store.obj("pd:goal"); return { day: typeof v.day === "string" ? v.day : null, n: v.n | 0 }; };
   let goal = readGoal();
   if (goal.day !== today()) goal = { day: today(), n: 0 };
+  // v2: a Keeper who has never hatched an egg needs only half the goal for the first one, so the very first
+  // visit can end with a dragon. From the next day on it is the usual goal for everyone.
+  const STARTER = Math.max(1, Math.round(GOAL / 2));
+  function goalNow() {
+    if (!KEEPER_GOAL) return GOAL;
+    const d = store.obj("pd:dex"), log = Array.isArray(d.log) ? d.log : [];
+    const before = log.some((l) => l && l.day !== today()) || (d.n | 0) > 1
+      || (!log.length && d.have && typeof d.have === "object" && Object.keys(d.have).length > 0);
+    return before ? GOAL : STARTER;
+  }
+  window.pdGoalNow = goalNow;
   function showGoal() {
-    const n = Math.min(goal.n, GOAL), done = n >= GOAL;
-    $("goal-text").textContent = done ? "Daily goal done" : `${n}/${GOAL} ${goalWord} today`;
+    const G = goalNow(), n = Math.min(goal.n, G), done = n >= G;
+    $("goal-text").textContent = done ? "Daily goal done" : `${n}/${G} ${goalWord} today`;
     $("goal").classList.toggle("done", done);
-    $("goal-egg").style.setProperty("--fill", `${(n / GOAL) * 100}%`);
+    $("goal-egg").style.setProperty("--fill", `${(n / G) * 100}%`);
     dispatchEvent(new Event("pd:goalshow"));   // v2 dragons turn a finished goal into "hatch your egg"
   }
   function bumpGoal() {
@@ -416,8 +427,14 @@
     goal.n++;
     store.set("pd:goal", goal);
     showGoal();
-    if (goal.n === GOAL) {
-      toast(KEEPER_GOAL ? `\u{1F423} You cheered on ${GOAL} fellow Keepers today. Blinky is proud of you.`
+    const G = goalNow(), left = G - goal.n;
+    // a friendly heads up near the end, once a day, so nobody stops just short of their egg
+    if (KEEPER_GOAL && left === 5 && G > 5 && store.get("pd:nudge", "") !== today()) {
+      store.set("pd:nudge", today());
+      toast(`\u{1F95A} Just ${left} more Keepers and your egg hatches.`);
+    }
+    if (goal.n === G) {
+      toast(KEEPER_GOAL ? `\u{1F423} You cheered on ${G} fellow Keepers today. Blinky is proud of you.`
         : "\u{1F423} You gave 5 quiet posts some love today. Blinky is proud of you.");
       window.meadow && window.meadow.cheer && window.meadow.cheer();
       dispatchEvent(new Event("pd:goaldone"));

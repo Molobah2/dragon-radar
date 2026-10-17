@@ -4,16 +4,17 @@ Everything is keyed by the random number each browser makes for itself (see visi
 No name, X account or IP address is ever stored.
 """
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 
-from .db import Event, Keeper, Post, Report, ReportConn, ReportStatus, Visitor, utcnow
+from .db import Event, Keeper, Post, Report, ReportConn, ReportStatus, VisitDay, Visitor, utcnow
 
 VID = re.compile(r"^[a-f0-9]{32}$")
 REF = re.compile(r"^[a-z0-9_-]{0,32}$")
-KINDS = {"open", "popen", "goal", "share", "save", "install"}   # popen: an open on a preview device
+KINDS = {"open", "popen", "goal", "share", "save", "install", "hatch", "arrive"}   # popen: an open on a preview device
+# hatch: an egg hatched (ref is the tier). arrive: someone landed from a shared link (ref says which kind)
 REASONS = {"spam": "Spam or scam", "offtopic": "Not about Pocket Dragons", "harm": "Rude or harmful"}
 KEEP_DAYS = 70          # events older than this are deleted, ten weeks is plenty for trends
 HABIT_OPENS = 5         # the north star: Keepers who open this many posts in a week
@@ -48,6 +49,32 @@ def habit_keepers(s, end: date) -> int:
     return s.scalar(select(func.count()).select_from(inner)) or 0
 
 
+def funnel(s, today: date) -> dict:
+    """The week as steps: who visited, who opened a post, who finished the goal, who hatched, who came back,
+    and how many arrived from a shared dragon book. Each number is people (browsers), not clicks."""
+    week = today - timedelta(days=6)
+
+    def people(kind: str, ref: str | None = None) -> int:
+        q = select(func.count(func.distinct(Event.vid))).where(Event.kind == kind, Event.day >= week)
+        if ref is not None:
+            q = q.where(Event.ref == ref)
+        return s.scalar(q) or 0
+
+    visitors = s.scalar(select(func.count(func.distinct(VisitDay.vid))).where(VisitDay.day >= week)) or 0
+    back_q = (select(VisitDay.vid).where(VisitDay.day >= week).group_by(VisitDay.vid)
+              .having(func.count(func.distinct(VisitDay.day)) >= 2).subquery())
+    came_back = s.scalar(select(func.count()).select_from(back_q)) or 0
+    start = datetime.combine(week, datetime.min.time())
+    new = s.scalar(select(func.count()).select_from(Visitor).where(Visitor.first_seen >= start)) or 0
+    steps = [
+        ("Visited", visitors), ("Opened a post", people("open")), ("Finished the daily goal", people("goal")),
+        ("Hatched an egg", people("hatch")), ("Came back on another day", came_back),
+    ]
+    top = max([n for _, n in steps] + [1])
+    return {"steps": [{"label": k, "n": n, "pct": round(100 * n / top)} for k, n in steps],
+            "new": new, "from_book": people("arrive", "book"), "from_card": people("arrive", "card")}
+
+
 def summary(s, today: date) -> dict:
     """Numbers for the admin page."""
     week = today - timedelta(days=6)
@@ -75,6 +102,7 @@ def summary(s, today: date) -> dict:
         "goals_peak": max([g["n"] for g in goals] + [1]),
         "shares": per_ref("share"), "saves": per_ref("save"),
         "installs_week": count("install", week), "installs_all": count("install", date(2000, 1, 1)),
+        "funnel": funnel(s, today),
     }
 
 

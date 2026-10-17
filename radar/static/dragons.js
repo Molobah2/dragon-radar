@@ -66,7 +66,9 @@
   const found = () => ENTRIES.filter(owned).length;
   const foundIn = (tier) => ENTRIES.filter((e) => e.tier === tier && owned(e)).length;
 
-  function goalDone() { const g = store.get("pd:goal", null); return !!g && g.day === today() && (g.n || 0) >= GOAL; }
+  // a brand new Keeper's first egg needs half the usual goal (set in app.js), so the first visit ends with a dragon
+  const goalNow = () => (window.pdGoalNow ? window.pdGoalNow() : GOAL);
+  function goalDone() { const g = store.get("pd:goal", null); return !!g && g.day === today() && (g.n || 0) >= goalNow(); }
   // the goal streak: days in a row with the daily goal finished
   // streak freeze: one missed goal day a week is forgiven, so rares and legends stay in reach for busy Keepers
   const freezeOk = (g) => (g.count || 0) > 1 && (!g.fz || dayGap(g.fz, today()) >= 7);
@@ -109,6 +111,7 @@
     h[k] = (h[k] || 0) + 1;
     dex.have[entry.sp.id] = h;
     dex.last = today(); dex.n = (dex.n || 0) + 1;
+    track("hatch", entry.tier);
     dex.log.push({ k: entry.key, day: today() });
     dex.log = dex.log.slice(-120);
     save();
@@ -746,7 +749,7 @@
   function renderDex() {
     const f = found(), gs = goalStreak();
     $("dex-sub").textContent = f ? `${f} of ${TOTAL} found${gs ? ` · \u{1F525} ${gs} day goal streak` : ""}`
-      : `No dragons yet. Cheer on ${GOAL} fellow Keepers today and your first egg hatches.`;
+      : `No dragons yet. Cheer on ${goalNow()} fellow Keepers today and your first egg hatches.`;
     $("dex-next").textContent = f ? nextNews() : "";
     $("dex-bar").style.setProperty("--p", `${(f / TOTAL) * 100}%`);
     $("dex-hatch").hidden = !canHatch();
@@ -851,14 +854,15 @@
     const f = found(), gs = goalStreak(), r = foundIn("rare"), l = foundIn("legend");
     const extra = [r ? `${r} rare holo` : "", l ? `${l} golden legend${l > 1 ? "s" : ""}` : ""].filter(Boolean).join(" and ");
     const tail = gs > 1 ? (extra ? `, with ${extra.replace(" and ", ", ")} and a ${gs} day streak` : ` with a ${gs} day streak`) : extra ? `, with ${extra}` : "";
-    return `My dragon book on pdtools \u{1F409} ${f} of ${TOTAL} found${tail}. Cheer on ${GOAL} fellow Keepers a day and start yours at pdtools.xyz`;
+    const link = bookMe && bookMe.status === "confirmed" ? `pdtools.xyz/k/${bookMe.handle}` : "pdtools.xyz";
+    return `My dragon book on pdtools \u{1F409} ${f} of ${TOTAL} found${tail}. Cheer on ${GOAL} fellow Keepers a day and start yours at ${link}`;
   };
   function shade(src) {   // the dark silhouette of a dragon not found yet
     const s = document.createElement("canvas"); s.width = src.width; s.height = src.height;
     const x = s.getContext("2d"); x.drawImage(src, 0, 0); x.globalCompositeOperation = "source-in"; x.fillStyle = "rgba(255, 255, 255, .16)"; x.fillRect(0, 0, s.width, s.height);
     return s;
   }
-  async function bookCard() {
+  async function bookCard(scale = 2.5) {
     const K = window.pdCard;
     const arts = await Promise.all(ENTRIES.map((e) => sticker(e, 220)));
     // every dragon found must be drawn: if one has not arrived yet, the picture waits (the caller says so kindly)
@@ -866,7 +870,7 @@
     const relics = await Promise.all(SECRETS.map((e) => (sealed(e) ? sticker(e, 220) : null)));
     if (SECRETS.some((e, i) => sealed(e) && !relics[i])) return null;
     await K.fonts();
-    const { c, x } = K.canvas(2.5), W = K.W, H = K.H;
+    const { c, x } = K.canvas(scale), W = K.W, H = K.H;
     // a calm night sky with soft warm light, the same family as every pdtools card
     const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#2a1f5c"); g.addColorStop(0.55, "#16123a"); g.addColorStop(1, "#0a0820");
     x.fillStyle = g; x.fillRect(0, 0, W, H);
@@ -949,7 +953,47 @@
     if (b) { bookBlob = b; bookStamp = key; bookFile = new File([b], "pdtools-my-dragon-book.png", { type: "image/png" }); }
     return b;
   }
+  // a Keeper who signed Blinky's Book of Friends gets their own book page (pdtools.xyz/k/name) to share.
+  // The picture is sent only when they save, share or post their book, and refreshed later only if they did.
+  let bookMe = null, sentKey = store.get("pd:bookSent", "");
+  const myVid = () => { try { return localStorage.getItem("pd:vid") || ""; } catch (e) { return ""; } };
+  async function whoAmI() {
+    if (bookMe) return bookMe;
+    try {
+      const vid = myVid();
+      bookMe = vid ? await (await fetch(`/api/book/me?vid=${encodeURIComponent(vid)}`, { headers: { Accept: "application/json" } })).json() : { status: "none" };
+    } catch (e) { bookMe = { status: "none" }; }
+    return bookMe;
+  }
+  addEventListener("pd:bookme", (e) => { if (e.detail) { bookMe = e.detail; paintLink(); } });
+  async function publishBook() {
+    const me = await whoAmI();
+    if (!me || me.status !== "confirmed") return null;
+    const key = bookKey();
+    if (sentKey === key) return `https://pdtools.xyz/k/${me.handle}`;
+    const c = await bookCard(1);
+    if (!c) return null;
+    let img = "";
+    try { img = c.toDataURL("image/jpeg", 0.86); } catch (e) { return null; }
+    try {
+      const r = await (await fetch("/api/book/page", { method: "POST", headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ vid: myVid(), img, found: found(), rare: foundIn("rare"), legend: foundIn("legend"),
+          relics: SECRETS.filter(sealed).length, streak: goalStreak() }) })).json();
+      if (r && r.ok) { sentKey = key; store.set("pd:bookSent", key); return r.url; }
+    } catch (e) { /* offline: the next save tries again */ }
+    return null;
+  }
+  function paintLink() {
+    const signed = bookMe && bookMe.status === "confirmed";
+    if ($("dex-link")) $("dex-link").hidden = !signed;
+    if ($("dex-link-url") && signed) { $("dex-link-url").textContent = `pdtools.xyz/k/${bookMe.handle}`; $("dex-link-url").href = `/k/${bookMe.handle}`; }
+    if ($("dex-sign")) $("dex-sign").hidden = !bookMe || signed;
+    $("dex-post").href = `https://x.com/intent/post?text=${encodeURIComponent(bookText())}`;
+  }
+  if ($("dex-sign-btn")) $("dex-sign-btn").addEventListener("click", () => { closeSheet(dexEl); setTimeout(() => window.pdOpenBook && window.pdOpenBook(), 260); });
+
   async function prepBook(tries = 0) {
+    if (!tries) whoAmI().then(() => { paintLink(); if (sentKey && sentKey !== bookKey()) publishBook(); });
     $("dex-post").href = `https://x.com/intent/post?text=${encodeURIComponent(bookText())}`;
     const b = await makeBook();
     if (!b) { if (tries < 4 && !dexEl.hidden) setTimeout(() => { if (!dexEl.hidden) prepBook(tries + 1); }, 4000); return; }
@@ -965,15 +1009,16 @@
       return;
     }
     btn.textContent = label; btn.disabled = false;
-    track("save", "book");
+    track("save", "book"); publishBook();
     const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "pdtools-my-dragon-book.png";
     document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
   });
   $("dex-share").addEventListener("click", async () => {
     const b = await makeBook(); if (!b || !bookFile) return;
+    publishBook();
     try { await navigator.share({ files: [bookFile], text: bookText() }); track("share", "book"); } catch (e) {}
   });
-  $("dex-post").addEventListener("click", () => { $("dex-post").href = `https://x.com/intent/post?text=${encodeURIComponent(bookText())}`; track("share", "book"); });
+  $("dex-post").addEventListener("click", () => { $("dex-post").href = `https://x.com/intent/post?text=${encodeURIComponent(bookText())}`; track("share", "book"); publishBook(); });
 
   function openDex() {
     renderDex(); openSheet(dexEl);
@@ -1010,5 +1055,10 @@
   window.pdDex = { canHatch, openHatch, openDex, todayHatch };
   // a relic earned earlier (or brought over with a backup code) shows up once the page has settled
   (function waitCalm(t) { if (document.body.classList.contains("ready")) setTimeout(offerSeal, 2500); else if (t < 60) setTimeout(() => waitCalm(t + 1), 1000); })(0);
+  // someone tapped a shared dragon book link: counted once, so we can see if shared books bring new Keepers
+  try {
+    const from = new URLSearchParams(location.search).get("from");
+    if (from === "book" && !sessionStorage.getItem("pd:arrived")) { sessionStorage.setItem("pd:arrived", "1"); setTimeout(() => track("arrive", "book"), 1200); }
+  } catch (e) { /* private mode */ }
   if (location.hash === "#dragons") { history.replaceState(null, "", location.pathname + location.search); setTimeout(openDex, 600); }
 })();
