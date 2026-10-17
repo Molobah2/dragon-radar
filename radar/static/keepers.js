@@ -7,6 +7,10 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
   };
   const followed = store.get("radar:followed", {}) || {};
+  // tapped Follow on X but not confirmed yet: X never tells the site whether you really followed (you may have cancelled),
+  // so the card asks when you come back instead of guessing
+  const pending = store.get("radar:pending", {}) || {};
+  const savePending = () => store.set("radar:pending", pending);
   let show = "all", hide = !!store.get("radar:hideFollowed", false), query = "";
   $("k-hide").checked = hide;
   let team = [], keepers = [];
@@ -41,18 +45,21 @@
     note.textContent = "Nice run. Take a short breather before following more, X can limit accounts that follow very fast.";
   }
 
-  function follow(k, card) {
-    followed[k.username.toLowerCase()] = Date.now(); store.set("radar:followed", followed);
+  function follow(k) { pending[k.username.toLowerCase()] = Date.now(); savePending(); setTimeout(render, 400); }
+  function confirmFollow(k) {
+    const u = k.username.toLowerCase(); delete pending[u]; savePending();
+    followed[u] = Date.now(); store.set("radar:followed", followed);
     window.meadow && window.meadow.cheer && window.meadow.cheer();
-    pace(); setTimeout(render, 400);
+    pace(); render();
   }
+  function notYet(k) { delete pending[k.username.toLowerCase()]; savePending(); render(); }
   // followed straight on X, outside pdtools: mark it so they stop showing up as someone to follow
   // (an old timestamp, so it never counts toward the follow pacing note)
-  function already(k) { followed[k.username.toLowerCase()] = 1; store.set("radar:followed", followed); render(); }
+  function already(k) { delete pending[k.username.toLowerCase()]; savePending(); followed[k.username.toLowerCase()] = 1; store.set("radar:followed", followed); render(); }
   function unfollow(k) { delete followed[k.username.toLowerCase()]; store.set("radar:followed", followed); render(); }
 
   function card(k, isTeam) {
-    const done = !!followed[k.username.toLowerCase()];
+    const done = !!followed[k.username.toLowerCase()], asking = !done && !!pending[k.username.toLowerCase()];
     const url = `https://x.com/${k.username}`;
     const av = k.avatar ? el("img", { class: "avatar", src: k.avatar, alt: "", loading: "lazy" })
       : el("span", { class: "avatar blank" }, (k.name || "?").slice(0, 1));
@@ -71,7 +78,10 @@
           : el("a", { class: "btn btn-go", href: `https://x.com/intent/follow?screen_name=${encodeURIComponent(k.username)}`,
               target: "_blank", rel: "noopener", onclick: () => follow(k) }, "Follow on X"),
         el("a", { class: "btn btn-soft", href: url, target: "_blank", rel: "noopener" }, "Profile"),
-        done ? null : el("button", { class: "kp-already", type: "button", onclick: () => already(k) }, "Already following")));
+        done || asking ? null : el("button", { class: "kp-already", type: "button", onclick: () => already(k) }, "Already following")),
+      asking ? el("div", { class: "kp-ask" }, el("span", {}, "Did you follow?"),
+        el("button", { class: "btn btn-go", type: "button", onclick: () => confirmFollow(k) }, "Yes, followed"),
+        el("button", { class: "btn btn-soft", type: "button", onclick: () => notYet(k) }, "Not yet")) : null);
   }
 
   function render() {

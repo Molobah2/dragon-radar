@@ -348,6 +348,8 @@ body.modal-open { overflow: hidden; }
 .kp-card .btn { padding: 8px 14px; font-size: 13.5px; }
 .kp-already { margin-left: auto; padding: 8px 4px; border: 0; background: none; font: 700 12.5px var(--font-body); color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .kp-already:hover { color: var(--ink); }
+.kp-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(243,196,107,.16); font: 800 13.5px var(--font-body); }
+.kp-ask span { margin-right: auto; }
 .kp-when { font-size: 13px; font-weight: 700; color: var(--leaf); }
 .kp-when.quiet { color: var(--ink-soft); }
 .kp-search { border: 2px solid #e3e7f2; border-radius: 999px; padding: 8px 14px; font: 700 14px var(--font-body); min-width: 0; width: min(260px, 100%); outline: none; background: #fff; }

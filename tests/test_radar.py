@@ -1997,3 +1997,15 @@ def test_mailbox_ideas_refresh_and_already_following():
     src = open("radar/i18n_src.js", encoding="utf-8").read()
     for k in ("kAlready:", "fRefresh:", "fRefreshL:", "fCaught:"):
         assert src.count(k) == 10, k
+
+
+def test_follow_asks_before_marking_followed():
+    """Tapping Follow on X no longer marks the Keeper as followed: X cannot tell the site, so the card asks first."""
+    ks = open("radar/static/keepers.js", encoding="utf-8").read()
+    f = ks[ks.index("function follow(k)"):ks.index("function confirmFollow")]
+    assert "pending[" in f and "followed[" not in f
+    assert "function confirmFollow(k)" in ks and "function notYet(k)" in ks
+    assert "Did you follow?" in ks and "Yes, followed" in ks and "Not yet" in ks
+    src = open("radar/i18n_src.js", encoding="utf-8").read()
+    for k in ("kAskQ:", "kAskYes:", "kAskNo:"):
+        assert src.count(k) == 10, k
