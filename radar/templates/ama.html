@@ -13,7 +13,7 @@
     <div class="ama-meta">
       <span class="ama-tag"><b>{{ amas | length }}</b> AMAs so far</span>
       <span class="ama-tag"><b>Every Friday</b> on Discord</span>
-      <span class="ama-tag ama-tag-hot"><b data-count="{{ peak }}">{{ "{:,}".format(peak) }}</b> peak live</span>
+      <span class="ama-tag ama-tag-hot"><b><span data-count="{{ peak_shown }}">{{ "{:,}".format(peak_shown) }}</span>+</b> peak live</span>
     </div>
   </div>
   <div class="ama-chart ama-rise" style="--d: .12s" aria-label="How many people joined each AMA live">
@@ -21,7 +21,7 @@
     <div class="ama-bars">
       {% for a in amas | reverse %}
       <div class="ama-bar{{ ' none' if not a.live }}{{ ' soon' if not a.points }}" style="--h: {{ ((a.live or 0) / peak * 100) | round(1) if a.live else 18 }}%; --i: {{ loop.index0 }}">
-        <b>{% if a.live %}<span data-count="{{ a.live }}">{{ "{:,}".format(a.live) }}</span>{% elif not a.points %}soon{% else %}not shared{% endif %}</b>
+        <b>{% if a.live %}<span data-count="{{ a.live // 100 * 100 }}">{{ "{:,}".format(a.live // 100 * 100) }}</span>+{% elif not a.points %}soon{% else %}not shared{% endif %}</b>
         <i></i><span>AMA {{ a.n }}</span>
       </div>
       {% endfor %}
@@ -46,7 +46,7 @@
         <span class="ama-pill">AMA {{ a.n }}</span>
         {% if loop.first %}<span class="ama-pill ama-new">Latest</span>{% endif %}
         <span class="ama-date">{{ a.label }}</span>
-        {% if a.live %}<span class="ama-chip">{{ ico("pulse", 22) }}{{ a.about }} {{ "{:,}".format(a.live) }} live</span>{% endif %}
+        {% if a.live %}<span class="ama-chip">{{ ico("pulse", 22) }}{{ a.crowd }} live</span>{% endif %}
       </div>
       <h2>{{ a.title }}</h2>
       {% if a.points %}

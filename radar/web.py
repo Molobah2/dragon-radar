@@ -985,8 +985,8 @@ def create_app(cfg: Config | None = None) -> Flask:
     # ---------- follow directory ----------
     @app.get("/friends/ama")
     def ama_page():
-        from .ama import AMAS, PEAK
-        return render_template("ama.html", cfg=cfg, amas=AMAS, peak=PEAK,
+        from .ama import AMAS, PEAK, PEAK_SHOWN
+        return render_template("ama.html", cfg=cfg, amas=AMAS, peak=PEAK, peak_shown=PEAK_SHOWN,
                                og_title="AMA Library · every Pocket Dragons AMA in one place",
                                og_desc="Catch up on every Pocket Dragons AMA: the recordings, what was shared and how the room grew week by week.")
 

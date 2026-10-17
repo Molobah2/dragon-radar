@@ -10,7 +10,7 @@ AMAS = [
     {"n": 6, "day": date(2026, 10, 16), "post": "2111347128580653444", "live": 900,
      "title": "Badges, burning and honor",
      "points": [
-         "Around 900 joined live, after the team cleared bots from Discord and X.",
+         "900+ joined live, after the team cleared bots from Discord and X.",
          "The AMA badge now runs to five AMAs, with a new badge waiting at five out of five.",
          "A new Dragon Space badge for X Spaces is coming soon.",
          "Burning needs at least two dragons: you keep one, and the burn button will not burn a single dragon.",
@@ -20,7 +20,7 @@ AMAS = [
     {"n": 5, "day": date(2026, 10, 9), "post": "2108889370434633957", "live": 1020,
      "title": "Burn odds, Godwin and pre-sale",
      "points": [
-         "The room passed 1,000 live for the first time, and the stage now holds 1,200.",
+         "The room passed 1,000 live for the first time, and the stage was boosted to fit more Keepers.",
          "First look at burn odds with placeholder numbers: two greens give a guaranteed blue, and the odds always show before you burn.",
          "Godwin, the 3D animator behind Blinky, joined on camera and shared new Blinky animations.",
          "Pre-sale costs the same as mint with no discount, and the top spots on the Keeper Ledger get a guaranteed pre-sale spot.",
@@ -34,7 +34,7 @@ AMAS = [
          "Revenue split shared: 30% company, 30% NFT inventory, 20% rewards pool and 20% vault.",
          "The closing leak: the top spots on the Keeper Ledger earn pre-sale spots.",
      ]},
-    {"n": 3, "day": date(2026, 9, 25), "post": "2103793637347717464", "live": 700, "about": "Nearly",
+    {"n": 3, "day": date(2026, 9, 25), "post": "2103793637347717464", "live": 690,
      "title": "352 dragons and the collection",
      "points": [
          "16 species and 22 origins make 352 distinct dragons.",
@@ -42,7 +42,7 @@ AMAS = [
          "A collection book awards badges for completing sets.",
          "Blinky Says, Referral and the AMA Attendee quest were explained in detail.",
      ]},
-    {"n": 2, "day": date(2026, 9, 18), "post": "2101134496649404730", "live": None,
+    {"n": 2, "day": date(2026, 9, 18), "post": "2101134496649404730", "live": 100,
      "title": "The economy",
      "points": [
          "Collectibles, badges and your onboarding card all feed one stat called Power.",
@@ -60,9 +60,15 @@ AMAS = [
      ]},
 ]
 
+def crowd(n):
+    """Live counts are shown rounded down to the hundred with a plus, never as exact numbers: 216 shows as 200+."""
+    return f"{n // 100 * 100:,}+" if n else ""
+
+
 for a in AMAS:
-    a.setdefault("about", "About")
+    a["crowd"] = crowd(a["live"])
     a["url"] = f"https://x.com/djsamwithers/status/{a['post']}"
     a["label"] = a["day"].strftime("Friday, %B %-d") if a["day"] else "Recording shared September 14"
 
 PEAK = max(a["live"] or 0 for a in AMAS)
+PEAK_SHOWN = PEAK // 100 * 100
