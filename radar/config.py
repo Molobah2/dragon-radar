@@ -181,7 +181,8 @@ Config.mailbox = _mailbox
 COMMUNITY_MUSIC = [
     {"name": "The Panda", "x": "ThePanda_NFT", "songs": ["Blinky's song"],
      "avatar": "https://pbs.twimg.com/profile_images/1794018791090708480/cd_1UKgj_200x200.jpg"},
-    {"name": "DJ", "x": "bubblegum_dee", "songs": ["The Pocket Dragon Wakes", "Four-Leaf Clover Escape"],
+    {"name": "DJ", "x": "bubblegum_dee", "songs": ["The Pocket Dragon Wakes", "Four-Leaf Clover Escape", "Dragons Rule The Den", "Incubator Seven Two Six",
+                                                 "Pocket Dragons in the Palm", "Pocket Dragos"],
      "avatar": "https://pbs.twimg.com/profile_images/2106797900298956800/QEgBWpGJ_200x200.jpg"},
     {"name": "Boxer", "x": "Boxerr110", "songs": ["Pocket Dragon"],
      "avatar": "https://pbs.twimg.com/profile_images/2062207325553983491/phRPGgCQ_200x200.jpg"},

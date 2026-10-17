@@ -24,12 +24,12 @@
     "mix": 108.6
   },
   {
-    "src": "audio/four-leaf-clover-escape.m4a",
-    "title": "Four-Leaf Clover Escape",
+    "src": "audio/dragons-rule-the-den.m4a",
+    "title": "Dragons Rule The Den",
     "by": "DJ",
     "x": "bubblegum_dee",
-    "dur": 155.3,
-    "mix": 149.3
+    "dur": 155.26,
+    "mix": 149.26
   },
   {
     "src": "audio/keeper-of-the-dragon.m4a",
@@ -38,5 +38,37 @@
     "x": "IsmailHA279",
     "dur": 254.2,
     "mix": 248.2
+  },
+  {
+    "src": "audio/four-leaf-clover-escape.m4a",
+    "title": "Four-Leaf Clover Escape",
+    "by": "DJ",
+    "x": "bubblegum_dee",
+    "dur": 155.3,
+    "mix": 149.3
+  },
+  {
+    "src": "audio/incubator-seven-two-six.m4a",
+    "title": "Incubator Seven Two Six",
+    "by": "DJ",
+    "x": "bubblegum_dee",
+    "dur": 163.5,
+    "mix": 157.5
+  },
+  {
+    "src": "audio/pocket-dragons-in-the-palm.m4a",
+    "title": "Pocket Dragons in the Palm",
+    "by": "DJ",
+    "x": "bubblegum_dee",
+    "dur": 157.3,
+    "mix": 151.3
+  },
+  {
+    "src": "audio/pocket-dragos.m4a",
+    "title": "Pocket Dragos",
+    "by": "DJ",
+    "x": "bubblegum_dee",
+    "dur": 126.9,
+    "mix": 120.9
   }
 ]
