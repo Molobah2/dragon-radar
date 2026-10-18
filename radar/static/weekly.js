@@ -44,7 +44,7 @@
     const cx = (TITLE.x0 + TITLE.x1) / 2;
     ctx.textAlign = "center";
     ctx.font = `700 30px ${D}`; engraved("This week in the Hatchery", cx, TITLE.y0 + 35, INK);
-    ctx.font = `800 13.5px ${B}`; engraved("COMMUNITY POSTS KEEPERS OPENED MOST", cx, TITLE.y0 + 54, INK_SOFT);
+    ctx.font = `800 13.5px ${B}`; engraved((who === "keepers" ? "POSTS BY KEEPERS, THE TEAM LEFT OUT" : "COMMUNITY POSTS KEEPERS OPENED MOST"), cx, TITLE.y0 + 54, INK_SOFT);
     ctx.textAlign = "left";
     if (!top.length) {
       const r = ROWS[0];
@@ -87,17 +87,25 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
+  // whose posts: everyone in the community, or Keepers only (team members left out, for shoutouts)
+  const wstore = { get() { try { return localStorage.getItem("pd:weeklyWho") } catch (e) { return null } }, set(v) { try { localStorage.setItem("pd:weeklyWho", v) } catch (e) {} } };
+  let who = wstore.get() === "keepers" ? "keepers" : "community";
+  const whoBtns = () => document.querySelectorAll("[data-wkwho]");
+  const markWho = () => whoBtns().forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.wkwho === who)));
+  whoBtns().forEach((b) => b.addEventListener("click", () => { if (who === b.dataset.wkwho) return; who = b.dataset.wkwho; wstore.set(who); markWho(); open(); }));
   async function open() {
+    markWho();
     wrap.hidden = false; (void wrap.offsetWidth, wrap.classList.add("open")); document.body.classList.add("sheet-open");
     $("weekly-msg").textContent = "Drawing the card...";
     try {
-      const r = await fetch("/api/posts?range=7d&who=community&quotes=1");
+      const r = await fetch(`/api/posts?range=7d&who=${who}&quotes=1`);
       const j = await r.json();
       top = (j.posts || []).filter((p) => p.opens > 0).sort((a, b) => b.opens - a.opens || (a.t < b.t ? 1 : -1)).slice(0, 5);
     } catch (e) { top = []; }
     await draw();
     $("weekly-msg").textContent = "";
-    const text = "This week in the Pocket Dragons Hatchery \u{1F409} the community posts Keepers loved most. See them all at pdtools.xyz";
+    const text = who === "keepers" ? "This week in the Pocket Dragons Hatchery \u{1F409} the posts by Keepers that the community loved most. See them all at pdtools.xyz"
+      : "This week in the Pocket Dragons Hatchery \u{1F409} the community posts Keepers loved most. See them all at pdtools.xyz";
     $("weekly-post").href = `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
   }
   function close() { wrap.classList.remove("open"); (document.querySelector(".sheet-wrap.open") || document.body.classList.remove("sheet-open")); setTimeout(() => { if (!wrap.classList.contains("open")) wrap.hidden = true; }, 250); }

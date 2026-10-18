@@ -377,6 +377,10 @@
       {% if v2 %}<canvas id="weekly-canvas" class="share-canvas" width="2400" height="1350" data-base="{{ cfg.scene_base }}"></canvas>
       <div class="mw-pick"><div class="mw-row"><b>Card style</b><div class="mw-designs" id="wk-designs" role="group" aria-label="Card style"></div></div></div>
       {% else %}<canvas id="weekly-canvas" width="2400" height="1350"{% if cfg.scene_base %} data-bg="{{ cfg.scene_base }}/image/upload/c_fill,w_2400,h_1350/f_jpg/q_90/v1791730865/{{ cfg.scene_folder }}/weekly-board-c"{% endif %}></canvas>{% endif %}
+      <div class="group wk-who" role="group" aria-label="Posts from">
+        <button class="tab" type="button" data-wkwho="community" aria-pressed="true">Everyone</button>
+        <button class="tab" type="button" data-wkwho="keepers" aria-pressed="false">Keepers only</button>
+      </div>
       <p class="kp-msg" id="weekly-msg"></p>
       <div class="sheet-actions">
         <button class="btn btn-go" id="weekly-save" type="button">Save image</button>

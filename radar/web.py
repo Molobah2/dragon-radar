@@ -298,6 +298,11 @@ def create_app(cfg: Config | None = None) -> Flask:
             q = q.where(Post.is_team.is_(True))
         elif who == "community":
             q = q.where(Post.is_team.is_(False))
+        elif who == "keepers":
+            # Keepers only: the official account and every team member in TEAM_ACCOUNTS left out
+            # (for weekly shoutouts that should celebrate the community, not the team)
+            crew = [a.split(":", 1)[0].strip().lstrip("@").lower() for a in cfg.team_accounts.split(",") if a.strip()]
+            q = q.where(Post.is_team.is_(False), func.lower(Post.author_username).not_in(crew or [""]))
         else:
             who = "all"
         if not quotes:

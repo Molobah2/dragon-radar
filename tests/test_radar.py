@@ -2009,3 +2009,24 @@ def test_follow_asks_before_marking_followed():
     src = open("radar/i18n_src.js", encoding="utf-8").read()
     for k in ("kAskQ:", "kAskYes:", "kAskNo:"):
         assert src.count(k) == 10, k
+
+
+def test_weekly_keepers_only_leaves_the_team_out(cfg, Session):
+    """Shiv's request: the weekly top posts can leave out every team member (TEAM_ACCOUNTS), not just the official account."""
+    now = utcnow()
+    with Session() as s:
+        s.add_all([
+            Post(id="11", author_username="Pocket_Dragons_", text="official", author_id="t", created_at=now - timedelta(minutes=5), is_team=True),
+            Post(id="12", author_username="HeartyOfDaCards", text="team member", author_id="h", created_at=now - timedelta(minutes=6)),
+            Post(id="13", author_username="tradingjoker", text="team member", author_id="j", created_at=now - timedelta(minutes=7)),
+            Post(id="14", author_username="shivo222", text="keeper", author_id="k", created_at=now - timedelta(minutes=8)),
+        ])
+        s.commit()
+    app = create_app(cfg); app.config["TESTING"] = True; c = app.test_client()
+    assert set(ids(c.get("/api/posts?range=7d&who=community"))) == {"12", "13", "14"}
+    assert ids(c.get("/api/posts?range=7d&who=keepers")) == ["14"]
+    for f in ("weekly.js", "weekly2.js"):
+        js = open(f"radar/static/{f}", encoding="utf-8").read()
+        assert "who=${who}" in js and "pd:weeklyWho" in js and "THE TEAM LEFT OUT" in js
+    assert 'data-wkwho="keepers"' in open("radar/templates/feed.html", encoding="utf-8").read()
+    assert open("radar/i18n_src.js", encoding="utf-8").read().count("wkKeepers:") == 10
