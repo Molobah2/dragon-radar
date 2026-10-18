@@ -944,7 +944,10 @@
     return c;
   }
   let bookBlob = null, bookFile = null, bookStamp = "";
-  const bookKey = () => JSON.stringify([dex.have, dex.s, goalStreak(), xName()]);
+  // the art versions of owned dragons are part of the key: when a dragon gets new art (Pink, October 2026),
+  // a Keeper's shared book page is redrawn and sent again the next time they open their book
+  const artKey = () => Object.keys(dex.have).sort().map((id) => id + ":" + ["c", "r", "l"].map((t) => (D.art || {})[`${id}-${t}`] || "").join(",")).join(";");
+  const bookKey = () => JSON.stringify([dex.have, dex.s, goalStreak(), xName(), artKey()]);
   async function makeBook() {
     const key = bookKey();
     if (bookBlob && bookStamp === key) return bookBlob;

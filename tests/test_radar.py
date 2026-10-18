@@ -2030,3 +2030,12 @@ def test_weekly_keepers_only_leaves_the_team_out(cfg, Session):
         assert "who=${who}" in js and "pd:weeklyWho" in js and "THE TEAM LEFT OUT" in js
     assert 'data-wkwho="keepers"' in open("radar/templates/feed.html", encoding="utf-8").read()
     assert open("radar/i18n_src.js", encoding="utf-8").read().count("wkKeepers:") == 10
+
+
+def test_new_dragon_art_reaches_everyone():
+    """New art for a dragon (Pink) shows for Keepers who already own it: the sticker is built from the live art version,
+    and a shared book page is redrawn because the art versions are part of the book key."""
+    dd = open("radar/static/dex-data.js", encoding="utf-8").read()
+    assert '"pink-c":"v1792336210"' in dd and '"pink-r":"v1792336214"' in dd
+    js = open("radar/static/dragons.js", encoding="utf-8").read()
+    assert "artKey()" in js and "D.art[entry.key]" in js
