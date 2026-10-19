@@ -74,6 +74,7 @@
     $("m-done").textContent = `${done} opened`;
     $("m-total").textContent = `${all.length} posts`;
     $("progress-text").textContent = !all.length ? "No posts in this range yet." : done === all.length ? "All caught up. Nice." : done ? `${all.length - done} still waiting in this range.` : "Nothing opened yet in this range.";
+    paintDays();
   }
 
   // ---------- community pulse (from the posts already on the page, costs nothing) ----------
@@ -700,7 +701,7 @@
     pending.length = 0;
     if (newPinned) { pinnedPosts.splice(0, pinnedPosts.length, ...newPinned); pinnedIds.clear(); pinnedPosts.forEach((p) => pinnedIds.add(p.id)); newPinned = null; }
     hidePill();
-    render(); pulse();
+    render(); pulse(); loadDays();
     const top = $("feed").getBoundingClientRect().top + scrollY - 90;
     window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
   });
@@ -754,6 +755,7 @@
       data.newcomers = j.newcomers || [];
       shown = BATCH;
       render(); renderWelcome(); pulse();
+      if ("who" in change || "quotes" in change) loadDays(); else paintDays(true);
     } catch (e) {
       if (ticket !== busy) return;                        // an older request failing must not undo a newer filter
       if (!navigator.onLine || e instanceof TypeError) { // no connection: keep the posts on screen and the old choice
@@ -773,6 +775,89 @@
     go({ range: p2.get("range") || "24h", who: p2.get("who") || "all", quotes: p2.get("quotes") === "0" ? "0" : "1" }, false);
   });
   document.querySelectorAll("time[data-rel]").forEach((t) => { t.textContent = ago(t.getAttribute("datetime")); });
+
+  // ---------- catch up by day: the last 7 days, each keeping the posts this browser has not opened yet ----------
+  // The server only sends each day's post ids; which ones are opened stays in this browser, like the rest of the feed.
+  let dayList = null, skipped = null;              // skipped: { day, ids } after "Mark ... as done", so Undo can bring them back
+  const dayName = (iso) => {
+    const gap = dayList ? dayGap(iso, dayList.today) : 9;
+    if (gap === 0) return "Today";
+    if (gap === 1) return "Yesterday";
+    return new Date(`${iso}T12:00:00Z`).toLocaleDateString(undefined, { weekday: "short", timeZone: "UTC" });
+  };
+  const leftIn = (d) => d.ids.filter((id) => !opened[id] && !unavailable.has(id));
+  function pickedDay() {
+    if (!dayList) return null;
+    if (current.range === "custom" && current.from && (!current.to || current.to === current.from)) return current.from;
+    if (current.range === "today") return dayList.today;
+    if (current.range === "yesterday" && dayList.days[1]) return dayList.days[1].day;
+    return null;
+  }
+  async function loadDays() {
+    try {
+      const r = await fetch(`/api/days?${new URLSearchParams({ who: current.who, quotes: current.quotes })}`, { headers: { Accept: "application/json" } });
+      if (!r.ok) return;
+      const j = await r.json();
+      if (!j || !Array.isArray(j.days)) return;
+      dayList = j; paintDays(true);
+    } catch (e) { /* offline for a moment: the strip waits for the next load */ }
+  }
+  function paintDays(scroll) {
+    const box = $("days");
+    if (!box || !dayList) return;
+    const pick = pickedDay();
+    const rows = dayList.days.map((d) => ({ day: d.day, ids: d.ids, left: leftIn(d).length }));
+    box.hidden = !rows.some((d) => d.ids.length);
+    $("days-row").replaceChildren(...rows.map((d) => {
+      const state = !d.ids.length ? "none" : d.left ? "left" : "done", on = d.day === pick;
+      const long = new Date(`${d.day}T12:00:00Z`).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
+      return el("button", { class: `day-chip ${state}${on ? " on" : ""}`, type: "button", "aria-pressed": String(on), title: long,
+        onclick: () => openDay(d.day) },
+        el("b", {}, dayName(d.day)), el("span", {}, state === "none" ? "no posts" : d.left ? `${d.left} left` : "all done ✓"));
+    }));
+    if (scroll) { const on = $("days-row").querySelector(".on"); on && on.scrollIntoView({ block: "nearest", inline: "center" }); }
+    // the note is about earlier days only, today is the main feed already
+    const earlier = rows.slice(1).filter((d) => d.left), total = earlier.reduce((n, d) => n + d.left, 0);
+    const oldest = earlier[earlier.length - 1];
+    $("days-note").textContent = total
+      ? `${total} ${total === 1 ? "post" : "posts"} from earlier days ${total === 1 ? "is" : "are"} still waiting for you`
+      : rows.slice(1).some((d) => d.ids.length) ? "You are all caught up on earlier days \u{1F409}" : "";
+    const start = $("days-go");
+    start.hidden = !oldest || oldest.day === pick;
+    if (oldest) { start.textContent = `Start with ${dayName(oldest.day)}`; start.onclick = () => openDay(oldest.day); }
+    // a past day is open: offer to mark the rest of it done, or undo that
+    const cur = rows.find((d) => d.day === pick), bar = $("days-bar"), btn = $("days-skip");
+    if (skipped && skipped.day === pick) {
+      bar.hidden = false;
+      $("days-bar-text").textContent = `${dayName(pick)} is marked done.`;
+      btn.textContent = "Undo"; btn.onclick = undoSkip;
+    } else if (cur && cur.day !== dayList.today && cur.left) {
+      bar.hidden = false;
+      $("days-bar-text").textContent = `${cur.left} left from ${dayName(pick)}. Too many to get through?`;
+      btn.textContent = `Mark ${dayName(pick)} as done`; btn.onclick = () => skipDay(cur);
+      btn.title = "Hides the rest of this day. It does not count as support, and you can undo it.";
+    } else bar.hidden = true;
+  }
+  function openDay(day) {
+    if (skipped && skipped.day !== day) skipped = null;
+    if (dayList && day === dayList.today) go({ range: "today" });
+    else go({ range: "custom", from: day, to: day });
+  }
+  // "Done" for a whole day: it only tidies the posts away, it never counts as support (same as the Done button)
+  function skipDay(d) {
+    Object.assign(opened, store.obj("radar:opened"));   // keep what another tab opened
+    const ids = leftIn(d);
+    if (!ids.length) return;
+    const t = Date.now();
+    ids.forEach((id) => { opened[id] = t; });
+    save(); skipped = { day: d.day, ids }; render();
+  }
+  function undoSkip() {
+    if (!skipped) return;
+    skipped.ids.forEach((id) => { delete opened[id]; });
+    save(); skipped = null; render();
+  }
+  addEventListener("storage", (e) => { if (e.key === "radar:opened" && dayList) { Object.assign(opened, store.obj("radar:opened")); paintDays(); } });
 
   // ---------- the 5 second opening (skipped when changing filters) ----------
   let revealed = false, timer = null;
@@ -809,6 +894,7 @@
   render();
   renderWelcome();
   pulse();
+  loadDays();
   showStreak();
   showGoal();
   statusLine();

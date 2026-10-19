@@ -2039,3 +2039,38 @@ def test_new_dragon_art_reaches_everyone():
     assert '"pink-c":"v1792336210"' in dd and '"pink-r":"v1792336214"' in dd
     js = open("radar/static/dragons.js", encoding="utf-8").read()
     assert "artKey()" in js and "D.art[entry.key]" in js
+
+
+def test_days_strip_lists_each_of_the_last_7_days(cfg, Session):
+    """Jon's request: posts not opened on a day stay waiting under that date. /api/days gives each of the last
+    7 days its own post ids (newest day first); the page compares them with what this browser opened."""
+    now = utcnow()
+    midnight = now.replace(hour=0, minute=0, second=1, microsecond=0)     # Africa/Accra is UTC, so this is today
+    with Session() as s:
+        s.add_all([
+            Post(id="21", author_username="a", text="today", author_id="a", created_at=midnight),
+            Post(id="22", author_username="b", text="yesterday", author_id="b", created_at=midnight - timedelta(days=1)),
+            Post(id="23", author_username="c", text="three days ago", author_id="c", created_at=midnight - timedelta(days=3)),
+            Post(id="24", author_username="d", text="too old", author_id="d", created_at=midnight - timedelta(days=8)),
+            Post(id="25", author_username="Pocket_Dragons_", text="team", author_id="t", created_at=midnight - timedelta(days=1), is_team=True),
+        ])
+        s.commit()
+    app = create_app(cfg); app.config["TESTING"] = True; c = app.test_client()
+    j = c.get("/api/days").get_json()
+    assert len(j["days"]) == 7 and j["days"][0]["day"] == j["today"] == midnight.date().isoformat()
+    by = {d["day"]: set(d["ids"]) for d in j["days"]}
+    assert by[midnight.date().isoformat()] == {"21"}
+    assert by[(midnight - timedelta(days=1)).date().isoformat()] == {"22", "25"}
+    assert by[(midnight - timedelta(days=3)).date().isoformat()] == {"23"}
+    assert "24" not in set().union(*by.values())                          # past 7 days the day drops off the strip
+    j = c.get("/api/days?who=community").get_json()
+    assert set(j["days"][1]["ids"]) == {"22"}                            # the strip follows the Everyone / Team / Community choice
+    # a day opened from the strip is just a one day custom range
+    assert ids(c.get(f"/api/posts?range=custom&from={j['days'][3]['day']}&to={j['days'][3]['day']}")) == ["23"]
+    js = open("radar/static/app.js", encoding="utf-8").read()
+    assert "/api/days?" in js and "function skipDay" in js and "function undoSkip" in js
+    assert "it never counts as support" in js                              # marking a day done is a tidy up, not support
+    html = open("radar/templates/feed.html", encoding="utf-8").read()
+    assert 'id="days-row"' in html and 'id="days-skip"' in html
+    assert 'id="hub-catchup"' in open("radar/templates/hub.html", encoding="utf-8").read()
+    assert open("radar/i18n_src.js", encoding="utf-8").read().count("daysTitle:") == 10

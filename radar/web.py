@@ -28,6 +28,7 @@ from .db import (SIDE_RUNS, BlockedAuthor, CollectorRun, Keeper, Post, get_setti
 
 FEED_LIMIT = 1000
 FEED_CACHE_S = 30  # seconds the shared feed result is reused
+DAY_STRIP = 7      # days the "catch up by day" strip keeps (X's recent search reaches 7 days back)
 OPENS_PER_CONNECTION = 3   # different browsers on one connection that can add to a post's public count
 HABIT_GAP_S = 4            # seconds between two counted opens from one browser
 HABIT_PER_CONNECTION = 200 # counted opens per connection per day, all browsers together
@@ -275,8 +276,8 @@ def create_app(cfg: Config | None = None) -> Flask:
             items, pinned_items, filters, updated, newcomers = hit[1]
             return [dict(i) for i in items], [dict(i) for i in pinned_items], dict(filters), updated, newcomers
         out = _feed_query(args)
-        if len(feed_cache) > 40:
-            for k in list(feed_cache)[:20]:            # the oldest half goes, the busy ones stay
+        if len(feed_cache) > 80:                       # room for the 7 day strip's per day answers too
+            for k in list(feed_cache)[:40]:            # the oldest half goes, the busy ones stay
                 feed_cache.pop(k, None)
         feed_cache[ck] = (now_ts, out)
         items, pinned_items, filters, updated, newcomers = out
@@ -437,6 +438,22 @@ def create_app(cfg: Config | None = None) -> Flask:
     def api_posts():
         items, pinned_items, filters, updated, newcomers = feed_query(request.args)
         return jsonify({"posts": items, "pinned": pinned_items, "filters": filters, "updated": updated, "newcomers": newcomers})
+
+    @app.get("/api/days")
+    def api_days():
+        """The post ids of each of the last 7 days (site time zone), newest day first, for the "catch up by day"
+        strip. The page compares them with the posts this browser already opened, so nothing about the
+        visitor is sent here. Each day is its own query, so one busy day can never hide another."""
+        who = request.args.get("who", "all")
+        who = who if who in ("all", "team", "community", "keepers") else "all"
+        quotes = "0" if request.args.get("quotes") == "0" else "1"
+        today = datetime.now(timezone.utc).astimezone(tz).date()
+        days = []
+        for k in range(DAY_STRIP):
+            d = (today - timedelta(days=k)).isoformat()
+            items, *_ = feed_query({"range": "custom", "from": d, "to": d, "who": who, "quotes": quotes})
+            days.append({"day": d, "ids": [i["id"] for i in items]})
+        return jsonify({"today": today.isoformat(), "days": days})
 
     # ---------- request helpers ----------
     def client_ip() -> str:

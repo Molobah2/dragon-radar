@@ -60,6 +60,17 @@
     </div>
   </form>
 
+  <section class="days" id="days" hidden aria-labelledby="days-title">
+    <div class="days-head"><strong id="days-title" data-i18n="daysTitle">Catch up by day</strong>
+      <span class="days-note" id="days-note"></span>
+      <button class="btn btn-go days-go" id="days-go" type="button" hidden></button></div>
+    <div class="days-row" id="days-row" role="group" aria-label="Pick a day"></div>
+    <div class="days-bar" id="days-bar" hidden>
+      <span id="days-bar-text"></span>
+      <button class="btn btn-soft" id="days-skip" type="button"></button>
+    </div>
+  </section>
+
   <div class="progress-strip">
     {{ ico("hourglass", 30) }}<strong>Your day so far</strong>
     <span id="progress-text">Nothing opened yet in this range.</span>
