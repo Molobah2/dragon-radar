@@ -51,6 +51,8 @@ class Config:
     # test copies of the site ask search engines to stay away
     noindex: bool = field(default_factory=lambda: _bool("NOINDEX", "0"))
     author_x: str = field(default_factory=lambda: os.environ.get("AUTHOR_X", "jonwynnx").lstrip("@"))
+    # Jon's own Discord server, shown on the home page next to his X
+    author_discord: str = field(default_factory=lambda: os.environ.get("AUTHOR_DISCORD", "https://discord.gg/pxqERbCEk"))
     hub_name: str = field(default_factory=lambda: os.environ.get("HUB_NAME", "pdtools"))
     # Main web address; requests to any other host (like the old onrender.com address) are sent here
     canonical_host: str = field(default_factory=lambda: os.environ.get("CANONICAL_HOST", "").strip().lower())

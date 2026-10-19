@@ -2074,3 +2074,10 @@ def test_days_strip_lists_each_of_the_last_7_days(cfg, Session):
     assert 'id="days-row"' in html and 'id="days-skip"' in html
     assert 'id="hub-catchup"' in open("radar/templates/hub.html", encoding="utf-8").read()
     assert open("radar/i18n_src.js", encoding="utf-8").read().count("daysTitle:") == 10
+
+
+def test_home_links_to_jons_discord_and_x(cfg, Session):
+    """A Keeper's feedback: make Jon's own Discord easy to find. The home page shows a Discord button and an X button."""
+    app = create_app(cfg); app.config["TESTING"] = True; html = app.test_client().get("/").get_data(as_text=True)
+    assert 'href="https://discord.gg/pxqERbCEk"' in html and "Join my Discord" in html
+    assert f'href="https://x.com/{cfg.author_x}"' in html and "Follow on X" in html
