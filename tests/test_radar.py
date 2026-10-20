@@ -1628,7 +1628,7 @@ def test_speed_budget(cfg, Session):
         assert size < code_max, f"{path}: scripts and styles {size} bytes"
     assert len(c.get("/static/i18n.js").get_data()) < 4000
     for lang in ("es", "ru", "zh"):
-        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 28_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker
+        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 31_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker, then the help page
     page = c.get("/friends").get_data(as_text=True)
     assert "e_background_removal" not in page            # icons are small stored files, not cut out per view
 
@@ -2091,3 +2091,15 @@ def test_feed_warns_inside_the_x_app_and_restore_keeps_the_longer_streak(cfg, Se
     assert 'id="inapp" hidden' in html and 'id="ia-move"' in html and "You are inside the X app" in html
     js = (Path(__file__).parent.parent / "radar" / "static" / "app.js").read_text(encoding="utf-8")
     assert "TwitterAndroid" in js and 's2.last === streak.last' in js and "keep the longer run" in js
+
+
+def test_help_page_and_whats_new(cfg, Session):
+    """A help page with the how to video and the progress questions, linked from the home page What's new card and My tools."""
+    app = create_app(cfg); app.config["TESTING"] = True; c = app.test_client()
+    html = c.get("/help").get_data(as_text=True)
+    assert "help/how-to-open.mp4" in html and 'preload="none"' in html and 'id="move"' in html
+    assert "Make my move code" in html and "Is pdtools safe to use?" in html   # the FAQ follows (its progress answers are v2 only)
+    assert c.get("/static/help/how-to-open.mp4").status_code == 200
+    hub = c.get("/").get_data(as_text=True)
+    assert "What's new" in hub and 'href="/help"' in hub and 'href="/help#move"' in hub
+    assert 'href="/help"' in c.get("/friends").get_data(as_text=True)

@@ -1324,3 +1324,19 @@ html.theme-dark .day-chip.done span { color: #86efac; }
 .ia-actions { display: grid; gap: 8px; }
 .ia-x { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(29, 36, 51, .08); color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; }
 @media (max-width: 640px) { .inapp { grid-template-columns: 1fr; padding: 14px 44px 14px 16px; } .ia-actions { grid-template-columns: 1fr 1fr; } }
+
+/* Help page */
+.help-hero { margin: 8px 0 16px; }
+.help-hero .lede { margin: 0; }
+.help-hero h1 { margin: 6px 0 8px; }
+.help-kicker { margin: 0; font-weight: 800; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; color: var(--plum); }
+.help-card { margin: 0 0 16px; padding: 20px 22px; border-radius: var(--r); background: var(--glass-strong); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 14px 30px -24px rgba(29, 36, 51, .5); }
+.help-card h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; font-family: var(--font-display); font-size: 21px; color: var(--ink); }
+.help-card p { margin: 0 0 10px; color: var(--ink-soft); font-weight: 600; line-height: 1.6; }
+.help-steps { margin: 0 0 10px; padding-left: 22px; display: grid; gap: 8px; color: var(--ink); font-weight: 700; line-height: 1.55; }
+.help-note { font-size: 14px; }
+.help-video { padding: 10px; }
+.help-video video { display: block; width: 100%; height: auto; border-radius: calc(var(--r) - 8px); background: #241a4a; aspect-ratio: 16 / 9; }
+.help-cap { margin: 10px 6px 4px !important; font-size: 14px; text-align: center; }
+.help-links { display: flex; flex-wrap: wrap; gap: 10px; }

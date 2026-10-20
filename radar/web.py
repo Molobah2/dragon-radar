@@ -415,7 +415,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                   for m in COMMUNITY_MUSIC]
         from .ama import AMAS
         return render_template("hub.html", cfg=cfg, stats=public_stats() if g.get("v2") else None, music_makers=makers,
-                               ama_count=len(AMAS))
+                               ama_count=len(AMAS), news=NEWS[:3])
 
     @app.get("/keepers")
     def keepers_old():
@@ -1011,6 +1011,19 @@ def create_app(cfg: Config | None = None) -> Flask:
         return render_template("ama.html", cfg=cfg, amas=AMAS, peak=PEAK, peak_shown=PEAK_SHOWN,
                                og_title="AMA Library · every Pocket Dragons AMA in one place",
                                og_desc="Catch up on every Pocket Dragons AMA: the recordings, what was shared and how the room grew week by week.")
+
+    # the What's new card on the home page: newest first, the top three are shown
+    NEWS = [
+        {"title": "Your dragons in one place", "text": "Inside the X app, a note now helps you move your progress in one tap.", "href": "/help#move"},
+        {"title": "Catch up by day", "text": "Posts you missed wait under their own day.", "href": "/friends"},
+        {"title": "The AMA Library", "text": "Every Pocket Dragons AMA in one place.", "href": "/friends/ama"},
+        {"title": "Pick a song", "text": "Choose any song from the community playlist.", "href": "/friends"},
+    ]
+
+    @app.get("/help")
+    def help_page():
+        return render_template("help.html", cfg=cfg, og_title="Help · pdtools",
+                               og_desc="How to open pdtools, keep your dragons in one place, and answers to the questions Keepers ask most.")
 
     @app.get("/friends/keepers")
     def keepers_page():

@@ -211,6 +211,17 @@
     .mk-now .snd-bars i { animation: eq 1.1s ease-in-out infinite; } .mk-now .snd-bars i:nth-child(2) { animation-delay: -.35s; } .mk-now .snd-bars i:nth-child(3) { animation-delay: -.7s; }
     @media (max-width: 860px) { .makers { grid-template-columns: 1fr; } .music { padding: 20px 16px 16px; } }
     @media (prefers-reduced-motion: reduce) { .mk-now .snd-bars i { animation: none; height: 10px; } a.maker { transition: none; } }
+    /* What's new on the home page */
+    .hub-news { margin: 22px 0 6px; padding: 16px 18px; border-radius: 22px; background: rgba(255, 255, 255, .14); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, .22); color: #fff; max-width: 560px; }
+    .hn-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 14px; margin-bottom: 8px; }
+    .hn-head h2 { margin: 0; font-family: var(--font-display); font-size: 19px; }
+    .hn-help { color: #ffd66b; font-weight: 800; font-size: 13.5px; text-decoration: none; }
+    .hn-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .hn-list a { display: block; padding: 8px 10px; border-radius: 14px; color: inherit; text-decoration: none; background: rgba(0, 0, 0, .14); }
+    .hn-list a:hover { background: rgba(0, 0, 0, .22); }
+    .hn-list b { display: block; font-size: 15px; }
+    .hn-list span { display: block; font-size: 13.5px; font-weight: 600; opacity: .86; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -271,6 +282,12 @@
       })();
       </script>
     </section>
+    {% if news %}<section class="hub-news reveal" aria-labelledby="hn-title">
+      <div class="hn-head"><h2 id="hn-title">What's new</h2><a class="hn-help" href="{{ url_for('help_page') }}">New here? Read the help page</a></div>
+      <ul class="hn-list">
+        {% for n in news %}<li><a href="{{ n.href }}"><b>{{ n.title }}</b><span>{{ n.text }}</span></a></li>{% endfor %}
+      </ul>
+    </section>{% endif %}
     <a class="more-cue" href="#tools" aria-label="See all tools"><span>All tools</span><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 
     <div class="section-head" id="tools">Tools</div>

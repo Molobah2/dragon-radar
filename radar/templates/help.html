@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_ico.html" import ico with context %}
+{% block title %}Help · {{ cfg.site_name }}{% endblock %}
+{% block body_class %}ready static-page{% endblock %}
+{% block header_right %}<a class="btn btn-soft" data-i18n-html="back" href="{{ url_for('feed') }}"><span class="wide-only">Back to the </span>feed</a>{% endblock %}
+{% block main %}
+<section class="help-card help-hero">
+  <p class="help-kicker">Help and questions</p>
+  <h1 data-i18n-html="hpH1">New to <span class="pop">pdtools?</span></h1>
+  <p class="lede">Everything you need to get started, and answers to the questions Keepers ask most.</p>
+</section>
+
+<section class="help-card help-video">
+  <video controls playsinline preload="none" width="1280" height="720" poster="{{ url_for('static', filename='help/poster.jpg') }}">
+    <source src="{{ url_for('static', filename='help/how-to-open.mp4') }}" type="video/mp4">
+  </video>
+  <p class="help-cap">How to open pdtools, in about half a minute</p>
+</section>
+
+<section class="help-card" aria-labelledby="help-start">
+  <h2 id="help-start">{{ ico("sparkle", 26) }}Start in three steps</h2>
+  <ol class="help-steps">
+    <li>Open pdtools.xyz in your phone browser. There is nothing to download, no login and no wallet.</li>
+    <li>Tap Open Blinky's Friends and open posts from fellow Keepers. Say hi on X in your own words.</li>
+    {% if v2 %}<li>Finish your daily goal to hatch a dragon, then come back tomorrow to grow your streak.</li>
+    {% else %}<li>Come back tomorrow to grow your streak.</li>{% endif %}
+  </ol>
+</section>
+
+<section class="help-card" id="move" aria-labelledby="help-move">
+  <h2 id="help-move">{{ ico("hatch", 26) }}Keep your progress in one place</h2>
+  <p>Your opened posts, streak and dragons are saved in the browser you use, on that device. There is no account, so a different browser starts fresh.</p>
+  <p>The X app opens links in its own browser, and that one keeps its own progress. To bring everything together:</p>
+  <ol class="help-steps">
+    <li>Inside the X app, open pdtools and tap Make my move code at the top of the feed. Copy the code.</li>
+    <li>Open pdtools.xyz in your phone browser, tap Progress, enter the code and tap Restore.</li>
+    <li>From then on, open pdtools in your phone browser. Inside X, use the menu and choose Open in browser.</li>
+  </ol>
+  <p class="help-note">Nothing is lost when this happens. Every post you open still counts as support for the person who posted it.</p>
+</section>
+
+<section class="help-card help-ask">
+  <h2>{{ ico("bulb", 26) }}Still stuck?</h2>
+  <p>Send a note through the mailbox in the corner, or say hello on Discord or X. Every message is read.</p>
+  <div class="help-links">
+    {% if cfg.author_discord %}<a class="btn btn-go" href="{{ cfg.author_discord }}" target="_blank" rel="noopener">Join my Discord</a>{% endif %}
+    <a class="btn btn-soft" href="https://x.com/{{ cfg.author_x }}" target="_blank" rel="noopener">Follow on X</a>
+  </div>
+</section>
+{% endblock %}
