@@ -1617,7 +1617,8 @@ def test_speed_budget(cfg, Session):
     c = v2_client(cfg)
     # /friends raised on purpose (120k to 124k): the song picker controls and the dragon book; the picker's
     # list itself (music.js) only loads when someone opens it
-    budgets = {"/friends": (124_000, 60_000), "/": (15_000, 40_000), "/friends/keepers": (60_000, 40_000)}
+    budgets = {"/friends": (126_000, 60_000),   # raised on purpose: the X app note and its move code button
+                "/": (15_000, 40_000), "/friends/keepers": (60_000, 40_000)}
     for path, (code_max, html_max) in budgets.items():
         html = c.get(path).get_data(as_text=True)
         assert "fonts.googleapis" not in html and "fonts.gstatic" not in html, path
@@ -2081,3 +2082,12 @@ def test_home_links_to_jons_discord_and_x(cfg, Session):
     app = create_app(cfg); app.config["TESTING"] = True; html = app.test_client().get("/").get_data(as_text=True)
     assert 'href="https://discord.gg/pxqERbCEk"' in html and "Join my Discord" in html
     assert f'href="https://x.com/{cfg.author_x}"' in html and "Follow on X" in html
+
+
+def test_feed_warns_inside_the_x_app_and_restore_keeps_the_longer_streak(cfg, Session):
+    """A Keeper's progress was split between X's own browser and his phone browser. The feed carries a hidden note
+    that app.js shows only inside the X app, and restoring a code keeps the longer streak when both devices were used."""
+    app = create_app(cfg); app.config["TESTING"] = True; html = app.test_client().get("/friends").get_data(as_text=True)
+    assert 'id="inapp" hidden' in html and 'id="ia-move"' in html and "You are inside the X app" in html
+    js = (Path(__file__).parent.parent / "radar" / "static" / "app.js").read_text(encoding="utf-8")
+    assert "TwitterAndroid" in js and 's2.last === streak.last' in js and "keep the longer run" in js

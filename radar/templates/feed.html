@@ -14,6 +14,18 @@
 {% endblock %}
 {% block header_right %}{% if cfg.demo_mode %}<span class="sample-flag">Demo data</span>{% endif %}<a class="btn btn-soft nav-keepers" href="{{ url_for('keepers_page') }}">{{ ico("shield", 20) }}<span>Keepers</span></a>{% endblock %}
 {% block main %}
+  <section class="inapp" id="inapp" hidden aria-labelledby="ia-title">
+    <div class="ia-text">
+      <b id="ia-title">You are inside the X app</b>
+      <p>Your dragons and streak are saved in this browser only. To keep everything in one place, open pdtools in your phone browser.</p>
+      <p class="ia-steps" id="ia-steps" hidden>Make your move code first. Then use the menu on this screen to choose Open in browser, open Progress there and enter the code.</p>
+    </div>
+    <div class="ia-actions">
+      <button class="btn btn-go" id="ia-move" type="button">Make my move code</button>
+      <button class="btn btn-soft" id="ia-how" type="button">How to move</button>
+    </div>
+    <button class="ia-x" id="ia-close" type="button" aria-label="Close">&times;</button>
+  </section>
   <section class="hero">
     <div class="hero-main">
       <h1 data-i18n-html="h1Feed">Something stirs<br>in the <span class="pop">Hatchery.</span></h1>

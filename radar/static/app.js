@@ -311,6 +311,17 @@
     toast("Thank you. The post is gone from your feed and Jon will take a look.");
   }));
   function openSheet(id) { $(id).hidden = false; (void $(id).offsetWidth, $(id).classList.add("open")); document.body.classList.add("sheet-open"); }
+  // inside the X app's own browser, progress is kept apart from the phone browser: say so, and help move it in one tap
+  (() => {
+    const box = $("inapp"); if (!box) return;
+    const track = (kind, ref) => { try { window.pdTrack && window.pdTrack(kind, ref); } catch (e) { /* ignore */ } };
+    if (!/Twitter|TwitterAndroid/i.test(navigator.userAgent || "")) return;
+    try { if (sessionStorage.getItem("pd:inappHide")) return; } catch (e) { /* private mode */ }
+    box.hidden = false; track("inapp", "shown");
+    $("ia-how").addEventListener("click", () => { $("ia-steps").hidden = !$("ia-steps").hidden; });
+    $("ia-move").addEventListener("click", () => { track("inapp", "move"); $("ia-steps").hidden = false; showStreak(); pgMsg("", true); openSheet("progress"); $("pg-save").click(); });
+    $("ia-close").addEventListener("click", () => { box.hidden = true; try { sessionStorage.setItem("pd:inappHide", "1"); } catch (e) { /* fine */ } });
+  })();
   function closeSheet(id) { $(id).classList.remove("open"); (document.querySelector(".sheet-wrap.open") || document.body.classList.remove("sheet-open")); setTimeout(() => { if (!$(id).classList.contains("open")) $(id).hidden = true; }, 250); }
   const pgMsg = (t, ok) => { $("pg-msg").textContent = t; $("pg-msg").className = "kp-msg " + (ok ? "ok" : "no"); };
   $("progress-open").addEventListener("click", () => { showStreak(); pgMsg("", true); openSheet("progress"); });
@@ -348,7 +359,11 @@
       save();
       const s2 = j.streak || {};
       if ((s2.best || 0) > (streak.best || 0)) streak.best = s2.best;
-      if (s2.last && (!streak.last || s2.last > streak.last)) { streak.last = s2.last; streak.count = s2.count || 0; }
+      // the day streak: keep the newer one, and if both devices were used on the same or the next day, keep the longer run
+      if (s2.last && streak.last && s2.last === streak.last) streak.count = Math.max(streak.count | 0, s2.count | 0);
+      else if (s2.last && streak.last && dayGap(s2.last, streak.last) === 1) streak.count = Math.max(streak.count | 0, (s2.count | 0) + 1);
+      else if (s2.last && streak.last && dayGap(streak.last, s2.last) === 1) { streak.count = Math.max(s2.count | 0, (streak.count | 0) + 1); streak.last = s2.last; }
+      else if (s2.last && (!streak.last || s2.last > streak.last)) { streak.last = s2.last; streak.count = s2.count || 0; }
       if (s2.fz && (!streak.fz || s2.fz > streak.fz)) streak.fz = s2.fz;
       store.set("pd:streak", streak);
       const dexIn = mergeDex(j.dex);
@@ -387,7 +402,14 @@
     // the hatch count sets the pace of new dragons; the goal streak keeps the later one
     const n = Math.max(mine.n | 0, inc.n | 0);
     const gs = [mine.g, inc.g].filter((g) => g && typeof g.last === "string").sort((a, b) => (a.last < b.last ? -1 : 1));
-    const g = gs.length ? { ...gs[gs.length - 1], best: Math.max(...gs.map((x) => x.best | 0)) } : mine.g || null;
+    let g = gs.length ? { ...gs[gs.length - 1], best: Math.max(...gs.map((x) => x.best | 0)) } : mine.g || null;
+    // the goal streak on the same or the next day on two devices: keep the longer run
+    if (gs.length === 2) {
+      const [a, b] = gs, gap = dayGap(a.last, b.last);
+      if (gap === 0) g.count = Math.max(a.count | 0, b.count | 0);
+      else if (gap === 1) g.count = Math.max(b.count | 0, (a.count | 0) + 1);
+      g.best = Math.max(g.best | 0, g.count | 0);
+    }
     const e = Math.max(mine.e | 0, Math.min(1e6, inc.e | 0));
     const sIn = inc.s && typeof inc.s === "object" ? inc.s : {}, sMine = mine.s && typeof mine.s === "object" ? mine.s : {};
     const sOut = { ...sMine };
