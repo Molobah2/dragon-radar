@@ -11,6 +11,7 @@
   <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ asset('fonts.css') }}">
+{% include "_speed.html" %}
   {% if cfg.scene_base %}<link rel="preconnect" href="{{ cfg.scene_base }}" crossorigin>
   <script>window.PD_FOREST = {{ {"base": cfg.scene_base, "folder": cfg.scene_folder, "ver": cfg.hub_version,
     "still": cfg.hub_scene, "intro": cfg.hub_intro, "loop": cfg.hub_loop} | tojson }};</script>{% endif %}
@@ -53,6 +54,7 @@
     @media (max-width: 560px) { .sound-pill .snd-label { display: none; } .sound-pill { padding: 8px 10px; } }
     .lang-pick { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow); cursor: pointer; }
     .lang-pick select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 800; font-size: 13px; cursor: pointer; max-width: 9em; }
+    .lang-pick select, .lang-pick option { font-family: "Nunito Picker", system-ui, -apple-system, "Segoe UI", sans-serif; }
     .lang-pick select:focus-visible { outline: none; } .lang-pick:focus-within { outline: 3px solid var(--teal); outline-offset: 2px; }
     .lang-pick option { color: #1b2130; }
     .hero { padding: 72px 0 40px; max-width: 760px; }

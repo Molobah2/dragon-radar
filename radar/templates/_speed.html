@@ -1,0 +1,10 @@
+  {# Speed and smoothness, shared by every page: a soft cross fade between pages where the browser supports it,
+     and the next page fetched as soon as a finger or pointer starts towards a link, so it opens almost at once. #}
+  <style>
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+    @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+  </style>
+  <script type="speculationrules">{"prefetch": [{"where": {"and": [{"href_matches": "/*"},
+    {"not": {"href_matches": ["/admin*", "/api/*", "/cron/*", "/static/*", "/login*", "/logout*", "/lab*", "/preview*"]}},
+    {"not": {"selector_matches": "[target=_blank], [download], [rel~=nofollow]"}}]}, "eagerness": "moderate"}]}</script>

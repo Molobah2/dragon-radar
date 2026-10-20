@@ -150,20 +150,10 @@
     t.live = true;
     cur = { t, i: wrap(i) };
     media();
-    return play(t).then(() => { if (curved) curveTo(t, SONG, secs, true); else fade(t, SONG, secs); preloadNext(secs); });
+    return play(t).then(() => { if (curved) curveTo(t, SONG, secs, true); else fade(t, SONG, secs); });
   }
-  // Get the next song ready long before its turn: once this song is playing (and any crossfade has finished),
-  // the free deck starts downloading the next one, so a slow connection or a sleepy background tab never
-  // leaves a silent gap at the mix.
-  function preloadNext(secs) {
-    const mine = cur;
-    setTimeout(() => {
-      if (!cur || cur !== mine || mixing || SONGS.length < 2) return;
-      const free = other();
-      if (!free.live) load(free, nextIdx(cur.i));
-    }, (secs || 0) * 1000 + 3000);
-  }
-
+  // The next song is fetched only when its turn is near (see tick), never as soon as a song starts, so a page
+  // view does not pull a whole second song over a phone connection that may never play it.
   // `to` is a song the Keeper picked: it comes in with a short, quick mix instead of waiting for the ending
   function mixNext(secs, to) {
     if (!cur || mixing || !SONGS.length) return;
@@ -190,7 +180,7 @@
     const a = cur.t.a, s = song(cur.i);
     if (!a.duration || a.paused) return;
     const m = mixAt(s, a);
-    if (a.currentTime >= m - 45) load(other(), nextIdx(cur.i));   // get the next song ready ahead of time
+    if (a.currentTime >= m - 90) load(other(), nextIdx(cur.i));   // get the next song ready 90 seconds ahead, enough for a slow phone
     if (a.currentTime >= m) mixNext(a.duration - m);
   }
   setInterval(tick, 250);

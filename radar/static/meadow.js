@@ -351,18 +351,24 @@
       for (let i = 0; i < 26; i++) sparkles.push({ x: bx, y: by, vx: rnd(-220, 220), vy: rnd(-380, -120), life: 1.1, c: cols[i % 5], r: rnd(3, 6) });
     }
 
-    let last = performance.now(), acc = 0;
+    let last = performance.now(), acc = 0, scrollQuiet = 0;
+    // Smooth scrolling: while the page moves, the blurred scene behind it holds still, so the phone only has to
+    // slide the page and never redraw the meadow (and every glass card's blur) at the same time.
+    const STEP = matchMedia("(pointer: coarse)").matches ? 1 / 15 : 1 / 24;
+    addEventListener("scroll", () => { scrollQuiet = performance.now() + 220; }, { passive: true });
+    addEventListener("touchmove", () => { scrollQuiet = performance.now() + 220; }, { passive: true });
     function frame(nowMs) {
       const dt = Math.min(0.05, (nowMs - last) / 1000); last = nowMs;
       const t = nowMs / 1000;
       // after the intro the scene is blurred; draw fewer frames at lower resolution to save battery
-      if (lowRes) { acc += dt; if (acc < 1 / 24) { if (!reduce) requestAnimationFrame(frame); return; } acc = 0; }
-      update(lowRes ? 1 / 24 : dt, t);
+      if (lowRes && nowMs < scrollQuiet) { if (!reduce) requestAnimationFrame(frame); return; }
+      if (lowRes) { acc += dt; if (acc < STEP) { if (!reduce) requestAnimationFrame(frame); return; } acc = 0; }
+      update(lowRes ? STEP : dt, t);
       const wind = Math.sin(t * 0.4) * 0.6 + Math.sin(t * 1.3) * 0.25;
       hour = clockHour(nowMs); sky = palette(hour); syncPage(nowMs);
-      if (PHOTO) { photoFrame(t, lowRes ? 1 / 24 : dt); if (!reduce) requestAnimationFrame(frame); return; }
-      drawSky(t, lowRes ? 1 / 24 : dt);
-      clouds.forEach((c) => cloud(c, lowRes ? 1 / 24 : dt));
+      if (PHOTO) { photoFrame(t, lowRes ? STEP : dt); if (!reduce) requestAnimationFrame(frame); return; }
+      drawSky(t, lowRes ? STEP : dt);
+      clouds.forEach((c) => cloud(c, lowRes ? STEP : dt));
       drawHills();
       const dragonDepthY = dragon.groundY;
       let drawn = false;

@@ -25,7 +25,8 @@
   --r: 24px;
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 body { background: var(--sky); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; overflow-x: hidden; }
 a { color: inherit; }
 button { font: inherit; color: inherit; }
@@ -161,7 +162,8 @@ time { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); f
 .actions { display: flex; gap: 8px; }
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 0; font-weight: 800; font-size: 14px; text-decoration: none; cursor: pointer;
   transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), box-shadow .2s, background .2s; }
-.btn:hover { transform: translateY(-2px); }
+/* the lift only where there is a real pointer: on phones a tap would leave the button floating */
+@media (hover: hover) { .btn:hover { transform: translateY(-2px); } }
 .btn:active { transform: translateY(1px) scale(.97); }
 .btn-go { background: var(--coral); color: #fff; box-shadow: 0 5px 0 var(--coral-deep), 0 14px 24px -12px rgba(232, 86, 58, .9); }
 .btn-go:active { box-shadow: 0 2px 0 var(--coral-deep); }
@@ -479,6 +481,8 @@ body.dark-sky .photo { background: #121842; }
 .lang-pick select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 800; font-size: 13px;
   cursor: pointer; padding: 0 2px; max-width: 9.5em; }
 .lang-pick select:focus-visible { outline: none; }
+/* the language names (Русский, Tiếng Việt...) use the phone's own font, so English readers never download extra font files */
+.lang-pick select, .lang-pick option { font-family: "Nunito Picker", system-ui, -apple-system, "Segoe UI", sans-serif; }
 .lang-pick:focus-within { outline: 3px solid var(--plum); outline-offset: 2px; }
 .lang-pick option { color: #1d2433; }
 body.dark-sky .lang-pick { background: rgba(20, 26, 69, .72); color: #f2f4ff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }

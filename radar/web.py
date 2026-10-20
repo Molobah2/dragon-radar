@@ -28,6 +28,8 @@ from .db import (SIDE_RUNS, BlockedAuthor, CollectorRun, Keeper, Post, get_setti
 
 FEED_LIMIT = 1000
 FEED_CACHE_S = 30  # seconds the shared feed result is reused
+EXTRAS_CACHE_S = 60  # pinned posts, welcome row and team spotlight, shared by every filter
+DAYS_CACHE_S = 60  # the 7 day strip
 DAY_STRIP = 7      # days the "catch up by day" strip keeps (X's recent search reaches 7 days back)
 OPENS_PER_CONNECTION = 3   # different browsers on one connection that can add to a post's public count
 HABIT_GAP_S = 4            # seconds between two counted opens from one browser
@@ -226,7 +228,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         if request.method == "POST" and resp.status_code < 400 and (
                 (request.path.startswith("/admin") and session.get("admin"))
                 or request.path == "/cron/collect" or g.get("feed_changed")):
-            feed_cache.clear()
+            clear_feed()
         if request.path.startswith("/static/fonts/") and resp.status_code == 200:   # font files are never changed in place
             resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         elif request.path.startswith("/static/") and request.args.get("v") == version and resp.status_code == 200:
@@ -254,6 +256,11 @@ def create_app(cfg: Config | None = None) -> Flask:
     # The feed costs several database round trips. Everyone sees the same posts, so the result is kept
     # for FEED_CACHE_S seconds: a busy minute costs the database a couple of reads instead of hundreds.
     feed_cache: dict = {}
+    extras_cache: dict = {}
+    days_cache: dict = {}
+
+    def clear_feed():
+        feed_cache.clear(); extras_cache.clear(); days_cache.clear()
 
     def feed_query(args):
         # One plain value per filter, used for BOTH the cache key and the query, so a repeated parameter
@@ -285,14 +292,10 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     app.feed_cache = feed_cache    # tests and admin actions can empty it
 
-    def _feed_query(args):
-        key, start, end = resolve_range(args, tz, utcnow(), cfg.feed_days)
-        who = args.get("who", "all")
-        # The form sends a hidden "0" then the checkbox "1"; the last value wins
-        quote_vals = args.getlist("quotes") if hasattr(args, "getlist") else [args.get("quotes", "1")]
-        quotes = (quote_vals[-1] if quote_vals else "1") != "0"
-        q = (select(Post).where(Post.hidden.is_(False), Post.created_at >= start, Post.created_at < end,
-                                Post.author_username.is_not(None), Post.text.is_not(None))
+    def feed_where(q, start, end, who, quotes):
+        """The feed's filters, shared by the feed itself and the 7 day strip so both always count the same posts."""
+        q = (q.where(Post.hidden.is_(False), Post.created_at >= start, Post.created_at < end,
+                     Post.author_username.is_not(None), Post.text.is_not(None))
              .where(Post.author_id.not_in(select(BlockedAuthor.author_id)))
              .where(Post.text.not_like("%Book of Friends PD%")))     # signing proof posts stay out of the feed
         if who == "team":
@@ -308,6 +311,58 @@ def create_app(cfg: Config | None = None) -> Flask:
             who = "all"
         if not quotes:
             q = q.where(Post.is_quote.is_(False))
+        return q, who
+
+    def feed_extras():
+        """The parts of the feed that are the same for every filter: the pinned team posts, the last collector run,
+        the welcome row (a heavy look over every post) and the team spotlight. Worked out once a minute, not per request."""
+        hit = extras_cache.get("x")
+        if hit and time.time() - hit[0] < EXTRAS_CACHE_S:
+            return hit[1]
+        with Session() as s:
+            pinned = s.scalars(select(Post).where(Post.is_team.is_(True), Post.hidden.is_(False),
+                                                  Post.text.is_not(None), Post.author_username.is_not(None))
+                               .order_by(Post.created_at.desc()).limit(PINNED)).all()
+            last_run = s.scalar(select(CollectorRun).where(CollectorRun.status.in_(["ok", "page_limit"]))
+                                .order_by(CollectorRun.started_at.desc()).limit(1))
+            # Welcome row: people whose very first post on the radar landed in the last 7 days
+            first = (select(Post.author_id, func.min(Post.created_at).label("first"))
+                     .where(Post.hidden.is_(False)).group_by(Post.author_id).subquery())
+            fresh = s.scalars(select(Post).join(first, (Post.author_id == first.c.author_id) & (Post.created_at == first.c.first))
+                              .where(first.c.first >= utcnow() - timedelta(days=7), Post.is_team.is_(False),
+                                     Post.text.is_not(None), Post.author_username.is_not(None),
+                                     Post.author_id.not_in(select(BlockedAuthor.author_id)))
+                              .order_by(Post.created_at.desc()).limit(NEWCOMERS)).all()
+            # Team spotlight: the newest dragon post from each team member, newest first. A new post replaces
+            # the old one in that member's slot; a slot older than crew_hours steps aside.
+            crew_posts = []
+            crew = cfg.crew
+            if crew:
+                roles = {h.lower(): r for h, r in crew}
+                rows = s.scalars(select(Post).where(func.lower(Post.author_username).in_(list(roles)),
+                                                    Post.hidden.is_(False), Post.text.is_not(None),
+                                                    Post.created_at >= utcnow() - timedelta(hours=cfg.crew_hours))
+                                 .order_by(Post.created_at.desc())).all()
+                seen = set()
+                for p in rows:
+                    k = p.author_username.lower()
+                    if k not in seen:
+                        seen.add(k)
+                        crew_posts.append((p, roles[k]))
+            s.expunge_all()
+        out = (pinned, last_run, fresh, crew_posts)
+        extras_cache["x"] = (time.time(), out)
+        return out
+
+    app.extras_cache = extras_cache
+
+    def _feed_query(args):
+        key, start, end = resolve_range(args, tz, utcnow(), cfg.feed_days)
+        who = args.get("who", "all")
+        # The form sends a hidden "0" then the checkbox "1"; the last value wins
+        quote_vals = args.getlist("quotes") if hasattr(args, "getlist") else [args.get("quotes", "1")]
+        quotes = (quote_vals[-1] if quote_vals else "1") != "0"
+        q, who = feed_where(select(Post), start, end, who, quotes)
         after = args.get("after")
         if after:   # the "new posts" check only asks for what arrived since the newest post on screen
             try:
@@ -317,42 +372,9 @@ def create_app(cfg: Config | None = None) -> Flask:
         q = q.order_by(Post.created_at.desc()).limit(FEED_LIMIT)
         with Session() as s:
             posts = s.scalars(q).all()
-        # The four newest team posts are always pinned, whatever range or filter is picked
-        with Session() as s:
-            pinned = s.scalars(select(Post).where(Post.is_team.is_(True), Post.hidden.is_(False),
-                                                  Post.text.is_not(None), Post.author_username.is_not(None))
-                               .order_by(Post.created_at.desc()).limit(PINNED)).all()
-        with Session() as s:
-            last_run = s.scalar(select(CollectorRun).where(CollectorRun.status.in_(["ok", "page_limit"]))
-                                .order_by(CollectorRun.started_at.desc()).limit(1))
-        # Welcome row: people whose very first post on the radar landed in the last 7 days
-        # (skipped for the light "anything new?" check)
-        fresh = []
-        with Session() as s:
-            first = (select(Post.author_id, func.min(Post.created_at).label("first"))
-                     .where(Post.hidden.is_(False)).group_by(Post.author_id).subquery())
-            fresh = [] if after else s.scalars(select(Post).join(first, (Post.author_id == first.c.author_id) & (Post.created_at == first.c.first))
-                              .where(first.c.first >= utcnow() - timedelta(days=7), Post.is_team.is_(False),
-                                     Post.text.is_not(None), Post.author_username.is_not(None),
-                                     Post.author_id.not_in(select(BlockedAuthor.author_id)))
-                              .order_by(Post.created_at.desc()).limit(NEWCOMERS)).all()
-        # Team spotlight: the newest dragon post from each team member, newest first. A new post replaces
-        # the old one in that member's slot; a slot older than crew_hours steps aside.
-        crew_posts = []
-        crew = cfg.crew
-        if crew:
-            roles = {h.lower(): r for h, r in crew}
-            with Session() as s:
-                rows = s.scalars(select(Post).where(func.lower(Post.author_username).in_(list(roles)),
-                                                    Post.hidden.is_(False), Post.text.is_not(None),
-                                                    Post.created_at >= utcnow() - timedelta(hours=cfg.crew_hours))
-                                 .order_by(Post.created_at.desc())).all()
-            seen = set()
-            for p in rows:
-                k = p.author_username.lower()
-                if k not in seen:
-                    seen.add(k)
-                    crew_posts.append((p, roles[k]))
+        pinned, last_run, fresh, crew_posts = feed_extras()
+        if after:
+            fresh = []
         def item(p):
             return {"id": p.id, "t": p.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
                   "team": p.is_team, "quote": p.is_quote, "text": p.text, "name": p.author_name or p.author_username,
@@ -439,21 +461,40 @@ def create_app(cfg: Config | None = None) -> Flask:
         items, pinned_items, filters, updated, newcomers = feed_query(request.args)
         return jsonify({"posts": items, "pinned": pinned_items, "filters": filters, "updated": updated, "newcomers": newcomers})
 
+    app.days_cache = days_cache
+
     @app.get("/api/days")
     def api_days():
         """The post ids of each of the last 7 days (site time zone), newest day first, for the "catch up by day"
         strip. The page compares them with the posts this browser already opened, so nothing about the
-        visitor is sent here. Each day is its own query, so one busy day can never hide another."""
+        visitor is sent here. One light query covers the week, and each day keeps its own cap, so one busy day can never hide another."""
         who = request.args.get("who", "all")
         who = who if who in ("all", "team", "community", "keepers") else "all"
         quotes = "0" if request.args.get("quotes") == "0" else "1"
         today = datetime.now(timezone.utc).astimezone(tz).date()
-        days = []
-        for k in range(DAY_STRIP):
-            d = (today - timedelta(days=k)).isoformat()
-            items, *_ = feed_query({"range": "custom", "from": d, "to": d, "who": who, "quotes": quotes})
-            days.append({"day": d, "ids": [i["id"] for i in items]})
-        return jsonify({"today": today.isoformat(), "days": days})
+        ck = f"{today}|{who}|{quotes}|{bool(g.get('v2'))}"
+        hit = days_cache.get(ck)
+        if hit and time.time() - hit[0] < DAYS_CACHE_S:
+            return jsonify(hit[1])
+        # one light query for the whole week (ids and times only), split into days here
+        start, _ = local_day_bounds(today - timedelta(days=DAY_STRIP - 1), tz)
+        _, end = local_day_bounds(today, tz)
+        q, _ = feed_where(select(Post.id, Post.created_at), start, end, who, quotes == "1")
+        with Session() as s:
+            rows = s.execute(q.order_by(Post.created_at.desc())).all()
+        by_day: dict[str, list[str]] = {}
+        for pid, at in rows:
+            d = at.replace(tzinfo=timezone.utc).astimezone(tz).date().isoformat()
+            ids = by_day.setdefault(d, [])
+            if len(ids) < FEED_LIMIT:              # the same cap the feed uses for one day
+                ids.append(pid)
+        days = [{"day": (today - timedelta(days=k)).isoformat(), "ids": by_day.get((today - timedelta(days=k)).isoformat(), [])}
+                for k in range(DAY_STRIP)]
+        out = {"today": today.isoformat(), "days": days}
+        if len(days_cache) > 20:
+            days_cache.clear()
+        days_cache[ck] = (time.time(), out)
+        return jsonify(out)
 
     # ---------- request helpers ----------
     def client_ip() -> str:
@@ -1294,7 +1335,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         try:
             with Session() as s:
                 run_collection(s, XClient(cfg.x_bearer_token), cfg)
-            feed_cache.clear()                      # new posts show straight away
+            clear_feed()                            # new posts show straight away
         except Exception:  # noqa: BLE001  the run row already records errors
             app.logger.exception("Background collection failed")
         finally:

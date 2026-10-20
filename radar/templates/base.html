@@ -10,8 +10,10 @@
   {% include "_icons.html" %}
   <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  {% if cfg.scene_base %}<link rel="preconnect" href="{{ cfg.scene_base }}" crossorigin>{% endif %}
   <link rel="stylesheet" href="{{ asset('fonts.css') }}">
   <link rel="stylesheet" href="{{ asset('style.css') }}">
+{% include "_speed.html" %}
   {% if v2 %}<link rel="stylesheet" href="{{ asset('dark.css') }}">
   <script>/* dark mode before the first paint: the visitor's choice, or their phone's own setting */
     (function () { var t = null; try { t = localStorage.getItem("pd:theme"); } catch (e) {}

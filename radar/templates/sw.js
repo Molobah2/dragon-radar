@@ -19,15 +19,18 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys()
     .then((ks) => Promise.all(ks.filter((k) => k.startsWith("pd-") && k !== PAGES && k !== STATIC).map((k) => caches.delete(k))))
+    // navigation preload: the page request starts while this helper is still waking up, so pages are not slowed by it
+    .then(() => self.registration.navigationPreload && self.registration.navigationPreload.enable().catch(() => {}))
     .then(() => self.clients.claim()));
 });
 
 function timeout(ms) { return new Promise((_, rej) => setTimeout(() => rej(new Error("slow")), ms)); }
 
-async function page(req) {
+async function page(req, preload) {
   const cache = await caches.open(PAGES);
   try {
-    const res = await Promise.race([fetch(req), timeout(6000)]);
+    const early = preload ? await Promise.race([preload, timeout(6000)]) : null;   // undefined when preload is off
+    const res = early || await Promise.race([fetch(req), timeout(6000)]);
     if (res && res.ok && res.type === "basic") cache.put(new URL(req.url).pathname, res.clone());
     return res;
   } catch (err) {
@@ -57,7 +60,7 @@ self.addEventListener("fetch", (e) => {
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/admin") || url.pathname.startsWith("/cron")) return;
   if (url.pathname.startsWith("/preview") || url.pathname.startsWith("/lab")) return;   // v2 preview pages are never kept offline
   if (url.pathname.startsWith("/static/audio/") || req.headers.has("range")) return;
-  if (req.mode === "navigate") { e.respondWith(page(req)); return; }
+  if (req.mode === "navigate") { e.respondWith(page(req, e.preloadResponse)); return; }
   if (url.pathname.startsWith("/static/") && url.searchParams.get("v") === VERSION) { e.respondWith(asset(req)); return; }
 });
 {% endif %}

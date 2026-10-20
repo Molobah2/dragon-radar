@@ -2103,3 +2103,26 @@ def test_help_page_and_whats_new(cfg, Session):
     hub = c.get("/").get_data(as_text=True)
     assert "What's new" in hub and 'href="/help"' in hub and 'href="/help#move"' in hub
     assert 'href="/help"' in c.get("/friends").get_data(as_text=True)
+
+
+def test_days_strip_matches_each_days_feed(cfg, Session):
+    """Speed pass: the strip now uses one light query for the whole week. Each day must still list exactly the
+    posts the feed shows for that day, with hidden, blocked and proof posts left out and the quote filter applied."""
+    now = utcnow(); midnight = now.replace(hour=0, minute=0, second=1, microsecond=0)
+    with Session() as s:
+        s.add_all([
+            Post(id="31", author_username="a", text="hi", author_id="a", created_at=midnight + timedelta(minutes=1)),
+            Post(id="32", author_username="b", text="quote", author_id="b", created_at=midnight - timedelta(days=2), is_quote=True),
+            Post(id="33", author_username="c", text="hidden", author_id="c", created_at=midnight - timedelta(days=2), hidden=True),
+            Post(id="34", author_username="d", text="blocked", author_id="d", created_at=midnight - timedelta(days=4)),
+            Post(id="35", author_username="e", text="Book of Friends PD proof", author_id="e", created_at=midnight - timedelta(days=4)),
+            Post(id="36", author_username="f", text="ok", author_id="f", created_at=midnight - timedelta(days=6, hours=-2)),
+        ])
+        s.add(BlockedAuthor(author_id="d")); s.commit()
+    app = create_app(cfg); app.config["TESTING"] = True; c = app.test_client()
+    for q in ("", "&quotes=0", "&who=community"):
+        j = c.get("/api/days?x=1" + q).get_json()
+        for d in j["days"]:
+            assert sorted(d["ids"]) == sorted(ids(c.get(f"/api/posts?range=custom&from={d['day']}&to={d['day']}{q}"))), (q, d["day"])
+    j = c.get("/api/days?quotes=0").get_json()
+    assert "32" not in set().union(*[set(d["ids"]) for d in j["days"]])
