@@ -463,6 +463,19 @@
       dispatchEvent(new Event("pd:goaldone"));
     }
   }
+  // A new day while the page stays open (a phone keeps the tab for hours, or brings it back from memory the next
+  // morning): the goal, streak, dragons and today's posts all belong to the new day, so the page starts fresh.
+  // It never interrupts: it waits while a sheet is open or the visitor is typing.
+  const loadDay = today();
+  function newDayCheck() {
+    if (today() === loadDay || document.hidden) return;
+    if (document.querySelector(".sheet-wrap.open") || (document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))) return;
+    location.reload();
+  }
+  document.addEventListener("visibilitychange", newDayCheck);
+  addEventListener("pageshow", newDayCheck);
+  addEventListener("focus", newDayCheck);
+  setInterval(newDayCheck, 60 * 1000);
   $("goal").addEventListener("click", () => { if (KEEPER_GOAL) { $("feed").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); return; } $("needsLove").checked = true; $("needsLove").dispatchEvent(new Event("change")); $("feed").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); });
 
   // ---------- team alerts: a browser notification when a new team post arrives (while a tab is open) ----------

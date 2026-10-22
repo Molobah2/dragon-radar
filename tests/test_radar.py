@@ -2126,3 +2126,10 @@ def test_days_strip_matches_each_days_feed(cfg, Session):
             assert sorted(d["ids"]) == sorted(ids(c.get(f"/api/posts?range=custom&from={d['day']}&to={d['day']}{q}"))), (q, d["day"])
     j = c.get("/api/days?quotes=0").get_json()
     assert "32" not in set().union(*[set(d["ids"]) for d in j["days"]])
+
+
+def test_feed_starts_fresh_when_a_new_day_begins_with_the_tab_open():
+    """A Keeper in Taiwan saw "Daily goal done" the next morning: the phone had kept yesterday's page open.
+    The feed now notices a new local day (on return, focus or once a minute) and reloads itself."""
+    js = (Path(__file__).parent.parent / "radar" / "static" / "app.js").read_text(encoding="utf-8")
+    assert "function newDayCheck()" in js and 'addEventListener("pageshow", newDayCheck)' in js and "setInterval(newDayCheck" in js
