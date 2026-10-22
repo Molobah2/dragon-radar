@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% if data %}@{{ data.handle }} · {% endif %}Dragon Circle · {{ cfg.hub_name or "PD Tools" }}</title>
-  <meta name="description" content="See the Keepers you tag and who tag you most in Pocket Dragons posts. Free, unofficial community tool.">
+  <meta name="description" content="See the Keepers who engage with you most in Pocket Dragons posts. Free, unofficial community tool.">
   <meta name="theme-color" content="#120a2a">
   {% include "_icons.html" %}
   <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
@@ -22,7 +22,7 @@
   --ease: cubic-bezier(.2, .8, .2, 1); --spring: cubic-bezier(.3, 1.5, .5, 1);
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; }
+html, body { margin: 0; min-height: 100%; overflow-x: hidden; }
 body { background: #0c0720; color: var(--ink); font: 600 16px/1.5 var(--body); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: inherit; }
 button, input, select { font: inherit; color: inherit; }
@@ -42,7 +42,7 @@ button, input, select { font: inherit; color: inherit; }
 .grain { position: absolute; inset: 0; opacity: .05; background-image: radial-gradient(rgba(255,255,255,.8) 1px, transparent 1px); background-size: 3px 3px; }
 
 /* frame */
-.dc-app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+.dc-app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; overflow-x: clip; }
 .dc-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: max(14px, env(safe-area-inset-top)) clamp(16px, 4vw, 40px) 8px; }
 .dc-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 700 18px/1 var(--disp); letter-spacing: .2px; }
 .dc-brand img { width: 38px; height: 38px; border-radius: 12px; box-shadow: 0 0 0 2px rgba(255,255,255,.15), 0 8px 20px -8px #000; }
@@ -173,6 +173,8 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 .card-who small { display: block; color: var(--soft); font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-rank { margin-left: auto; align-self: flex-start; font: 700 14px/1 var(--disp); color: var(--gold); }
 .card-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0 12px; }
+.card-back { margin: -4px 0 10px; font-size: 13px; font-weight: 800; color: var(--gold); }
+.card-back:empty { display: none; }
 .card-nums div { padding: 10px; border-radius: 14px; background: rgba(255,255,255,.06); }
 .card-nums b { display: block; font: 700 22px/1 var(--disp); }
 .card-nums span { font-size: 12px; color: var(--soft); font-weight: 800; }
@@ -277,9 +279,9 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
       <div class="info">
         <span class="kick"><i></i>Dragon Circle</span>
         <h1 class="big" data-i18n-html="dcH1">Who is in your <span class="pop">Dragon Circle?</span></h1>
-        <p class="lede">See the Keepers you tag and who tag you most in Pocket Dragons posts.</p>
+        <p class="lede">See the Keepers who engage with you most in Pocket Dragons posts.</p>
         {{ draw_form() }}
-        <p class="note">Built only from the Pocket Dragons posts shared on pdtools. The team accounts are left out, and there is nothing to sign in to.</p>
+        <p class="note">Replies, quote posts and tags come from the Pocket Dragons posts shared on pdtools. Opens count only Keepers who signed Blinky&#39;s Book of Friends. The team accounts are left out.</p>
       </div>
       <div class="orbit-wrap">
         <div class="orbit demo" id="orbit" aria-hidden="true">
@@ -306,12 +308,12 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
         {% if spots %}
         <div class="stats">
           <div class="stat"><b data-count="{{ spots | length }}">{{ spots | length }}</b><span>Keepers in the circle</span></div>
-          <div class="stat" style="--c: var(--lilac)"><b data-count="{{ two | length }}">{{ two | length }}</b><span>Tag each other</span></div>
-          <div class="stat" style="--c: var(--mint)"><b data-count="{{ data.tagged_by }}">{{ data.tagged_by }}</b><span>Times tagged</span></div>
+          <div class="stat" style="--c: var(--lilac)"><b data-count="{{ two | length }}">{{ two | length }}</b><span>Two way</span></div>
+          <div class="stat" style="--c: var(--mint)"><b data-count="{{ data.engaged }}">{{ data.engaged }}</b><span>Engagements</span></div>
         </div>
         <div class="acts">
           <a class="btn go" href="/circle/{{ data.handle }}.png?v={{ stamp }}" download="dragon-circle-{{ data.handle }}.png"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Save image</a>
-          <a class="btn" target="_blank" rel="noopener" href="https://x.com/intent/post?text={{ ('My Dragon Circle on pdtools 🐉 The Keepers I tag and who tag me most in Pocket Dragons posts. Draw yours, free.') | urlencode }}&url={{ ('https://pdtools.xyz/circle/' ~ data.handle) | urlencode }}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.2-8.3L2 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z"/></svg>Post on X</a>
+          <a class="btn" target="_blank" rel="noopener" href="https://x.com/intent/post?text={{ ('My Dragon Circle on pdtools 🐉 The Keepers who engage with me most in Pocket Dragons posts. Draw yours, free.') | urlencode }}&url={{ ('https://pdtools.xyz/circle/' ~ data.handle) | urlencode }}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.2-8.3L2 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z"/></svg>Post on X</a>
           <button class="btn" type="button" id="dc-copy" data-link="https://pdtools.xyz/circle/{{ data.handle }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>Copy link</button>
         </div>
         <p class="hint" id="dc-msg" aria-live="polite">Tap a Keeper to see how you are connected.</p>
@@ -338,7 +340,7 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
           {% for ring in [0, 1] %}{% set group = spots | selectattr("ring", "equalto", ring) | list %}{% if group %}
           <div class="ring r{{ ring }}">
             {% for p in group %}
-            <button class="node{{ ' two' if p.out and p['in'] }}" type="button" data-r="{{ p.rank }}" data-user="{{ p.user }}" data-name="{{ p.name }}" data-out="{{ p.out }}" data-in="{{ p['in'] }}" data-pic="{{ 1 if p.has_pic else 0 }}"
+            <button class="node{{ ' two' if p.out and p['in'] }}" type="button" data-r="{{ p.rank }}" data-user="{{ p.user }}" data-name="{{ p.name }}" data-out="{{ p.out }}" data-in="{{ p['in'] }}" data-go="{{ p.got.opens }}" data-gr="{{ p.got.replies }}" data-gq="{{ p.got.quotes }}" data-gt="{{ p.got.tags }}" data-pic="{{ 1 if p.has_pic else 0 }}"
                     style="--x:{{ p.x }}%; --y:{{ p.y }}%; --s:{{ p.size }}%; --i:{{ p.rank }}" aria-label="{{ p.rank }}. {{ p.name }} @{{ p.user }}">
               <span class="up"><span class="pop-in"><span class="bob"><span class="ava">{{ p.user[:1] | upper }}{% if p.has_pic %}<img src="/api/avatar/{{ p.user }}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% if p.rank <= 3 %}<b class="rank m{{ p.rank }}">{{ p.rank }}</b>{% endif %}</span></span></span>
             </button>
@@ -355,7 +357,7 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
     {% set top = [spots | map(attribute="out") | max, spots | map(attribute="in") | max, 1] | max %}
     <section class="panel" aria-labelledby="dc-list-title">
       <h2 id="dc-list-title">{{ ico("sparkle", 26) }}Everyone in the circle</h2>
-      <div class="legend"><span class="s"><i></i>Tags sent</span><span class="b"><i></i>Tags back</span></div>
+      <div class="legend"><span class="b"><i></i>Received</span><span class="s"><i></i>Given</span></div>
       <ol class="ranks" id="ranks">
         {% for p in spots %}
         <li style="--i:{{ loop.index0 }}"><a class="row" href="https://x.com/{{ p.user }}" target="_blank" rel="noopener">
@@ -363,26 +365,27 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
           <span class="ava">{{ p.user[:1] | upper }}{% if p.has_pic %}<img src="/api/avatar/{{ p.user }}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
           <span class="who"><b><span>{{ p.name }}</span>{% if p.out and p["in"] %}<em class="chip">Two way</em>{% endif %}</b><small>@{{ p.user }}</small>
             <span class="bars">
-              <span class="bar s" title="Tags sent"><i style="--w:{{ (p.out / top * 100) | round(1) }}%"></i>{{ p.out }}</span>
-              <span class="bar b" title="Tags back"><i style="--w:{{ (p['in'] / top * 100) | round(1) }}%"></i>{{ p["in"] }}</span>
+              <span class="bar b" title="Received"><i style="--w:{{ (p['in'] / top * 100) | round(1) }}%"></i>{{ p["in"] }}</span>
+              <span class="bar s" title="Given"><i style="--w:{{ (p.out / top * 100) | round(1) }}%"></i>{{ p.out }}</span>
             </span>
           </span>
         </a></li>
         {% endfor %}
       </ol>
-      <p class="note">Counts come from the Pocket Dragons posts shared on pdtools. Keepers who tag each other both ways sit closer to the middle.</p>
+      <p class="note">Replies and quote posts count twice, because they take more time. Keepers who engage both ways sit closer to the middle. Opens count only Keepers who signed Blinky&#39;s Book of Friends.</p>
     </section>
     {% endif %}
 
     <section class="panel again">
-      <div><h2>{{ ico("bulb", 26) }}Draw another circle</h2><p class="note" style="margin:0">Built only from the Pocket Dragons posts shared on pdtools. The team accounts are left out, and there is nothing to sign in to.</p></div>
+      <div><h2>{{ ico("bulb", 26) }}Draw another circle</h2><p class="note" style="margin:0">Replies, quote posts and tags come from the Pocket Dragons posts shared on pdtools. Opens count only Keepers who signed Blinky&#39;s Book of Friends. The team accounts are left out.</p></div>
       {{ draw_form(True) }}
     </section>
 
     <div class="card" id="dc-card" role="dialog" aria-modal="false" aria-labelledby="dc-card-name" hidden>
       <button class="card-x" type="button" id="dc-card-x" aria-label="Close">&times;</button>
       <div class="card-top"><span class="ava" id="dc-card-ava"></span><span class="card-who"><b id="dc-card-name"></b><small id="dc-card-user"></small></span><span class="card-rank" id="dc-card-rank"></span></div>
-      <div class="card-nums"><div><b id="dc-card-out"></b><span>Tags sent</span></div><div><b id="dc-card-in"></b><span>Tags back</span></div></div>
+      <div class="card-nums"><div><b id="dc-card-go"></b><span>Opens</span></div><div><b id="dc-card-gr"></b><span>Replies</span></div><div><b id="dc-card-gq"></b><span>Quote posts</span></div><div><b id="dc-card-gt"></b><span>Tags</span></div></div>
+      <p class="card-back" id="dc-card-back"></p>
       <span class="chip" id="dc-card-two"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>Two way</span>
       <a class="btn go" id="dc-card-go" target="_blank" rel="noopener" href="#">Open on X</a>
     </div>
@@ -482,7 +485,8 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
     const ava = $("dc-card-ava"); ava.textContent = d.user.slice(0, 1).toUpperCase();
     if (d.pic === "1") { const im = new Image(); im.alt = ""; im.referrerPolicy = "no-referrer"; im.onerror = () => im.remove(); im.src = "/api/avatar/" + d.user; ava.append(im); }
     $("dc-card-name").textContent = d.name; $("dc-card-user").textContent = "@" + d.user; $("dc-card-rank").textContent = "#" + d.r;
-    $("dc-card-out").textContent = out; $("dc-card-in").textContent = inn;
+    ["go", "gr", "gq", "gt"].forEach((k) => { $("dc-card-" + k).textContent = d[k] || 0; });
+    $("dc-card-back").textContent = out ? out + " given back" : "";
     $("dc-card-two").hidden = !(out && inn); $("dc-card-go").href = "https://x.com/" + d.user;
     card.hidden = false;
     if (!phone) {

@@ -8,7 +8,7 @@ billed by X) once per author, cache the answer in AuthorCheck for 30 days, and u
 from datetime import datetime, timedelta
 
 import requests
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from .db import AuthorCheck, Post
 
@@ -125,3 +125,53 @@ def refresh_authors(s, cfg, now: datetime, http=None, limit: int = 40) -> dict:
 def backfill_avatars(s, cfg, now: datetime, http=None, limit: int = 40) -> int:
     """Kept for older callers: the picture part of refresh_authors."""
     return refresh_authors(s, cfg, now, http=http, limit=limit)["pictures"]
+
+
+STATUS = "https://api.fxtwitter.com/status/{id}"
+
+
+def post_link(post_id: str, http, timeout: int = 8) -> dict | None:
+    """{"reply_to", "quote_of"} as lower-case handles (or None), {} when FxTwitter says the post is gone,
+    None on a temporary error."""
+    try:
+        r = http.get(STATUS.format(id=post_id), timeout=timeout, headers=UA)
+    except requests.RequestException:
+        return None
+    if r.status_code == 404:
+        return {}
+    if r.status_code != 200:
+        return None
+    try:
+        t = (r.json() or {}).get("tweet") or {}
+    except ValueError:
+        return None
+    if not t:
+        return {}
+    q = ((t.get("quote") or {}).get("author") or {}).get("screen_name")
+    rt = t.get("replying_to")
+    return {"reply_to": (rt or "").lower()[:32] or None, "quote_of": (q or "").lower()[:32] or None}
+
+
+def backfill_links(s, now: datetime, http=None, limit: int = 50) -> int:
+    """Reads who each saved post replies to or quotes, newest posts first, a few dozen per collection.
+    FxTwitter now and then says "not found" for a post that exists, so a miss is asked again up to 3 times."""
+    from .db import PostLink
+    http = http or requests.Session()
+    have = select(PostLink.post_id).where(or_(PostLink.done.is_(True), PostLink.checked_at > now - timedelta(hours=6)))
+    ids = list(s.scalars(select(Post.id).where(Post.hidden.is_(False), Post.id.not_in(have))
+                         .order_by(Post.created_at.desc()).limit(limit)))
+    n = 0
+    for pid in ids:
+        got = post_link(pid, http)
+        if got is None:          # FxTwitter is busy: try again next time
+            break
+        row = s.get(PostLink, pid) or PostLink(post_id=pid)
+        row.tries = (row.tries or 0) + 1
+        row.checked_at = now
+        if got:
+            row.reply_to, row.quote_of, row.done = got["reply_to"], got["quote_of"], True
+        else:
+            row.done = row.tries >= 3
+        s.add(row); n += 1
+    s.flush()
+    return n

@@ -1170,7 +1170,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                 return redirect(url_for("circle_page", handle=clean(h)))
         from .circle import layout
         return render_template("circle.html", cfg=cfg, data=None, demo=layout([{}] * 20), og_title="Dragon Circle · who you are closest to in Pocket Dragons",
-                               og_desc="See the Keepers you tag and who tag you most in Pocket Dragons posts. Free, no login.")
+                               og_desc="See the Keepers who engage with you most in Pocket Dragons posts. Free, no login.")
 
     @app.get("/circle/<handle>")
     @circle_only
@@ -1185,7 +1185,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         return render_template("circle.html", cfg=cfg, data=data, spots=layout(data["people"]), stamp=circle_stamp(data), og_img=img,
                                og_alt=f"@{data['handle']}'s Dragon Circle: the Keepers they are closest to in Pocket Dragons posts",
                                og_title=f"@{data['handle']}'s Dragon Circle on PD Tools",
-                               og_desc=f"The {len(data['people'])} Keepers @{data['handle']} tags and is tagged by most in Pocket Dragons posts. Draw yours, free.")
+                               og_desc=f"The {len(data['people'])} Keepers who engage with @{data['handle']} most in Pocket Dragons posts. Draw yours, free.")
 
     @app.get("/circle/<handle>.png")
     @circle_only
@@ -1239,7 +1239,7 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     # the What's new card on the home page: newest first, the top three are shown
     NEWS = [
-        {"title": "Your Dragon Circle", "text": "See the Keepers you tag and who tag you most in dragon posts.", "href": "/circle"},
+        {"title": "Your Dragon Circle", "text": "See the Keepers who engage with you most in dragon posts.", "href": "/circle"},
         {"title": "Your dragons in one place", "text": "Inside the X app, a note now helps you move your progress in one tap.", "href": "/help#move"},
         {"title": "Catch up by day", "text": "Posts you missed wait under their own day.", "href": "/friends"},
         {"title": "The AMA Library", "text": "Every Pocket Dragons AMA in one place.", "href": "/friends/ama"},

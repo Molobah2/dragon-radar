@@ -1,4 +1,5 @@
-"""Dragon Circle: the Keepers someone is closest to, worked out only from the Pocket Dragons posts shared on pdtools.
+"""Dragon Circle: the Keepers someone is closest to, worked out only from the Pocket Dragons posts shared on pdtools
+(and opens on pdtools by Keepers who signed the Book of Friends), with no paid X call at all.
 
 For a handle we count, in every visible post on the radar:
   out  how often their own posts tag @someone
@@ -35,20 +36,30 @@ def team_handles(s, cfg) -> set[str]:
     return out
 
 
+KINDS = ("opens", "replies", "quotes", "tags")
+WEIGHT = {"opens": 1, "replies": 2, "quotes": 2, "tags": 1}   # a reply or a quote post takes more effort than a tag
+IN_WEIGHT = 2                                                 # what others give you counts more than what you give
+
+
 def build(s, cfg, handle: str) -> dict:
     h = clean(handle)
     if not h:
         return {"ok": False, "message": "That does not look like an X handle."}
     key = h.lower()
+    from .db import Event, Friend, FriendDevice, PostLink
     blocked_ids = select(BlockedAuthor.author_id)
-    rows = s.execute(select(Post.author_username, Post.text, Post.author_name, Post.author_avatar)
-                     .where(Post.hidden.is_(False), Post.text.is_not(None), Post.author_username.is_not(None),
-                            Post.author_id.not_in(blocked_ids), Post.text.not_like("%Book of Friends PD%"))
-                     .where(or_(func.lower(Post.author_username) == key, Post.text.ilike(f"%@{h}%")))).all()
+    visible = (Post.hidden.is_(False), Post.author_username.is_not(None), Post.author_id.not_in(blocked_ids),
+               or_(Post.text.is_(None), Post.text.not_like("%Book of Friends PD%")))
     team = team_handles(s, cfg)
     blocked_names = {u.lower() for u in s.scalars(select(Post.author_username).where(Post.author_id.in_(blocked_ids)).distinct()) if u}
-    out_c, in_c = Counter(), Counter()
-    own_posts, me_name, me_avatar, shown = 0, None, None, {}
+    got = {"in": {k: Counter() for k in KINDS}, "out": {k: Counter() for k in KINDS}}
+    shown: dict[str, str] = {}
+    own_posts, me_name, me_avatar = 0, None, None
+
+    # 1. tags in the text of dragon posts
+    rows = s.execute(select(Post.author_username, Post.text, Post.author_name, Post.author_avatar)
+                     .where(*visible, Post.text.is_not(None))
+                     .where(or_(func.lower(Post.author_username) == key, Post.text.ilike(f"%@{h}%")))).all()
     for user, text, name, avatar in rows:
         u = user.lower()
         if u == key:
@@ -58,17 +69,50 @@ def build(s, cfg, handle: str) -> dict:
             for m in MENTION.findall(text):
                 ml = m.lower()
                 if ml != key and ml not in seen:
-                    seen.add(ml); out_c[ml] += 1; shown.setdefault(ml, m)
-        else:
-            if any(m.lower() == key for m in MENTION.findall(text)):
-                in_c[u] += 1; shown.setdefault(u, user)
+                    seen.add(ml); got["out"]["tags"][ml] += 1; shown.setdefault(ml, m)
+        elif any(m.lower() == key for m in MENTION.findall(text)):
+            got["in"]["tags"][u] += 1; shown.setdefault(u, user)
+
+    # 2. replies and quote posts (read for free from FxTwitter, see fxpic.backfill_links)
+    for col, kind in ((PostLink.reply_to, "replies"), (PostLink.quote_of, "quotes")):
+        for user in s.scalars(select(Post.author_username).join(PostLink, PostLink.post_id == Post.id).where(*visible, col == key)):
+            if user.lower() != key:
+                got["in"][kind][user.lower()] += 1; shown.setdefault(user.lower(), user)
+        for target in s.scalars(select(col).join(Post, PostLink.post_id == Post.id).where(*visible, func.lower(Post.author_username) == key, col.is_not(None))):
+            if target != key:
+                got["out"][kind][target] += 1; shown.setdefault(target, target)
+
+    # 3. opens on pdtools, only from Keepers who signed Blinky's Book of Friends (proved the X name is theirs)
+    signed = (select(FriendDevice.vid, FriendDevice.key).where(FriendDevice.confirmed.is_(True))).subquery()
+    opened = (Event.kind.in_(("open", "popen")))
+    for who, n in s.execute(select(signed.c.key, func.count(func.distinct(Event.ref)))
+                            .join(signed, signed.c.vid == Event.vid).join(Post, Post.id == Event.ref)
+                            .where(opened, *visible, func.lower(Post.author_username) == key, signed.c.key != key)
+                            .group_by(signed.c.key)):
+        got["in"]["opens"][who] += n
+    for user, n in s.execute(select(Post.author_username, func.count(func.distinct(Event.ref)))
+                             .join(signed, signed.c.vid == Event.vid).join(Post, Post.id == Event.ref)
+                             .where(opened, *visible, signed.c.key == key, func.lower(Post.author_username) != key)
+                             .group_by(Post.author_username)):
+        got["out"]["opens"][user.lower()] += n; shown.setdefault(user.lower(), user)
+    for f in s.scalars(select(Friend).where(Friend.key.in_(list(got["in"]["opens"])))):
+        shown.setdefault(f.key, f.username)
+
+    everyone = set()
+    for side in got.values():
+        for c in side.values():
+            everyone |= set(c)
     people = []
-    for u in set(out_c) | set(in_c):
-        if u in team or u in blocked_names:
+    for u in everyone:
+        if u in team or u in blocked_names or u == key:
             continue
-        o, i = out_c[u], in_c[u]
-        people.append({"user": shown[u], "out": o, "in": i, "score": o + i + (MUTUAL_BONUS if o and i else 0)})
-    people.sort(key=lambda p: (-p["score"], -(p["out"] and p["in"]), p["user"].lower()))
+        ins = {k: got["in"][k][u] for k in KINDS}; outs = {k: got["out"][k][u] for k in KINDS}
+        pi = sum(WEIGHT[k] * ins[k] for k in KINDS); po = sum(WEIGHT[k] * outs[k] for k in KINDS)
+        i, o = sum(ins.values()), sum(outs.values())
+        people.append({"user": shown.get(u, u), "out": o, "in": i, "got": ins, "gave": outs,
+                       "score": IN_WEIGHT * pi + po + (MUTUAL_BONUS if i and o else 0)})
+    total_in = sum(p["in"] for p in people)
+    people.sort(key=lambda p: (-p["score"], -p["in"], p["user"].lower()))
     people = people[:INNER + OUTER]
     # names and pictures for everyone shown, from their own posts or the Keepers directory
     keys = [p["user"].lower() for p in people]
@@ -89,7 +133,7 @@ def build(s, cfg, handle: str) -> dict:
             me_name, me_avatar = getattr(kp, "name", None), getattr(kp, "avatar", None)
             h = kp.username
     return {"ok": True, "handle": h, "name": me_name or h, "has_pic": bool(me_avatar), "posts": own_posts,
-            "tagged_by": sum(in_c.values()), "people": people}
+            "tagged_by": sum(got["in"]["tags"].values()), "engaged": total_in, "people": people}
 
 
 # ---------- the share picture (also the X preview card), 1200 x 675 ----------
@@ -155,8 +199,8 @@ def render(data: dict, avatars: dict, font_dir: str) -> bytes:
     size = 64
     while size > 34 and d.textlength(hd, font=f7(size)) > 470: size -= 2
     d.text((60, 236), hd, font=f7(size), fill=(255, 246, 228), anchor="lm")
-    d.text((60, 300), "The Keepers I tag and who", font=f6(30), fill=(226, 214, 250), anchor="lm")
-    d.text((60, 340), "tag me most in dragon posts", font=f6(30), fill=(226, 214, 250), anchor="lm")
+    d.text((60, 300), "The Keepers who engage with", font=f6(30), fill=(226, 214, 250), anchor="lm")
+    d.text((60, 340), "me most in dragon posts", font=f6(30), fill=(226, 214, 250), anchor="lm")
     d.text((60, 410), f"{len(ppl)} Keepers in my circle", font=f7(30), fill=(255, 214, 150), anchor="lm")
     d.text((60, 560), "pdtools.xyz/circle", font=f7(30), fill=(255, 160, 116), anchor="lm")
     d.text((60, 600), "free, unofficial community tool", font=f6(22), fill=(196, 182, 228), anchor="lm")

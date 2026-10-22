@@ -292,6 +292,11 @@ def run_collection(s: Session, client: XClient, cfg: Config, now: datetime | Non
             log.info("Authors: %s", refresh_authors(s, cfg, now))
         except Exception:  # noqa: BLE001
             log.exception("Picture backfill failed")
+        try:
+            from .fxpic import backfill_links
+            log.info("Reply and quote links: %s", backfill_links(s, now))
+        except Exception:  # noqa: BLE001
+            log.exception("Link backfill failed")
         run.status = status
         run.finished_at = utcnow()
         s.commit()

@@ -2213,3 +2213,28 @@ def test_avatar_heals_a_changed_profile_picture(cfg, Session, monkeypatch):
     with Session() as s:
         assert s.get(Post, "501").author_avatar.endswith("new_bigger.jpg")
     n = len(calls); c.get("/api/avatar/Nastya"); assert len(calls) == n      # kept for a day
+
+
+def test_dragon_circle_counts_replies_quotes_and_signed_opens(cfg, Session):
+    """Replies and quote posts (read free from FxTwitter) count double; opens only count Keepers who signed
+    the Book of Friends, never an anonymous browser."""
+    from radar.db import Event, FriendDevice, PostLink
+    now = utcnow(); today = now.date()
+    with Session() as s:
+        s.add_all([
+            Post(id="601", author_id="j", author_username="Jon", text="my dragon", created_at=now),
+            Post(id="602", author_id="r", author_username="Rae", text="so cute", created_at=now),
+            Post(id="603", author_id="q", author_username="Quinn", text="look at this", created_at=now),
+            PostLink(post_id="602", reply_to="jon", done=True), PostLink(post_id="603", quote_of="jon", done=True),
+            FriendDevice(vid="v-ola", key="ola", username="Ola", code="x", confirmed=True),
+            FriendDevice(vid="v-anon", key="anon", username="Anon", code="y", confirmed=False),
+            Event(day=today, vid="v-ola", kind="open", ref="601"),
+            Event(day=today, vid="v-anon", kind="open", ref="601"),
+        ])
+        s.commit()
+        from radar.circle import build
+        d = build(s, cfg, "jon")
+    who = {p["user"].lower(): p for p in d["people"]}
+    assert set(who) == {"rae", "quinn", "ola"}
+    assert who["rae"]["got"]["replies"] == 1 and who["quinn"]["got"]["quotes"] == 1 and who["ola"]["got"]["opens"] == 1
+    assert who["rae"]["score"] > who["ola"]["score"] and d["engaged"] == 3

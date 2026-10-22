@@ -64,6 +64,18 @@ class AuthorCheck(Base):
     checked_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class PostLink(Base):
+    """Who a post answers or quotes, read once for free from FxTwitter. Lets the Dragon Circle count replies and
+    quote posts between Keepers without any paid X call."""
+    __tablename__ = "post_links"
+    post_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    reply_to: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)   # lower-case handle
+    quote_of: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)   # lower-case handle
+    done: Mapped[bool] = mapped_column(Boolean, default=False)
+    tries: Mapped[int] = mapped_column(Integer, default=0)
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class BlockedAuthor(Base):
     __tablename__ = "blocked_authors"
     author_id: Mapped[str] = mapped_column(String(32), primary_key=True)
