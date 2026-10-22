@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% from "_ico.html" import ico with context %}
+{% block title %}Dragon Circle · {{ cfg.site_name }}{% endblock %}
+{% block body_class %}ready static-page{% endblock %}
+{% block header_right %}<a class="btn btn-soft" data-i18n-html="back" href="{{ url_for('feed') }}"><span class="wide-only">Back to the </span>feed</a>{% endblock %}
+{% block main %}
+<style>
+/* Dragon Circle */
+.dc-hero h1 { margin: 6px 0 8px; }
+.dc-handle { font-size: clamp(34px, 8vw, 56px); word-break: break-all; }
+.dc-form { display: flex; align-items: stretch; gap: 0; margin: 18px 0 10px; max-width: 520px; border-radius: 18px; overflow: hidden;
+  background: #fff; box-shadow: 0 12px 30px -20px rgba(29, 36, 51, .6), inset 0 0 0 2px rgba(29, 36, 51, .08); }
+.dc-at { display: grid; place-items: center; padding: 0 4px 0 16px; font: 800 20px/1 var(--font-display); color: var(--ink-soft); }
+.dc-form input { flex: 1; min-width: 0; border: 0; outline: 0; padding: 14px 8px; font: 700 17px/1.2 inherit; font-size: 17px; background: transparent; color: var(--ink); }
+.dc-form .btn { border-radius: 0; padding: 0 18px; white-space: nowrap; }
+.dc-note { margin: 10px 0 0 !important; font-size: 13.5px !important; color: var(--ink-soft); }
+.dc-wheel { position: relative; width: min(100%, 560px); aspect-ratio: 1; margin: 18px auto 6px; }
+.dc-guide { position: absolute; left: 50%; top: 50%; border-radius: 50%; border: 2px dashed rgba(242, 177, 52, .45); transform: translate(-50%, -50%); }
+.dc-guide.g1 { width: 62%; height: 62%; } .dc-guide.g2 { width: 91%; height: 91%; border-color: rgba(150, 120, 230, .35); }
+.dc-me, .dc-p { position: absolute; width: var(--s); aspect-ratio: 1; transform: translate(-50%, -50%); text-decoration: none; }
+.dc-me { left: 50%; top: 50%; }
+.dc-p { left: var(--x); top: var(--y); animation: dcIn .6s cubic-bezier(.3, 1.5, .5, 1) both; animation-delay: calc(var(--i) * 45ms); }
+@keyframes dcIn { from { opacity: 0; transform: translate(-50%, -50%) scale(.4); } }
+.dc-face { position: relative; display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; overflow: hidden;
+  background: linear-gradient(140deg, #8a6bd0, #5b3f9c); color: #fff3dc; font: 800 clamp(14px, 4vw, 30px)/1 var(--font-display);
+  box-shadow: 0 0 0 4px #fff, 0 10px 22px -10px rgba(29, 36, 51, .7); }
+.dc-face img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.dc-me .dc-face { box-shadow: 0 0 0 6px #ff9f6e, 0 0 0 11px rgba(255, 159, 110, .3), 0 16px 34px -12px rgba(29, 36, 51, .8); font-size: clamp(28px, 7vw, 54px); }
+.dc-p.r0 .dc-face { box-shadow: 0 0 0 4px #ffc45c, 0 10px 22px -10px rgba(29, 36, 51, .7); }
+.dc-p.r1 .dc-face { box-shadow: 0 0 0 3px #c4aaff, 0 8px 18px -10px rgba(29, 36, 51, .7); }
+.dc-p:hover .dc-face { transform: scale(1.06); transition: transform .2s; }
+.dc-rank { position: absolute; right: -6%; top: -8%; width: 34%; min-width: 22px; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%;
+  background: #ffd65c; color: #32163c; font: 800 clamp(11px, 2.6vw, 17px)/1 var(--font-display); box-shadow: 0 0 0 3px #3a1e4a; }
+.dc-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; }
+.dc-empty { margin-top: 14px; padding: 16px; border-radius: 18px; background: rgba(255, 255, 255, .5); }
+.dc-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px; }
+.dc-list a { display: grid; grid-template-columns: 30px 44px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 16px; text-decoration: none; color: var(--ink); background: rgba(255, 255, 255, .55); }
+.dc-n { font: 800 16px/1 var(--font-display); color: var(--ink-soft); text-align: center; }
+.dc-face.sm { width: 44px; height: 44px; font-size: 18px; box-shadow: 0 0 0 2px #fff; }
+.dc-who { min-width: 0; } .dc-who b, .dc-who small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dc-who small { color: var(--ink-soft); font-weight: 700; }
+.dc-count { display: grid; gap: 2px; text-align: right; font-size: 12px; color: var(--ink-soft); }
+.dc-c b { color: var(--ink); font-size: 14px; }
+@media (max-width: 520px) { .dc-list a { grid-template-columns: 24px 38px 1fr; } .dc-count { grid-column: 2 / -1; grid-auto-flow: column; justify-content: start; gap: 12px; text-align: left; } .dc-face.sm { width: 38px; height: 38px; } }
+</style>
+{% macro draw_form(again=False) %}
+<form class="dc-form" action="{{ url_for('circle_home') }}" method="get" role="search">
+  <span class="dc-at" aria-hidden="true">@</span>
+  <input name="h" type="text" placeholder="yourhandle" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="16" enterkeyhint="go" aria-label="Your X handle" required>
+  <button class="btn btn-go" type="submit">{{ "Draw another circle" if again else "Draw my circle" }}</button>
+</form>
+{% endmacro %}
+
+{% if not data %}
+<section class="help-card dc-hero">
+  <p class="help-kicker">Dragon Circle</p>
+  <h1 data-i18n-html="dcH1">Who is in your <span class="pop">Dragon Circle?</span></h1>
+  <p class="lede">See the Keepers you tag and who tag you most in Pocket Dragons posts.</p>
+  {{ draw_form() }}
+  <p class="dc-note">Built only from the Pocket Dragons posts shared on pdtools. The team accounts are left out, and there is nothing to sign in to.</p>
+</section>
+{% else %}
+<section class="help-card dc-hero">
+  <p class="help-kicker">Dragon Circle</p>
+  <h1 class="dc-handle">@{{ data.handle }}</h1>
+  <p class="lede">The Keepers who are closest in Pocket Dragons posts.</p>
+  {% if spots %}
+  <div class="dc-wheel" aria-label="Dragon Circle of @{{ data.handle }}">
+    <i class="dc-guide g1" aria-hidden="true"></i><i class="dc-guide g2" aria-hidden="true"></i>
+    <a class="dc-me" href="https://x.com/{{ data.handle }}" target="_blank" rel="noopener" style="--s:26%">
+      <span class="dc-face">{{ data.handle[:1] | upper }}{% if data.has_pic %}<img src="/api/avatar/{{ data.handle }}" alt="" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+    </a>
+    {% for p in spots %}
+    <a class="dc-p r{{ p.ring }}" href="https://x.com/{{ p.user }}" target="_blank" rel="noopener" title="{{ p.name }} @{{ p.user }}"
+       style="--x:{{ p.x }}%; --y:{{ p.y }}%; --s:{{ p.size }}%; --i:{{ loop.index0 }}">
+      <span class="dc-face">{{ p.user[:1] | upper }}{% if p.has_pic %}<img src="/api/avatar/{{ p.user }}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+      {% if p.rank <= 3 %}<b class="dc-rank">{{ p.rank }}</b>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  <div class="dc-actions">
+    <a class="btn btn-go" href="/circle/{{ data.handle }}.png?v={{ stamp }}" download="dragon-circle-{{ data.handle }}.png">Save image</a>
+    <a class="btn btn-soft" target="_blank" rel="noopener"
+       href="https://x.com/intent/post?text={{ ('My Dragon Circle on pdtools 🐉 The Keepers I tag and who tag me most in Pocket Dragons posts. Draw yours, free.') | urlencode }}&url={{ ('https://pdtools.xyz/circle/' ~ data.handle) | urlencode }}">Post on X</a>
+    <button class="btn btn-soft" type="button" id="dc-copy" data-link="https://pdtools.xyz/circle/{{ data.handle }}">Copy link</button>
+  </div>
+  <p class="dc-note" id="dc-msg" aria-live="polite"></p>
+  {% else %}
+  <div class="dc-empty">
+    <p><b>No circle yet.</b></p>
+    <p>pdtools has not seen any Pocket Dragons posts from or tagging this handle yet. Share your dragon posts in share-content on the Pocket Dragons Discord, tag the Keepers you talk with, and your circle will grow.</p>
+  </div>
+  {% endif %}
+</section>
+
+{% if spots %}
+<section class="help-card" aria-labelledby="dc-list-title">
+  <h2 id="dc-list-title">{{ ico("sparkle", 26) }}Everyone in the circle</h2>
+  <ol class="dc-list">
+    {% for p in spots %}
+    <li><a href="https://x.com/{{ p.user }}" target="_blank" rel="noopener">
+      <span class="dc-n">{{ p.rank }}</span>
+      <span class="dc-face sm">{{ p.user[:1] | upper }}{% if p.has_pic %}<img src="/api/avatar/{{ p.user }}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+      <span class="dc-who"><b>{{ p.name }}</b><small>@{{ p.user }}</small></span>
+      <span class="dc-count"><span class="dc-c"><b>{{ p.out }}</b> <small>Tagged by @{{ data.handle }}</small></span><span class="dc-c"><b>{{ p["in"] }}</b> <small>Tagged @{{ data.handle }}</small></span></span>
+    </a></li>
+    {% endfor %}
+  </ol>
+  <p class="dc-note">Counts come from the Pocket Dragons posts shared on pdtools. Keepers who tag each other both ways sit closer to the middle.</p>
+</section>
+{% endif %}
+
+<section class="help-card">
+  <h2>{{ ico("bulb", 26) }}Draw another circle</h2>
+  {{ draw_form(True) }}
+</section>
+{% endif %}
+<script>
+  (() => {
+    const b = document.getElementById("dc-copy"); if (!b) return;
+    b.addEventListener("click", async () => {
+      const msg = document.getElementById("dc-msg");
+      try { await navigator.clipboard.writeText(b.dataset.link); msg.textContent = "Link copied."; } catch (e) { msg.textContent = b.dataset.link; }
+    });
+  })();
+</script>
+{% endblock %}

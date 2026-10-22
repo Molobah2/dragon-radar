@@ -131,7 +131,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         return {"asset": lambda filename: url_for("static", filename=filename, v=version), "asset_version": version,
                 "site_songs": site_songs,
                 "site_credits": [{"track": x["title"], "by": x["by"], "x": x.get("x", "")} for x in playlist],
-                "v2": getattr(g, "v2", False), "v2_private": getattr(g, "v2", False) and not cfg.v2_public}
+                "v2": getattr(g, "v2", False), "circle_open": getattr(g, "circle", False), "v2_private": getattr(g, "v2", False) and not cfg.v2_public}
 
     # v2 tools in progress: add {"name", "url", "note"} here as each one is built
     LAB_TOOLS: list[dict] = [
@@ -150,10 +150,19 @@ def create_app(cfg: Config | None = None) -> Flask:
         # tied to the key, so changing PREVIEW_KEY on Render switches every old preview device off
         return hashlib.sha256(f"pdtools-v2:{cfg.preview_key}".encode()).hexdigest()[:40]
 
+    CIRCLE_COOKIE = "pd_circle"
+
+    def circle_token() -> str:
+        return hashlib.sha256(f"pdtools-circle:{cfg.preview_key}".encode()).hexdigest()[:40]
+
     @app.before_request
     def _v2_flag():
         cookie = request.cookies.get(PREVIEW_COOKIE, "")
         g.v2 = cfg.v2_public or bool(cfg.preview_key and cookie and hmac.compare_digest(cookie, preview_token()))
+        # Dragon Circle is locked to the devices Jon unlocks one by one from /lab (a preview cookie alone is not enough)
+        lock = request.cookies.get(CIRCLE_COOKIE, "")
+        g.circle = bool(cfg.preview_key and cookie and hmac.compare_digest(cookie, preview_token())
+                        and lock and hmac.compare_digest(lock, circle_token()))
 
     app.config.setdefault("MAX_CONTENT_LENGTH", 2_000_000)   # no request body on this site is ever near this
 
@@ -166,6 +175,15 @@ def create_app(cfg: Config | None = None) -> Flask:
             return view(*a, **k)
         return inner
     app.extensions["radar"]["v2_only"] = v2_only
+
+    def circle_only(view):
+        """Dragon Circle while it is locked: 404 everywhere except the devices Jon unlocked."""
+        @wraps(view)
+        def inner(*a, **k):
+            if not g.get("circle"):
+                abort(404)
+            return view(*a, **k)
+        return inner
 
     @app.get("/preview/<key>")
     def preview_on(key):
@@ -207,6 +225,18 @@ def create_app(cfg: Config | None = None) -> Flask:
     @v2_only
     def lab():
         return render_template("lab.html", cfg=cfg, lab_tools=LAB_TOOLS)
+
+    @app.get("/lab/circle/<mode>")
+    def circle_lock(mode):
+        """Jon turns the locked Dragon Circle on or off for the one device he is holding."""
+        if mode not in ("on", "off") or not cfg.preview_key or not hmac.compare_digest(request.cookies.get(PREVIEW_COOKIE, ""), preview_token()):
+            abort(404)
+        resp = redirect("/circle" if mode == "on" else url_for("lab"))
+        if mode == "on":
+            resp.set_cookie(CIRCLE_COOKIE, circle_token(), max_age=60 * 60 * 24 * 365, secure=request.is_secure, httponly=True, samesite="Lax", path="/")
+        else:
+            resp.delete_cookie(CIRCLE_COOKIE, path="/")
+        return resp
 
     # ---------- language packs (see i18n_pack.py) ----------
     from .i18n_pack import build as build_packs
@@ -437,7 +467,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                   for m in COMMUNITY_MUSIC]
         from .ama import AMAS
         return render_template("hub.html", cfg=cfg, stats=public_stats() if g.get("v2") else None, music_makers=makers,
-                               ama_count=len(AMAS), news=NEWS[:3])
+                               ama_count=len(AMAS), news=[n for n in NEWS if g.get("circle") or n.get("href") != "/circle"][:3])
 
     @app.get("/keepers")
     def keepers_old():
@@ -1008,13 +1038,13 @@ def create_app(cfg: Config | None = None) -> Flask:
     # saving a canvas that drew an image from another site). Only X's image host is allowed.
     avatar_cache: dict[str, tuple[float, bytes, str]] = {}
 
-    @app.get("/api/avatar/<handle>")
-    def api_avatar(handle):
+    def avatar_bytes(handle):
+        """A Keeper's X picture (bytes, type), fetched from X's image host only and kept for a day, or None."""
         import requests
         key = handle.lower()
         hit = avatar_cache.get(key)
         if hit and datetime.now().timestamp() - hit[0] < 86400:
-            return hit[1], 200, {"Content-Type": hit[2], "Cache-Control": "public, max-age=86400"}
+            return hit[1], hit[2]
         with Session() as s:
             url = s.scalar(select(Post.author_avatar).where(func.lower(Post.author_username) == key,
                                                             Post.author_avatar.is_not(None)).limit(1))
@@ -1030,20 +1060,121 @@ def create_app(cfg: Config | None = None) -> Flask:
             import json
             url = (json.loads(cached).get("card") or {}).get("avatar_url")
         if not url or not url.startswith("https://pbs.twimg.com/"):
-            abort(404)
+            return None
         try:
             r = requests.get(url, timeout=8, allow_redirects=False)   # X's image host only, never a hop elsewhere
         except requests.RequestException:
-            abort(404)
+            return None
         if r.status_code != 200 or len(r.content) > 500_000:
-            abort(404)
+            return None
         ctype = r.headers.get("Content-Type", "image/jpeg").split(";")[0].strip().lower()
         if ctype not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
-            abort(404)
+            return None
         if len(avatar_cache) > 2000:
             avatar_cache.clear()
         avatar_cache[key] = (datetime.now().timestamp(), r.content, ctype)
-        return r.content, 200, {"Content-Type": ctype, "Cache-Control": "public, max-age=86400"}
+        return r.content, ctype
+
+    @app.get("/api/avatar/<handle>")
+    def api_avatar(handle):
+        got = avatar_bytes(handle)
+        if not got:
+            abort(404)
+        return got[0], 200, {"Content-Type": got[1], "Cache-Control": "public, max-age=86400"}
+
+    # ---------- Dragon Circle: the Keepers someone tags and is tagged by most, from dragon posts only ----------
+    circle_cache: dict[str, tuple[float, dict]] = {}
+    circle_png: dict[str, tuple[float, bytes]] = {}
+    circle_hits: dict[str, list[float]] = {}
+    CIRCLE_CACHE_S, CIRCLE_PNG_S = 600, 6 * 3600
+
+    def circle_data(handle):
+        from .circle import build, clean
+        h = clean(handle)
+        if not h:
+            return {"ok": False, "message": "That does not look like an X handle."}
+        hit = circle_cache.get(h.lower())
+        if hit and time.time() - hit[0] < CIRCLE_CACHE_S:
+            return hit[1]
+        with Session() as s:
+            data = build(s, cfg, h)
+        if len(circle_cache) > 500:
+            circle_cache.clear()
+        circle_cache[h.lower()] = (time.time(), data)
+        return data
+
+    def circle_stamp(data):
+        import hashlib
+        raw = "|".join([data.get("handle", "")] + [f"{p['user']}:{p['score']}" for p in data.get("people", [])])
+        return hashlib.sha1(raw.encode()).hexdigest()[:10]
+
+    @app.get("/circle")
+    @circle_only
+    def circle_home():
+        h = (request.args.get("h") or "").strip().lstrip("@")
+        if h:
+            from .circle import clean
+            if clean(h):
+                return redirect(url_for("circle_page", handle=clean(h)))
+        return render_template("circle.html", cfg=cfg, data=None, og_title="Dragon Circle · who you are closest to in Pocket Dragons",
+                               og_desc="See the Keepers you tag and who tag you most in Pocket Dragons posts. Free, no login.")
+
+    @app.get("/circle/<handle>")
+    @circle_only
+    def circle_page(handle):
+        data = circle_data(handle)
+        if not data.get("ok"):
+            abort(404)
+        if data["handle"] != handle:
+            return redirect(url_for("circle_page", handle=data["handle"]))
+        from .circle import layout
+        img = f"https://pdtools.xyz/circle/{data['handle']}.png?v={circle_stamp(data)}" if data["people"] else None
+        return render_template("circle.html", cfg=cfg, data=data, spots=layout(data["people"]), stamp=circle_stamp(data), og_img=img,
+                               og_alt=f"@{data['handle']}'s Dragon Circle: the Keepers they are closest to in Pocket Dragons posts",
+                               og_title=f"@{data['handle']}'s Dragon Circle on PD Tools",
+                               og_desc=f"The {len(data['people'])} Keepers @{data['handle']} tags and is tagged by most in Pocket Dragons posts. Draw yours, free.")
+
+    @app.get("/circle/<handle>.png")
+    @circle_only
+    def circle_image(handle):
+        import io
+        from concurrent.futures import ThreadPoolExecutor
+        from pathlib import Path
+        from PIL import Image
+        from .circle import render
+        data = circle_data(handle)
+        if not data.get("ok"):
+            abort(404)
+        key = data["handle"].lower() + ":" + circle_stamp(data)
+        hit = circle_png.get(key)
+        if not (hit and time.time() - hit[0] < CIRCLE_PNG_S):
+            ip = client_ip(); nowt = time.time()
+            recent = [t for t in circle_hits.get(ip, []) if nowt - t < 3600]
+            if len(recent) >= 40:
+                abort(429)
+            circle_hits[ip] = recent + [nowt]
+            handles = [data["handle"]] + [p["user"] for p in data["people"]]
+            def pic(h):
+                got = avatar_bytes(h)
+                try:
+                    return h.lower(), (Image.open(io.BytesIO(got[0])) if got else None)
+                except Exception:  # noqa: BLE001  a broken picture just shows the first letter
+                    return h.lower(), None
+            with ThreadPoolExecutor(max_workers=6) as ex:
+                avatars = dict(ex.map(pic, handles))
+            png = render(data, avatars, str(Path(__file__).parent / "fonts"))
+            if len(circle_png) > 60:
+                circle_png.clear()
+            circle_png[key] = (time.time(), png); hit = circle_png[key]
+        r = app.response_class(hit[1], mimetype="image/png")
+        r.headers["Cache-Control"] = "public, max-age=3600"
+        return r
+
+    @app.get("/api/circle/<handle>")
+    @circle_only
+    def api_circle(handle):
+        data = circle_data(handle)
+        return jsonify(data), (200 if data.get("ok") else 400)
 
     # ---------- follow directory ----------
     @app.get("/friends/ama")
@@ -1055,6 +1186,7 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     # the What's new card on the home page: newest first, the top three are shown
     NEWS = [
+        {"title": "Your Dragon Circle", "text": "See the Keepers you tag and who tag you most in dragon posts.", "href": "/circle"},
         {"title": "Your dragons in one place", "text": "Inside the X app, a note now helps you move your progress in one tap.", "href": "/help#move"},
         {"title": "Catch up by day", "text": "Posts you missed wait under their own day.", "href": "/friends"},
         {"title": "The AMA Library", "text": "Every Pocket Dragons AMA in one place.", "href": "/friends/ama"},

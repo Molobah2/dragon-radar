@@ -1344,3 +1344,4 @@ html.theme-dark .day-chip.done span { color: #86efac; }
 .help-video video { display: block; width: 100%; height: auto; border-radius: calc(var(--r) - 8px); background: #241a4a; aspect-ratio: 16 / 9; }
 .help-cap { margin: 10px 6px 4px !important; font-size: 14px; text-align: center; }
 .help-links { display: flex; flex-wrap: wrap; gap: 10px; }
+

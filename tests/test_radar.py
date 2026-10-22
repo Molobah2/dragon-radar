@@ -2133,3 +2133,54 @@ def test_feed_starts_fresh_when_a_new_day_begins_with_the_tab_open():
     The feed now notices a new local day (on return, focus or once a minute) and reloads itself."""
     js = (Path(__file__).parent.parent / "radar" / "static" / "app.js").read_text(encoding="utf-8")
     assert "function newDayCheck()" in js and 'addEventListener("pageshow", newDayCheck)' in js and "setInterval(newDayCheck" in js
+
+
+def test_dragon_circle_counts_tags_both_ways_and_leaves_the_team_out(cfg, Session):
+    """Dragon Circle: who a Keeper tags and who tags them in dragon posts. Two way tags rank first, the team,
+    blocked authors, hidden posts and emails never count, and the page, picture and API all answer."""
+    now = utcnow()
+    with Session() as s:
+        s.add_all([
+            Post(id="401", author_id="a", author_username="Alice", text="GM @Bob and @carol, also @Pocket_Dragons_", created_at=now),
+            Post(id="402", author_id="a", author_username="Alice", text="Hatched with @bob today, mail hello@dave.io", created_at=now),
+            Post(id="403", author_id="b", author_username="Bob", text="Thanks @alice!", created_at=now),
+            Post(id="404", author_id="e", author_username="Erin", text="@Alice your dragon is cute", created_at=now),
+            Post(id="405", author_id="z", author_username="Zed", text="spam @alice", created_at=now),
+            Post(id="406", author_id="f", author_username="Fay", text="hidden @alice", created_at=now, hidden=True),
+            Post(id="407", author_id="t", author_username="TradingJoker", text="welcome @alice", created_at=now, is_team=True),
+        ])
+        s.add(BlockedAuthor(author_id="z")); s.commit()
+    cfg.v2_public = True; cfg.preview_key = "secret-preview-phrase-123"
+    app = create_app(cfg); app.config["TESTING"] = True; c = app.test_client()
+    # locked: everyone gets a 404 and no link to it, even with the preview on, until this device is unlocked
+    stranger = app.test_client()
+    assert stranger.get("/circle").status_code == 404 and stranger.get("/api/circle/alice").status_code == 404
+    assert stranger.get("/lab/circle/on").status_code == 404 and 'href="/circle"' not in stranger.get("/").get_data(as_text=True)
+    c.get("/preview/secret-preview-phrase-123")
+    assert c.get("/circle").status_code == 404 and "pd_circle" not in str(c.get("/").headers)
+    r = c.get("/lab/circle/on"); assert r.status_code == 302 and "pd_circle=" in r.headers["Set-Cookie"]
+    assert 'href="/circle"' in c.get("/").get_data(as_text=True)
+    j = c.get("/api/circle/alice").get_json()
+    who = [p["user"] for p in j["people"]]
+    assert j["ok"] and j["handle"] == "Alice" and j["posts"] == 2
+    assert who[0] == "Bob" and set(who) == {"Bob", "carol", "Erin"}     # Bob: tagged twice and tagged back
+    bob = j["people"][0]; assert (bob["out"], bob["in"]) == (2, 1)
+    assert not any(u.lower() in ("pocket_dragons_", "tradingjoker", "zed", "fay", "dave") for u in who)
+    page = c.get("/circle/alice")
+    assert page.status_code == 302 and page.headers["Location"].endswith("/circle/Alice")
+    html = c.get("/circle/Alice").get_data(as_text=True)
+    assert "@Alice" in html and "Save image" in html and "x.com/intent/post" in html and "/circle/Alice.png?v=" in html
+    png = c.get("/circle/Alice.png")
+    assert png.status_code == 200 and png.data[:8] == b"\x89PNG\r\n\x1a\n" and png.mimetype == "image/png"
+    assert c.get("/api/circle/not a handle").status_code in (400, 404)
+    assert "Draw my circle" in c.get("/circle").get_data(as_text=True)
+    assert c.get("/circle?h=@Alice").headers["Location"].endswith("/circle/Alice")
+
+
+def test_dragon_circle_locks_again(cfg, Session):
+    cfg.v2_public = True; cfg.preview_key = "secret-preview-phrase-123"
+    c = create_app(cfg).test_client()
+    c.get("/preview/secret-preview-phrase-123"); c.get("/lab/circle/on")
+    assert c.get("/circle").status_code == 200
+    c.get("/lab/circle/off")
+    assert c.get("/circle").status_code == 404
