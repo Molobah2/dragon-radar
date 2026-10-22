@@ -558,7 +558,9 @@
     K.hero(x, art, { glow: t === "legend" ? "255, 214, 110" : t === "rare" ? "200, 220, 255" : "255, 245, 225" });
     K.panel(x, t === "legend" ? "rgba(255, 214, 110, .75)" : "rgba(255, 255, 255, .32)");
     const X = P.x + 40, inner = P.w - 80;
-    K.pill(x, RARITY[t].toUpperCase(), X, P.y + 40, t === "legend" ? { bg: "#ffd76a", ink: "#3a2606" } : t === "rare" ? { bg: "rgba(168, 220, 255, .24)" } : {});
+    const pw = K.pill(x, RARITY[t].toUpperCase(), X, P.y + 40, t === "legend" ? { bg: "#ffd76a", ink: "#3a2606" } : t === "rare" ? { bg: "rgba(168, 220, 255, .24)" } : {});
+    // these are community stickers, not the real Pocket Dragons NFTs, so every card says so
+    K.pill(x, "FAN ART", X + pw + 10, P.y + 40, { bg: "rgba(0, 0, 0, .3)", ink: "rgba(255, 255, 255, .9)" });
     x.fillStyle = K.INK; x.textAlign = "left";
     K.fit(x, `${sp.name} Dragon`, X, P.y + 148, inner, 60, 40);
     x.fillStyle = K.SOFT; x.font = '700 24px "Nunito", sans-serif'; x.fillText(entry.pose || "", X, P.y + 190);
