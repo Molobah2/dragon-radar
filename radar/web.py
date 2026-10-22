@@ -1038,7 +1038,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     # saving a canvas that drew an image from another site). Only X's image host is allowed.
     avatar_cache: dict[str, tuple[float, bytes, str]] = {}
 
-    avatar_miss: dict[str, float] = {}       # handles with no working picture right now, so we do not ask again for an hour
+    avatar_miss: dict[str, float] = {}       # handles with no working picture right now, so we do not ask again for 15 minutes
     avatar_fx_tried: dict[str, float] = {}   # handles we looked up fresh on FxTwitter in the last 6 hours
 
     def avatar_bytes(handle):
@@ -1053,7 +1053,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         hit = avatar_cache.get(key)
         if hit and now_ts - hit[0] < 86400:
             return hit[1], hit[2]
-        if now_ts - avatar_miss.get(key, 0) < 3600:
+        if now_ts - avatar_miss.get(key, 0) < 900:
             return None
         urls = []
         with Session() as s:
@@ -1094,7 +1094,14 @@ def create_app(cfg: Config | None = None) -> Flask:
         if not got and now_ts - avatar_fx_tried.get(key, 0) > 6 * 3600:
             avatar_fx_tried[key] = now_ts
             from .fxpic import profile as fx_profile
-            fx = fx_profile(handle, fx_http) or {}
+            fx = {}
+            for attempt in range(3):            # FxTwitter now and then answers "not found" for a real account; ask again
+                fx = fx_profile(handle, fx_http) or {}
+                if fx.get("profile_image_url"):
+                    break
+                time.sleep(0.5)
+            if not fx.get("profile_image_url"):
+                avatar_fx_tried[key] = now_ts - 6 * 3600 + 900    # try the lookup again in 15 minutes
             fresh = fx.get("profile_image_url") or ""
             if fresh and fresh not in seen:
                 got = grab(fresh)
