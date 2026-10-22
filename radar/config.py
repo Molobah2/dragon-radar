@@ -188,7 +188,7 @@ COMMUNITY_MUSIC = [
      "avatar": "https://pbs.twimg.com/profile_images/2106797900298956800/QEgBWpGJ_200x200.jpg"},
     {"name": "Boxer", "x": "Boxerr110", "songs": ["Pocket Dragon"],
      "avatar": "https://pbs.twimg.com/profile_images/2062207325553983491/phRPGgCQ_200x200.jpg"},
-    {"name": "Ismail HA", "x": "IsmailHA279", "songs": ["Keeper of the Dragon"],
+    {"name": "Ismail HA", "x": "IsmailHA279", "songs": ["Keeper of the Dragon", "The Keepers' Echo"],
      "avatar": "https://pbs.twimg.com/profile_images/2023680543871926272/Rv0wREMK_200x200.jpg"},
     {"name": "Anastasiya", "x": "BugaenkoNastya", "songs": ["Keepers Got The Fire"],
      "avatar": "https://pbs.twimg.com/profile_images/2098326307721580544/44knRiO4_200x200.jpg"},
