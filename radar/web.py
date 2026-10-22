@@ -23,7 +23,7 @@ from sqlalchemy.exc import IntegrityError
 from .collector import run_collection
 from .config import Config
 from .directory import has_dragon_tag, note_user
-from .db import (SIDE_RUNS, BlockedAuthor, CollectorRun, Keeper, Post, get_setting, make_session_factory, month_spend,
+from .db import (SIDE_RUNS, AuthorCheck, BlockedAuthor, CollectorRun, Keeper, Post, get_setting, make_session_factory, month_spend,
                  set_setting, utcnow)
 
 FEED_LIMIT = 1000
@@ -1038,42 +1038,87 @@ def create_app(cfg: Config | None = None) -> Flask:
     # saving a canvas that drew an image from another site). Only X's image host is allowed.
     avatar_cache: dict[str, tuple[float, bytes, str]] = {}
 
+    avatar_miss: dict[str, float] = {}       # handles with no working picture right now, so we do not ask again for an hour
+    avatar_fx_tried: dict[str, float] = {}   # handles we looked up fresh on FxTwitter in the last 6 hours
+
     def avatar_bytes(handle):
-        """A Keeper's X picture (bytes, type), fetched from X's image host only and kept for a day, or None."""
+        """A Keeper's X picture (bytes, type), fetched from X's image host only and kept for a day, or None.
+        X gives every new profile picture a new address and the old one stops working, so this tries every
+        address we know (newest first) and, when all of them are dead, looks the Keeper up once on FxTwitter
+        and saves the new address everywhere, so the feed and the Keepers page heal too."""
+        import json
         import requests
         key = handle.lower()
+        now_ts = datetime.now().timestamp()
         hit = avatar_cache.get(key)
-        if hit and datetime.now().timestamp() - hit[0] < 86400:
+        if hit and now_ts - hit[0] < 86400:
             return hit[1], hit[2]
+        if now_ts - avatar_miss.get(key, 0) < 3600:
+            return None
+        urls = []
         with Session() as s:
-            url = s.scalar(select(Post.author_avatar).where(func.lower(Post.author_username) == key,
-                                                            Post.author_avatar.is_not(None)).limit(1))
-            cached = get_setting(s, f"keeper:{key}")
+            c = s.get(AuthorCheck, key)
+            if c and c.avatar:
+                urls.append(c.avatar)
+            urls += list(s.scalars(select(Post.author_avatar).where(func.lower(Post.author_username) == key, Post.author_avatar.is_not(None))
+                                   .group_by(Post.author_avatar).order_by(func.max(Post.collected_at).desc()).limit(4)))
             kp = s.get(Keeper, key)
+            if kp and kp.avatar:
+                urls.append(kp.avatar)
             team = get_setting(s, "team_profiles")
-        if not url and kp and kp.avatar:
-            url = kp.avatar
-        if not url and team:
-            import json
-            url = next((t.get("avatar") for t in json.loads(team) if t["username"].lower() == key), None)
-        if not url and cached:
-            import json
-            url = (json.loads(cached).get("card") or {}).get("avatar_url")
-        if not url or not url.startswith("https://pbs.twimg.com/"):
-            return None
-        try:
-            r = requests.get(url, timeout=8, allow_redirects=False)   # X's image host only, never a hop elsewhere
-        except requests.RequestException:
-            return None
-        if r.status_code != 200 or len(r.content) > 500_000:
-            return None
-        ctype = r.headers.get("Content-Type", "image/jpeg").split(";")[0].strip().lower()
-        if ctype not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
+            cached = get_setting(s, f"keeper:{key}")
+        if team:
+            urls.append(next((t.get("avatar") for t in json.loads(team) if t["username"].lower() == key), None))
+        if cached:
+            urls.append((json.loads(cached).get("card") or {}).get("avatar_url"))
+
+        def grab(url):
+            if not url or not url.startswith("https://pbs.twimg.com/"):
+                return None
+            try:
+                r = requests.get(url, timeout=8, allow_redirects=False)   # X's image host only, never a hop elsewhere
+            except requests.RequestException:
+                return None
+            if r.status_code != 200 or len(r.content) > 500_000:
+                return None
+            ctype = r.headers.get("Content-Type", "image/jpeg").split(";")[0].strip().lower()
+            return (r.content, ctype) if ctype in ("image/jpeg", "image/png", "image/webp", "image/gif") else None
+
+        got, seen = None, set()
+        for u in urls:
+            if u and u not in seen:
+                seen.add(u)
+                got = grab(u)
+                if got:
+                    break
+        if not got and now_ts - avatar_fx_tried.get(key, 0) > 6 * 3600:
+            avatar_fx_tried[key] = now_ts
+            from .fxpic import profile as fx_profile
+            fx = fx_profile(handle, fx_http) or {}
+            fresh = fx.get("profile_image_url") or ""
+            if fresh and fresh not in seen:
+                got = grab(fresh)
+                if got:
+                    with Session() as s:           # save the new address so every page shows it from now on
+                        for p in s.scalars(select(Post).where(func.lower(Post.author_username) == key)):
+                            p.author_avatar = fresh
+                        kp = s.get(Keeper, key)
+                        if kp is not None:
+                            kp.avatar = fresh
+                        c = s.get(AuthorCheck, key)
+                        if c is not None:
+                            c.avatar = fresh
+                        s.commit()
+                    clear_feed()
+        if not got:
+            avatar_miss[key] = now_ts
+            if len(avatar_miss) > 5000:
+                avatar_miss.clear()
             return None
         if len(avatar_cache) > 2000:
             avatar_cache.clear()
-        avatar_cache[key] = (datetime.now().timestamp(), r.content, ctype)
-        return r.content, ctype
+        avatar_cache[key] = (now_ts, got[0], got[1])
+        return got
 
     @app.get("/api/avatar/<handle>")
     def api_avatar(handle):

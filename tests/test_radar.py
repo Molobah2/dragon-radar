@@ -2184,3 +2184,32 @@ def test_dragon_circle_locks_again(cfg, Session):
     assert c.get("/circle").status_code == 200
     c.get("/lab/circle/off")
     assert c.get("/circle").status_code == 404
+
+
+def test_avatar_heals_a_changed_profile_picture(cfg, Session, monkeypatch):
+    """X retires the old picture address when someone changes their picture. The avatar route tries every
+    address we know, then looks the Keeper up fresh once and saves the new address for every page."""
+    now = utcnow()
+    with Session() as s:
+        s.add(Post(id="501", author_id="n", author_username="Nastya", text="gm", created_at=now,
+                   author_avatar="https://pbs.twimg.com/profile_images/1/old_bigger.jpg"))
+        s.commit()
+    import requests as rq
+
+    class R:
+        def __init__(self, code, body=b"", ctype="image/jpeg"):
+            self.status_code, self.content, self.headers = code, body, {"Content-Type": ctype}
+    calls = []
+
+    def fake_get(url, **k):
+        calls.append(url)
+        return R(200, b"\xff\xd8newpic") if "new_bigger" in url else R(404)
+    monkeypatch.setattr(rq, "get", fake_get)
+    import radar.fxpic as fxp
+    monkeypatch.setattr(fxp, "profile", lambda u, http, timeout=8: {"username": u, "profile_image_url": "https://pbs.twimg.com/profile_images/2/new_bigger.jpg"})
+    c = create_app(cfg).test_client()
+    r = c.get("/api/avatar/Nastya")
+    assert r.status_code == 200 and r.data == b"\xff\xd8newpic"
+    with Session() as s:
+        assert s.get(Post, "501").author_avatar.endswith("new_bigger.jpg")
+    n = len(calls); c.get("/api/avatar/Nastya"); assert len(calls) == n      # kept for a day
