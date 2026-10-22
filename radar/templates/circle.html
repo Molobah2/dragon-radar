@@ -1,127 +1,525 @@
-{% extends "base.html" %}
+<!doctype html>
 {% from "_ico.html" import ico with context %}
-{% block title %}Dragon Circle · {{ cfg.site_name }}{% endblock %}
-{% block body_class %}ready static-page{% endblock %}
-{% block header_right %}<a class="btn btn-soft" data-i18n-html="back" href="{{ url_for('feed') }}"><span class="wide-only">Back to the </span>feed</a>{% endblock %}
-{% block main %}
+<html lang="en" class="dc-root">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% if data %}@{{ data.handle }} · {% endif %}Dragon Circle · {{ cfg.hub_name or "PD Tools" }}</title>
+  <meta name="description" content="See the Keepers you tag and who tag you most in Pocket Dragons posts. Free, unofficial community tool.">
+  <meta name="theme-color" content="#120a2a">
+  {% include "_icons.html" %}
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ asset('fonts.css') }}">
+{% include "_speed.html" %}
 <style>
-/* Dragon Circle */
-.dc-hero h1 { margin: 6px 0 8px; }
-.dc-handle { font-size: clamp(34px, 8vw, 56px); word-break: break-all; }
-.dc-form { display: flex; align-items: stretch; gap: 0; margin: 18px 0 10px; max-width: 520px; border-radius: 18px; overflow: hidden;
-  background: #fff; box-shadow: 0 12px 30px -20px rgba(29, 36, 51, .6), inset 0 0 0 2px rgba(29, 36, 51, .08); }
-.dc-at { display: grid; place-items: center; padding: 0 4px 0 16px; font: 800 20px/1 var(--font-display); color: var(--ink-soft); }
-.dc-form input { flex: 1; min-width: 0; border: 0; outline: 0; padding: 14px 8px; font: 700 17px/1.2 inherit; font-size: 17px; background: transparent; color: var(--ink); }
-.dc-form .btn { border-radius: 0; padding: 0 18px; white-space: nowrap; }
-.dc-note { margin: 10px 0 0 !important; font-size: 13.5px !important; color: var(--ink-soft); }
-.dc-wheel { position: relative; width: min(100%, 560px); aspect-ratio: 1; margin: 18px auto 6px; }
-.dc-guide { position: absolute; left: 50%; top: 50%; border-radius: 50%; border: 2px dashed rgba(242, 177, 52, .45); transform: translate(-50%, -50%); }
-.dc-guide.g1 { width: 62%; height: 62%; } .dc-guide.g2 { width: 91%; height: 91%; border-color: rgba(150, 120, 230, .35); }
-.dc-me, .dc-p { position: absolute; width: var(--s); aspect-ratio: 1; transform: translate(-50%, -50%); text-decoration: none; }
-.dc-me { left: 50%; top: 50%; }
-.dc-p { left: var(--x); top: var(--y); animation: dcIn .6s cubic-bezier(.3, 1.5, .5, 1) both; animation-delay: calc(var(--i) * 45ms); }
-@keyframes dcIn { from { opacity: 0; transform: translate(-50%, -50%) scale(.4); } }
-.dc-face { position: relative; display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; overflow: hidden;
-  background: linear-gradient(140deg, #8a6bd0, #5b3f9c); color: #fff3dc; font: 800 clamp(14px, 4vw, 30px)/1 var(--font-display);
-  box-shadow: 0 0 0 4px #fff, 0 10px 22px -10px rgba(29, 36, 51, .7); }
-.dc-face img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.dc-me .dc-face { box-shadow: 0 0 0 6px #ff9f6e, 0 0 0 11px rgba(255, 159, 110, .3), 0 16px 34px -12px rgba(29, 36, 51, .8); font-size: clamp(28px, 7vw, 54px); }
-.dc-p.r0 .dc-face { box-shadow: 0 0 0 4px #ffc45c, 0 10px 22px -10px rgba(29, 36, 51, .7); }
-.dc-p.r1 .dc-face { box-shadow: 0 0 0 3px #c4aaff, 0 8px 18px -10px rgba(29, 36, 51, .7); }
-.dc-p:hover .dc-face { transform: scale(1.06); transition: transform .2s; }
-.dc-rank { position: absolute; right: -6%; top: -8%; width: 34%; min-width: 22px; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%;
-  background: #ffd65c; color: #32163c; font: 800 clamp(11px, 2.6vw, 17px)/1 var(--font-display); box-shadow: 0 0 0 3px #3a1e4a; }
-.dc-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; }
-.dc-empty { margin-top: 14px; padding: 16px; border-radius: 18px; background: rgba(255, 255, 255, .5); }
-.dc-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px; }
-.dc-list a { display: grid; grid-template-columns: 30px 44px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 16px; text-decoration: none; color: var(--ink); background: rgba(255, 255, 255, .55); }
-.dc-n { font: 800 16px/1 var(--font-display); color: var(--ink-soft); text-align: center; }
-.dc-face.sm { width: 44px; height: 44px; font-size: 18px; box-shadow: 0 0 0 2px #fff; }
-.dc-who { min-width: 0; } .dc-who b, .dc-who small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dc-who small { color: var(--ink-soft); font-weight: 700; }
-.dc-count { display: grid; gap: 2px; text-align: right; font-size: 12px; color: var(--ink-soft); }
-.dc-c b { color: var(--ink); font-size: 14px; }
-@media (max-width: 520px) { .dc-list a { grid-template-columns: 24px 38px 1fr; } .dc-count { grid-column: 2 / -1; grid-auto-flow: column; justify-content: start; gap: 12px; text-align: left; } .dc-face.sm { width: 38px; height: 38px; } }
+/* ===== Dragon Circle: its own night sky, its own look ===== */
+:root {
+  --ink: #fff6ea; --soft: #cbbfe8; --mute: #9a8cc4;
+  --gold: #ffcf6b; --gold2: #ff9f6e; --lilac: #b9a2ff; --mint: #7ef0d0; --rose: #ff7eb6;
+  --glass: rgba(255, 255, 255, .06); --glass2: rgba(255, 255, 255, .1); --line: rgba(255, 255, 255, .12);
+  --disp: "Fredoka", "Trebuchet MS", system-ui, sans-serif; --body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease: cubic-bezier(.2, .8, .2, 1); --spring: cubic-bezier(.3, 1.5, .5, 1);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { background: #0c0720; color: var(--ink); font: 600 16px/1.5 var(--body); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: inherit; }
+button, input, select { font: inherit; color: inherit; }
+::selection { background: rgba(255, 207, 107, .35); }
+
+/* sky */
+.dc-sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  background: radial-gradient(120% 80% at 70% 0%, #2a1658 0%, #170c38 45%, #0c0720 100%); }
+.dc-sky canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.aur { position: absolute; width: 70vmax; height: 70vmax; border-radius: 50%; opacity: .55; mix-blend-mode: screen; will-change: transform; }
+.aur.a1 { left: -20vmax; top: -25vmax; background: radial-gradient(closest-side, rgba(150, 90, 255, .55), transparent); animation: drift1 26s var(--ease) infinite alternate; }
+.aur.a2 { right: -25vmax; top: 10vmax; background: radial-gradient(closest-side, rgba(255, 120, 170, .38), transparent); animation: drift2 32s var(--ease) infinite alternate; }
+.aur.a3 { left: 10vmax; bottom: -35vmax; background: radial-gradient(closest-side, rgba(80, 200, 220, .28), transparent); animation: drift3 38s var(--ease) infinite alternate; }
+@keyframes drift1 { to { transform: translate(14vmax, 8vmax) scale(1.15); } }
+@keyframes drift2 { to { transform: translate(-12vmax, 10vmax) scale(.9); } }
+@keyframes drift3 { to { transform: translate(10vmax, -8vmax) scale(1.2); } }
+.grain { position: absolute; inset: 0; opacity: .05; background-image: radial-gradient(rgba(255,255,255,.8) 1px, transparent 1px); background-size: 3px 3px; }
+
+/* frame */
+.dc-app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+.dc-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: max(14px, env(safe-area-inset-top)) clamp(16px, 4vw, 40px) 8px; }
+.dc-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 700 18px/1 var(--disp); letter-spacing: .2px; }
+.dc-brand img { width: 38px; height: 38px; border-radius: 12px; box-shadow: 0 0 0 2px rgba(255,255,255,.15), 0 8px 20px -8px #000; }
+.dc-brand small { display: block; font: 700 11px/1 var(--body); letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-top: 4px; }
+.dc-tools { display: flex; align-items: center; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); text-decoration: none; font-weight: 800; font-size: 14px;
+  transition: background .25s, border-color .25s, transform .25s var(--spring); cursor: pointer; }
+.pill:hover { background: var(--glass2); border-color: rgba(255,255,255,.25); transform: translateY(-1px); }
+.pill svg { width: 18px; height: 18px; }
+.pill select { appearance: none; -webkit-appearance: none; background: transparent; border: 0; outline: 0; font-weight: 800; font-size: 14px; cursor: pointer; padding-right: 2px; }
+.pill select option { color: #1d1433; }
+@media (max-width: 560px) { .pill .wide { display: none; } .dc-brand span { display: none; } }
+
+.dc-main { flex: 1; width: min(1180px, 100%); margin: 0 auto; padding: 8px clamp(16px, 4vw, 40px) 40px; }
+
+/* stage */
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-template-areas: "info orbit"; align-items: center; gap: clamp(20px, 4vw, 56px); min-height: min(78vh, 760px); }
+.info { grid-area: info; }
+.orbit-wrap { grid-area: orbit; perspective: 1200px; }
+@media (max-width: 860px) {
+  .stage { display: flex; flex-direction: column; align-items: center; min-height: 0; gap: 0; text-align: center; }
+  .info { display: contents; }
+  .info > * { order: 2; }
+  .info > .kick, .info > .handle, .info > .lede, .info > .big { order: 0; }
+  .orbit-wrap { order: 1; width: 100%; margin: 14px 0 4px; }
+  .stats { margin-top: 8px; }
+}
+.kick { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 10px; border-radius: 999px; font: 800 12px/1 var(--body); letter-spacing: 2.4px; text-transform: uppercase;
+  color: #2a1440; background: linear-gradient(90deg, var(--gold), var(--gold2)); box-shadow: 0 10px 30px -12px rgba(255, 170, 90, .9); }
+.kick i { width: 8px; height: 8px; border-radius: 50%; background: #2a1440; box-shadow: 0 0 0 3px rgba(42,20,64,.2); animation: beat 1.8s ease-in-out infinite; }
+@keyframes beat { 50% { transform: scale(.55); opacity: .6; } }
+.handle { margin: 16px 0 6px; font: 700 clamp(40px, 7.4vw, 76px)/1 var(--disp); letter-spacing: -1px; word-break: break-all;
+  background: linear-gradient(100deg, #fff 0%, #ffe2b0 30%, #ffb0d8 55%, #c8b6ff 75%, #fff 100%); background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 7s linear infinite; }
+@keyframes shine { to { background-position: -220% 0; } }
+.lede { margin: 6px 0 0; font-size: clamp(16px, 2vw, 19px); color: var(--soft); max-width: 30em; }
+h1.big { margin: 18px 0 10px; font: 700 clamp(40px, 6.6vw, 72px)/1.02 var(--disp); letter-spacing: -1px; }
+h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(--lilac)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* stats */
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 26px 0 0; max-width: 480px; width: 100%; }
+.stat { position: relative; padding: 14px 12px 12px; border-radius: 20px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); overflow: hidden; }
+.stat::before { content: ""; position: absolute; inset: 0 0 auto; height: 2px; background: linear-gradient(90deg, transparent, var(--c, var(--gold)), transparent); opacity: .9; }
+.stat b { display: block; font: 700 clamp(26px, 4vw, 34px)/1 var(--disp); color: var(--c, var(--gold)); font-variant-numeric: tabular-nums; }
+.stat span { display: block; margin-top: 6px; font-size: 12.5px; line-height: 1.25; color: var(--soft); font-weight: 800; }
+
+/* buttons */
+.acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+@media (max-width: 860px) { .acts { justify-content: center; } }
+.btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 50px; padding: 0 22px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); font-weight: 900; font-size: 15px; text-decoration: none; cursor: pointer; overflow: hidden;
+  transition: transform .3s var(--spring), background .25s, box-shadow .3s; -webkit-tap-highlight-color: transparent; }
+.btn:hover { transform: translateY(-2px); background: var(--glass2); }
+.btn:active { transform: scale(.96); }
+.btn svg { width: 19px; height: 19px; flex: none; }
+.btn.go { color: #2a1440; border: 0; background: linear-gradient(100deg, var(--gold), var(--gold2) 60%, var(--rose)); box-shadow: 0 14px 34px -14px rgba(255, 150, 100, .95), inset 0 1px 0 rgba(255,255,255,.6); }
+.btn.go::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.55) 50%, transparent 80%); transform: translateX(-120%); animation: sweep 4.5s var(--ease) infinite 1.2s; }
+@keyframes sweep { 30%, 100% { transform: translateX(120%); } }
+.hint { margin: 16px 0 0; font-size: 13.5px; color: var(--mute); min-height: 1.4em; }
+
+/* ===== the orbit ===== */
+.orbit { position: relative; width: min(100%, 620px); aspect-ratio: 1; margin: 0 auto; transform-style: preserve-3d; transition: transform .8s var(--ease); }
+.glow { position: absolute; inset: 12%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 150, 110, .35), rgba(150, 90, 255, .18) 60%, transparent); filter: blur(6px); animation: breathe 6s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: scale(1.08); opacity: .75; } }
+.track { position: absolute; left: 50%; top: 50%; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.track.t0 { width: 62%; height: 62%; border: 1.5px solid rgba(255, 207, 107, .28); box-shadow: 0 0 40px rgba(255, 207, 107, .08) inset; }
+.track.t1 { width: 91%; height: 91%; border: 1.5px dashed rgba(185, 162, 255, .25); }
+.track.t2 { width: 108%; height: 108%; border: 1px solid rgba(255,255,255,.05); }
+.ring { position: absolute; inset: 0; pointer-events: none; animation: spin var(--dur) linear infinite; animation-direction: var(--dir, normal); }
+.ring.r0 { --dur: 110s; }
+.ring.r1 { --dur: 170s; --dir: reverse; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.ln { stroke: rgba(200, 180, 255, .28); stroke-width: .28; stroke-linecap: round; stroke-dasharray: 60; stroke-dashoffset: 60; animation: draw 1.4s var(--ease) forwards; animation-delay: calc(.35s + var(--i) * 60ms); transition: opacity .3s, stroke .3s, stroke-width .3s; }
+.ln.two { stroke: rgba(255, 207, 107, .6); stroke-width: .38; }
+.flow { stroke: var(--gold); stroke-width: .55; stroke-linecap: round; stroke-dasharray: 1.4 6; opacity: 0; animation: flow 2.4s linear infinite, fadein .6s 1.8s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes flow { to { stroke-dashoffset: -7.4; } }
+@keyframes fadein { to { opacity: .95; } }
+.orbit.focus .ln, .orbit.focus .flow { opacity: .12; }
+.orbit.focus .ln.on { opacity: 1; stroke: #fff; stroke-width: .5; }
+.orbit.focus .flow.on { opacity: 1; }
+
+.node { position: absolute; left: var(--x); top: var(--y); width: var(--s); aspect-ratio: 1; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; transform: translate(-50%, -50%); -webkit-tap-highlight-color: transparent; z-index: 2; }
+.up { display: block; width: 100%; height: 100%; animation: spin var(--dur) linear infinite; animation-direction: var(--udir, reverse); }
+.ring.r1 .up { --udir: normal; }
+.pop-in { display: block; width: 100%; height: 100%; animation: popin .9s var(--spring) both; animation-delay: calc(.25s + var(--i) * 70ms); }
+@keyframes popin { from { opacity: 0; transform: scale(.2); } }
+.bob { display: block; width: 100%; height: 100%; animation: bob 5s ease-in-out infinite; animation-delay: calc(var(--i) * -.7s); }
+@keyframes bob { 50% { transform: translateY(-5%); } }
+.ava { position: relative; display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: linear-gradient(140deg, #8a6bd0, #4c2f8f);
+  font: 700 clamp(14px, 3.4vw, 28px)/1 var(--disp); color: #fff3dc; box-shadow: 0 0 0 3px var(--rc, var(--lilac)), 0 0 0 7px rgba(255,255,255,.06), 0 14px 30px -10px rgba(0,0,0,.8);
+  transition: transform .35s var(--spring), box-shadow .35s; }
+.ava img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ring.r0 .ava { --rc: var(--gold); }
+.node:hover .ava, .node.on .ava { transform: scale(1.16); box-shadow: 0 0 0 3px #fff, 0 0 0 9px rgba(255, 207, 107, .35), 0 0 40px rgba(255, 207, 107, .55); }
+.node:focus-visible { outline: none; } .node:focus-visible .ava { box-shadow: 0 0 0 3px #fff, 0 0 0 8px var(--gold); }
+.orbit:hover .ring, .orbit:hover .up { animation-play-state: paused; }
+.orbit.focus .node:not(.on) .ava { filter: brightness(.5) saturate(.6); }
+.rank { position: absolute; right: -8%; top: -8%; z-index: 2; display: grid; place-items: center; width: 38%; min-width: 22px; aspect-ratio: 1; border-radius: 50%;
+  font: 700 clamp(11px, 2.3vw, 16px)/1 var(--disp); color: #2a1440; background: var(--medal); box-shadow: 0 0 0 2.5px #1a0f36, 0 4px 12px rgba(0,0,0,.5); }
+.rank.m1 { --medal: linear-gradient(135deg, #fff1b8, #ffc94a 55%, #e79a1c); }
+.rank.m2 { --medal: linear-gradient(135deg, #ffffff, #d4dcf0 55%, #9aa7c7); }
+.rank.m3 { --medal: linear-gradient(135deg, #ffd7b0, #e9a06a 55%, #b8693a); }
+.node.two .ava { box-shadow: 0 0 0 3px var(--rc, var(--lilac)), 0 0 0 7px rgba(255, 207, 107, .16), 0 0 26px rgba(255, 207, 107, .35), 0 14px 30px -10px rgba(0,0,0,.8); }
+.two-dot-unused { position: absolute; left: -4%; bottom: 4%; z-index: 2; width: 26%; min-width: 14px; aspect-ratio: 1; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2.5px #1a0f36, 0 0 14px var(--gold); }
+
+.core { position: absolute; left: 50%; top: 50%; width: 27%; aspect-ratio: 1; transform: translate(-50%, -50%); z-index: 3; text-decoration: none; }
+.core .halo { position: absolute; inset: -9%; border-radius: 50%; background: conic-gradient(from 0deg, var(--gold), var(--rose), var(--lilac), var(--mint), var(--gold)); animation: spin 8s linear infinite; filter: blur(.5px); }
+.core .halo::after { content: ""; position: absolute; inset: 5%; border-radius: 50%; background: #1a0f36; }
+.core .wave { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255, 190, 130, .5); animation: wave 3.6s var(--ease) infinite; }
+.core .wave.w2 { animation-delay: 1.2s; } .core .wave.w3 { animation-delay: 2.4s; }
+@keyframes wave { from { transform: scale(1); opacity: .8; } to { transform: scale(2.1); opacity: 0; } }
+.core .ava { position: absolute; inset: 0; font-size: clamp(30px, 7vw, 56px); box-shadow: 0 20px 50px -14px rgba(0,0,0,.9); animation: popin 1s var(--spring) both; }
+.core .ava { width: auto; height: auto; inset: 3%; }
+.core:hover .ava { transform: scale(1.04); }
+
+/* hover card */
+.card { position: fixed; z-index: 40; width: 270px; padding: 16px; border-radius: 22px; background: rgba(30, 18, 64, .82); border: 1px solid rgba(255,255,255,.16);
+  backdrop-filter: blur(20px) saturate(1.3); -webkit-backdrop-filter: blur(20px) saturate(1.3); box-shadow: 0 30px 60px -20px rgba(0,0,0,.9);
+  opacity: 0; transform: translateY(8px) scale(.96); pointer-events: none; transition: opacity .25s var(--ease), transform .3s var(--spring); }
+.card.show { opacity: 1; transform: none; pointer-events: auto; }
+.card-top { display: flex; align-items: center; gap: 12px; }
+.card .ava { width: 54px; height: 54px; flex: none; font-size: 22px; box-shadow: 0 0 0 2px var(--gold); }
+.card-who { min-width: 0; }
+.card-who b { display: block; font: 700 18px/1.15 var(--disp); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-who small { display: block; color: var(--soft); font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-rank { margin-left: auto; align-self: flex-start; font: 700 14px/1 var(--disp); color: var(--gold); }
+.card-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0 12px; }
+.card-nums div { padding: 10px; border-radius: 14px; background: rgba(255,255,255,.06); }
+.card-nums b { display: block; font: 700 22px/1 var(--disp); }
+.card-nums span { font-size: 12px; color: var(--soft); font-weight: 800; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 900; color: #2a1440; background: linear-gradient(90deg, var(--gold), var(--gold2)); }
+.card .btn { width: 100%; height: 44px; margin-top: 10px; font-size: 14px; }
+.card-x { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); cursor: pointer; display: none; }
+@media (max-width: 640px) {
+  .card { left: 12px !important; right: 12px; top: auto !important; bottom: max(12px, env(safe-area-inset-bottom)); width: auto; transform: translateY(30px); border-radius: 26px; padding: 18px; }
+  .card.show { transform: none; }
+  .card-x { display: block; }
+  .card-rank { margin-right: 34px; }
+}
+
+/* sections under the stage */
+.panel { position: relative; margin-top: clamp(22px, 4vw, 40px); padding: clamp(18px, 3vw, 30px); border-radius: 30px; background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035));
+  border: 1px solid var(--line); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 30px 80px -40px rgba(0,0,0,.9); }
+.panel h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; font: 700 clamp(22px, 3vw, 30px)/1.1 var(--disp); }
+.panel h2 svg { width: 26px; height: 26px; color: var(--gold); }
+.panel > p { margin: 0 0 14px; color: var(--soft); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 4px 0 16px; font-size: 13px; color: var(--soft); font-weight: 800; }
+.legend i { display: inline-block; width: 22px; height: 6px; border-radius: 6px; margin-right: 6px; vertical-align: middle; }
+.legend .s i { background: linear-gradient(90deg, var(--gold), var(--gold2)); }
+.legend .b i { background: linear-gradient(90deg, var(--lilac), var(--mint)); }
+.ranks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
+@media (max-width: 400px) { .ranks { grid-template-columns: 1fr; } }
+.ranks li { opacity: 0; transform: translateY(14px); transition: opacity .6s var(--ease), transform .6s var(--ease); transition-delay: calc(var(--i) * 40ms); }
+.ranks.in li { opacity: 1; transform: none; }
+.row { display: grid; grid-template-columns: 34px 48px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 14px; border-radius: 20px; text-decoration: none;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.06); transition: background .25s, transform .3s var(--spring), border-color .25s; }
+.row:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.16); transform: translateY(-2px); }
+.row .n { font: 700 18px/1 var(--disp); color: var(--mute); text-align: center; }
+.row .n.top { color: var(--gold); }
+.row .ava { width: 48px; height: 48px; font-size: 19px; box-shadow: 0 0 0 2px rgba(255,255,255,.18); }
+.row .who { min-width: 0; }
+.row .who b { display: flex; align-items: center; gap: 6px; font: 700 16.5px/1.2 var(--disp); }
+.row .who b span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .who small { display: block; color: var(--soft); font-weight: 800; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .chip { padding: 2px 8px; font-size: 10.5px; flex: none; }
+.bars { display: grid; gap: 5px; margin-top: 8px; }
+.bar { display: grid; grid-template-columns: 1fr 26px; align-items: center; gap: 8px; font: 700 13px/1 var(--disp); }
+.bar i { display: block; height: 7px; border-radius: 7px; background: rgba(255,255,255,.07); overflow: hidden; }
+.bar i::after { content: ""; display: block; height: 100%; width: 0; border-radius: inherit; background: var(--g); transition: width 1.2s var(--ease); transition-delay: calc(.2s + var(--i) * 50ms); }
+.ranks.in .bar i::after { width: var(--w); }
+.bar.s { --g: linear-gradient(90deg, var(--gold), var(--gold2)); }
+.bar.b { --g: linear-gradient(90deg, var(--lilac), var(--mint)); }
+
+/* search form */
+.draw { display: flex; align-items: center; gap: 6px; width: 100%; max-width: 520px; margin-top: 22px; padding: 6px; border-radius: 999px; background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.16); box-shadow: 0 20px 50px -24px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.08); transition: border-color .25s, box-shadow .25s; }
+.draw:focus-within { border-color: rgba(255, 207, 107, .6); box-shadow: 0 0 0 5px rgba(255, 207, 107, .12), 0 20px 50px -24px rgba(0,0,0,.9); }
+.draw .at { padding-left: 14px; font: 700 20px/1 var(--disp); color: var(--gold); }
+.draw input { flex: 1; min-width: 0; height: 46px; border: 0; outline: 0; background: transparent; font-size: 17px; font-weight: 800; }
+.draw input::placeholder { color: var(--mute); }
+.draw .btn { height: 46px; padding: 0 18px; flex: none; }
+@media (max-width: 340px) { .draw .btn .wide { display: none; } }
+.note { margin: 14px 0 0; font-size: 13.5px; color: var(--mute); max-width: 34em; }
+.panel.again { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px 24px; }
+.panel.again .draw { margin: 0; }
+@media (max-width: 860px) { .panel.again { grid-template-columns: 1fr; } }
+
+/* empty states */
+.empty { margin-top: 20px; padding: 18px 20px; border-radius: 22px; background: var(--glass); border: 1px solid var(--line); max-width: 480px; text-align: left; }
+.empty b { font: 700 19px/1.2 var(--disp); color: var(--gold); }
+.empty p { margin: 6px 0 0; color: var(--soft); }
+.demo .node { cursor: default; }
+.demo .ava { background: radial-gradient(circle at 30% 30%, #fff 0, var(--c) 35%, rgba(0,0,0,.3) 100%); box-shadow: 0 0 0 3px rgba(255,255,255,.15), 0 0 30px var(--c); }
+
+footer.dc-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; padding: 26px clamp(16px, 4vw, 40px) calc(26px + env(safe-area-inset-bottom)); width: min(1180px, 100%); margin: 0 auto; color: var(--mute); font-size: 13px; }
+footer.dc-foot a { text-decoration: none; }
+footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
+  .ring, .up, .core .halo, .aur { animation: none !important; }
+}
+.paused .ring, .paused .up { animation-play-state: paused; }
 </style>
-{% macro draw_form(again=False) %}
-<form class="dc-form" action="{{ url_for('circle_home') }}" method="get" role="search">
-  <span class="dc-at" aria-hidden="true">@</span>
-  <input name="h" type="text" placeholder="yourhandle" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="16" enterkeyhint="go" aria-label="Your X handle" required>
-  <button class="btn btn-go" type="submit">{{ "Draw another circle" if again else "Draw my circle" }}</button>
-</form>
-{% endmacro %}
+</head>
+<body>
+<div class="dc-sky" aria-hidden="true"><i class="aur a1"></i><i class="aur a2"></i><i class="aur a3"></i><canvas id="sky"></canvas><i class="grain"></i></div>
 
-{% if not data %}
-<section class="help-card dc-hero">
-  <p class="help-kicker">Dragon Circle</p>
-  <h1 data-i18n-html="dcH1">Who is in your <span class="pop">Dragon Circle?</span></h1>
-  <p class="lede">See the Keepers you tag and who tag you most in Pocket Dragons posts.</p>
-  {{ draw_form() }}
-  <p class="dc-note">Built only from the Pocket Dragons posts shared on pdtools. The team accounts are left out, and there is nothing to sign in to.</p>
-</section>
-{% else %}
-<section class="help-card dc-hero">
-  <p class="help-kicker">Dragon Circle</p>
-  <h1 class="dc-handle">@{{ data.handle }}</h1>
-  <p class="lede">The Keepers who are closest in Pocket Dragons posts.</p>
-  {% if spots %}
-  <div class="dc-wheel" aria-label="Dragon Circle of @{{ data.handle }}">
-    <i class="dc-guide g1" aria-hidden="true"></i><i class="dc-guide g2" aria-hidden="true"></i>
-    <a class="dc-me" href="https://x.com/{{ data.handle }}" target="_blank" rel="noopener" style="--s:26%">
-      <span class="dc-face">{{ data.handle[:1] | upper }}{% if data.has_pic %}<img src="/api/avatar/{{ data.handle }}" alt="" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
-    </a>
-    {% for p in spots %}
-    <a class="dc-p r{{ p.ring }}" href="https://x.com/{{ p.user }}" target="_blank" rel="noopener" title="{{ p.name }} @{{ p.user }}"
-       style="--x:{{ p.x }}%; --y:{{ p.y }}%; --s:{{ p.size }}%; --i:{{ loop.index0 }}">
-      <span class="dc-face">{{ p.user[:1] | upper }}{% if p.has_pic %}<img src="/api/avatar/{{ p.user }}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
-      {% if p.rank <= 3 %}<b class="dc-rank">{{ p.rank }}</b>{% endif %}
-    </a>
-    {% endfor %}
-  </div>
-  <div class="dc-actions">
-    <a class="btn btn-go" href="/circle/{{ data.handle }}.png?v={{ stamp }}" download="dragon-circle-{{ data.handle }}.png">Save image</a>
-    <a class="btn btn-soft" target="_blank" rel="noopener"
-       href="https://x.com/intent/post?text={{ ('My Dragon Circle on pdtools 🐉 The Keepers I tag and who tag me most in Pocket Dragons posts. Draw yours, free.') | urlencode }}&url={{ ('https://pdtools.xyz/circle/' ~ data.handle) | urlencode }}">Post on X</a>
-    <button class="btn btn-soft" type="button" id="dc-copy" data-link="https://pdtools.xyz/circle/{{ data.handle }}">Copy link</button>
-  </div>
-  <p class="dc-note" id="dc-msg" aria-live="polite"></p>
+<div class="dc-app">
+  <header class="dc-bar">
+    <a class="dc-brand" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="38" height="38"><span>PD Tools<small>Dragon Circle</small></span></a>
+    <div class="dc-tools">
+      <a class="pill" href="{{ url_for('feed') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span class="wide">Back to the feed</span></a>
+      <label class="pill" title="Language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><select id="lang-select" aria-label="Language"></select></label>
+    </div>
+  </header>
+
+  <main class="dc-main">
+  {% macro draw_form(again=False) %}
+    <form class="draw" action="{{ url_for('circle_home') }}" method="get" role="search">
+      <span class="at" aria-hidden="true">@</span>
+      <input name="h" type="text" placeholder="yourhandle" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="16" enterkeyhint="go" aria-label="Your X handle" required>
+      <button class="btn go" type="submit"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.2 6.3L21 9l-5.2 4.2L17.6 20 12 16.4 6.4 20l1.8-6.8L3 9l6.8-.7z"/></svg><span class="wide">{{ "Draw another circle" if again else "Draw my circle" }}</span></button>
+    </form>
+  {% endmacro %}
+
+  {% if not data %}
+    <section class="stage">
+      <div class="info">
+        <span class="kick"><i></i>Dragon Circle</span>
+        <h1 class="big" data-i18n-html="dcH1">Who is in your <span class="pop">Dragon Circle?</span></h1>
+        <p class="lede">See the Keepers you tag and who tag you most in Pocket Dragons posts.</p>
+        {{ draw_form() }}
+        <p class="note">Built only from the Pocket Dragons posts shared on pdtools. The team accounts are left out, and there is nothing to sign in to.</p>
+      </div>
+      <div class="orbit-wrap">
+        <div class="orbit demo" id="orbit" aria-hidden="true">
+          <i class="glow"></i><i class="track t2"></i><i class="track t0"></i><i class="track t1"></i>
+          {% set cols = ["#ffcf6b", "#ff7eb6", "#b9a2ff", "#7ef0d0", "#ff9f6e", "#8fd3ff"] %}
+          {% for ring in [0, 1] %}
+          <div class="ring r{{ ring }}">
+            {% for p in demo if p.ring == ring %}
+            <span class="node" style="--x:{{ p.x }}%; --y:{{ p.y }}%; --s:{{ p.size * 0.78 }}%; --i:{{ p.rank }}"><span class="up"><span class="pop-in"><span class="bob"><span class="ava" style="--c:{{ cols[p.rank % 6] }}"></span></span></span></span></span>
+            {% endfor %}
+          </div>
+          {% endfor %}
+          <span class="core"><i class="wave"></i><i class="wave w2"></i><i class="wave w3"></i><i class="halo"></i><span class="ava"><img src="{{ asset('brand/badge-96.webp') }}" alt=""></span></span>
+        </div>
+      </div>
+    </section>
   {% else %}
-  <div class="dc-empty">
-    <p><b>No circle yet.</b></p>
-    <p>pdtools has not seen any Pocket Dragons posts from or tagging this handle yet. Share your dragon posts in share-content on the Pocket Dragons Discord, tag the Keepers you talk with, and your circle will grow.</p>
-  </div>
+    {% set two = spots | selectattr("out") | selectattr("in") | list %}
+    <section class="stage">
+      <div class="info">
+        <span class="kick"><i></i>Dragon Circle</span>
+        <h1 class="handle">@{{ data.handle }}</h1>
+        <p class="lede">The Keepers who are closest in Pocket Dragons posts.</p>
+        {% if spots %}
+        <div class="stats">
+          <div class="stat"><b data-count="{{ spots | length }}">{{ spots | length }}</b><span>Keepers in the circle</span></div>
+          <div class="stat" style="--c: var(--lilac)"><b data-count="{{ two | length }}">{{ two | length }}</b><span>Tag each other</span></div>
+          <div class="stat" style="--c: var(--mint)"><b data-count="{{ data.tagged_by }}">{{ data.tagged_by }}</b><span>Times tagged</span></div>
+        </div>
+        <div class="acts">
+          <a class="btn go" href="/circle/{{ data.handle }}.png?v={{ stamp }}" download="dragon-circle-{{ data.handle }}.png"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Save image</a>
+          <a class="btn" target="_blank" rel="noopener" href="https://x.com/intent/post?text={{ ('My Dragon Circle on pdtools 🐉 The Keepers I tag and who tag me most in Pocket Dragons posts. Draw yours, free.') | urlencode }}&url={{ ('https://pdtools.xyz/circle/' ~ data.handle) | urlencode }}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.2-8.3L2 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z"/></svg>Post on X</a>
+          <button class="btn" type="button" id="dc-copy" data-link="https://pdtools.xyz/circle/{{ data.handle }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>Copy link</button>
+        </div>
+        <p class="hint" id="dc-msg" aria-live="polite">Tap a Keeper to see how you are connected.</p>
+        {% else %}
+        <div class="empty">
+          <b>No circle yet.</b>
+          <p>pdtools has not seen any Pocket Dragons posts from or tagging this handle yet. Share your dragon posts in share-content on the Pocket Dragons Discord, tag the Keepers you talk with, and your circle will grow.</p>
+        </div>
+        {% endif %}
+      </div>
+      <div class="orbit-wrap">
+        <div class="orbit" id="orbit" role="group" aria-label="Dragon Circle of @{{ data.handle }}">
+          <i class="glow"></i><i class="track t2"></i><i class="track t0"></i><i class="track t1"></i>
+          {% for ring in [0, 1] %}{% set group = spots | selectattr("ring", "equalto", ring) | list %}{% if group %}
+          <div class="ring r{{ ring }}" aria-hidden="true">
+            <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              {% for p in group %}{% set mutual = p.out and p["in"] %}
+              <line class="ln{{ ' two' if mutual }}" data-r="{{ p.rank }}" x1="50" y1="50" x2="{{ p.x }}" y2="{{ p.y }}" pathLength="60" style="--i:{{ p.rank }}"/>
+              {% if mutual %}<line class="flow" data-r="{{ p.rank }}" x1="{{ p.x }}" y1="{{ p.y }}" x2="50" y2="50"/>{% endif %}
+              {% endfor %}
+            </svg>
+          </div>
+          {% endif %}{% endfor %}
+          {% for ring in [0, 1] %}{% set group = spots | selectattr("ring", "equalto", ring) | list %}{% if group %}
+          <div class="ring r{{ ring }}">
+            {% for p in group %}
+            <button class="node{{ ' two' if p.out and p['in'] }}" type="button" data-r="{{ p.rank }}" data-user="{{ p.user }}" data-name="{{ p.name }}" data-out="{{ p.out }}" data-in="{{ p['in'] }}" data-pic="{{ 1 if p.has_pic else 0 }}"
+                    style="--x:{{ p.x }}%; --y:{{ p.y }}%; --s:{{ p.size }}%; --i:{{ p.rank }}" aria-label="{{ p.rank }}. {{ p.name }} @{{ p.user }}">
+              <span class="up"><span class="pop-in"><span class="bob"><span class="ava">{{ p.user[:1] | upper }}{% if p.has_pic %}<img src="/api/avatar/{{ p.user }}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% if p.rank <= 3 %}<b class="rank m{{ p.rank }}">{{ p.rank }}</b>{% endif %}</span></span></span>
+            </button>
+            {% endfor %}
+          </div>
+          {% endif %}{% endfor %}
+          <a class="core" href="https://x.com/{{ data.handle }}" target="_blank" rel="noopener" aria-label="@{{ data.handle }} on X"><i class="wave"></i><i class="wave w2"></i><i class="wave w3"></i><i class="halo"></i>
+            <span class="ava">{{ data.handle[:1] | upper }}{% if data.has_pic %}<img src="/api/avatar/{{ data.handle }}" alt="" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span></a>
+        </div>
+      </div>
+    </section>
+
+    {% if spots %}
+    {% set top = [spots | map(attribute="out") | max, spots | map(attribute="in") | max, 1] | max %}
+    <section class="panel" aria-labelledby="dc-list-title">
+      <h2 id="dc-list-title">{{ ico("sparkle", 26) }}Everyone in the circle</h2>
+      <div class="legend"><span class="s"><i></i>Tags sent</span><span class="b"><i></i>Tags back</span></div>
+      <ol class="ranks" id="ranks">
+        {% for p in spots %}
+        <li style="--i:{{ loop.index0 }}"><a class="row" href="https://x.com/{{ p.user }}" target="_blank" rel="noopener">
+          <span class="n{{ ' top' if p.rank <= 3 }}">{{ p.rank }}</span>
+          <span class="ava">{{ p.user[:1] | upper }}{% if p.has_pic %}<img src="/api/avatar/{{ p.user }}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+          <span class="who"><b><span>{{ p.name }}</span>{% if p.out and p["in"] %}<em class="chip">Two way</em>{% endif %}</b><small>@{{ p.user }}</small>
+            <span class="bars">
+              <span class="bar s" title="Tags sent"><i style="--w:{{ (p.out / top * 100) | round(1) }}%"></i>{{ p.out }}</span>
+              <span class="bar b" title="Tags back"><i style="--w:{{ (p['in'] / top * 100) | round(1) }}%"></i>{{ p["in"] }}</span>
+            </span>
+          </span>
+        </a></li>
+        {% endfor %}
+      </ol>
+      <p class="note">Counts come from the Pocket Dragons posts shared on pdtools. Keepers who tag each other both ways sit closer to the middle.</p>
+    </section>
+    {% endif %}
+
+    <section class="panel again">
+      <div><h2>{{ ico("bulb", 26) }}Draw another circle</h2><p class="note" style="margin:0">Built only from the Pocket Dragons posts shared on pdtools. The team accounts are left out, and there is nothing to sign in to.</p></div>
+      {{ draw_form(True) }}
+    </section>
+
+    <div class="card" id="dc-card" role="dialog" aria-modal="false" aria-labelledby="dc-card-name" hidden>
+      <button class="card-x" type="button" id="dc-card-x" aria-label="Close">&times;</button>
+      <div class="card-top"><span class="ava" id="dc-card-ava"></span><span class="card-who"><b id="dc-card-name"></b><small id="dc-card-user"></small></span><span class="card-rank" id="dc-card-rank"></span></div>
+      <div class="card-nums"><div><b id="dc-card-out"></b><span>Tags sent</span></div><div><b id="dc-card-in"></b><span>Tags back</span></div></div>
+      <span class="chip" id="dc-card-two"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>Two way</span>
+      <a class="btn go" id="dc-card-go" target="_blank" rel="noopener" href="#">Open on X</a>
+    </div>
   {% endif %}
-</section>
+  </main>
 
-{% if spots %}
-<section class="help-card" aria-labelledby="dc-list-title">
-  <h2 id="dc-list-title">{{ ico("sparkle", 26) }}Everyone in the circle</h2>
-  <ol class="dc-list">
-    {% for p in spots %}
-    <li><a href="https://x.com/{{ p.user }}" target="_blank" rel="noopener">
-      <span class="dc-n">{{ p.rank }}</span>
-      <span class="dc-face sm">{{ p.user[:1] | upper }}{% if p.has_pic %}<img src="/api/avatar/{{ p.user }}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
-      <span class="dc-who"><b>{{ p.name }}</b><small>@{{ p.user }}</small></span>
-      <span class="dc-count"><span class="dc-c"><b>{{ p.out }}</b> <small>Tagged by @{{ data.handle }}</small></span><span class="dc-c"><b>{{ p["in"] }}</b> <small>Tagged @{{ data.handle }}</small></span></span>
-    </a></li>
-    {% endfor %}
-  </ol>
-  <p class="dc-note">Counts come from the Pocket Dragons posts shared on pdtools. Keepers who tag each other both ways sit closer to the middle.</p>
-</section>
-{% endif %}
+  <footer class="dc-foot">
+    <span>Unofficial community tool. Not affiliated with or endorsed by Pocket Dragons. Every post links back to X.</span>
+    <a href="https://x.com/{{ cfg.author_x }}" target="_blank" rel="noopener"><strong>Built by Jon Wynn</strong></a>
+  </footer>
+</div>
 
-<section class="help-card">
-  <h2>{{ ico("bulb", 26) }}Draw another circle</h2>
-  {{ draw_form(True) }}
-</section>
-{% endif %}
+<script src="{{ asset('i18n.js') }}"></script>
 <script>
-  (() => {
-    const b = document.getElementById("dc-copy"); if (!b) return;
-    b.addEventListener("click", async () => {
-      const msg = document.getElementById("dc-msg");
-      try { await navigator.clipboard.writeText(b.dataset.link); msg.textContent = "Link copied."; } catch (e) { msg.textContent = b.dataset.link; }
-    });
-  })();
+(() => {
+  "use strict";
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const phone = matchMedia("(max-width: 640px)").matches;
+
+  /* starfield: soft twinkling stars and a shooting star now and then */
+  const cv = document.getElementById("sky"), cx = cv.getContext("2d");
+  let W = 0, H = 0, stars = [], shoot = null, last = 0;
+  function size() {
+    const d = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+    cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0);
+    const n = Math.round((W * H) / (phone ? 9000 : 6500));
+    stars = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.3 + .25, p: Math.random() * 6.28, s: .6 + Math.random() * 1.6, h: Math.random() < .15 }));
+  }
+  function frame(t) {
+    if (document.hidden) { requestAnimationFrame(frame); return; }
+    if (!phone || t - last > 32) {
+      last = t; cx.clearRect(0, 0, W, H);
+      for (const s of stars) {
+        const a = calm ? .7 : .35 + .65 * (0.5 + 0.5 * Math.sin(s.p + t / 1000 * s.s));
+        cx.globalAlpha = a; cx.fillStyle = s.h ? "#ffe2b0" : "#ffffff";
+        cx.beginPath(); cx.arc(s.x, s.y, s.r, 0, 6.283); cx.fill();
+      }
+      if (!calm) {
+        if (!shoot && Math.random() < .004) shoot = { x: Math.random() * W * .7 + W * .2, y: Math.random() * H * .35, l: 0 };
+        if (shoot) {
+          shoot.l += 1; const k = shoot.l / 60, x = shoot.x - k * 320, y = shoot.y + k * 160;
+          const g = cx.createLinearGradient(x, y, x + 90, y - 45); g.addColorStop(0, "rgba(255,240,220,.9)"); g.addColorStop(1, "rgba(255,240,220,0)");
+          cx.globalAlpha = 1 - k; cx.strokeStyle = g; cx.lineWidth = 1.6; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x + 90, y - 45); cx.stroke();
+          if (shoot.l > 60) shoot = null;
+        }
+      }
+      cx.globalAlpha = 1;
+    }
+    if (!calm) requestAnimationFrame(frame);
+  }
+  size(); addEventListener("resize", size, { passive: true }); requestAnimationFrame(frame);
+
+  const orbit = document.getElementById("orbit");
+  /* a gentle 3D tilt that follows the pointer on big screens */
+  if (orbit && !calm && matchMedia("(hover: hover) and (min-width: 861px)").matches) {
+    addEventListener("pointermove", (e) => {
+      const r = orbit.getBoundingClientRect(), dx = (e.clientX - (r.left + r.width / 2)) / innerWidth, dy = (e.clientY - (r.top + r.height / 2)) / innerHeight;
+      orbit.style.transform = `rotateY(${dx * 14}deg) rotateX(${-dy * 14}deg)`;
+    }, { passive: true });
+  }
+
+  /* numbers count up */
+  for (const el of document.querySelectorAll("[data-count]")) {
+    const end = +el.dataset.count; if (calm || !end) continue;
+    const t0 = performance.now() + 300;
+    const tick = (t) => { const k = Math.min(1, Math.max(0, (t - t0) / 1100)); el.textContent = Math.round(end * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(tick); };
+    el.textContent = "0"; requestAnimationFrame(tick);
+  }
+
+  /* the list slides in when it comes into view */
+  const ranks = document.getElementById("ranks");
+  if (ranks) {
+    if ("IntersectionObserver" in window) { const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { ranks.classList.add("in"); io.disconnect(); } }, { threshold: .12 }); io.observe(ranks); }
+    else ranks.classList.add("in");
+  }
+
+  /* copy link, with the phone's own share sheet when there is one */
+  const copy = document.getElementById("dc-copy"), msg = document.getElementById("dc-msg");
+  if (copy) copy.addEventListener("click", async () => {
+    const link = copy.dataset.link;
+    try { await navigator.clipboard.writeText(link); msg.textContent = "Link copied."; }
+    catch (e) { msg.textContent = link; }
+  });
+
+  /* tap or hover a Keeper: a little card with how they are connected */
+  const card = document.getElementById("dc-card");
+  if (!orbit || !card) return;
+  const $ = (id) => document.getElementById(id);
+  let open = null, hoverTimer = 0;
+  function show(node, pinned) {
+    clearTimeout(hoverTimer);
+    if (open && open.node === node) { open.pinned = open.pinned || pinned; return; }
+    const d = node.dataset, out = +d.out, inn = +d.in;
+    orbit.querySelectorAll(".on").forEach((x) => x.classList.remove("on"));
+    orbit.querySelectorAll(`[data-r="${d.r}"]`).forEach((x) => x.classList.add("on"));
+    orbit.classList.add("focus", "paused");
+    const ava = $("dc-card-ava"); ava.textContent = d.user.slice(0, 1).toUpperCase();
+    if (d.pic === "1") { const im = new Image(); im.alt = ""; im.referrerPolicy = "no-referrer"; im.onerror = () => im.remove(); im.src = "/api/avatar/" + d.user; ava.append(im); }
+    $("dc-card-name").textContent = d.name; $("dc-card-user").textContent = "@" + d.user; $("dc-card-rank").textContent = "#" + d.r;
+    $("dc-card-out").textContent = out; $("dc-card-in").textContent = inn;
+    $("dc-card-two").hidden = !(out && inn); $("dc-card-go").href = "https://x.com/" + d.user;
+    card.hidden = false;
+    if (!phone) {
+      const r = node.getBoundingClientRect(), cw = 270, ch = card.offsetHeight || 230;
+      let x = r.right + 14, y = r.top + r.height / 2 - ch / 2;
+      if (x + cw > innerWidth - 12) x = r.left - cw - 14;
+      y = Math.max(12, Math.min(innerHeight - ch - 12, y));
+      card.style.left = x + "px"; card.style.top = y + "px";
+    }
+    requestAnimationFrame(() => card.classList.add("show"));
+    open = { node, pinned };
+  }
+  function hide() {
+    if (!open) return;
+    card.classList.remove("show"); orbit.classList.remove("focus", "paused");
+    orbit.querySelectorAll(".on").forEach((x) => x.classList.remove("on"));
+    setTimeout(() => { if (!open) card.hidden = true; }, 260); open = null;
+  }
+  orbit.addEventListener("click", (e) => {
+    const n = e.target.closest(".node"); if (!n) return;
+    e.stopPropagation();
+    if (open && open.node === n && open.pinned) hide(); else show(n, true);
+  });
+  if (matchMedia("(hover: hover)").matches) {
+    orbit.addEventListener("pointerover", (e) => { const n = e.target.closest(".node"); if (n && !(open && open.pinned)) show(n, false); });
+    orbit.addEventListener("pointerout", (e) => { const n = e.target.closest(".node"); if (n && open && !open.pinned && !n.contains(e.relatedTarget)) hoverTimer = setTimeout(hide, 180); });
+    card.addEventListener("pointerenter", () => clearTimeout(hoverTimer));
+    card.addEventListener("pointerleave", () => { if (open && !open.pinned) hoverTimer = setTimeout(hide, 180); });
+  }
+  document.addEventListener("click", (e) => { if (open && !card.contains(e.target)) hide(); });
+  $("dc-card-x").addEventListener("click", hide);
+  addEventListener("keydown", (e) => { if (e.key === "Escape") hide(); });
+  addEventListener("scroll", () => { if (open && !phone) hide(); }, { passive: true });
+})();
 </script>
-{% endblock %}
+<script>if ("serviceWorker" in navigator && location.protocol === "https:") addEventListener("load", () => navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {}));</script>
+<script src="{{ asset('hit.js') }}" defer></script>
+{% include "_preview.html" %}
+</body>
+</html>

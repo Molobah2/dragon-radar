@@ -1116,7 +1116,8 @@ def create_app(cfg: Config | None = None) -> Flask:
             from .circle import clean
             if clean(h):
                 return redirect(url_for("circle_page", handle=clean(h)))
-        return render_template("circle.html", cfg=cfg, data=None, og_title="Dragon Circle · who you are closest to in Pocket Dragons",
+        from .circle import layout
+        return render_template("circle.html", cfg=cfg, data=None, demo=layout([{}] * 20), og_title="Dragon Circle · who you are closest to in Pocket Dragons",
                                og_desc="See the Keepers you tag and who tag you most in Pocket Dragons posts. Free, no login.")
 
     @app.get("/circle/<handle>")

@@ -168,7 +168,7 @@ def layout(people: list[dict]) -> list[dict]:
     """Where each person sits on the page's circle, in percent of the square (inner ring first)."""
     import math
     out = []
-    for ring, (start, count, r, size, off) in enumerate(((0, INNER, 31, 15, 0), (INNER, OUTER, 45.5, 10.5, .26))):
+    for ring, (start, count, r, size, off) in enumerate(((0, INNER, 31, 12.5, 0), (INNER, OUTER, 45.5, 9, .26))):
         group = people[start:start + count]; n = max(1, len(group))
         for i, p in enumerate(group):
             ang = -math.pi / 2 + (i / n) * 2 * math.pi + off
