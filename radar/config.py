@@ -191,7 +191,7 @@ COMMUNITY_MUSIC = [
     {"name": "Ismail HA", "x": "IsmailHA279", "songs": ["Keeper of the Dragon", "The Keepers' Echo"],
      "avatar": "https://pbs.twimg.com/profile_images/2023680543871926272/Rv0wREMK_200x200.jpg"},
     {"name": "Anastasiya", "x": "BugaenkoNastya", "songs": ["Keepers Got The Fire"],
-     "avatar": "https://pbs.twimg.com/profile_images/2098326307721580544/44knRiO4_200x200.jpg"},
+     "avatar": "https://pbs.twimg.com/profile_images/2110632402162761728/my2B6t4a_200x200.jpg"},
 ]
 
 

@@ -346,7 +346,7 @@
       <p class="music-lede">The Keepers who make Pocket Dragons music. Thank you for filling the meadow with sound.</p>
       <div class="makers">
         {% for m in music_makers %}<div class="maker{{ ' playing' if m.playing }}">
-          <a class="mk-av" href="https://x.com/{{ m.x }}" target="_blank" rel="noopener" aria-label="@{{ m.x }} on X">{{ m.name[:1] }}<img src="{{ m.avatar }}" alt="" width="64" height="64" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()"></a>
+          <a class="mk-av" href="https://x.com/{{ m.x }}" target="_blank" rel="noopener" aria-label="@{{ m.x }} on X">{{ m.name[:1] }}<img src="/api/avatar/{{ m.x }}" data-alt="{{ m.avatar }}" alt="" width="64" height="64" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt=''}else{this.remove()}"></a>
           <span class="mk-text"><b class="mk-name">{{ m.name }}</b><a class="mk-x" href="https://x.com/{{ m.x }}" target="_blank" rel="noopener">@{{ m.x }}</a>
             <span class="mk-songs">{% for song in m.songs[:1] %}{% if song in m.on_site %}<button class="mk-song" type="button" data-song="{{ song }}" title="Play this song"><i>&#9654;</i> {{ song }}</button>{% else %}<span class="mk-song"><i>&#9835;</i> {{ song }}</span>{% endif %}{% endfor %}</span>
             {% if m.songs | length > 1 %}<button class="mk-more" type="button" data-music data-music-by="{{ m.x }}">+{{ m.songs | length - 1 }} more songs</button>{% endif %}
