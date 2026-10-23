@@ -179,7 +179,7 @@
     $("bm-check").disabled = true; msg("Checking your post...", true);
     try {
       const j = await getJSON("/api/book/check", { vid: vid(), link });
-      if (j.ok) { msg(`Welcome to the book, @${j.handle}.`, true); await loadMe(); loadBook(); }
+      if (j.ok) { msg(`Welcome to the book, @${j.handle}.`, true); await loadMe(); loadBook(); dispatchEvent(new Event("pd:booksigned")); }
       else if (j.why === "other") msg(j.found ? `That post is by @${j.found}. Post from the X name you signed with.` : "That post is from a different X name.");
       else msg(WHY[j.why] || "Something went wrong. Please try again.");
     } catch (e) { msg("Could not reach the book right now. Please try again."); }

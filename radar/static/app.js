@@ -354,28 +354,7 @@
       const r = await fetch(`/api/backup/${encodeURIComponent(code)}?vid=${encodeURIComponent(myVid())}`);
       const j = await r.json();
       if (!j.ok) throw new Error(j.message);
-      let added = 0;
-      for (const [id, ts] of Object.entries(j.opened || {})) if (!opened[id]) { opened[id] = ts; added++; }
-      save();
-      const s2 = j.streak || {};
-      if ((s2.best || 0) > (streak.best || 0)) streak.best = s2.best;
-      // the day streak: keep the newer one, and if both devices were used on the same or the next day, keep the longer run
-      if (s2.last && streak.last && s2.last === streak.last) streak.count = Math.max(streak.count | 0, s2.count | 0);
-      else if (s2.last && streak.last && dayGap(s2.last, streak.last) === 1) streak.count = Math.max(streak.count | 0, (s2.count | 0) + 1);
-      else if (s2.last && streak.last && dayGap(streak.last, s2.last) === 1) { streak.count = Math.max(s2.count | 0, (streak.count | 0) + 1); streak.last = s2.last; }
-      else if (s2.last && (!streak.last || s2.last > streak.last)) { streak.last = s2.last; streak.count = s2.count || 0; }
-      if (s2.fz && (!streak.fz || s2.fz > streak.fz)) streak.fz = s2.fz;
-      store.set("pd:streak", streak);
-      const dexIn = mergeDex(j.dex);
-      // today's goal count: saved today on the other device, keep the higher number (yesterday's count never carries)
-      const gIn = j.goal || {};
-      if (gIn.day === today() && (gIn.n | 0) > 0) {
-        goal = readGoal();
-        if (goal.day !== today()) goal = { day: today(), n: 0 };
-        if ((gIn.n | 0) > goal.n) { goal.n = Math.min(200, gIn.n | 0); store.set("pd:goal", goal); }
-        showGoal();
-      }
-      showStreak(); render();
+      const { added, dexIn } = applyProgress(j);
       const bits = [added ? `${added} opened posts` : "", dexIn ? `${dexIn} dragon${dexIn === 1 ? "" : "s"}` : ""].filter(Boolean);
       if (j.book) bits.push("your Book of Friends name");
       pgMsg(bits.length ? `Restored ${bits.join(" and ")}.` : "All set, nothing new to restore.", true);
@@ -383,6 +362,72 @@
     } catch (e) { pgMsg(e.message || "Could not restore right now, please try again.", false); }
     $("pg-restore").disabled = false;
   });
+
+  // progress from a backup code or from the Keeper's own safe copy: joined with what is here, never replacing it
+  function applyProgress(j) {
+    streak = readStreak();
+    let added = 0;
+    for (const [id, ts] of Object.entries(j.opened || {})) if (!opened[id]) { opened[id] = ts; added++; }
+    save();
+    const s2 = j.streak || {};
+    if ((s2.best || 0) > (streak.best || 0)) streak.best = s2.best;
+    // the day streak: keep the newer one, and if both devices were used on the same or the next day, keep the longer run
+    if (s2.last && streak.last && s2.last === streak.last) streak.count = Math.max(streak.count | 0, s2.count | 0);
+    else if (s2.last && streak.last && dayGap(s2.last, streak.last) === 1) streak.count = Math.max(streak.count | 0, (s2.count | 0) + 1);
+    else if (s2.last && streak.last && dayGap(streak.last, s2.last) === 1) { streak.count = Math.max(s2.count | 0, (streak.count | 0) + 1); streak.last = s2.last; }
+    else if (s2.last && (!streak.last || s2.last > streak.last)) { streak.last = s2.last; streak.count = s2.count || 0; }
+    if (s2.fz && (!streak.fz || s2.fz > streak.fz)) streak.fz = s2.fz;
+    store.set("pd:streak", streak);
+    const dexIn = mergeDex(j.dex);
+    // today's goal count: saved today on the other device, keep the higher number (yesterday's count never carries)
+    const gIn = j.goal || {};
+    if (gIn.day === today() && (gIn.n | 0) > 0) {
+      goal = readGoal();
+      if (goal.day !== today()) goal = { day: today(), n: 0 };
+      if ((gIn.n | 0) > goal.n) { goal.n = Math.min(200, gIn.n | 0); store.set("pd:goal", goal); }
+      showGoal();
+    }
+    showStreak(); render();
+    return { added, dexIn };
+  }
+
+  // ---------- signed Keepers: progress kept safe on pdtools ----------
+  // A browser can lose its saved data (cleared site data, a phone tidying storage, a new phone). Devices signed into
+  // Blinky's Book of Friends send their progress to pdtools about once a minute when it changes, and pull it back
+  // when the page opens or the book is signed again, so nothing is lost. Merged both ways: nothing is ever replaced.
+  const SYNC_URL = "/api/book/progress";
+  let syncSent = "", syncOff = false, syncTimer = null;
+  const progressBody = () => ({ opened, streak: readStreak(), goal: readGoal(), dex: store.get("pd:dex", null) });
+  async function pullSafe(say) {
+    const vid = myVid(); if (!vid || syncOff) return;
+    try {
+      const j = await (await fetch(`${SYNC_URL}?vid=${encodeURIComponent(vid)}`, { headers: { Accept: "application/json" }, cache: "no-store" })).json();
+      if (!j.ok) { if (j.why === "unsigned") syncOff = true; return; }
+      const { added, dexIn } = applyProgress(j);
+      if (added || dexIn) {
+        const bits = [added ? `${added} opened posts` : "", dexIn ? `${dexIn} dragon${dexIn === 1 ? "" : "s"}` : ""].filter(Boolean);
+        toast(`Restored ${bits.join(" and ")}.`);
+      }
+      pushSafe(true);
+    } catch (e) { /* offline: try again next time */ }
+  }
+  function pushSafe(now) {
+    if (syncOff || !myVid()) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      const body = JSON.stringify({ ...progressBody(), vid: myVid() });
+      if (body === syncSent) return;
+      fetch(SYNC_URL, { method: "POST", keepalive: body.length < 60000, headers: { "Content-Type": "application/json" }, body })
+        .then((r) => r.json()).then((j) => { if (j.ok && !j.later) syncSent = body; if (j.why === "unsigned") syncOff = true; }).catch(() => {});
+    }, now ? 0 : 60000);
+  }
+  if (data.v2) {
+    pullSafe(false);
+    addEventListener("pd:opened", () => pushSafe(false));
+    addEventListener("pd:dexsaved", () => pushSafe(true));
+    addEventListener("pd:booksigned", () => { syncOff = false; pullSafe(true); });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") pushSafe(true); });
+  }
 
   // collectible dragons from a backup code: keep the higher count of each, never lose one
   function mergeDex(inc) {

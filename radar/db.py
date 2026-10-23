@@ -76,6 +76,15 @@ class PostLink(Base):
     checked_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class KeeperSave(Base):
+    """The merged progress of a Keeper who signed the Book of Friends, so a cleared browser or a new phone loses nothing.
+    Only post ids, dates and small numbers (see cloudsave.py)."""
+    __tablename__ = "keeper_saves"
+    key: Mapped[str] = mapped_column(String(32), primary_key=True)          # lower-case handle
+    data: Mapped[str] = mapped_column(Text, default="{}")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class BlockedAuthor(Base):
     __tablename__ = "blocked_authors"
     author_id: Mapped[str] = mapped_column(String(32), primary_key=True)

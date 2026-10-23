@@ -3,6 +3,7 @@
 Run locally:  flask --app "radar.web:create_app()" run
 Production:   gunicorn "radar.web:create_app()"
 """
+import json
 import mimetypes
 import hmac
 import os
@@ -1391,20 +1392,9 @@ def create_app(cfg: Config | None = None) -> Flask:
         backup_hits[ip] = hits + [nowt]
         return len(hits) >= limit
 
-    @app.post("/api/backup")
-    def backup_save():
-        import json as _json
+    def clean_progress(body: dict) -> dict:
+        """A visitor's progress as sent by the page, with only well formed ids, dates and small numbers kept."""
         import math as _math
-        from .db import ProgressBackup
-        ip = client_ip()
-        if _too_many(ip):
-            return jsonify({"ok": False, "message": "Too many saves for now, try again later."}), 429
-        if (request.content_length or 0) > 200_000 or len(request.get_data()) > 200_000:
-            return jsonify({"ok": False, "message": "That is too much to save at once."}), 413
-        try:
-            body = _body(200_000)
-        except ValueError:
-            body = {}
         opened = body.get("opened") if isinstance(body.get("opened"), dict) else {}
         # keep only well formed post ids and timestamps
         clean = {str(k)[:25]: int(v) for k, v in list(opened.items())[:3000]
@@ -1429,14 +1419,29 @@ def create_app(cfg: Config | None = None) -> Flask:
                          "fz": day(g_in.get("fz"))},
                    "e": num(dex_in.get("e"), 1_000_000),
                    "s": {k: day(v) for k, v in s_in.items() if k in ("moon", "ember", "star") and day(v)}}
-        book_vid = str(body.get("vid", ""))[:32] if g.get("v2") else ""
         # today's daily goal count travels too, so a new device shows the same "x/20 Keeper posts today"
         goal_in = body.get("goal") if isinstance(body.get("goal"), dict) else {}
         goal_out = {"day": day(goal_in.get("day")), "n": num(goal_in.get("n"), 200)}
-        data = _json.dumps({"opened": clean, "streak": {k: streak.get(k) for k in ("last", "count", "best", "fz")},
-                            **({"goal": goal_out} if goal_out["day"] and goal_out["n"] else {}),
-                            **({"book_vid": book_vid} if book_vid else {}),
-                            **({"dex": dex_out} if have or dex_out["e"] or dex_out["s"] else {})})
+        return {"opened": clean, "streak": {k: streak.get(k) for k in ("last", "count", "best", "fz")},
+                **({"goal": goal_out} if goal_out["day"] and goal_out["n"] else {}),
+                **({"dex": dex_out} if have or dex_out["e"] or dex_out["s"] else {})}
+
+    @app.post("/api/backup")
+    def backup_save():
+        import json as _json
+        import math as _math
+        from .db import ProgressBackup
+        ip = client_ip()
+        if _too_many(ip):
+            return jsonify({"ok": False, "message": "Too many saves for now, try again later."}), 429
+        if (request.content_length or 0) > 200_000 or len(request.get_data()) > 200_000:
+            return jsonify({"ok": False, "message": "That is too much to save at once."}), 413
+        try:
+            body = _body(200_000)
+        except ValueError:
+            body = {}
+        book_vid = str(body.get("vid", ""))[:32] if g.get("v2") else ""
+        data = _json.dumps({**clean_progress(body), **({"book_vid": book_vid} if book_vid else {})})
         if len(data) > 150_000:
             return jsonify({"ok": False, "message": "That is too much to save at once."}), 413
         now = utcnow()
@@ -1470,6 +1475,63 @@ def create_app(cfg: Config | None = None) -> Flask:
                 linked = link_device(s, book_vid, request.args.get("vid", "")[:32])
                 s.commit()
             return jsonify({"ok": True, **data, "book": linked})
+
+    # ---------- progress kept safe for signed Keepers (see cloudsave.py) ----------
+    save_seen: dict[str, float] = {}
+
+    def signed_key(vid: str) -> str:
+        from .db import FriendDevice
+        with Session() as s:
+            dev = s.get(FriendDevice, vid) if vid else None
+            return dev.key if dev is not None and dev.confirmed else ""
+
+    @app.post("/api/book/progress")
+    @v2_only
+    def book_progress_save():
+        from .cloudsave import load, merge
+        from .db import KeeperSave
+        if (request.content_length or 0) > 200_000 or len(request.get_data()) > 200_000:
+            return jsonify({"ok": False}), 413
+        try:
+            body = _body(200_000)
+        except ValueError:
+            return jsonify({"ok": False}), 400
+        vid = str(body.get("vid", ""))[:32]
+        key = signed_key(vid)
+        if not key:
+            return jsonify({"ok": False, "why": "unsigned"})
+        nowt = time.time()
+        if nowt - save_seen.get(vid, 0) < 45:              # a page sends at most about once a minute
+            return jsonify({"ok": True, "later": True})
+        if len(save_seen) > 20000:
+            save_seen.clear()
+        save_seen[vid] = nowt
+        incoming = clean_progress(body)
+        with Session() as s:
+            row = s.get(KeeperSave, key)
+            merged = merge(load(row.data) if row else {}, incoming)
+            raw = json.dumps(merged, separators=(",", ":"))
+            if len(raw) > 300_000:
+                return jsonify({"ok": False}), 413
+            if row is None:
+                s.add(KeeperSave(key=key, data=raw, updated_at=utcnow()))
+            else:
+                row.data, row.updated_at = raw, utcnow()
+            s.commit()
+        return jsonify({"ok": True})
+
+    @app.get("/api/book/progress")
+    @v2_only
+    def book_progress_load():
+        from .cloudsave import load
+        from .db import KeeperSave
+        key = signed_key(request.args.get("vid", "")[:32])
+        if not key:
+            return jsonify({"ok": False, "why": "unsigned"})
+        with Session() as s:
+            row = s.get(KeeperSave, key)
+            data = load(row.data) if row else {}
+        return jsonify({"ok": True, **data}), 200, {"Cache-Control": "no-store"}
 
     @app.post("/api/feedback")
     def feedback():

@@ -1617,7 +1617,7 @@ def test_speed_budget(cfg, Session):
     c = v2_client(cfg)
     # /friends raised on purpose (120k to 124k): the song picker controls and the dragon book; the picker's
     # list itself (music.js) only loads when someone opens it
-    budgets = {"/friends": (126_000, 60_000),   # raised on purpose: the X app note and its move code button
+    budgets = {"/friends": (128_000, 60_000),   # raised on purpose: the X app note, its move code button and the safe copy for signed Keepers
                 "/": (15_000, 40_000), "/friends/keepers": (60_000, 40_000)}
     for path, (code_max, html_max) in budgets.items():
         html = c.get(path).get_data(as_text=True)
@@ -2238,3 +2238,27 @@ def test_dragon_circle_counts_replies_quotes_and_signed_opens(cfg, Session):
     assert set(who) == {"rae", "quinn", "ola"}
     assert who["rae"]["got"]["replies"] == 1 and who["quinn"]["got"]["quotes"] == 1 and who["ola"]["got"]["opens"] == 1
     assert who["rae"]["score"] > who["ola"]["score"] and d["engaged"] == 3
+
+
+def test_signed_keepers_progress_is_kept_safe_and_merged(cfg, Session):
+    """A signed Keeper's devices send their progress; it is merged (never replaced) and comes back on a new device,
+    while an unsigned browser can neither save nor read anything."""
+    from radar.db import FriendDevice
+    cfg.v2_public = True
+    with Session() as s:
+        s.add_all([FriendDevice(vid="a" * 32, key="nacho", username="Nacho", code="x", confirmed=True),
+                   FriendDevice(vid="b" * 32, key="nacho", username="Nacho", code="y", confirmed=True)])
+        s.commit()
+    c = create_app(cfg).test_client()
+    phone = {"vid": "a" * 32, "opened": {"111": 1000}, "streak": {"last": "2026-10-21", "count": 5, "best": 5},
+             "dex": {"have": {"speed": {"c": 1}, "acid": {"c": 1}}, "n": 2, "g": {"last": "2026-10-21", "count": 5, "best": 5}}}
+    assert c.post("/api/book/progress", json=phone).get_json()["ok"]
+    laptop = {"vid": "b" * 32, "opened": {"222": 2000}, "streak": {"last": "2026-10-22", "count": 1, "best": 1},
+              "dex": {"have": {"ghost": {"r": 1}}, "n": 1, "g": {"last": "2026-10-22", "count": 1, "best": 1}}}
+    assert c.post("/api/book/progress", json=laptop).get_json()["ok"]
+    back = c.get("/api/book/progress?vid=" + "a" * 32).get_json()
+    assert set(back["opened"]) == {"111", "222"}
+    assert back["streak"]["count"] == 6 and back["dex"]["g"]["count"] == 6        # the next day carries the run on
+    assert set(back["dex"]["have"]) == {"speed", "acid", "ghost"}
+    assert c.get("/api/book/progress?vid=" + "z" * 32).get_json()["ok"] is False
+    assert c.post("/api/book/progress", json={**phone, "vid": "z" * 32}).get_json()["ok"] is False

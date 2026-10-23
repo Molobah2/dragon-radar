@@ -57,7 +57,7 @@
     return out;
   }
   let dex = load();
-  const save = () => store.set("pd:dex", dex);
+  const save = () => { store.set("pd:dex", dex); dispatchEvent(new Event("pd:dexsaved")); };   // a signed Keeper's safe copy follows (app.js)
   const sealed = (e) => !!dex.s[e.sp.id];
   // the secret marks, kept unreadable on purpose
   const MARK = [3974678, 11828366, 24034322].map((v) => ((v ^ 0x2A5F3) - 104729) / 7919);

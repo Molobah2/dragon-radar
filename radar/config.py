@@ -192,6 +192,8 @@ COMMUNITY_MUSIC = [
      "avatar": "https://pbs.twimg.com/profile_images/2023680543871926272/Rv0wREMK_200x200.jpg"},
     {"name": "Anastasiya", "x": "BugaenkoNastya", "songs": ["Keepers Got The Fire"],
      "avatar": "https://pbs.twimg.com/profile_images/2110632402162761728/my2B6t4a_200x200.jpg"},
+    {"name": "Nacho", "x": "NachoAvg_", "songs": ["Pocket Full of Dragons"],
+     "avatar": "https://pbs.twimg.com/profile_images/2098607625336487936/b-hopSxT_200x200.jpg"},
 ]
 
 
