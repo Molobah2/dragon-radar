@@ -109,30 +109,48 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 .glow { position: absolute; inset: 12%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 150, 110, .35), rgba(150, 90, 255, .18) 60%, transparent); filter: blur(6px); animation: breathe 6s ease-in-out infinite; }
 @keyframes breathe { 50% { transform: scale(1.08); opacity: .75; } }
 .track { position: absolute; left: 50%; top: 50%; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.track { animation: trackin 1s var(--spring) both; }
+.track.t2 { animation-delay: .15s; } .track.t0 { animation-delay: .3s; } .track.t1 { animation-delay: .45s; }
+@keyframes trackin { from { transform: translate(-50%, -50%) scale(.25); opacity: 0; } }
 .track.t0 { width: 62%; height: 62%; border: 1.5px solid rgba(255, 207, 107, .28); box-shadow: 0 0 40px rgba(255, 207, 107, .08) inset; }
 .track.t1 { width: 91%; height: 91%; border: 1.5px dashed rgba(185, 162, 255, .25); }
 .track.t2 { width: 108%; height: 108%; border: 1px solid rgba(255,255,255,.05); }
 .ring { position: absolute; inset: 0; pointer-events: none; animation: spin var(--dur) linear infinite; animation-direction: var(--dir, normal); }
-.ring.r0 { --dur: 110s; }
-.ring.r1 { --dur: 170s; --dir: reverse; }
+.ring.r0 { --dur: 70s; }
+.ring.r1 { --dur: 120s; --dir: reverse; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.ln { stroke: rgba(200, 180, 255, .28); stroke-width: .28; stroke-linecap: round; stroke-dasharray: 60; stroke-dashoffset: 60; animation: draw 1.4s var(--ease) forwards; animation-delay: calc(.35s + var(--i) * 60ms); transition: opacity .3s, stroke .3s, stroke-width .3s; }
+/* the reveal: you first, then each line draws out to its Keeper and the Keeper pops in as it arrives, closest first */
+.ln { stroke: rgba(200, 180, 255, .28); stroke-width: .28; stroke-linecap: round; stroke-dasharray: 60; stroke-dashoffset: 60; animation: draw .7s var(--ease) forwards; animation-delay: calc(.6s + var(--i) * 90ms); transition: opacity .3s, stroke .3s, stroke-width .3s; }
 .ln.two { stroke: rgba(255, 207, 107, .6); stroke-width: .38; }
-.flow { stroke: var(--gold); stroke-width: .55; stroke-linecap: round; stroke-dasharray: 1.4 6; opacity: 0; animation: flow 2.4s linear infinite, fadein .6s 1.8s forwards; }
+/* energy along the lines: lilac sparks flow in from what a Keeper gave you, gold sparks flow out from what you gave them.
+   Closer Keepers send more sparks, faster. */
+.sp { fill: none; stroke-width: 1.35; stroke-linecap: round; stroke-opacity: 0; transition: opacity .3s;
+  animation: s50 3.6s linear infinite, sparkin .8s forwards; animation-delay: calc(var(--i) * -.37s), calc(1.3s + var(--i) * 90ms); stroke-dasharray: 0 50; }
+.sp.g33 { stroke-dasharray: 0 33.4; animation-name: s33, sparkin; animation-duration: 2.6s, .8s; }
+.sp.g20 { stroke-dasharray: 0 20; animation-name: s20, sparkin; animation-duration: 1.8s, .8s; }
+.sp.in { stroke: #a8f0ff; } .sp.out { stroke: var(--gold); }
+@keyframes s50 { to { stroke-dashoffset: -50; } }
+@keyframes s33 { to { stroke-dashoffset: -33.4; } }
+@keyframes s20 { to { stroke-dashoffset: -20; } }
+@keyframes sparkin { to { stroke-opacity: .95; } }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 @keyframes flow { to { stroke-dashoffset: -7.4; } }
 @keyframes fadein { to { opacity: .95; } }
-.orbit.focus .ln, .orbit.focus .flow { opacity: .12; }
+.orbit.focus .ln, .orbit.focus .sp { opacity: .12; }
 .orbit.focus .ln.on { opacity: 1; stroke: #fff; stroke-width: .5; }
-.orbit.focus .flow.on { opacity: 1; }
+.orbit.focus .sp.on { opacity: 1; }
 
 .node { position: absolute; left: var(--x); top: var(--y); width: var(--s); aspect-ratio: 1; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; transform: translate(-50%, -50%); -webkit-tap-highlight-color: transparent; z-index: 2; }
 .up { display: block; width: 100%; height: 100%; animation: spin var(--dur) linear infinite; animation-direction: var(--udir, reverse); }
 .ring.r1 .up { --udir: normal; }
-.pop-in { display: block; width: 100%; height: 100%; animation: popin .9s var(--spring) both; animation-delay: calc(.25s + var(--i) * 70ms); }
+.pop-in { position: relative; display: block; width: 100%; height: 100%; animation: popin .8s var(--spring) both; animation-delay: calc(1.1s + var(--i) * 90ms); }
+.pop-in::before { content: ""; position: absolute; inset: -6%; border-radius: 50%; border: 2px solid rgba(255, 220, 150, .9); opacity: 0; pointer-events: none;
+  animation: ping .9s var(--ease) both; animation-delay: calc(1.25s + var(--i) * 90ms); }
+.demo .pop-in::before { display: none; }
+@keyframes ping { 0% { opacity: .9; transform: scale(.9); } 100% { opacity: 0; transform: scale(1.7); } }
 @keyframes popin { from { opacity: 0; transform: scale(.2); } }
-.bob { display: block; width: 100%; height: 100%; animation: bob 5s ease-in-out infinite; animation-delay: calc(var(--i) * -.7s); }
+.bob { position: relative; display: block; width: 100%; height: 100%; animation: bob 5s ease-in-out infinite; animation-delay: calc(var(--i) * -.7s); }
 @keyframes bob { 50% { transform: translateY(-5%); } }
 .ava { position: relative; display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: linear-gradient(140deg, #8a6bd0, #4c2f8f);
   font: 700 clamp(14px, 3.4vw, 28px)/1 var(--disp); color: #fff3dc; box-shadow: 0 0 0 3px var(--rc, var(--lilac)), 0 0 0 7px rgba(255,255,255,.06), 0 14px 30px -10px rgba(0,0,0,.8);
@@ -143,11 +161,27 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 .node:focus-visible { outline: none; } .node:focus-visible .ava { box-shadow: 0 0 0 3px #fff, 0 0 0 8px var(--gold); }
 .orbit:hover .ring, .orbit:hover .up { animation-play-state: paused; }
 .orbit.focus .node:not(.on) .ava { filter: brightness(.5) saturate(.6); }
-.rank { position: absolute; right: -8%; top: -8%; z-index: 2; display: grid; place-items: center; width: 38%; min-width: 22px; aspect-ratio: 1; border-radius: 50%;
+.rank { position: absolute; right: -8%; top: -8%; z-index: 2; overflow: hidden; display: grid; place-items: center; width: 38%; min-width: 22px; aspect-ratio: 1; border-radius: 50%;
   font: 700 clamp(11px, 2.3vw, 16px)/1 var(--disp); color: #2a1440; background: var(--medal); box-shadow: 0 0 0 2.5px #1a0f36, 0 4px 12px rgba(0,0,0,.5); }
 .rank.m1 { --medal: linear-gradient(135deg, #fff1b8, #ffc94a 55%, #e79a1c); }
 .rank.m2 { --medal: linear-gradient(135deg, #ffffff, #d4dcf0 55%, #9aa7c7); }
 .rank.m3 { --medal: linear-gradient(135deg, #ffd7b0, #e9a06a 55%, #b8693a); }
+/* the top three: a breathing halo in their medal colour and a shimmer across the medal */
+.tg { position: absolute; inset: -42%; z-index: -1; border-radius: 50%; background: radial-gradient(closest-side, var(--tgc) 52%, transparent 80%); pointer-events: none;
+  animation: tglow 3.2s ease-in-out infinite; animation-delay: calc(var(--i) * -.8s); }
+.tg.m1 { --tgc: rgba(255, 201, 74, .95); --tgr: #ffd36a; } .tg.m2 { --tgc: rgba(214, 224, 255, .8); --tgr: #e4ebff; } .tg.m3 { --tgc: rgba(233, 160, 106, .85); --tgr: #f0b07a; }
+.tg::after { content: ""; position: absolute; inset: 9%; border-radius: 50%; border: 2px dashed var(--tgr); opacity: .8; animation: spin 9s linear infinite; }
+@keyframes tglow { 0%, 100% { transform: scale(.92); opacity: .65; } 50% { transform: scale(1.12); opacity: 1; } }
+.rank::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .95) 50%, transparent 70%);
+  transform: translateX(-130%); animation: medal 3.4s var(--ease) infinite; animation-delay: calc(2.4s + var(--i) * .5s); }
+@keyframes medal { 35%, 100% { transform: translateX(130%); } }
+/* a lantern you sent this week */
+.lit-b { position: absolute; left: -8%; bottom: -4%; z-index: 2; display: grid; place-items: center; width: 40%; min-width: 22px; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #5a2a3e, #241238 70%); box-shadow: 0 0 0 2.5px #ffcf6b, 0 0 16px rgba(255, 150, 70, .9); animation: lit 2.4s ease-in-out infinite; }
+.lit-b svg { width: 74%; height: 74%; }
+@keyframes lit { 50% { box-shadow: 0 0 0 2.5px #ffcf6b, 0 0 28px rgba(255, 170, 80, 1); } }
+.card-lit { margin: -2px 0 8px; font-size: 13px; font-weight: 800; color: var(--gold); }
+.card .btn.lantern { color: #2a1440; border: 0; background: linear-gradient(100deg, #ffe3a0, #ffb347); }
 .node.two .ava { box-shadow: 0 0 0 3px var(--rc, var(--lilac)), 0 0 0 7px rgba(255, 207, 107, .16), 0 0 26px rgba(255, 207, 107, .35), 0 14px 30px -10px rgba(0,0,0,.8); }
 .two-dot-unused { position: absolute; left: -4%; bottom: 4%; z-index: 2; width: 26%; min-width: 14px; aspect-ratio: 1; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2.5px #1a0f36, 0 0 14px var(--gold); }
 
@@ -155,6 +189,9 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 .core .halo { position: absolute; inset: -9%; border-radius: 50%; background: conic-gradient(from 0deg, var(--gold), var(--rose), var(--lilac), var(--mint), var(--gold)); animation: spin 8s linear infinite; filter: blur(.5px); }
 .core .halo::after { content: ""; position: absolute; inset: 5%; border-radius: 50%; background: #1a0f36; }
 .core .wave { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255, 190, 130, .5); animation: wave 3.6s var(--ease) infinite; }
+.core .burst { position: absolute; inset: -4%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 236, 190, .9), rgba(255, 170, 110, .35) 60%, transparent);
+  opacity: 0; pointer-events: none; animation: burst 1.2s var(--ease) .35s both; }
+@keyframes burst { 0% { opacity: 1; transform: scale(.4); } 100% { opacity: 0; transform: scale(2.6); } }
 .core .wave.w2 { animation-delay: 1.2s; } .core .wave.w3 { animation-delay: 2.4s; }
 @keyframes wave { from { transform: scale(1); opacity: .8; } to { transform: scale(2.1); opacity: 0; } }
 .core .ava { position: absolute; inset: 0; font-size: clamp(30px, 7vw, 56px); box-shadow: 0 20px 50px -14px rgba(0,0,0,.9); animation: popin 1s var(--spring) both; }
@@ -248,7 +285,8 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
-  .ring, .up, .core .halo, .aur { animation: none !important; }
+  .ring, .up, .core .halo, .aur, .sp, .tg, .rank::after, .lit-b { animation: none !important; }
+  .sp { stroke-opacity: .7; }
 }
 .paused .ring, .paused .up { animation-play-state: paused; }
 </style>
@@ -330,9 +368,12 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
           {% for ring in [0, 1] %}{% set group = spots | selectattr("ring", "equalto", ring) | list %}{% if group %}
           <div class="ring r{{ ring }}" aria-hidden="true">
             <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <defs><filter id="spg{{ ring }}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation=".6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
               {% for p in group %}{% set mutual = p.out and p["in"] %}
               <line class="ln{{ ' two' if mutual }}" data-r="{{ p.rank }}" x1="50" y1="50" x2="{{ p.x }}" y2="{{ p.y }}" pathLength="60" style="--i:{{ p.rank }}"/>
-              {% if mutual %}<line class="flow" data-r="{{ p.rank }}" x1="{{ p.x }}" y1="{{ p.y }}" x2="50" y2="50"/>{% endif %}
+              {% set g = " g20" if p.rank <= 3 else " g33" if ring == 0 else "" %}
+              {% if p["in"] %}<line class="sp in{{ g }}" data-r="{{ p.rank }}" x1="{{ p.x }}" y1="{{ p.y }}" x2="50" y2="50" pathLength="100" filter="url(#spg{{ ring }})" style="--i:{{ p.rank }}"/>{% endif %}
+              {% if p.out %}<line class="sp out{{ g }}" data-r="{{ p.rank }}" x1="50" y1="50" x2="{{ p.x }}" y2="{{ p.y }}" pathLength="100" filter="url(#spg{{ ring }})" style="--i:{{ p.rank }}"/>{% endif %}
               {% endfor %}
             </svg>
           </div>
@@ -342,12 +383,12 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
             {% for p in group %}
             <button class="node{{ ' two' if p.out and p['in'] }}" type="button" data-r="{{ p.rank }}" data-user="{{ p.user }}" data-name="{{ p.name }}" data-out="{{ p.out }}" data-in="{{ p['in'] }}" data-go="{{ p.got.opens }}" data-gr="{{ p.got.replies }}" data-gq="{{ p.got.quotes }}" data-gt="{{ p.got.tags }}" data-pic="{{ 1 if p.has_pic else 0 }}"
                     style="--x:{{ p.x }}%; --y:{{ p.y }}%; --s:{{ p.size }}%; --i:{{ p.rank }}" aria-label="{{ p.rank }}. {{ p.name }} @{{ p.user }}">
-              <span class="up"><span class="pop-in"><span class="bob"><span class="ava">{{ p.user[:1] | upper }}{% if p.has_pic %}<img src="/api/avatar/{{ p.user }}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% if p.rank <= 3 %}<b class="rank m{{ p.rank }}">{{ p.rank }}</b>{% endif %}</span></span></span>
+              <span class="up"><span class="pop-in"><span class="bob">{% if p.rank <= 3 %}<i class="tg m{{ p.rank }}"></i>{% endif %}<span class="ava">{{ p.user[:1] | upper }}{% if p.has_pic %}<img src="/api/avatar/{{ p.user }}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% if p.rank <= 3 %}<b class="rank m{{ p.rank }}">{{ p.rank }}</b>{% endif %}</span></span></span>
             </button>
             {% endfor %}
           </div>
           {% endif %}{% endfor %}
-          <a class="core" href="https://x.com/{{ data.handle }}" target="_blank" rel="noopener" aria-label="@{{ data.handle }} on X"><i class="wave"></i><i class="wave w2"></i><i class="wave w3"></i><i class="halo"></i>
+          <a class="core" href="https://x.com/{{ data.handle }}" target="_blank" rel="noopener" aria-label="@{{ data.handle }} on X"><i class="burst"></i><i class="wave"></i><i class="wave w2"></i><i class="wave w3"></i><i class="halo"></i>
             <span class="ava">{{ data.handle[:1] | upper }}{% if data.has_pic %}<img src="/api/avatar/{{ data.handle }}" alt="" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span></a>
         </div>
       </div>
@@ -387,7 +428,9 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
       <div class="card-nums"><div><b id="dc-card-go"></b><span>Opens</span></div><div><b id="dc-card-gr"></b><span>Replies</span></div><div><b id="dc-card-gq"></b><span>Quote posts</span></div><div><b id="dc-card-gt"></b><span>Tags</span></div></div>
       <p class="card-back" id="dc-card-back"></p>
       <span class="chip" id="dc-card-two"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>Two way</span>
-      <a class="btn go" id="dc-card-go" target="_blank" rel="noopener" href="#">Open on X</a>
+      <p class="card-lit" id="dc-card-lit" hidden>You sent them a lantern this week</p>
+      <a class="btn lantern" id="dc-card-lantern" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M12 3v2M7 9a5 5 0 0 1 10 0v6a5 5 0 0 1-10 0z M9 21h6"/></svg>Send a lantern</a>
+      <a class="btn go" id="dc-card-x-link" target="_blank" rel="noopener" href="#">Open on X</a>
     </div>
   {% endif %}
   </main>
@@ -474,7 +517,25 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
   const card = document.getElementById("dc-card");
   if (!orbit || !card) return;
   const $ = (id) => document.getElementById(id);
-  let open = null, hoverTimer = 0;
+  let open = null, hoverTimer = 0, me = "";
+  /* Cheers: Keepers you sent a lantern this week carry a little glowing lantern in your circle */
+  const lit = new Set();
+  const LANTERN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1v3" stroke="#ffcf6b" stroke-width="1.6"/><rect x="8" y="3.6" width="8" height="2.6" rx="1.1" fill="#ffcf6b"/><ellipse cx="12" cy="12.8" rx="6.6" ry="6.6" fill="#e8481e"/><ellipse cx="10" cy="10.6" rx="2.2" ry="3" fill="#ff9a5c" opacity=".7"/><path d="M12 6.4v12.8M8.7 7.4c-1.7 3-1.7 7.8 0 10.8M15.3 7.4c1.7 3 1.7 7.8 0 10.8" stroke="#ffd98a" stroke-width="1" fill="none"/><rect x="8" y="19" width="8" height="2.6" rx="1.1" fill="#ffcf6b"/></svg>';
+  (async () => {
+    let vid = ""; try { vid = localStorage.getItem("pd:vid") || ""; } catch (e) { /* fine */ }
+    if (!/^[a-f0-9]{32}$/.test(vid)) return;
+    try {
+      const j = await (await fetch("/api/cheers/me?vid=" + vid)).json();
+      if (!j || !j.signed) return;
+      me = j.user || "";
+      for (const c of j.sent || []) lit.add(String(c.user || "").toLowerCase());
+      orbit.querySelectorAll(".node").forEach((n) => {
+        if (!lit.has(n.dataset.user.toLowerCase())) return;
+        const b = document.createElement("i"); b.className = "lit-b"; b.innerHTML = LANTERN;
+        n.querySelector(".bob").append(b);
+      });
+    } catch (e) { /* the circle works the same without it */ }
+  })();
   function show(node, pinned) {
     clearTimeout(hoverTimer);
     if (open && open.node === node) { open.pinned = open.pinned || pinned; return; }
@@ -487,7 +548,10 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
     $("dc-card-name").textContent = d.name; $("dc-card-user").textContent = "@" + d.user; $("dc-card-rank").textContent = "#" + d.r;
     ["go", "gr", "gq", "gt"].forEach((k) => { $("dc-card-" + k).textContent = d[k] || 0; });
     $("dc-card-back").textContent = out ? out + " given back" : "";
-    $("dc-card-two").hidden = !(out && inn); $("dc-card-go").href = "https://x.com/" + d.user;
+    $("dc-card-two").hidden = !(out && inn); $("dc-card-x-link").href = "https://x.com/" + d.user;
+    const sentNow = lit.has(d.user.toLowerCase()), self = me && me.toLowerCase() === d.user.toLowerCase();
+    $("dc-card-lit").hidden = !sentNow; $("dc-card-lantern").hidden = sentNow || self;
+    $("dc-card-lantern").href = "/cheers?to=" + encodeURIComponent(d.user);
     card.hidden = false;
     if (!phone) {
       const r = node.getBoundingClientRect(), cw = 270, ch = card.offsetHeight || 230;

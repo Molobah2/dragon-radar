@@ -2665,3 +2665,23 @@ def test_welcome_keepsake_cards(cfg, Session, monkeypatch):
     monkeypatch.setattr(welcome_cards, "card", lambda av, user, name, joined, by=None, small=False: seen.setdefault("by", by) and b"\xff\xd8x" or b"\xff\xd8x")
     c.get("/welcome/FreshOne/card.jpg?vid=" + "d" * 32 + "&by=Elon")
     assert seen.get("by") is None                         # an unsigned browser is never named, whatever the link says
+
+
+def test_circle_links_to_cheers_and_wrapped_only_where_unlocked(cfg, Session):
+    """The Circle draws sparks for each way a Keeper engages, offers a lantern for each Keeper (Cheers) and keeps
+    "Open on X" on its own id. Wrapped shows the Circle slide only to devices where the Circle is open, so the
+    public launch never links to the locked Circle."""
+    now = utcnow()
+    with Session() as s:
+        s.add_all([Post(id="501", author_id="a", author_username="Alice", text="GM @Bob", created_at=now),
+                   Post(id="502", author_id="b", author_username="Bob", text="thanks @Alice", created_at=now)])
+        s.commit()
+    app, c = _v21_client(cfg)
+    page = c.get("/circle/Alice").get_data(as_text=True)
+    assert 'class="sp in' in page and 'class="sp out' in page and 'id="dc-card-lantern"' in page
+    assert page.count('id="dc-card-go"') == 1 and 'id="dc-card-x-link"' in page
+    assert "const CIRCLE = true;" in c.get("/wrapped").get_data(as_text=True)
+    cfg.v21_public = True
+    public = app.test_client()
+    assert "const CIRCLE = false;" in public.get("/wrapped").get_data(as_text=True)
+    assert public.get("/api/circle/Alice").status_code == 404

@@ -126,6 +126,7 @@ body { background: #120c26; overflow-x: hidden; }
   const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const D = window.PD_DEX || { art: {}, art2d: {}, dragons: [], legends: [] };
   const BASE = "https://res.cloudinary.com/gosbi0oh";
+  const CIRCLE = {{ 'true' if circle_open else 'false' }};     // the Dragon Circle keeps its own lock, so its slide shows only where it is open
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } } };
   function vid() {
@@ -212,6 +213,9 @@ body { background: #120c26; overflow-x: hidden; }
       : `<p class="hint">Sign Blinky's Book of Friends to see who cheered you back.</p>`;
     out.push(people ? `<div class="k">Your Keepers</div><h2>The Keepers you cheered on most</h2><div class="people">${people}</div>${back}`
       : `<div class="k">Your Keepers</div><h2>Your Keepers will show up here</h2><p>The fellow Keepers whose posts you open most this month.</p>${back}`);
+    const circleUser = CIRCLE && data.back && data.back.user ? data.back.user : "";
+    if (circleUser) out.push(`<div class="k">Your Dragon Circle</div><h2>The Keepers closest to you</h2><div class="people" id="wr-circle"><p class="hint">Drawing your circle…</p></div>
+      <div class="acts"><a class="btn go" href="/circle/${encodeURIComponent(circleUser)}">Open my Dragon Circle</a></div>`);
     out.push(`<div class="k">The whole hatchery</div><h2>Together in ${esc(mon)}</h2><div class="big" data-n="${hh.opens}">${fmt(hh.opens)}</div><p>opens on dragon posts shared on pdtools</p>
       <div class="chips"><div class="chip"><b>${fmt(hh.posts)}</b><span>Dragon posts shared</span></div><div class="chip"><b>${fmt(hh.new)}</b><span>Keepers who shared their first post</span></div><div class="chip"><b>${fmt(hh.hatches)}</b><span>Eggs hatched</span></div></div>`);
     out.push(`<div class="k">Your card</div><h2>Share your ${esc(mon)}</h2><img class="card-img" id="card-img" alt="Your Hatchery Wrapped card" hidden>
@@ -225,6 +229,15 @@ body { background: #120c26; overflow-x: hidden; }
     $("save").addEventListener("click", save);
     $("loading").hidden = true;
     go(0);
+    if (circleUser) fillCircle(circleUser, gen);
+  }
+  /* the top three of the Keeper's Dragon Circle, the same people as on /circle */
+  async function fillCircle(user, mine) {
+    let people = [];
+    try { const j = await (await fetch("/api/circle/" + encodeURIComponent(user))).json(); if (j && j.ok) people = (j.people || []).slice(0, 3); } catch (e) { /* shown as empty below */ }
+    const box = $("wr-circle"); if (!box || mine !== gen) return;
+    box.innerHTML = people.length ? people.map((p, i) => `<div class="person"><span class="n">${i + 1}</span><span class="ava">${esc((p.name || p.user)[0] || "?").toUpperCase()}${p.has_pic ? `<img src="/api/avatar/${encodeURIComponent(p.user)}" alt="" onerror="this.remove()">` : ""}</span><span class="wr-who"><b>${esc(p.name || p.user)}</b><small>@${esc(p.user)}</small></span><em>${p.in && p.out ? "⇄" : ""}</em></div>`).join("")
+      : `<p>${T("Tag the Keepers you talk with in your dragon posts and your circle will grow.")}</p>`;
   }
   function countUp(el) {
     const n = +el.dataset.n; if (calm || !n || el.dataset.done) return; el.dataset.done = 1;
