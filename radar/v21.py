@@ -99,7 +99,7 @@ def drop_pick(s, now: datetime) -> None:
 def creator_stats(s, cfg, now: datetime, days: int = CREATOR_DAYS) -> list[dict]:
     """Everyone who posted about the dragons this week, scored for Jon to look at (he always decides)."""
     since = now - timedelta(days=days)
-    team = team_handles(s, cfg)
+    team = team_handles(s, cfg) | {(cfg.author_x or "").lower().lstrip("@")}   # Jon never suggests himself
     blocked = set(s.scalars(select(BlockedAuthor.author_id)))
     posts = s.scalars(select(Post).where(Post.created_at >= since, Post.hidden.is_(False), Post.is_team.is_(False))).all()
     people: dict[str, dict] = {}
@@ -128,8 +128,9 @@ def creator_stats(s, cfg, now: datetime, days: int = CREATOR_DAYS) -> list[dict]
         eng = len(me.pop("engagers"))
         me["engaged"] = eng
         me["top"] = sorted(me["top"], key=lambda x: (-x["opens"], not x["media"]))[:3]
-        # a reply or quote from another Keeper counts most; posting a lot only helps a little and stops at seven
-        me["score"] = me["opens"] + 4 * eng + 3 * min(me["art"], 7) + 2 * min(me["posts"], 7)
+        # a reply or quote from another Keeper counts most; pictures (any image, screenshots too) and posting a lot
+        # only help a little and stop at seven
+        me["score"] = me["opens"] + 4 * eng + min(me["art"], 7) + 2 * min(me["posts"], 7)
         out.append(me)
     out.sort(key=lambda x: (-x["score"], x["user"].lower()))
     return out
@@ -221,7 +222,8 @@ def _gradient(size, top_y, color=(18, 8, 4), alpha=235):
 
 
 def _png(img) -> bytes:
-    buf = io.BytesIO(); img.convert("RGB").save(buf, "PNG", optimize=True); return buf.getvalue()
+    """Share cards are painted scenes, so a high quality JPEG is a fifth of the size of a PNG and looks the same."""
+    buf = io.BytesIO(); img.convert("RGB").save(buf, "JPEG", quality=90, optimize=True, progressive=True); return buf.getvalue()
 
 
 def welcome_card(person: dict, avatar) -> bytes:

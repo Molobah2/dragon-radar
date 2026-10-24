@@ -139,7 +139,7 @@ body { background: #140a08; }
       <div class="num"><b>{{ stats.posts }}</b><span>Dragon posts</span></div>
       <div class="num"><b>{{ stats.opens }}</b><span>Opens on pdtools</span></div>
       {% if stats.engaged %}<div class="num"><b>{{ stats.engaged }}</b><span>Keepers who replied or quoted</span></div>{% endif %}
-      {% if stats.art %}<div class="num"><b>{{ stats.art }}</b><span>Posts with art</span></div>{% endif %}
+      {% if stats.art %}<div class="num"><b>{{ stats.art }}</b><span>Posts with pictures</span></div>{% endif %}
     </div>
     {% endif %}
     <div class="acts">
@@ -162,7 +162,7 @@ body { background: #140a08; }
     {% for t in stats.top %}
     <li><a class="post" href="https://x.com/{{ pick.user }}/status/{{ t.id }}" target="_blank" rel="noopener">
       <p>{{ t.text or "A Pocket Dragons post. Open it on X." }}</p>
-      <span class="meta"><span class="chip">{{ t.opens }} {{ "open" if t.opens == 1 else "opens" }}</span>{% if t.media %}<span class="chip art">Art</span>{% endif %}</span>
+      <span class="meta"><span class="chip">{{ t.opens }} {{ "open" if t.opens == 1 else "opens" }}</span>{% if t.media %}<span class="chip art">Picture</span>{% endif %}</span>
     </a></li>
     {% endfor %}
   </ul>
@@ -182,7 +182,7 @@ body { background: #140a08; }
 {% endif %}
 
 <section class="sec rise">
-  <p class="how"><b>How a creator is chosen.</b> pdtools looks at the Pocket Dragons posts shared here this week: how many Keepers opened them, who replied or quoted them, and the art people made. Then Jon reads through and picks one Keeper by hand. Nobody can buy it or ask for it, and the spotlight moves to someone new each week.</p>
+  <p class="how"><b>How a creator is chosen.</b> pdtools looks at the Pocket Dragons posts shared here this week: how many Keepers opened them, who replied or quoted them, and what people made and shared. Then Jon reads through and picks one Keeper by hand. Nobody can buy it or ask for it, and the spotlight moves to someone new each week.</p>
 </section>
 
 {% include "_v21_foot.html" %}

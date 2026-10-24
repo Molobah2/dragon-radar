@@ -2314,7 +2314,7 @@ def test_welcome_lane_shows_first_posts_waiting_first(cfg, Session, monkeypatch)
     page = c.get("/welcome/Newbie").get_data(as_text=True)
     assert "Welcome, <span>@Newbie" in page and "/welcome/Newbie.png" in page
     assert c.get("/welcome/Regular").status_code == 302
-    png = c.get("/welcome/Newbie.png"); assert png.status_code == 200 and png.data[:8] == b"\x89PNG\r\n\x1a\n"
+    png = c.get("/welcome/Newbie.png"); assert png.status_code == 200 and png.data[:2] == b"\xff\xd8" and png.mimetype == "image/jpeg"
     assert c.get("/welcome/Regular.png").status_code == 404
 
 
@@ -2334,6 +2334,7 @@ def test_creator_of_the_week_suggests_and_jon_picks(cfg, Session, monkeypatch):
             Post(id="805", author_id="ar", author_username="Artie", text="self reply", created_at=now),
             PostLink(post_id="803", reply_to="artie", done=True), PostLink(post_id="804", quote_of="artie", done=True),
             PostLink(post_id="805", reply_to="artie", done=True),
+            Post(id="806", author_id="jw", author_username="jonwynnx", text="lots of posts", created_at=now, opens=99),
         ])
         for i in range(12):
             s.add(Post(id=f"9{i:02d}", author_id="sp", author_username="Spammy", text="gm", created_at=now - timedelta(hours=i)))
@@ -2341,6 +2342,7 @@ def test_creator_of_the_week_suggests_and_jon_picks(cfg, Session, monkeypatch):
         from radar.v21 import creator_stats
         st = creator_stats(s, cfg, now)
     top = st[0]
+    assert "jonwynnx" not in [x["user"] for x in st]           # Jon never suggests himself
     assert top["user"] == "Artie" and top["engaged"] == 2 and top["art"] == 1 and top["top"][0]["id"] == "801"
     app, c = _v21_client(cfg)
     assert "Pinky is choosing" in c.get("/creator").get_data(as_text=True)
@@ -2354,7 +2356,7 @@ def test_creator_of_the_week_suggests_and_jon_picks(cfg, Session, monkeypatch):
     assert "@Artie" in page and "Painted the cutest Blinky" in page and "Creator of the week" in page and "/creator/" in page
     from radar.v21 import week_start
     wk = week_start(now).date().isoformat()
-    png = c.get(f"/creator/{wk}.png"); assert png.status_code == 200 and png.data[:8] == b"\x89PNG\r\n\x1a\n"
+    png = c.get(f"/creator/{wk}.png"); assert png.status_code == 200 and png.data[:2] == b"\xff\xd8"
     assert "no-store" in png.headers["Cache-Control"] and f"/creator/{wk}.png?u=Artie" in page
     with Session() as s:
         from radar.v21 import suggestions

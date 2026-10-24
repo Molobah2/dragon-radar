@@ -21,9 +21,9 @@
         <span class="cl-n">{{ loop.index }}</span>
         <span class="cl-ava"><img src="/api/avatar/{{ x.user }}" alt="" loading="lazy" onerror="this.remove()"></span>
         <div class="cl-who"><b>{{ x.name }}</b><a href="https://x.com/{{ x.user }}" target="_blank" rel="noopener">@{{ x.user }}</a></div>
-        <div class="cl-nums"><span><b>{{ x.posts }}</b> posts</span><span><b>{{ x.opens }}</b> opens</span><span><b>{{ x.engaged }}</b> Keepers replied or quoted</span><span><b>{{ x.art }}</b> with art</span><span class="cl-score">score {{ x.score }}</span></div>
+        <div class="cl-nums"><span><b>{{ x.posts }}</b> posts</span><span><b>{{ x.opens }}</b> opens</span><span><b>{{ x.engaged }}</b> Keepers replied or quoted</span><span><b>{{ x.art }}</b> with pictures</span><span class="cl-score">score {{ x.score }}</span></div>
       </div>
-      {% if x.top %}<div class="cl-posts">{% for t in x.top %}<a href="https://x.com/{{ x.user }}/status/{{ t.id }}" target="_blank" rel="noopener">{{ (t.text or "Open the post on X")[:110] }}{% if t.media %} · art{% endif %} · {{ t.opens }} opens</a>{% endfor %}</div>{% endif %}
+      {% if x.top %}<div class="cl-posts">{% for t in x.top %}<a href="https://x.com/{{ x.user }}/status/{{ t.id }}" target="_blank" rel="noopener">{{ (t.text or "Open the post on X")[:110] }}{% if t.media %} · picture{% endif %} · {{ t.opens }} opens</a>{% endfor %}</div>{% endif %}
       <form class="cl-pick" method="post" action="/lab/creator/pick">
         <input type="hidden" name="csrf" value="{{ csrf }}">
         <input type="hidden" name="user" value="{{ x.user }}">

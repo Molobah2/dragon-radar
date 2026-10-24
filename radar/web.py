@@ -1275,7 +1275,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             if len(v21_png) > 80:
                 v21_png.clear()
             v21_png[key] = (time.time(), make()); hit = v21_png[key]
-        r = app.response_class(hit[1], mimetype="image/png")
+        r = app.response_class(hit[1], mimetype="image/jpeg")
         # locked pages: never let a shared cache hand Jon's copy to someone without the cookie
         r.headers["Cache-Control"] = "private, no-store"
         r.headers["Vary"] = "Cookie"
