@@ -1,6 +1,5 @@
-"""The welcome card for a Keeper who just joined, in the same family as the secret relic cards: a deep sky of its
-own, a soft halo, the Keeper as the hero on the left, an engraved double frame with corner jewels and the words on
-the right. Drawn at twice the size (2400 x 1350, 16:9) so it stays crisp on X. Used for the share picture of
+"""The welcome card for a Keeper who just joined: a deep dusk sky, a soft halo, the Keeper as the hero on the left
+and the words on the right. No border, so it never looks like one of the official relic cards. Drawn at twice the size (2400 x 1350, 16:9) so it stays crisp on X. Used for the share picture of
 /welcome/<handle> and for the card a Keeper saves and posts with their hello."""
 import io
 import math
@@ -78,7 +77,7 @@ def _portrait(avatar, size, letter):
 
 
 def _gold(size, colors):
-    """A diagonal gold gradient the size of the card, like the relic frame."""
+    """A diagonal gold gradient, used for the ring around the picture."""
     w, h = size
     g = Image.new("RGB", (w, h))
     px = g.load()
@@ -154,26 +153,13 @@ def card(avatar, user, name, joined, by=None, small=False):
     vg = Image.radial_gradient("L").resize(img.size, Image.BILINEAR)      # 0 in the middle, about 180 at the sides
     dark = Image.new("RGBA", img.size, (6, 3, 14, 255)); dark.putalpha(vg.point(lambda v: int(max(0, min(1, (v - 95) / 120)) * 225)))
     img.alpha_composite(dark)
-    # an engraved double frame with corner jewels
-    gold = _gold(img.size, LOOK["frame"]).convert("RGBA")
-    fm = Image.new("L", img.size, 0); df = ImageDraw.Draw(fm)
-    df.rectangle((_p(22), _p(22), _p(W - 22), _p(H - 22)), outline=255, width=_p(6))
-    df.rectangle((_p(36), _p(36), _p(W - 36), _p(H - 36)), outline=180, width=_p(1.5))
-    for a, b in ((25, 25), (W - 25, 25), (25, H - 25), (W - 25, H - 25)):
-        df.polygon([(_p(a), _p(b - 14)), (_p(a + 14), _p(b)), (_p(a), _p(b + 14)), (_p(a - 14), _p(b))], fill=255)
-    jg = Image.new("RGBA", img.size, LOOK["glow"] + (0,)); jm = Image.new("L", img.size, 0); dj = ImageDraw.Draw(jm)
-    for a, b in ((25, 25), (W - 25, 25), (25, H - 25), (W - 25, H - 25)):
-        dj.ellipse((_p(a - 20), _p(b - 20), _p(a + 20), _p(b + 20)), fill=170)
-    jg.putalpha(jm.filter(ImageFilter.GaussianBlur(_p(10)))); img.alpha_composite(jg)
-    img.paste(gold, (0, 0), fm)
     # a soft shade behind the words so they always read
     strip = Image.new("L", (_p(W), 1), 0)
     for x in range(_p(600), _p(W)):
         t = (x / S - 600) / 600
         strip.putpixel((x, 0), int(255 * (.22 * min(1, t / .25) + .08 * max(0, (t - .25) / .75))))
     sl = Image.new("RGBA", img.size, (0, 0, 0, 255)); sl.putalpha(strip.resize(img.size))
-    box = (_p(40), _p(40), _p(W - 40), _p(H - 40))
-    img.alpha_composite(sl.crop(box), box[:2])
+    img.alpha_composite(sl)
     # words
     d = ImageDraw.Draw(img)
     X = _p(660)
