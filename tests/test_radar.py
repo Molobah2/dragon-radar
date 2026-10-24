@@ -2213,6 +2213,8 @@ def test_avatar_heals_a_changed_profile_picture(cfg, Session, monkeypatch):
     with Session() as s:
         assert s.get(Post, "501").author_avatar.endswith("new_bigger.jpg")
     n = len(calls); c.get("/api/avatar/Nastya"); assert len(calls) == n      # kept for a day
+    big = c.get("/api/avatar/Nastya?s=big")                                    # no 400px picture: falls back to the small one
+    assert big.status_code == 200 and big.data == b"\xff\xd8newpic" and calls[-1].endswith("new_400x400.jpg")
 
 
 def test_dragon_circle_counts_replies_quotes_and_signed_opens(cfg, Session):
@@ -2526,3 +2528,27 @@ def test_hatchery_canvas_lists_stickers_and_props(cfg, Session):
     html = c.get("/canvas").get_data(as_text=True)
     assert html.count('data-kind="st"') == 2 * len(STICKERS) and html.count('data-kind="pr"') == len(PROPS)
     assert "Jon Wynn" not in html.split("<footer")[0]           # the card and the island carry only the pdtools stamp
+
+
+def test_avatar_big_asks_x_for_the_400px_picture(cfg, Session, monkeypatch):
+    """Share cards and the canvas ask for ?s=big: the 400 by 400 picture from X's image host, kept apart from the small one."""
+    with Session() as s:
+        s.add(Post(id="502", author_id="m", author_username="Mira", text="gm", created_at=utcnow(),
+                   author_avatar="https://pbs.twimg.com/profile_images/3/me_bigger.png"))
+        s.commit()
+    import requests as rq
+
+    class R:
+        def __init__(self, code, body=b"", ctype="image/png"):
+            self.status_code, self.content, self.headers = code, body, {"Content-Type": ctype}
+    calls = []
+
+    def fake_get(url, **k):
+        calls.append(url)
+        return R(200, b"BIG" if "_400x400." in url else b"small")
+    monkeypatch.setattr(rq, "get", fake_get)
+    c = create_app(cfg).test_client()
+    assert c.get("/api/avatar/Mira").data == b"small"
+    assert c.get("/api/avatar/Mira?s=big").data == b"BIG"
+    assert calls[-1] == "https://pbs.twimg.com/profile_images/3/me_400x400.png"
+    n = len(calls); c.get("/api/avatar/Mira?s=big"); c.get("/api/avatar/Mira"); assert len(calls) == n   # both kept for a day

@@ -1042,7 +1042,9 @@ def create_app(cfg: Config | None = None) -> Flask:
     avatar_miss: dict[str, float] = {}       # handles with no working picture right now, so we do not ask again for 15 minutes
     avatar_fx_tried: dict[str, float] = {}   # handles we looked up fresh on FxTwitter in the last 6 hours
 
-    def avatar_bytes(handle):
+    avatar_big: dict[str, tuple[float, bytes, str]] = {}
+
+    def avatar_bytes(handle, big=False):
         """A Keeper's X picture (bytes, type), fetched from X's image host only and kept for a day, or None.
         X gives every new profile picture a new address and the old one stops working, so this tries every
         address we know (newest first) and, when all of them are dead, looks the Keeper up once on FxTwitter
@@ -1051,6 +1053,33 @@ def create_app(cfg: Config | None = None) -> Flask:
         import requests
         key = handle.lower()
         now_ts = datetime.now().timestamp()
+        if big:
+            # the sharp 400 by 400 picture for share cards and the canvas; the feed keeps the light small one
+            hb = avatar_big.get(key)
+            if hb and now_ts - hb[0] < 86400:
+                return hb[1], hb[2]
+            small = avatar_bytes(handle)
+            if not small:
+                return None
+            src = (avatar_cache.get(key) or (0, b"", "", ""))[3]
+            got = None
+            if src and src.startswith("https://pbs.twimg.com/"):
+                import re
+                import requests
+                url = re.sub(r"_(normal|bigger|mini)(\.[a-z]+)$", r"_400x400\2", src)
+                if url != src:
+                    try:
+                        r = requests.get(url, timeout=8, allow_redirects=False)
+                        ctype = r.headers.get("Content-Type", "image/jpeg").split(";")[0].strip().lower()
+                        if r.status_code == 200 and len(r.content) <= 500_000 and ctype in ("image/jpeg", "image/png", "image/webp"):
+                            got = (r.content, ctype)
+                    except requests.RequestException:
+                        got = None
+            got = got or small
+            if len(avatar_big) > 1000:
+                avatar_big.clear()
+            avatar_big[key] = (now_ts, got[0], got[1])
+            return got
         hit = avatar_cache.get(key)
         if hit and now_ts - hit[0] < 86400:
             return hit[1], hit[2]
@@ -1083,7 +1112,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             if r.status_code != 200 or len(r.content) > 500_000:
                 return None
             ctype = r.headers.get("Content-Type", "image/jpeg").split(";")[0].strip().lower()
-            return (r.content, ctype) if ctype in ("image/jpeg", "image/png", "image/webp", "image/gif") else None
+            return (r.content, ctype, url) if ctype in ("image/jpeg", "image/png", "image/webp", "image/gif") else None
 
         got, seen = None, set()
         for u in urls:
@@ -1125,12 +1154,12 @@ def create_app(cfg: Config | None = None) -> Flask:
             return None
         if len(avatar_cache) > 2000:
             avatar_cache.clear()
-        avatar_cache[key] = (now_ts, got[0], got[1])
-        return got
+        avatar_cache[key] = (now_ts, got[0], got[1], got[2])
+        return got[0], got[1]
 
     @app.get("/api/avatar/<handle>")
     def api_avatar(handle):
-        got = avatar_bytes(handle)
+        got = avatar_bytes(handle, big=request.args.get("s") == "big")
         if not got:
             abort(404)
         return got[0], 200, {"Content-Type": got[1], "Cache-Control": "public, max-age=86400"}
@@ -1255,7 +1284,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     def avatar_image(handle):
         import io
         from PIL import Image
-        got = avatar_bytes(handle)
+        got = avatar_bytes(handle, big=True)
         if not got:
             return None
         try:

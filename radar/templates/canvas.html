@@ -373,7 +373,7 @@ body { background: #1a1430; }
       return false;
     }
     me = data.user;
-    const img = await loadImg(`/api/avatar/${encodeURIComponent(me)}`);
+    const img = await loadImg(`/api/avatar/${encodeURIComponent(me)}?s=big`);
     meSrc = frameFor(img);
     box.innerHTML = "";
     const b = document.createElement("button"); b.className = "add"; b.type = "button"; b.dataset.kind = "me"; b.dataset.key = "me";
