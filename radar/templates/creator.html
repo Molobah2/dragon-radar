@@ -63,6 +63,7 @@ body { background: #140a08; }
 .kick { display: inline-flex; align-items: center; gap: 8px; padding: 8px 15px; border-radius: 999px; color: #3a1a06; font: 800 12px/1 var(--body); letter-spacing: 2.4px; text-transform: uppercase;
   background: linear-gradient(180deg, #ffe08f, #ffb85c); box-shadow: 0 10px 24px -10px rgba(255, 170, 70, .9); }
 .cw-copy h1 { margin: 14px 0 4px; font: 700 clamp(40px, 6.6vw, 82px)/1 var(--disp); letter-spacing: -.5px; text-shadow: 0 4px 30px rgba(0,0,0,.75); overflow-wrap: anywhere; }
+.cw-copy .handle b { font: inherit; }
 .cw-copy .handle { font: 700 clamp(18px, 2.2vw, 24px)/1.2 var(--disp); color: var(--gold); }
 .cw-copy .handle span { color: var(--mute); font-family: var(--body); font-weight: 800; font-size: .7em; margin-left: 8px; }
 .cw-copy .note { margin: 14px 0 0; max-width: 34em; padding-left: 14px; border-left: 3px solid var(--gold); color: var(--soft); font-size: clamp(15px, 1.6vw, 17px); font-style: italic; }
@@ -131,9 +132,9 @@ body { background: #140a08; }
   <div class="cw-copy">
     {% if pick %}
     <span class="kick">{{ "Creator of the week" if pick.current else ("Last week's creator" if pick.week == last_week else "Latest creator") }}</span>
-    <h1>{{ pick.name }}</h1>
-    <div class="handle">@{{ pick.user }}<span>{{ week }}</span></div>
-    {% if pick.note %}<p class="note">{{ pick.note }}<small>Jon, on picking them</small></p>{% endif %}
+    <h1 class="cw-name">{{ pick.name }}</h1>
+    <div class="handle"><b class="cw-handle">@{{ pick.user }}</b><span>{{ week }}</span></div>
+    {% if pick.note %}<p class="note"><span class="note-t">{{ pick.note }}</span><small>Jon, on picking them</small></p>{% endif %}
     {% if stats %}
     <div class="nums">
       <div class="num"><b>{{ stats.posts }}</b><span>Dragon posts</span></div>
@@ -160,7 +161,7 @@ body { background: #140a08; }
   <p>The posts Keepers opened most this week.</p>
   <ul class="posts">
     {% for t in stats.top %}
-    <li><a class="post" href="https://x.com/{{ pick.user }}/status/{{ t.id }}" target="_blank" rel="noopener">
+    <li><a class="post cw-post" href="https://x.com/{{ pick.user }}/status/{{ t.id }}" target="_blank" rel="noopener">
       <p>{{ t.text or "A Pocket Dragons post. Open it on X." }}</p>
       <span class="meta"><span class="chip">{{ t.opens }} {{ "open" if t.opens == 1 else "opens" }}</span>{% if t.media %}<span class="chip art">Picture</span>{% endif %}</span>
     </a></li>
@@ -173,7 +174,7 @@ body { background: #140a08; }
 <section class="sec rise">
   <h2>Hall of creators</h2>
   <p>Everyone Pinky has spotlighted so far.</p>
-  <ul class="hall">
+  <ul class="hall cw-hall">
     {% for p in past %}
     <li><a href="https://x.com/{{ p.user }}" target="_blank" rel="noopener"><span class="frame"><span class="ava">{{ (p.name or p.user)[:1]|upper }}<img src="/api/avatar/{{ p.user }}" alt="" loading="lazy" onerror="this.remove()"></span></span><b>{{ p.name }}</b><small>{{ week_label(p.week) }}</small></a></li>
     {% endfor %}

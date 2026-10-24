@@ -139,7 +139,7 @@ body { background: #1d0e09; }
     <h1>Welcome, <span>@{{ focus.user }}</span></h1>
     <p>This is their very first dragon post on pdtools. Open it on X and say hello.</p>
     {% else %}
-    <h1>Be the first to <span>say hello</span></h1>
+    <h1 data-i18n-html="wlH1">Be the first to <span>say hello</span></h1>
     <p>New Keepers sharing their very first dragon post. A kind reply on day one is how a newcomer becomes a friend.</p>
     {% endif %}
     <div class="stats">
@@ -254,8 +254,8 @@ body { background: #1d0e09; }
     const letter = esc((p.name || p.user)[0] || "?").toUpperCase();
     return `<li style="--i:${Math.min(i, 14)}"><article class="card${done ? " welcomed" : ""}${p.user.toLowerCase() === focus ? " focus" : ""}" data-id="${esc(p.id)}">
       <div class="top"><span class="ava">${letter}<img src="/api/avatar/${encodeURIComponent(p.user)}" alt="" loading="lazy" onerror="this.remove()"></span>
-        <span class="who"><b>${esc(p.name)}</b><small>@${esc(p.user)}</small></span>${opens}</div>
-      <p class="text">${esc(p.text || "Shared a post with art.")}</p>
+        <span class="who wl-who"><b>${esc(p.name)}</b><small>@${esc(p.user)}</small></span>${opens}</div>
+      <p class="text wl-text">${esc(p.text || "Shared a post with art.")}</p>
       <div class="meter"><div class="row"><span>First post</span><b>${ago(p.waited_h)}</b></div><i style="--w:${w}%"></i></div>
       <div class="act">
         <a class="btn go hello" href="https://x.com/${encodeURIComponent(p.user)}/status/${encodeURIComponent(p.id)}" target="_blank" rel="noopener" data-open="${esc(p.id)}">
