@@ -1342,7 +1342,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         lane = lane_data()
         return render_template("welcome.html", cfg=cfg, lane=lane, focus=None,
                                og_title="The welcome lane · new Keepers on PD Tools",
-                               og_desc="Keepers sharing their very first Pocket Dragons post. Be the first to say hello.")
+                               og_desc="New Keepers who just joined the Ancient Hatchery. Be the first to say hello.")
 
     def welcome_one(handle):
         """One new Keeper for their welcome page and card, kept for 3 minutes like the lane."""
@@ -1368,7 +1368,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                                og_img=f"https://pdtools.xyz/welcome/{person['user']}.png",
                                og_alt=f"Welcome to the hatchery, @{person['user']}",
                                og_title=f"Welcome to the hatchery, @{person['user']}",
-                               og_desc=f"@{person['user']} shared their first Pocket Dragons post. Say hello on PD Tools.")
+                               og_desc=f"@{person['user']} just joined the Ancient Hatchery. Say hello on PD Tools.")
 
     @app.get("/welcome/<handle>.png")
     @v21_only

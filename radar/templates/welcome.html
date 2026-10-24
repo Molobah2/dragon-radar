@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% if focus %}Welcome @{{ focus.user }} · {% endif %}The welcome lane · {{ cfg.hub_name or "PD Tools" }}</title>
-  <meta name="description" content="Keepers sharing their very first Pocket Dragons post. Be the first to say hello. Free, unofficial community tool.">
+  <meta name="description" content="New Keepers who just joined the Ancient Hatchery. Be the first to say hello. Free, unofficial community tool.">
   <meta name="theme-color" content="#2a140c">
   {% include "_icons.html" %}
   <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
@@ -137,10 +137,10 @@ body { background: #1d0e09; }
     <span class="kick"><i></i>The welcome lane</span>
     {% if focus %}
     <h1>Welcome, <span>@{{ focus.user }}</span></h1>
-    <p>This is their very first dragon post on pdtools. Open it on X and say hello.</p>
+    <p>This is the Keeper card they shared when they joined the Ancient Hatchery. Open it on X and say hello.</p>
     {% else %}
     <h1 data-i18n-html="wlH1">Be the first to <span>say hello</span></h1>
-    <p>New Keepers sharing their very first dragon post. A kind reply on day one is how a newcomer becomes a friend.</p>
+    <p>New Keepers who just joined the Ancient Hatchery. A kind reply on day one is how a newcomer becomes a friend.</p>
     {% endif %}
     <div class="stats">
       <div class="stat"><b data-count="{{ lane|length }}">{{ lane|length }}</b><span>New Keepers, last 3 days</span></div>
@@ -168,7 +168,7 @@ body { background: #1d0e09; }
     <p>Every new Keeper has had at least one visit. Blinky is keeping the lantern lit for the next one.</p>
   </div>
   <div class="more"><button class="btn ghost" id="more" type="button" hidden>Show more</button></div>
-  <p class="how rise"><b>How it works.</b> A Keeper shows up here when their first Pocket Dragons post is shared on pdtools. Open it, spend a moment on X, reply if you like, and come back. Your open counts toward your daily goal and streak in Blinky's Friends, just like the feed.</p>
+  <p class="how rise"><b>How it works.</b> A Keeper shows up here the first time they share their Keeper of the Ancient Hatchery card. Open it, spend a moment on X, reply if you like, and come back. Your open counts toward your daily goal and streak in Blinky's Friends, just like the feed.</p>
 </main>
 
 {% include "_v21_foot.html" %}
@@ -256,7 +256,7 @@ body { background: #1d0e09; }
       <div class="top"><span class="ava">${letter}<img src="/api/avatar/${encodeURIComponent(p.user)}" alt="" loading="lazy" onerror="this.remove()"></span>
         <span class="who wl-who"><b>${esc(p.name)}</b><small>@${esc(p.user)}</small></span>${opens}</div>
       <p class="text wl-text">${esc(p.text || "Shared a post with art.")}</p>
-      <div class="meter"><div class="row"><span>First post</span><b>${ago(p.waited_h)}</b></div><i style="--w:${w}%"></i></div>
+      <div class="meter"><div class="row"><span>Joined</span><b>${ago(p.waited_h)}</b></div><i style="--w:${w}%"></i></div>
       <div class="act">
         <a class="btn go hello" href="https://x.com/${encodeURIComponent(p.user)}/status/${encodeURIComponent(p.id)}" target="_blank" rel="noopener" data-open="${esc(p.id)}">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3c-1 2.2-3 3.4-3 6a3 3 0 0 0 6 0c0-.8-.2-1.5-.6-2.1.9.3 2.6 1.6 2.6 4.6a5 5 0 0 1-10 0C7 7.6 10.4 5.3 12 3z"/></svg>Say hello on X</a>

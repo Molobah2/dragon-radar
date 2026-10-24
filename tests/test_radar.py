@@ -2288,30 +2288,38 @@ def test_v21_pages_stay_locked_to_unlocked_devices(cfg, Session):
 
 
 def test_welcome_lane_shows_first_posts_waiting_first(cfg, Session, monkeypatch):
-    """Only a Keeper's very first post on pdtools, from the last three days, the unopened ones first.
-    Regulars, the team, blocked and hidden posts never show. The welcome card is a real picture."""
+    """Only Keepers who shared the official join card ("Keeper of the Ancient Hatchery") for the first time in the
+    last three days, the unopened ones first. A first post here without the card, an old card shared again, the team,
+    blocked and hidden posts never show. The welcome card is a real picture."""
     import requests as rq
     monkeypatch.setattr(rq, "get", lambda *a, **k: (_ for _ in ()).throw(rq.RequestException("offline")))
     now = utcnow()
+    card = "I asked @Pocket_Dragons_ for nothing in particular and got a Ghost egg.\n\nKeeper of the Ancient Hatchery."
     with Session() as s:
         s.add_all([
-            Post(id="701", author_id="n1", author_username="Newbie", author_name="New Bie", text="my first dragon!", created_at=now - timedelta(hours=5)),
-            Post(id="702", author_id="n1", author_username="Newbie", text="second one", created_at=now - timedelta(hours=1)),
-            Post(id="703", author_id="n2", author_username="Opened", text="hello hatchery", created_at=now - timedelta(hours=30), opens=4),
+            Post(id="701", author_id="n1", author_username="Newbie", author_name="New Bie", text=card, created_at=now - timedelta(hours=5)),
+            Post(id="702", author_id="n1", author_username="Newbie", text=card, created_at=now - timedelta(hours=1)),
+            Post(id="703", author_id="n2", author_username="Opened", text="keeper of the ancient hatchery 🐉", created_at=now - timedelta(hours=30), opens=4),
             Post(id="704", author_id="old", author_username="Regular", text="gm", created_at=now - timedelta(days=9)),
             Post(id="705", author_id="old", author_username="Regular", text="gm again", created_at=now - timedelta(hours=2)),
-            Post(id="706", author_id="tm", author_username="TeamPerson", text="welcome all", created_at=now, is_team=True),
-            Post(id="707", author_id="bl", author_username="Blocked", text="spam", created_at=now),
-            Post(id="708", author_id="hd", author_username="Hidden", text="gone", created_at=now, hidden=True),
+            Post(id="709", author_id="fan", author_username="LongFan", text="my first dragon post here!", created_at=now - timedelta(hours=1)),
+            Post(id="710", author_id="oc", author_username="OldCard", text=card, created_at=now - timedelta(days=9)),
+            Post(id="711", author_id="oc", author_username="OldCard", text=card, created_at=now - timedelta(hours=3)),
+            Post(id="712", author_id="lj", author_username="LateJoiner", text="been here ages", created_at=now - timedelta(days=12)),
+            Post(id="713", author_id="lj", author_username="LateJoiner", text=card, created_at=now - timedelta(hours=8)),
+            Post(id="706", author_id="tm", author_username="TeamPerson", text=card, created_at=now, is_team=True),
+            Post(id="707", author_id="bl", author_username="Blocked", text=card, created_at=now),
+            Post(id="708", author_id="hd", author_username="Hidden", text=card, created_at=now, hidden=True),
         ])
         s.add(BlockedAuthor(author_id="bl")); s.commit()
         from radar.v21 import welcome_lane
         lane = welcome_lane(s, cfg, now)
-    assert [x["user"] for x in lane] == ["Newbie", "Opened"]
-    assert lane[0]["id"] == "701" and lane[0]["waited_h"] == 5 and lane[0]["opens"] == 0
+    assert [x["user"] for x in lane] == ["LateJoiner", "Newbie", "Opened"]
+    newbie = next(x for x in lane if x["user"] == "Newbie")
+    assert newbie["id"] == "701" and newbie["waited_h"] == 5 and newbie["opens"] == 0
     app, c = _v21_client(cfg)
     html = c.get("/welcome").get_data(as_text=True)
-    assert "Be the first to" in html and "Newbie" in html and "Regular" not in html and "pocketdragons.io/creator-kit" in html
+    assert "Be the first to" in html and "Newbie" in html and "Regular" not in html and "LongFan" not in html and "pocketdragons.io/creator-kit" in html
     r = c.get("/welcome/newbie"); assert r.status_code == 302 and r.headers["Location"].endswith("/welcome/Newbie")
     page = c.get("/welcome/Newbie").get_data(as_text=True)
     assert "Welcome, <span>@Newbie" in page and "/welcome/Newbie.png" in page

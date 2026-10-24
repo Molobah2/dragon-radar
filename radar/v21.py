@@ -1,6 +1,6 @@
 """pdtools v2.1, wave 1: the New Keeper welcome lane and Creator of the week.
 
-Welcome lane: Keepers whose very first Pocket Dragons post on pdtools went up in the last three days, with how long
+Welcome lane: Keepers who shared their official "Keeper of the Ancient Hatchery" join card for the first time in the last three days, with how long
 it has waited and how many people opened it, so the community can be the first to say hello.
 
 Creator of the week: pdtools suggests, Jon approves. The suggestion only looks at public posts shared on pdtools in
@@ -25,12 +25,17 @@ PICKS_KEY = "v21:creators"
 
 
 # ---------- welcome lane ----------
+JOIN_CARD = "keeper of the ancient hatchery"     # the line on the official card every new Keeper shares when they join
+
+
 def welcome_lane(s, cfg, now: datetime, hours: int = WELCOME_HOURS) -> list[dict]:
-    """First ever posts on pdtools from the last few days, the ones nobody opened yet first."""
+    """Keepers who just joined: each one's first post of the official join card ("Keeper of the Ancient Hatchery")
+    from the last few days, the ones nobody opened yet first. A first post on pdtools alone is not enough, since many
+    long time fans only get their first post shared here much later."""
     since = now - timedelta(hours=hours)
     blocked = set(s.scalars(select(BlockedAuthor.author_id)))
     firsts = (select(Post.author_id, func.min(Post.created_at).label("first"))
-              .where(Post.is_team.is_(False)).group_by(Post.author_id).subquery())
+              .where(Post.is_team.is_(False), Post.text.ilike(f"%{JOIN_CARD}%")).group_by(Post.author_id).subquery())
     rows = s.execute(select(Post).join(firsts, (Post.author_id == firsts.c.author_id) & (Post.created_at == firsts.c.first))
                      .where(firsts.c.first >= since, Post.hidden.is_(False), Post.is_team.is_(False))).scalars().all()
     team = team_handles(s, cfg)
@@ -48,7 +53,7 @@ def welcome_lane(s, cfg, now: datetime, hours: int = WELCOME_HOURS) -> list[dict
 
 
 def welcome_person(s, cfg, handle: str, now: datetime) -> dict | None:
-    """One Keeper's first post on pdtools (for their welcome card), if it is recent enough to still welcome."""
+    """One Keeper's join card post (for their welcome card), if it is recent enough to still welcome."""
     h = clean(handle).lower()
     if not h:
         return None
@@ -246,7 +251,7 @@ def welcome_card(person: dict, avatar) -> bytes:
     _shadow_text(bg, (cx, 482), "Welcome to the hatchery", _font(True, 58), (255, 247, 232))
     handle = "@" + person["user"]
     _shadow_text(bg, (cx, 548), handle, _fit(d, handle, True, 50, 30, 520), (255, 205, 110))
-    _shadow_text(bg, (cx, 606), "First dragon post on pdtools", _font(False, 26), (255, 232, 205), blur=4)
+    _shadow_text(bg, (cx, 606), "Just joined the Ancient Hatchery", _font(False, 26), (255, 232, 205), blur=4)
     _shadow_text(bg, (W - 34, H - 30), "pdtools.xyz", _font(True, 24), (255, 240, 222), anchor="rm", blur=3)
     return _png(bg)
 
@@ -285,7 +290,7 @@ def creator_card(pick: dict, avatar, week_label: str) -> bytes:
 
 # the v2.1 tools as the home page and the Blinky's Friends menu show them: path, name, one line, scene, character
 TOOLS = [
-    ("/welcome", "Welcome lane", "Say hi to Keepers sharing their very first dragon post.", "v21/welcome-bg-s.jpg", "v21/blinky-lantern.webp"),
+    ("/welcome", "Welcome lane", "Say hi to Keepers who just joined the Ancient Hatchery.", "v21/welcome-bg-s.jpg", "v21/blinky-lantern.webp"),
     ("/creator", "Creator of the week", "Pinky spotlights one Keeper who made the hatchery brighter.", "v21/creator-bg-s.jpg", "v21/pinky-frame.webp"),
     ("/wrapped", "Hatchery Wrapped", "Your month in the hatchery as a story to share.", "v21/wrapped-b-s.jpg", "v21/blinky-scope.webp"),
     ("/dragondle", "Dragondle", "Five Pocket Dragons questions a day, the same for everyone.", "v21/dragondle-a-s.jpg", "v21/pinky-scroll.webp"),
