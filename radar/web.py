@@ -1230,6 +1230,179 @@ def create_app(cfg: Config | None = None) -> Flask:
         data = circle_data(handle)
         return jsonify(data), (200 if data.get("ok") else 400)
 
+    # ---------- v2.1 wave 1: welcome lane and Creator of the week (locked like the Circle) ----------
+    v21_only = circle_only
+    v21_cache: dict[str, tuple[float, object]] = {}
+    v21_png: dict[str, tuple[float, bytes]] = {}
+
+    def v21_cached(key, seconds, make):
+        hit = v21_cache.get(key)
+        if hit and time.time() - hit[0] < seconds:
+            return hit[1]
+        val = make()
+        if len(v21_cache) > 300:
+            v21_cache.clear()
+        v21_cache[key] = (time.time(), val)
+        return val
+
+    def lane_data():
+        from .v21 import welcome_lane
+        def make():
+            with Session() as s:
+                return welcome_lane(s, cfg, utcnow())
+        return v21_cached("lane", 180, make)
+
+    def avatar_image(handle):
+        import io
+        from PIL import Image
+        got = avatar_bytes(handle)
+        if not got:
+            return None
+        try:
+            im = Image.open(io.BytesIO(got[0])); im.load()
+            return im
+        except Exception:  # noqa: BLE001  a broken picture shows the first letter instead
+            return None
+
+    def card_png(key, make):
+        hit = v21_png.get(key)
+        if not (hit and time.time() - hit[0] < 6 * 3600):
+            ip = client_ip(); nowt = time.time()
+            recent = [t for t in circle_hits.get(ip, []) if nowt - t < 3600]
+            if len(recent) >= 40:
+                abort(429)
+            circle_hits[ip] = recent + [nowt]
+            if len(v21_png) > 80:
+                v21_png.clear()
+            v21_png[key] = (time.time(), make()); hit = v21_png[key]
+        r = app.response_class(hit[1], mimetype="image/png")
+        # locked pages: never let a shared cache hand Jon's copy to someone without the cookie
+        r.headers["Cache-Control"] = "private, no-store"
+        r.headers["Vary"] = "Cookie"
+        return r
+
+    @app.get("/welcome")
+    @v21_only
+    def welcome_home():
+        lane = lane_data()
+        return render_template("welcome.html", cfg=cfg, lane=lane, focus=None,
+                               og_title="The welcome lane · new Keepers on PD Tools",
+                               og_desc="Keepers sharing their very first Pocket Dragons post. Be the first to say hello.")
+
+    @app.get("/welcome/<handle>")
+    @v21_only
+    def welcome_page(handle):
+        from .v21 import welcome_person
+        with Session() as s:
+            person = welcome_person(s, cfg, handle, utcnow())
+        if not person:
+            return redirect(url_for("welcome_home"))
+        if person["user"] != handle:
+            return redirect(url_for("welcome_page", handle=person["user"]))
+        lane = lane_data()
+        if not any(x["id"] == person["id"] for x in lane):
+            lane = [person] + lane
+        return render_template("welcome.html", cfg=cfg, lane=lane, focus=person,
+                               og_img=f"https://pdtools.xyz/welcome/{person['user']}.png",
+                               og_alt=f"Welcome to the hatchery, @{person['user']}",
+                               og_title=f"Welcome to the hatchery, @{person['user']}",
+                               og_desc=f"@{person['user']} shared their first Pocket Dragons post. Say hello on PD Tools.")
+
+    @app.get("/welcome/<handle>.png")
+    @v21_only
+    def welcome_image(handle):
+        from .v21 import welcome_card, welcome_person
+        with Session() as s:
+            person = welcome_person(s, cfg, handle, utcnow())
+        if not person:
+            abort(404)
+        return card_png("w:" + person["user"].lower(), lambda: welcome_card(person, avatar_image(person["user"])))
+
+    @app.get("/api/welcome")
+    @v21_only
+    def api_welcome():
+        return jsonify({"ok": True, "lane": lane_data()})
+
+    def week_label(week: str) -> str:
+        d = datetime.fromisoformat(week)
+        return f"Week of {d.strftime('%b')} {d.day}"
+
+    @app.get("/creator")
+    @v21_only
+    def creator_home():
+        from .v21 import creator_stats, current_pick, picks, week_start
+        now = utcnow()
+        with Session() as s:
+            pick = current_pick(s, now)
+            past = [p for p in sorted(picks(s), key=lambda p: p["week"], reverse=True) if not pick or p["week"] != pick["week"]][:8]
+            stats = None
+            if pick:
+                start = datetime.fromisoformat(pick["week"])
+                end = min(now, start + timedelta(days=7))
+                stats = next((x for x in creator_stats(s, cfg, end) if x["user"].lower() == pick["user"].lower()), None)
+        og = {}
+        if pick:
+            og = {"og_img": f"https://pdtools.xyz/creator/{pick['week']}.png?u={pick['user']}",
+                  "og_alt": f"@{pick['user']}, Creator of the week on PD Tools",
+                  "og_title": f"@{pick['user']} is the Creator of the week",
+                  "og_desc": "Every week Pinky spotlights one Keeper who made the hatchery brighter. See who it is on PD Tools."}
+        return render_template("creator.html", cfg=cfg, pick=pick, stats=stats, past=past,
+                               week=week_label(pick["week"]) if pick else week_label(week_start(now).date().isoformat()),
+                               week_label=week_label, last_week=(week_start(now) - timedelta(days=7)).date().isoformat(), **og)
+
+    @app.get("/creator/<week>.png")
+    @v21_only
+    def creator_image(week):
+        from .v21 import creator_card, picks
+        with Session() as s:
+            pick = next((p for p in picks(s) if p["week"] == week), None)
+        if not pick:
+            abort(404)
+        return card_png(f"c:{week}:{pick['user'].lower()}", lambda: creator_card(pick, avatar_image(pick["user"]), week_label(week)))
+
+    def lab_csrf():
+        if not session.get("csrf"):
+            session["csrf"] = secrets.token_hex(16)
+        return session["csrf"]
+
+    @app.get("/lab/creator")
+    @v21_only
+    def creator_lab():
+        from .v21 import current_pick, suggestions, week_start
+        now = utcnow()
+        with Session() as s:
+            sug = suggestions(s, cfg, now)
+            pick = current_pick(s, now)
+        return render_template("creator_lab.html", cfg=cfg, sug=sug, pick=pick if pick and pick.get("current") else None,
+                               week=week_label(week_start(now).date().isoformat()), csrf=lab_csrf())
+
+    @app.post("/lab/creator/pick")
+    @v21_only
+    def creator_pick():
+        from .circle import clean
+        from .v21 import creator_stats, save_pick
+        check_csrf()
+        user = clean(request.form.get("user", ""))
+        if not user:
+            abort(400)
+        now = utcnow()
+        with Session() as s:
+            known = next((x for x in creator_stats(s, cfg, now, days=14) if x["user"].lower() == user.lower()), None)
+            save_pick(s, now, known["user"] if known else user, known["name"] if known else user, request.form.get("note", ""))
+            s.commit()
+        v21_png.clear()
+        return redirect(url_for("creator_lab"))
+
+    @app.post("/lab/creator/undo")
+    @v21_only
+    def creator_undo():
+        from .v21 import drop_pick
+        check_csrf()
+        with Session() as s:
+            drop_pick(s, utcnow()); s.commit()
+        v21_png.clear()
+        return redirect(url_for("creator_lab"))
+
     # ---------- follow directory ----------
     @app.get("/friends/ama")
     def ama_page():

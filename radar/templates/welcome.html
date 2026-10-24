@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% if focus %}Welcome @{{ focus.user }} · {% endif %}The welcome lane · {{ cfg.hub_name or "PD Tools" }}</title>
+  <meta name="description" content="Keepers sharing their very first Pocket Dragons post. Be the first to say hello. Free, unofficial community tool.">
+  <meta name="theme-color" content="#2a140c">
+  {% include "_icons.html" %}
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" as="image" href="{{ asset('v21/welcome-bg-s.jpg') }}" imagesrcset="{{ asset('v21/welcome-bg-s.jpg') }} 960w, {{ asset('v21/welcome-bg.jpg') }} 1920w" imagesizes="100vw">
+  <link rel="stylesheet" href="{{ asset('fonts.css') }}">
+  <link rel="stylesheet" href="{{ asset('v21/v21.css') }}">
+{% include "_speed.html" %}
+<style>
+/* ===== The welcome lane: the hatchery gate at sunrise ===== */
+body { background: #1d0e09; }
+.wl-hero { position: relative; height: clamp(600px, 100svh, 880px); overflow: hidden; isolation: isolate; }
+.wl-scene { position: absolute; left: 50%; top: 50%; width: 100%; height: 100%; transform: translate(-50%, -50%); }
+.wl-scene img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 46%;
+  animation: breathe 34s var(--ease) infinite alternate; }
+@keyframes breathe { from { transform: scale(1.02); } to { transform: scale(1.09); } }
+/* light pouring from the open doors */
+.door { position: absolute; left: 50%; top: 49%; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: screen; }
+.door::before { content: ""; position: absolute; inset: -30%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 226, 160, .75), rgba(255, 190, 110, .25) 45%, transparent 70%);
+  animation: pulse 5.5s ease-in-out infinite; }
+.door::after { content: ""; position: absolute; left: 50%; top: 40%; width: 380%; height: 300%; transform: translate(-50%, -10%);
+  background: conic-gradient(from 160deg at 50% 0%, transparent 0deg, rgba(255, 220, 160, .16) 6deg, transparent 12deg, transparent 18deg, rgba(255, 220, 160, .12) 24deg, transparent 30deg, transparent 34deg, rgba(255, 220, 160, .1) 40deg);
+  -webkit-mask: radial-gradient(closest-side at 50% 0%, #000, transparent); mask: radial-gradient(closest-side at 50% 0%, #000, transparent);
+  animation: rays 12s ease-in-out infinite alternate; }
+@keyframes pulse { 0%, 100% { opacity: .8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+@keyframes rays { from { opacity: .55; transform: translate(-50%, -10%) rotate(-3deg); } to { opacity: 1; transform: translate(-50%, -10%) rotate(3deg); } }
+.wl-hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.wl-shade { position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(29, 14, 9, .55) 0%, rgba(29, 14, 9, 0) 18%, rgba(29, 14, 9, 0) 46%, rgba(29, 14, 9, .7) 72%, #1d0e09 100%); }
+
+/* Blinky with his lantern */
+.blinky { position: absolute; left: clamp(-10px, 3vw, 60px); bottom: clamp(230px, 31vh, 320px); width: clamp(140px, 19vw, 270px); z-index: 3; pointer-events: none;
+  animation: bob 4.8s ease-in-out infinite; filter: drop-shadow(0 24px 30px rgba(0, 0, 0, .45)); }
+.blinky img { display: block; width: 100%; height: auto; }
+.blinky .lamp { position: absolute; left: 78%; top: 77%; width: 70%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 214, 140, .7), rgba(255, 170, 80, .2) 50%, transparent 72%); mix-blend-mode: screen; animation: flicker 2.6s ease-in-out infinite; }
+.blinky.wave img { animation: hop .9s var(--spring); }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-12px) rotate(1deg); } }
+@keyframes flicker { 0%, 100% { opacity: .85; } 30% { opacity: 1; } 55% { opacity: .7; } 70% { opacity: .95; } }
+@keyframes hop { 0% { transform: none; } 35% { transform: translateY(-18px) rotate(-4deg); } 70% { transform: translateY(2px); } 100% { transform: none; } }
+@media (max-width: 720px) { .blinky { bottom: auto; top: clamp(90px, 18vh, 150px); left: -8px; width: 128px; } }
+
+.wl-copy { position: absolute; left: 0; right: 0; bottom: clamp(26px, 6vh, 64px); z-index: 4; display: grid; justify-items: center; text-align: center; padding: 0 20px; }
+.kick { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(40, 16, 6, .45); border: 1px solid rgba(255, 220, 170, .35);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); font: 800 12px/1 var(--body); letter-spacing: 2.4px; text-transform: uppercase; color: var(--gold); }
+.kick i { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 12px var(--gold); animation: pulse 2.4s infinite; }
+.wl-copy h1 { margin: 14px 0 8px; font: 700 clamp(38px, 6.4vw, 76px)/1 var(--disp); letter-spacing: -.5px; text-shadow: 0 4px 30px rgba(40, 14, 0, .7); }
+.wl-copy h1 span { background: linear-gradient(180deg, #fff1c6, #ffb45c); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.wl-copy p { margin: 0; max-width: 34em; font-size: clamp(15px, 1.6vw, 18px); color: var(--soft); text-shadow: 0 2px 12px rgba(0,0,0,.6); }
+.stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
+.stat { min-width: 132px; padding: 12px 16px; border-radius: 20px; background: rgba(40, 16, 6, .5); border: 1px solid rgba(255, 220, 170, .2);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.stat b { display: block; font: 700 30px/1 var(--disp); color: var(--ink); }
+.stat span { display: block; margin-top: 5px; font-size: 12.5px; font-weight: 800; color: var(--mute); }
+.stat.hot b { color: var(--gold); }
+@media (max-width: 420px) { .stat { min-width: 0; flex: 1; padding: 10px 12px; } .stat b { font-size: 24px; } }
+
+/* the lane */
+.lane { position: relative; z-index: 2; width: min(1180px, 100%); margin: 0 auto; padding: 8px clamp(16px, 4vw, 40px) 20px; }
+.lane-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin-bottom: 18px; }
+.lane-head h2 { margin: 0; font: 700 clamp(24px, 3vw, 32px)/1.1 var(--disp); }
+.lane-head p { margin: 4px 0 0; color: var(--mute); font-size: 14px; }
+.tabs { display: inline-flex; padding: 5px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); }
+.tab { height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; cursor: pointer; font: 800 14px/1 var(--body); color: var(--soft); transition: background .3s, color .3s; }
+.tab[aria-selected="true"] { background: linear-gradient(180deg, #ffe08f, #ffb85c); color: #3a1a06; }
+.tab em { font-style: normal; opacity: .7; margin-left: 4px; }
+
+.grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+@media (max-width: 380px) { .grid { grid-template-columns: 1fr; } }
+.card { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 24px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 236, 214, .085), rgba(255, 236, 214, .04)); border: 1px solid var(--line);
+  box-shadow: 0 24px 50px -30px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .06);
+  transition: transform .4s var(--spring), border-color .3s, box-shadow .3s; }
+.card:hover { transform: translateY(-3px); border-color: rgba(255, 220, 170, .28); }
+.card.focus { border-color: rgba(255, 205, 110, .7); box-shadow: 0 0 0 4px rgba(255, 205, 110, .15), 0 24px 50px -30px #000; }
+.card .top { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.card .ava { width: 52px; height: 52px; box-shadow: 0 0 0 2px rgba(255, 220, 170, .35); }
+.card .who { min-width: 0; }
+.card .who b { display: block; font: 700 17px/1.2 var(--disp); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .who small { display: block; color: var(--mute); font-weight: 800; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 999px; font: 800 12px/1 var(--body); white-space: nowrap;
+  background: rgba(255, 255, 255, .08); color: var(--soft); }
+.chip.wait { background: rgba(255, 205, 110, .16); color: var(--gold); box-shadow: 0 0 0 1px rgba(255, 205, 110, .35); }
+.chip.wait i { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); animation: pulse 1.8s infinite; }
+.card .text { margin: 0; color: var(--soft); font-size: 14.5px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 3.2em; overflow-wrap: anywhere; }
+.meter { display: grid; gap: 6px; }
+.meter .row { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 800; color: var(--mute); }
+.meter .row b { color: var(--soft); }
+.meter i { display: block; height: 6px; border-radius: 6px; background: rgba(255, 255, 255, .07); overflow: hidden; }
+.meter i::after { content: ""; display: block; height: 100%; width: var(--w); border-radius: inherit; background: linear-gradient(90deg, var(--gold), var(--gold2), var(--rose)); }
+.card .act { display: flex; gap: 8px; flex-wrap: wrap; }
+.card .act .btn { flex: 1; height: 42px; font-size: 15px; padding: 0 14px; }
+.card .done { display: none; }
+.card.welcomed .hello { display: none; }
+.card.welcomed .done { display: inline-flex; }
+.card.welcomed::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(143, 240, 200, .45); }
+.stamp { position: absolute; right: 14px; top: 64px; transform: rotate(-8deg) scale(.6); opacity: 0; padding: 5px 10px; border-radius: 10px; border: 2px solid var(--mint);
+  color: var(--mint); font: 700 13px/1 var(--disp); letter-spacing: 1px; text-transform: uppercase; transition: transform .5s var(--spring), opacity .3s; pointer-events: none; }
+.card.welcomed .stamp { opacity: .9; transform: rotate(-8deg) scale(1); }
+.grid li { opacity: 0; transform: translateY(16px); transition: opacity .6s var(--ease), transform .6s var(--ease); transition-delay: calc(var(--i) * 45ms); }
+.grid.in li { opacity: 1; transform: none; }
+.empty { display: grid; justify-items: center; text-align: center; gap: 8px; padding: 40px 20px; border-radius: 26px; background: var(--glass); border: 1px dashed var(--line); }
+.empty img { width: 120px; }
+.empty b { font: 700 22px/1.2 var(--disp); color: var(--gold); }
+.empty p { margin: 0; color: var(--soft); max-width: 30em; }
+.more { display: flex; justify-content: center; margin-top: 18px; }
+.how { margin: 26px 0 0; padding: 18px 20px; border-radius: 22px; background: var(--glass); border: 1px solid var(--line); color: var(--mute); font-size: 14px; }
+.how b { color: var(--soft); }
+</style>
+</head>
+<body>
+<div class="wl-hero" id="hero">
+  <div class="wl-scene" id="scene" aria-hidden="true">
+    <img class="bg" alt="" src="{{ asset('v21/welcome-bg-s.jpg') }}" srcset="{{ asset('v21/welcome-bg-s.jpg') }} 960w, {{ asset('v21/welcome-bg.jpg') }} 1920w" sizes="100vw" fetchpriority="high">
+    <i class="door"></i>
+  </div>
+  <canvas id="motes" aria-hidden="true"></canvas>
+  <div class="wl-shade" aria-hidden="true"></div>
+  <div class="blinky" id="blinky" aria-hidden="true"><img src="{{ asset('v21/blinky-lantern.webp') }}" alt="" width="758" height="1000"><i class="lamp"></i></div>
+
+  <header class="v-bar">
+    <a class="v-brand" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="38" height="38"><span>PD Tools<small>Welcome lane</small></span></a>
+    <div class="v-tools">
+      <a class="pill" href="{{ url_for('feed') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span class="wide">Back to the feed</span></a>
+      <label class="pill" title="Language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><select id="lang-select" aria-label="Language"></select></label>
+    </div>
+  </header>
+
+  <div class="wl-copy">
+    <span class="kick"><i></i>The welcome lane</span>
+    {% if focus %}
+    <h1>Welcome, <span>@{{ focus.user }}</span></h1>
+    <p>This is their very first dragon post on pdtools. Open it on X and say hello.</p>
+    {% else %}
+    <h1>Be the first to <span>say hello</span></h1>
+    <p>New Keepers sharing their very first dragon post. A kind reply on day one is how a newcomer becomes a friend.</p>
+    {% endif %}
+    <div class="stats">
+      <div class="stat"><b data-count="{{ lane|length }}">{{ lane|length }}</b><span>New Keepers, last 3 days</span></div>
+      <div class="stat hot"><b data-count="{{ lane|selectattr('opens', 'equalto', 0)|list|length }}">{{ lane|selectattr('opens', 'equalto', 0)|list|length }}</b><span>Still waiting for a first open</span></div>
+      <div class="stat"><b id="mine">0</b><span>You welcomed today</span></div>
+    </div>
+  </div>
+</div>
+
+<main class="lane" id="lane">
+  <div class="lane-head rise">
+    <div>
+      <h2>New Keepers</h2>
+      <p>The ones nobody has opened yet come first.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Show">
+      <button class="tab" role="tab" aria-selected="true" data-show="wait">Still waiting<em id="n-wait"></em></button>
+      <button class="tab" role="tab" aria-selected="false" data-show="all">Everyone new<em id="n-all"></em></button>
+    </div>
+  </div>
+  <ul class="grid" id="grid" aria-live="polite"></ul>
+  <div class="empty" id="empty" hidden>
+    <img src="{{ asset('v21/blinky-lantern.webp') }}" alt="" width="120" height="158" loading="lazy">
+    <b>Everyone has been welcomed</b>
+    <p>Every new Keeper has had at least one visit. Blinky is keeping the lantern lit for the next one.</p>
+  </div>
+  <div class="more"><button class="btn ghost" id="more" type="button" hidden>Show more</button></div>
+  <p class="how rise"><b>How it works.</b> A Keeper shows up here when their first Pocket Dragons post is shared on pdtools. Open it, spend a moment on X, reply if you like, and come back. Your open counts toward your daily goal and streak in Blinky's Friends, just like the feed.</p>
+</main>
+
+{% include "_v21_foot.html" %}
+<div class="toast" id="toast" role="status"></div>
+
+<script type="application/json" id="lane-data">{{ lane|tojson }}</script>
+<script>window.WL_FOCUS = {{ (focus.user if focus else "")|tojson }};</script>
+<script src="{{ asset('i18n.js') }}"></script>
+<script>
+(() => {
+  "use strict";
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const phone = matchMedia("(max-width: 640px)").matches;
+  const store = {
+    obj(k) { try { return JSON.parse(localStorage.getItem(k) || "{}") || {}; } catch (e) { return {}; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } },
+  };
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+  const $ = (id) => document.getElementById(id);
+  let tt = 0;
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 3800); }
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  /* the scene always covers the hero like the photo would, so the door light sits on the door */
+  const hero = $("hero"), scene = $("scene"), AR = 2752 / 1536;
+  function fit() {
+    const w = hero.clientWidth, h = hero.clientHeight;
+    if (w / h > AR) { scene.style.width = w + "px"; scene.style.height = w / AR + "px"; }
+    else { scene.style.height = h + "px"; scene.style.width = h * AR + "px"; }
+  }
+  fit(); addEventListener("resize", fit, { passive: true });
+
+  /* golden motes drifting up through the morning light */
+  const cv = $("motes"), cx = cv.getContext("2d");
+  let W = 0, H = 0, motes = [], last = 0, heroOn = true;
+  function size() {
+    const d = Math.min(2, devicePixelRatio || 1); W = hero.clientWidth; H = hero.clientHeight;
+    cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0);
+    motes = Array.from({ length: phone ? 26 : 54 }, () => mote(true));
+  }
+  function mote(any) { return { x: Math.random() * W, y: any ? Math.random() * H : H + 10, r: Math.random() * 1.8 + .5, v: .15 + Math.random() * .45, p: Math.random() * 6.28, a: .25 + Math.random() * .6 }; }
+  function frame(t) {
+    if (!document.hidden && heroOn && (!phone || t - last > 32)) {
+      last = t; cx.clearRect(0, 0, W, H);
+      for (const m of motes) {
+        m.y -= m.v; m.x += Math.sin(m.p + t / 1800) * .25;
+        if (m.y < -10) Object.assign(m, mote(false));
+        cx.globalAlpha = m.a * (0.6 + 0.4 * Math.sin(m.p + t / 900));
+        const g = cx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r * 3);
+        g.addColorStop(0, "rgba(255,226,160,1)"); g.addColorStop(1, "rgba(255,226,160,0)");
+        cx.fillStyle = g; cx.beginPath(); cx.arc(m.x, m.y, m.r * 3, 0, 6.283); cx.fill();
+      }
+    }
+    if (!calm) requestAnimationFrame(frame);
+  }
+  size(); addEventListener("resize", size, { passive: true });
+  if (!calm) requestAnimationFrame(frame);
+  if ("IntersectionObserver" in window) new IntersectionObserver((e) => { heroOn = e[0].isIntersecting; }).observe(hero);
+
+  /* numbers count up */
+  for (const el of document.querySelectorAll("[data-count]")) {
+    const n = +el.dataset.count; if (calm || !n) continue;
+    const t0 = performance.now(); el.textContent = "0";
+    (function step(t) { const k = Math.min(1, (t - t0) / 1100); el.textContent = Math.round(n * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); })(t0);
+  }
+
+  /* the lane */
+  const lane = JSON.parse($("lane-data").textContent || "[]");
+  const focus = (window.WL_FOCUS || "").toLowerCase();
+  const opened = () => store.obj("radar:opened");
+  const welcomed = () => { const w = store.obj("pd:welcomed"); return w.day === today() && Array.isArray(w.ids) ? w.ids : []; };
+  let show = "wait", limit = 24;
+  const fresh = new Set();   // welcomed on this visit: they stay in view so the share button is there
+  function ago(h) { return h < 1 ? "just now" : h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`; }
+  function shareUrl(p) {
+    const text = `Welcome to the Pocket Dragons hatchery, @${p.user}! 🐉 Glad you are here.`;
+    return `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://pdtools.xyz/welcome/" + p.user)}`;
+  }
+  function card(p, i) {
+    const done = !!opened()[p.id];
+    const w = Math.min(100, Math.round((p.waited_h / 72) * 100));
+    const opens = p.opens ? `<span class="chip">${p.opens === 1 ? "1 open" : p.opens + " opens"}</span>` : `<span class="chip wait"><i></i>No opens yet</span>`;
+    const letter = esc((p.name || p.user)[0] || "?").toUpperCase();
+    return `<li style="--i:${Math.min(i, 14)}"><article class="card${done ? " welcomed" : ""}${p.user.toLowerCase() === focus ? " focus" : ""}" data-id="${esc(p.id)}">
+      <div class="top"><span class="ava">${letter}<img src="/api/avatar/${encodeURIComponent(p.user)}" alt="" loading="lazy" onerror="this.remove()"></span>
+        <span class="who"><b>${esc(p.name)}</b><small>@${esc(p.user)}</small></span>${opens}</div>
+      <p class="text">${esc(p.text || "Shared a post with art.")}</p>
+      <div class="meter"><div class="row"><span>First post</span><b>${ago(p.waited_h)}</b></div><i style="--w:${w}%"></i></div>
+      <div class="act">
+        <a class="btn go hello" href="https://x.com/${encodeURIComponent(p.user)}/status/${encodeURIComponent(p.id)}" target="_blank" rel="noopener" data-open="${esc(p.id)}">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3c-1 2.2-3 3.4-3 6a3 3 0 0 0 6 0c0-.8-.2-1.5-.6-2.1.9.3 2.6 1.6 2.6 4.6a5 5 0 0 1-10 0C7 7.6 10.4 5.3 12 3z"/></svg>Say hello on X</a>
+        <a class="btn ghost done" href="${shareUrl(p)}" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>Share a welcome card</a>
+      </div>
+      <span class="stamp">Welcomed</span>
+    </article></li>`;
+  }
+  function render() {
+    const op = opened();
+    let list = show === "wait" ? lane.filter((p) => (!p.opens && !op[p.id]) || fresh.has(p.id)) : lane.slice();
+    if (focus) list.sort((a, b) => (b.user.toLowerCase() === focus) - (a.user.toLowerCase() === focus));
+    $("n-wait").textContent = lane.filter((p) => !p.opens && !op[p.id]).length;
+    $("n-all").textContent = lane.length;
+    const grid = $("grid");
+    grid.classList.remove("in");
+    grid.innerHTML = list.slice(0, limit).map(card).join("");
+    $("empty").hidden = list.length > 0;
+    $("more").hidden = list.length <= limit;
+    requestAnimationFrame(() => requestAnimationFrame(() => grid.classList.add("in")));
+    $("mine").textContent = welcomed().length;
+  }
+  for (const b of document.querySelectorAll(".tab")) b.addEventListener("click", () => {
+    show = b.dataset.show; limit = 24;
+    for (const x of document.querySelectorAll(".tab")) x.setAttribute("aria-selected", x === b ? "true" : "false");
+    render();
+  });
+  $("more").addEventListener("click", () => { limit += 24; render(); });
+  if (focus) { show = "all"; for (const x of document.querySelectorAll(".tab")) x.setAttribute("aria-selected", x.dataset.show === "all" ? "true" : "false"); }
+  render();
+
+  /* an open counts once the visitor spends a few seconds on X and comes back, the same rule as the feed */
+  const DWELL = 8000, AWAY = "pd:wl-away";
+  let away = null;
+  function keep() { try { away ? sessionStorage.setItem(AWAY, JSON.stringify(away)) : sessionStorage.removeItem(AWAY); } catch (e) { /* fine */ } }
+  try { away = JSON.parse(sessionStorage.getItem(AWAY) || "null"); } catch (e) { away = null; }
+  $("grid").addEventListener("click", (e) => {
+    const a = e.target.closest("[data-open]"); if (!a) return;
+    away = { id: a.dataset.open, at: Date.now(), gone: null }; keep();
+  });
+  function left() { if (away && !away.gone) { away.gone = Date.now(); keep(); } }
+  function back() {
+    if (!away || !away.gone) return;
+    const a = away; away = null; keep();
+    if (Date.now() - a.at > 6 * 3600e3) return;
+    if (Date.now() - a.gone < DWELL) { toast("Give the post a few seconds on X so your hello counts."); return; }
+    welcome(a.id);
+  }
+  document.addEventListener("visibilitychange", () => (document.hidden ? left() : back()));
+  addEventListener("blur", left); addEventListener("focus", back); addEventListener("pagehide", left);
+  // a page the phone reloaded while the visitor was on X: settle it now, never later
+  if (away && away.gone) { const a = away; away = null; keep(); if (Date.now() - a.gone >= DWELL && Date.now() - a.at < 6 * 3600e3) welcome(a.id); }
+
+  function welcome(id) {
+    const p = lane.find((x) => x.id === id); if (!p) return;
+    fresh.add(id);
+    const op = opened(); if (!op[id]) { op[id] = Date.now(); store.set("radar:opened", op); }
+    const w = welcomed(); if (!w.includes(id)) store.set("pd:welcomed", { day: today(), ids: w.concat(id).slice(-200) });
+    // the feed picks this up next time and adds it to the daily goal, streak and dragons
+    const q = store.obj("pd:creditq"), ids = q.day === today() && Array.isArray(q.ids) ? q.ids : [];
+    if (!ids.includes(id)) store.set("pd:creditq", { day: today(), ids: ids.concat(id).slice(-100) });
+    let vid = ""; try { vid = localStorage.getItem("pd:vid") || ""; } catch (e) { /* fine */ }
+    fetch(`/api/open/${id}`, { method: "POST", keepalive: true, headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid }) })
+      .then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.opens) p.opens = j.opens; render(); }).catch(() => render());
+    const el = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`); if (el) el.classList.add("welcomed");
+    const b = $("blinky"); b.classList.remove("wave"); void b.offsetWidth; b.classList.add("wave");
+    toast(`Thank you for welcoming @${p.user}. Share a card so they feel at home.`);
+  }
+
+
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .15 });
+    document.querySelectorAll(".rise").forEach((el) => io.observe(el));
+  } else document.querySelectorAll(".rise").forEach((el) => el.classList.add("in"));
+})();
+</script>
+<script src="{{ asset('hit.js') }}" defer></script>
+</body>
+</html>

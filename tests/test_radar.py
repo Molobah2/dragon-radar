@@ -2262,3 +2262,113 @@ def test_signed_keepers_progress_is_kept_safe_and_merged(cfg, Session):
     assert set(back["dex"]["have"]) == {"speed", "acid", "ghost"}
     assert c.get("/api/book/progress?vid=" + "z" * 32).get_json()["ok"] is False
     assert c.post("/api/book/progress", json={**phone, "vid": "z" * 32}).get_json()["ok"] is False
+
+
+def _v21_client(cfg):
+    cfg.v2_public = True; cfg.preview_key = "secret-preview-phrase-123"
+    app = create_app(cfg); app.config["TESTING"] = True
+    c = app.test_client(); c.get("/preview/secret-preview-phrase-123"); c.get("/lab/circle/on")
+    return app, c
+
+
+def test_v21_pages_stay_locked_to_unlocked_devices(cfg, Session):
+    """v2.1 is private: the welcome lane, Creator of the week and the picker answer 404 to everyone else,
+    even with the v2 preview on, and a stranger can never post a pick."""
+    app, c = _v21_client(cfg)
+    stranger = app.test_client(); preview_only = app.test_client(); preview_only.get("/preview/secret-preview-phrase-123")
+    for who in (stranger, preview_only):
+        for path in ("/welcome", "/welcome/Alice", "/welcome/Alice.png", "/api/welcome", "/creator", "/lab/creator", "/creator/2026-10-19.png"):
+            assert who.get(path).status_code == 404, path
+        assert who.post("/lab/creator/pick", data={"user": "Alice"}).status_code == 404
+    assert c.get("/welcome").status_code == 200 and c.get("/creator").status_code == 200 and c.get("/lab/creator").status_code == 200
+    assert "Pick this week" in c.get("/lab").get_data(as_text=True)
+    assert "Pick this week" not in preview_only.get("/lab").get_data(as_text=True)
+
+
+def test_welcome_lane_shows_first_posts_waiting_first(cfg, Session, monkeypatch):
+    """Only a Keeper's very first post on pdtools, from the last three days, the unopened ones first.
+    Regulars, the team, blocked and hidden posts never show. The welcome card is a real picture."""
+    import requests as rq
+    monkeypatch.setattr(rq, "get", lambda *a, **k: (_ for _ in ()).throw(rq.RequestException("offline")))
+    now = utcnow()
+    with Session() as s:
+        s.add_all([
+            Post(id="701", author_id="n1", author_username="Newbie", author_name="New Bie", text="my first dragon!", created_at=now - timedelta(hours=5)),
+            Post(id="702", author_id="n1", author_username="Newbie", text="second one", created_at=now - timedelta(hours=1)),
+            Post(id="703", author_id="n2", author_username="Opened", text="hello hatchery", created_at=now - timedelta(hours=30), opens=4),
+            Post(id="704", author_id="old", author_username="Regular", text="gm", created_at=now - timedelta(days=9)),
+            Post(id="705", author_id="old", author_username="Regular", text="gm again", created_at=now - timedelta(hours=2)),
+            Post(id="706", author_id="tm", author_username="TeamPerson", text="welcome all", created_at=now, is_team=True),
+            Post(id="707", author_id="bl", author_username="Blocked", text="spam", created_at=now),
+            Post(id="708", author_id="hd", author_username="Hidden", text="gone", created_at=now, hidden=True),
+        ])
+        s.add(BlockedAuthor(author_id="bl")); s.commit()
+        from radar.v21 import welcome_lane
+        lane = welcome_lane(s, cfg, now)
+    assert [x["user"] for x in lane] == ["Newbie", "Opened"]
+    assert lane[0]["id"] == "701" and lane[0]["waited_h"] == 5 and lane[0]["opens"] == 0
+    app, c = _v21_client(cfg)
+    html = c.get("/welcome").get_data(as_text=True)
+    assert "Be the first to" in html and "Newbie" in html and "Regular" not in html and "pocketdragons.io/creator-kit" in html
+    r = c.get("/welcome/newbie"); assert r.status_code == 302 and r.headers["Location"].endswith("/welcome/Newbie")
+    page = c.get("/welcome/Newbie").get_data(as_text=True)
+    assert "Welcome, <span>@Newbie" in page and "/welcome/Newbie.png" in page
+    assert c.get("/welcome/Regular").status_code == 302
+    png = c.get("/welcome/Newbie.png"); assert png.status_code == 200 and png.data[:8] == b"\x89PNG\r\n\x1a\n"
+    assert c.get("/welcome/Regular.png").status_code == 404
+
+
+def test_creator_of_the_week_suggests_and_jon_picks(cfg, Session, monkeypatch):
+    """pdtools scores the week (replies and quotes from other Keepers count most), Jon picks on his own device,
+    the public page and the card follow the pick, undo takes it back, and recent winners step aside."""
+    import requests as rq
+    from radar.db import PostLink
+    monkeypatch.setattr(rq, "get", lambda *a, **k: (_ for _ in ()).throw(rq.RequestException("offline")))
+    now = utcnow()
+    with Session() as s:
+        s.add_all([
+            Post(id="801", author_id="ar", author_username="Artie", author_name="Artie", text="painted Blinky", created_at=now - timedelta(days=1), has_media=True, opens=6),
+            Post(id="802", author_id="sp", author_username="Spammy", text="gm", created_at=now - timedelta(days=1), opens=1),
+            Post(id="803", author_id="r1", author_username="Rae", text="love it", created_at=now),
+            Post(id="804", author_id="r2", author_username="Quinn", text="wow", created_at=now),
+            Post(id="805", author_id="ar", author_username="Artie", text="self reply", created_at=now),
+            PostLink(post_id="803", reply_to="artie", done=True), PostLink(post_id="804", quote_of="artie", done=True),
+            PostLink(post_id="805", reply_to="artie", done=True),
+        ])
+        for i in range(12):
+            s.add(Post(id=f"9{i:02d}", author_id="sp", author_username="Spammy", text="gm", created_at=now - timedelta(hours=i)))
+        s.commit()
+        from radar.v21 import creator_stats
+        st = creator_stats(s, cfg, now)
+    top = st[0]
+    assert top["user"] == "Artie" and top["engaged"] == 2 and top["art"] == 1 and top["top"][0]["id"] == "801"
+    app, c = _v21_client(cfg)
+    assert "Pinky is choosing" in c.get("/creator").get_data(as_text=True)
+    lab = c.get("/lab/creator").get_data(as_text=True)
+    assert "Pick Artie" in lab and lab.index("Artie") < lab.index("Spammy")
+    import re
+    tok = re.search(r'name="csrf" value="([0-9a-f]+)"', lab).group(1)
+    assert c.post("/lab/creator/pick", data={"user": "artie"}).status_code == 400          # no token, no pick
+    assert c.post("/lab/creator/pick", data={"user": "artie", "note": "Painted the cutest Blinky", "csrf": tok}).status_code == 302
+    page = c.get("/creator").get_data(as_text=True)
+    assert "@Artie" in page and "Painted the cutest Blinky" in page and "Creator of the week" in page and "/creator/" in page
+    from radar.v21 import week_start
+    wk = week_start(now).date().isoformat()
+    png = c.get(f"/creator/{wk}.png"); assert png.status_code == 200 and png.data[:8] == b"\x89PNG\r\n\x1a\n"
+    assert "no-store" in png.headers["Cache-Control"] and f"/creator/{wk}.png?u=Artie" in page
+    with Session() as s:
+        from radar.v21 import suggestions
+        assert "Artie" in [x["user"] for x in suggestions(s, cfg, now)]          # this week's own pick stays listed
+        assert "Artie" not in [x["user"] for x in suggestions(s, cfg, now + timedelta(days=7))]  # next week it steps aside
+    c.post("/lab/creator/undo", data={"csrf": tok})
+    assert "Pinky is choosing" in c.get("/creator").get_data(as_text=True)
+    assert c.post("/lab/creator/pick", data={"user": "not a handle!", "csrf": tok}).status_code == 400
+
+
+def test_welcome_lane_hellos_count_in_the_feed():
+    """A hello on the welcome lane goes in a small queue the feed reads once, so the goal and streak count it."""
+    root = Path(__file__).parent.parent / "radar"
+    js = (root / "static" / "app.js").read_text(encoding="utf-8")
+    page = (root / "templates" / "welcome.html").read_text(encoding="utf-8")
+    assert 'store.obj("pd:creditq")' in js and "credit(id, true)" in js
+    assert '"pd:creditq"' in page and "DWELL = 8000" in page

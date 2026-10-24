@@ -145,6 +145,18 @@
     try { sessionStorage.removeItem(AWAY_KEY); } catch (e) { /* fine */ }
     if (a && a.id && opened[a.id] && Date.now() - (a.gone || a.at) >= DWELL_MS && Date.now() - a.at < 6 * 3600e3) credit(a.id);
   });
+  // hellos said on the welcome lane count here too: daily goal, streak and dragons, once per post per day
+  addEventListener("pd:render", function creditQueue() {
+    removeEventListener("pd:render", creditQueue);
+    const q = store.obj("pd:creditq");
+    store.set("pd:creditq", {});
+    if (q.day !== today() || !Array.isArray(q.ids)) return;
+    for (const id of q.ids.slice(-100)) {
+      if (typeof id !== "string" || !/^\d{1,32}$/.test(id)) continue;
+      if (!opened[id]) { opened[id] = Date.now(); save(); }
+      credit(id, true);   // the welcome lane already told the server
+    }
+  });
 
   function markOpened(id, card, how = "open") {
     if (opened[id]) return;
@@ -159,7 +171,7 @@
     setTimeout(() => { card.classList.add("leaving"); setTimeout(render, 360); }, 120);
   }
   // the support itself: goal, streak, dragons, Book of Friends and the server count, once per post per day
-  function credit(id) {
+  function credit(id, told = false) {
     const fresh = firstToday(id);
     const post = posts.find((x) => x.id === id) || pinnedPosts.find((x) => x.id === id);
     if (fresh) {
@@ -174,7 +186,7 @@
         if (key) { fans[key] = (fans[key] | 0) + 1; store.set("pd:authors", fans); }
       }
     }
-    if (fresh) try {
+    if (fresh && !told) try {
       fetch(`/api/open/${id}`, { method: "POST", keepalive: true, headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: (() => { try { return localStorage.getItem("pd:vid") || ""; } catch (e) { return ""; } })() }) })
         .then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.full) dayFull(); }).catch(() => {});
     } catch (e) {}

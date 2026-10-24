@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% if pick %}@{{ pick.user }} · {% endif %}Creator of the week · {{ cfg.hub_name or "PD Tools" }}</title>
+  <meta name="description" content="Every week Pinky spotlights one Keeper who made the hatchery brighter. Free, unofficial community tool.">
+  <meta name="theme-color" content="#1a0d0a">
+  {% include "_icons.html" %}
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" as="image" href="{{ asset('v21/creator-bg-s.jpg') }}" imagesrcset="{{ asset('v21/creator-bg-s.jpg') }} 960w, {{ asset('v21/creator-bg.jpg') }} 1920w" imagesizes="100vw">
+  <link rel="stylesheet" href="{{ asset('fonts.css') }}">
+  <link rel="stylesheet" href="{{ asset('v21/v21.css') }}">
+{% include "_speed.html" %}
+<style>
+/* ===== Creator of the week: the spotlit gallery rotunda ===== */
+body { background: #140a08; }
+.cw-hero { position: relative; height: clamp(620px, 100svh, 900px); overflow: hidden; isolation: isolate; }
+.cw-stage { position: absolute; inset: 0; overflow: hidden; }
+.cw-scene { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 100%; height: 100%; }
+.cw-scene img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* the creator's picture hangs on the easel */
+.easel { position: absolute; left: 45.6%; top: 32.3%; width: 9%; height: 23.2%; overflow: hidden; background: #f3ead8;
+  box-shadow: inset 0 0 18px rgba(60, 30, 0, .6); opacity: 0; transform: scale(.94); transition: opacity 1s var(--ease) 1.2s, transform 1.2s var(--ease) 1.2s; }
+.ready .easel { opacity: 1; transform: none; }
+.easel img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.easel::after { content: ""; position: absolute; inset: -50%; background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, .45) 50%, transparent 58%);
+  transform: translateX(-60%); animation: glint 6s ease-in-out 2.4s infinite; }
+@keyframes glint { 0%, 70% { transform: translateX(-60%); } 100% { transform: translateX(60%); } }
+.easel .letter { width: 100%; height: 100%; display: grid; place-items: center; font: 700 clamp(30px, 5vw, 70px)/1 var(--disp); color: #b4733a; }
+.beam { position: absolute; left: 50%; top: -6%; width: 30%; height: 80%; transform: translateX(-50%); pointer-events: none; mix-blend-mode: screen;
+  background: linear-gradient(180deg, rgba(255, 226, 170, .5), rgba(255, 210, 140, .12) 60%, transparent);
+  clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%); filter: blur(10px); animation: beam 7s ease-in-out infinite alternate; }
+@keyframes beam { from { opacity: .55; } to { opacity: .95; } }
+.cw-hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.cw-shade { position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(20, 10, 8, .5) 0%, transparent 16%, transparent 52%, rgba(20, 10, 8, .82) 78%, #140a08 100%); }
+
+/* velvet curtains open on arrival */
+.curtain { position: absolute; top: -2%; bottom: -2%; width: 52%; z-index: 6; pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.35), transparent 14%, transparent 80%, rgba(0,0,0,.45)),
+    repeating-linear-gradient(90deg, #4a050d 0, #7d0f1b 2.2%, #a51a28 3.4%, #7d0f1b 4.6%, #4a050d 6.8%);
+  box-shadow: inset -30px 0 60px rgba(0,0,0,.5); transition: transform 1.9s cubic-bezier(.7, 0, .2, 1) .25s; }
+.curtain.l { left: 0; transform-origin: left; }
+.curtain.r { right: 0; transform-origin: right; box-shadow: inset 30px 0 60px rgba(0,0,0,.5); }
+.curtain::after { content: ""; position: absolute; left: 0; right: 0; bottom: 18%; height: 10px; background: linear-gradient(180deg, #f7c763, #b9822a); opacity: 0; }
+.ready .curtain.l { transform: translateX(-104%) scaleX(.6); }
+.ready .curtain.r { transform: translateX(104%) scaleX(.6); }
+
+/* Pinky holding up the creator's picture */
+.pinky { position: absolute; right: clamp(-10px, 3vw, 70px); bottom: clamp(60px, 9vh, 120px); width: clamp(150px, 22vw, 310px); z-index: 4; pointer-events: none;
+  filter: drop-shadow(0 26px 30px rgba(0, 0, 0, .55)); animation: bob 5s ease-in-out infinite; }
+.pinky img.me { display: block; width: 100%; height: auto; }
+.pinky .held { position: absolute; left: 35%; top: 58.8%; width: 24.6%; height: 20.2%; overflow: hidden; box-shadow: inset 0 0 8px rgba(60, 30, 0, .6); background: #f3ead8; }
+.pinky .held img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.pinky .held .letter { position: absolute; inset: 0; display: grid; place-items: center; font: 700 clamp(14px, 2.4vw, 34px)/1 var(--disp); color: #b4733a; }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(1deg); } 50% { transform: translateY(-12px) rotate(-1deg); } }
+
+
+.cw-copy { position: absolute; left: 0; right: 0; bottom: clamp(24px, 6vh, 60px); z-index: 5; width: min(1180px, 100%); margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
+.kick { display: inline-flex; align-items: center; gap: 8px; padding: 8px 15px; border-radius: 999px; color: #3a1a06; font: 800 12px/1 var(--body); letter-spacing: 2.4px; text-transform: uppercase;
+  background: linear-gradient(180deg, #ffe08f, #ffb85c); box-shadow: 0 10px 24px -10px rgba(255, 170, 70, .9); }
+.cw-copy h1 { margin: 14px 0 4px; font: 700 clamp(40px, 6.6vw, 82px)/1 var(--disp); letter-spacing: -.5px; text-shadow: 0 4px 30px rgba(0,0,0,.75); overflow-wrap: anywhere; }
+.cw-copy .handle { font: 700 clamp(18px, 2.2vw, 24px)/1.2 var(--disp); color: var(--gold); }
+.cw-copy .handle span { color: var(--mute); font-family: var(--body); font-weight: 800; font-size: .7em; margin-left: 8px; }
+.cw-copy .note { margin: 14px 0 0; max-width: 34em; padding-left: 14px; border-left: 3px solid var(--gold); color: var(--soft); font-size: clamp(15px, 1.6vw, 17px); font-style: italic; }
+.cw-copy .note small { display: block; font-style: normal; color: var(--mute); font-weight: 800; font-size: 12.5px; margin-top: 4px; }
+.cw-copy .lede { margin: 10px 0 0; max-width: 32em; color: var(--soft); font-size: clamp(15px, 1.6vw, 18px); text-shadow: 0 2px 12px rgba(0,0,0,.6); }
+.acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.nums { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.num { padding: 10px 14px; border-radius: 18px; background: rgba(30, 12, 6, .55); border: 1px solid rgba(255, 220, 170, .2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.num b { display: block; font: 700 24px/1 var(--disp); }
+.num span { display: block; margin-top: 4px; font-size: 12px; font-weight: 800; color: var(--mute); }
+.cw-copy > * { opacity: 0; transform: translateY(14px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
+.ready .cw-copy > * { opacity: 1; transform: none; }
+.ready .cw-copy > :nth-child(2) { transition-delay: 1.5s; } .ready .cw-copy > :nth-child(1) { transition-delay: 1.35s; }
+.ready .cw-copy > :nth-child(3) { transition-delay: 1.65s; } .ready .cw-copy > :nth-child(n+4) { transition-delay: 1.8s; }
+
+.sec { position: relative; z-index: 2; width: min(1180px, 100%); margin: 0 auto; padding: 18px clamp(16px, 4vw, 40px); }
+.sec h2 { margin: 0 0 4px; font: 700 clamp(24px, 3vw, 32px)/1.1 var(--disp); }
+.sec > p { margin: 0 0 16px; color: var(--mute); font-size: 14px; }
+.posts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.post { display: flex; flex-direction: column; gap: 10px; height: 100%; padding: 16px; border-radius: 22px; text-decoration: none;
+  background: linear-gradient(180deg, rgba(255, 236, 214, .085), rgba(255, 236, 214, .035)); border: 1px solid var(--line); transition: transform .35s var(--spring), border-color .3s; }
+.post:hover { transform: translateY(-3px); border-color: rgba(255, 220, 170, .3); }
+.post p { margin: 0; color: var(--soft); font-size: 14.5px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.post .meta { display: flex; gap: 8px; margin-top: auto; }
+.chip { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 999px; font: 800 12px/1 var(--body); background: rgba(255, 255, 255, .08); color: var(--soft); }
+.chip.art { background: rgba(255, 134, 180, .16); color: var(--rose); }
+.hall { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 14px; }
+.hall a { display: grid; justify-items: center; gap: 6px; width: 104px; text-decoration: none; text-align: center; }
+.hall .frame { padding: 6px; border-radius: 10px; background: linear-gradient(145deg, #ffe39a, #b9822a 45%, #ffd27a 70%, #8a5a1c); box-shadow: 0 14px 26px -14px #000; transition: transform .35s var(--spring); }
+.hall a:hover .frame { transform: translateY(-3px) rotate(-2deg); }
+.hall .ava { width: 80px; height: 80px; border-radius: 4px; }
+.hall b { font: 700 14px/1.2 var(--disp); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hall small { color: var(--mute); font-weight: 800; font-size: 12px; }
+.how { margin: 10px 0 0; padding: 18px 20px; border-radius: 22px; background: var(--glass); border: 1px solid var(--line); color: var(--mute); font-size: 14px; }
+.how b { color: var(--soft); }
+@media (max-width: 720px) {
+  .cw-hero { height: auto; }
+  .cw-stage { position: relative; height: clamp(420px, 66svh, 600px); }
+  .cw-shade { background: linear-gradient(180deg, rgba(20, 10, 8, .5) 0%, transparent 18%, transparent 62%, #140a08 100%); }
+  .pinky { bottom: 6px; right: -4px; width: 128px; }
+  .cw-copy { position: relative; bottom: auto; margin-top: -54px; padding-bottom: 10px; }
+}</style>
+</head>
+<body>
+<div class="cw-hero" id="hero">
+ <div class="cw-stage" id="stage">
+  <div class="cw-scene" id="scene" aria-hidden="true">
+    <img class="bg" alt="" src="{{ asset('v21/creator-bg-s.jpg') }}" srcset="{{ asset('v21/creator-bg-s.jpg') }} 960w, {{ asset('v21/creator-bg.jpg') }} 1920w" sizes="100vw" fetchpriority="high">
+    <i class="beam"></i>
+    <div class="easel">{% if pick %}<span class="letter">{{ (pick.name or pick.user)[:1]|upper }}</span><img src="/api/avatar/{{ pick.user }}" alt="" onerror="this.remove()" style="position:absolute;inset:0">{% endif %}</div>
+  </div>
+  <canvas id="sparks" aria-hidden="true"></canvas>
+  <div class="cw-shade" aria-hidden="true"></div>
+  <div class="pinky" aria-hidden="true"><img class="me" src="{{ asset('v21/pinky-frame.webp') }}" alt="" width="755" height="1000">{% if pick %}<span class="held"><span class="letter">{{ (pick.name or pick.user)[:1]|upper }}</span><img src="/api/avatar/{{ pick.user }}" alt="" onerror="this.remove()"></span>{% endif %}</div>
+  <i class="curtain l" aria-hidden="true"></i><i class="curtain r" aria-hidden="true"></i>
+ </div>
+
+  <header class="v-bar">
+    <a class="v-brand" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="38" height="38"><span>PD Tools<small>Creator of the week</small></span></a>
+    <div class="v-tools">
+      <a class="pill" href="{{ url_for('feed') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span class="wide">Back to the feed</span></a>
+      <label class="pill" title="Language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><select id="lang-select" aria-label="Language"></select></label>
+    </div>
+  </header>
+
+  <div class="cw-copy">
+    {% if pick %}
+    <span class="kick">{{ "Creator of the week" if pick.current else ("Last week's creator" if pick.week == last_week else "Latest creator") }}</span>
+    <h1>{{ pick.name }}</h1>
+    <div class="handle">@{{ pick.user }}<span>{{ week }}</span></div>
+    {% if pick.note %}<p class="note">{{ pick.note }}<small>Jon, on picking them</small></p>{% endif %}
+    {% if stats %}
+    <div class="nums">
+      <div class="num"><b>{{ stats.posts }}</b><span>Dragon posts</span></div>
+      <div class="num"><b>{{ stats.opens }}</b><span>Opens on pdtools</span></div>
+      {% if stats.engaged %}<div class="num"><b>{{ stats.engaged }}</b><span>Keepers who replied or quoted</span></div>{% endif %}
+      {% if stats.art %}<div class="num"><b>{{ stats.art }}</b><span>Posts with art</span></div>{% endif %}
+    </div>
+    {% endif %}
+    <div class="acts">
+      <a class="btn go" href="https://x.com/{{ pick.user }}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.2 6.3L21 9l-5.2 4.2L17.6 20 12 16.4 6.4 20l1.8-6.8L3 9l6.8-.7z"/></svg>Visit their X</a>
+      <a class="btn ghost" id="share" target="_blank" rel="noopener" href="https://x.com/intent/post?text={{ ('Congratulations @' ~ pick.user ~ ', the Creator of the week on pdtools! 🎨🐉')|urlencode }}&url={{ 'https://pdtools.xyz/creator'|urlencode }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>Share the card</a>
+    </div>
+    {% else %}
+    <span class="kick">Creator of the week</span>
+    <h1>Pinky is choosing</h1>
+    <p class="lede">Every week Pinky spotlights one Keeper who made the hatchery brighter. This week's creator is on the way.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if pick and stats and stats.top %}
+<section class="sec rise">
+  <h2>Their week in dragon posts</h2>
+  <p>The posts Keepers opened most this week.</p>
+  <ul class="posts">
+    {% for t in stats.top %}
+    <li><a class="post" href="https://x.com/{{ pick.user }}/status/{{ t.id }}" target="_blank" rel="noopener">
+      <p>{{ t.text or "A Pocket Dragons post. Open it on X." }}</p>
+      <span class="meta"><span class="chip">{{ t.opens }} {{ "open" if t.opens == 1 else "opens" }}</span>{% if t.media %}<span class="chip art">Art</span>{% endif %}</span>
+    </a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if past %}
+<section class="sec rise">
+  <h2>Hall of creators</h2>
+  <p>Everyone Pinky has spotlighted so far.</p>
+  <ul class="hall">
+    {% for p in past %}
+    <li><a href="https://x.com/{{ p.user }}" target="_blank" rel="noopener"><span class="frame"><span class="ava">{{ (p.name or p.user)[:1]|upper }}<img src="/api/avatar/{{ p.user }}" alt="" loading="lazy" onerror="this.remove()"></span></span><b>{{ p.name }}</b><small>{{ week_label(p.week) }}</small></a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="sec rise">
+  <p class="how"><b>How a creator is chosen.</b> pdtools looks at the Pocket Dragons posts shared here this week: how many Keepers opened them, who replied or quoted them, and the art people made. Then Jon reads through and picks one Keeper by hand. Nobody can buy it or ask for it, and the spotlight moves to someone new each week.</p>
+</section>
+
+{% include "_v21_foot.html" %}
+
+<script src="{{ asset('i18n.js') }}"></script>
+<script>
+(() => {
+  "use strict";
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const phone = matchMedia("(max-width: 640px)").matches;
+  const hero = document.getElementById("stage"), scene = document.getElementById("scene"), AR = 2752 / 1536;
+  function fit() {
+    const w = hero.clientWidth, h = hero.clientHeight;
+    if (w / h > AR) { scene.style.width = w + "px"; scene.style.height = w / AR + "px"; }
+    else { scene.style.height = h + "px"; scene.style.width = h * AR + "px"; }
+  }
+  fit(); addEventListener("resize", fit, { passive: true });
+  const go = () => requestAnimationFrame(() => document.body.classList.add("ready"));
+  const bg = scene.querySelector("img.bg");
+  if (calm || bg.complete) go(); else { bg.addEventListener("load", go, { once: true }); setTimeout(go, 1600); }
+
+  /* gold sparkles falling slowly through the spotlight */
+  const cv = document.getElementById("sparks"), cx = cv.getContext("2d");
+  let W = 0, H = 0, sp = [], last = 0, on = true;
+  function size() {
+    const d = Math.min(2, devicePixelRatio || 1); W = hero.clientWidth; H = hero.clientHeight;
+    cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0);
+    sp = Array.from({ length: phone ? 30 : 60 }, () => spark(true));
+  }
+  function spark(any) {
+    const spread = Math.min(W * .45, 520);
+    return { x: W / 2 + (Math.random() - .5) * spread * (any ? 1.2 : .6), y: any ? Math.random() * H : -10, v: .2 + Math.random() * .5, r: Math.random() * 1.6 + .4, p: Math.random() * 6.28, a: .3 + Math.random() * .7 };
+  }
+  function frame(t) {
+    if (!document.hidden && on && (!phone || t - last > 32)) {
+      last = t; cx.clearRect(0, 0, W, H);
+      for (const s of sp) {
+        s.y += s.v; s.x += Math.sin(s.p + t / 1500) * .2;
+        if (s.y > H * .9) Object.assign(s, spark(false));
+        cx.globalAlpha = s.a * (0.5 + 0.5 * Math.sin(s.p + t / 500));
+        cx.fillStyle = "#ffd98e"; cx.beginPath(); cx.arc(s.x, s.y, s.r, 0, 6.283); cx.fill();
+      }
+    }
+    if (!calm) requestAnimationFrame(frame);
+  }
+  size(); addEventListener("resize", size, { passive: true });
+  if (!calm) requestAnimationFrame(frame);
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver((e) => { on = e[0].isIntersecting; }).observe(hero);
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .12 });
+    document.querySelectorAll(".rise").forEach((el) => io.observe(el));
+  } else document.querySelectorAll(".rise").forEach((el) => el.classList.add("in"));
+})();
+</script>
+<script src="{{ asset('hit.js') }}" defer></script>
+</body>
+</html>

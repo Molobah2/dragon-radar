@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Pick the creator · {{ cfg.hub_name }}{% endblock %}
+{% block body_class %}ready static-page{% endblock %}
+{% block main %}
+<section class="panel cl">
+  <h2>Creator of the week</h2>
+  <p>{{ week }}. pdtools suggests, you decide. Nothing shows on the public page until you pick someone here. Anyone featured in the last four weeks is left out so the spotlight moves around.</p>
+  {% if pick %}
+  <div class="cl-now">
+    <span class="cl-ava"><img src="/api/avatar/{{ pick.user }}" alt="" onerror="this.remove()"></span>
+    <div><b>This week: {{ pick.name }} (@{{ pick.user }})</b>{% if pick.note %}<small>{{ pick.note }}</small>{% endif %}</div>
+    <a class="cl-btn" href="/creator">See the page</a>
+    <a class="cl-btn" href="/creator/{{ pick.week }}.png?u={{ pick.user }}" target="_blank" rel="noopener">See the card</a>
+    <form method="post" action="/lab/creator/undo"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cl-btn ghost" type="submit">Undo</button></form>
+  </div>
+  {% endif %}
+  <ol class="cl-list">
+    {% for x in sug %}
+    <li>
+      <div class="cl-row">
+        <span class="cl-n">{{ loop.index }}</span>
+        <span class="cl-ava"><img src="/api/avatar/{{ x.user }}" alt="" loading="lazy" onerror="this.remove()"></span>
+        <div class="cl-who"><b>{{ x.name }}</b><a href="https://x.com/{{ x.user }}" target="_blank" rel="noopener">@{{ x.user }}</a></div>
+        <div class="cl-nums"><span><b>{{ x.posts }}</b> posts</span><span><b>{{ x.opens }}</b> opens</span><span><b>{{ x.engaged }}</b> Keepers replied or quoted</span><span><b>{{ x.art }}</b> with art</span><span class="cl-score">score {{ x.score }}</span></div>
+      </div>
+      {% if x.top %}<div class="cl-posts">{% for t in x.top %}<a href="https://x.com/{{ x.user }}/status/{{ t.id }}" target="_blank" rel="noopener">{{ (t.text or "Open the post on X")[:110] }}{% if t.media %} · art{% endif %} · {{ t.opens }} opens</a>{% endfor %}</div>{% endif %}
+      <form class="cl-pick" method="post" action="/lab/creator/pick">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="user" value="{{ x.user }}">
+        <input type="text" name="note" maxlength="160" placeholder="Why them, in one short line (optional, shown on the page)">
+        <button class="cl-btn" type="submit">Pick {{ x.name }}</button>
+      </form>
+    </li>
+    {% else %}
+    <li class="cl-empty">No dragon posts this week yet.</li>
+    {% endfor %}
+  </ol>
+  <form class="cl-pick cl-other" method="post" action="/lab/creator/pick">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="text" name="user" maxlength="16" placeholder="Someone else: their X handle" required>
+    <input type="text" name="note" maxlength="160" placeholder="Why them (optional)">
+    <button class="cl-btn" type="submit">Pick</button>
+  </form>
+</section>
+<style>
+  .cl { padding: 26px; margin-bottom: 26px; }
+  .cl h2 { margin: 0 0 8px; font-family: var(--font-display); font-size: 30px; }
+  .cl > p { margin: 0 0 16px; color: var(--ink-soft); font-weight: 600; }
+  .cl-now { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px; border-radius: 18px; background: #fff3d6; margin-bottom: 16px; }
+  .cl-now div { flex: 1; min-width: 200px; } .cl-now small { display: block; color: var(--ink-soft); }
+  .cl-list { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 10px; }
+  .cl-list > li { padding: 14px; border-radius: 18px; background: rgba(255, 255, 255, .75); display: grid; gap: 10px; }
+  .cl-row { display: grid; grid-template-columns: 26px 44px minmax(0, 1fr); gap: 10px 12px; align-items: center; }
+  .cl-n { font-family: var(--font-display); font-size: 18px; color: var(--ink-soft); text-align: center; }
+  .cl-ava { position: relative; width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: #f0d9b5; flex: none; }
+  .cl-ava img { width: 100%; height: 100%; object-fit: cover; }
+  .cl-who b { display: block; } .cl-who a { font-size: 14px; color: var(--ink-soft); }
+  .cl-nums { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13.5px; color: var(--ink-soft); }
+  .cl-nums b { color: var(--ink); } .cl-score { font-weight: 800; color: #b06a12; }
+  .cl-posts { display: grid; gap: 4px; padding-left: 82px; font-size: 13px; }
+  .cl-posts a { color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cl-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cl-pick input[type=text] { flex: 1; min-width: 200px; height: 40px; padding: 0 12px; border-radius: 12px; border: 1px solid rgba(0,0,0,.15); background: #fff; }
+  .cl-btn { display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 999px; border: 0; background: #ffbf5f; color: #3a1a06; font-weight: 800; text-decoration: none; cursor: pointer; }
+  .cl-btn.ghost { background: transparent; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
+  .cl-other { padding: 14px; border-radius: 18px; background: rgba(255, 255, 255, .5); }
+  .cl-empty { font-weight: 700; color: var(--ink-soft); }
+  @media (max-width: 560px) { .cl-posts { padding-left: 0; } }
+</style>
+{% endblock %}

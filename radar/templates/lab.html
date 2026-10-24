@@ -17,6 +17,16 @@
     <li class="lab-empty">No v2 tools yet. The first one will appear here as soon as it is added.</li>
     {% endfor %}
   </ul>
+  {% if circle_open %}
+  <h3 class="lab-sub">v2.1, locked to this device</h3>
+  <ul class="lab-list">
+    <li><a href="/circle"><b>Dragon Circle</b><span>The Keepers who engage with someone most in dragon posts.</span></a></li>
+    <li><a href="/welcome"><b>Welcome lane</b><span>First ever dragon posts from new Keepers, the ones still waiting first.</span></a></li>
+    <li><a href="/creator"><b>Creator of the week</b><span>The public page with Pinky and the share card.</span></a></li>
+    <li><a href="/lab/creator"><b>Pick this week's creator</b><span>pdtools suggests, you approve. Nothing goes up until you pick.</span></a></li>
+  </ul>
+  <p class="lab-help">Lock v2.1 again on this device: <a href="/lab/circle/off">/lab/circle/off</a></p>
+  {% endif %}
   <p class="lab-help">To turn preview off on this device, tap Turn off at the bottom left. To turn it on again later, open your secret preview link.</p>
 </section>
 <style>
@@ -28,5 +38,6 @@
   .lab-list span { color: var(--ink-soft); font-weight: 600; font-size: 14px; }
   .lab-empty { padding: 14px 16px; border-radius: 18px; background: rgba(255, 255, 255, .5); font-weight: 700; color: var(--ink-soft); }
   .lab-help { font-size: 14px; }
+  .lab-sub { margin: 22px 0 10px; font-family: var(--font-display); font-size: 22px; }
 </style>
 {% endblock %}
