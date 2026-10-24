@@ -133,8 +133,8 @@ body { background: #1c120a; }
 
     <section class="sheet" id="play" aria-live="polite">
       <span class="cat" id="cat"></span>
-      <h2 id="q"></h2>
-      <div class="opts" id="opts"></div>
+      <h2 id="q" class="dle-q"></h2>
+      <div class="opts dle-q" id="opts"></div>
       <p class="why" id="why"></p>
       <button class="btn go next" id="next" type="button">Next question</button>
     </section>
@@ -144,6 +144,7 @@ body { background: #1c120a; }
       <div class="score" id="score"></div>
       <div class="grid" id="grid" aria-label="Your answers"></div>
       <p class="line" id="line"></p>
+      <p class="line" id="beat" hidden></p>
       <div class="nums"><div><b id="st-streak">0</b><span>Day streak</span></div><div><b id="st-best">0</b><span>Best streak</span></div><div><b id="st-played">0</b><span>Days played</span></div></div>
       <div class="bars" id="bars" hidden></div>
       <div class="acts">
@@ -152,6 +153,7 @@ body { background: #1c120a; }
       </div>
       <p class="next-in" id="next-in"></p>
     </section>
+    <p class="how" id="en-note" hidden>The questions are in English for now.</p>
     <p class="how">No spoilers in your grid. Answers come from what the team shared in public and how pdtools works.</p>
   </main>
   {% include "_v21_foot.html" %}
@@ -179,6 +181,7 @@ body { background: #1c120a; }
     }
     return v;
   }
+  const T = (t) => (window.pdT ? window.pdT(t) : t);
   let tt = 0;
   function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 3200); }
 
@@ -231,7 +234,7 @@ body { background: #1c120a; }
     const q = G.qs[i], btns = [...$("opts").children], ok = j === q.a;
     btns.forEach((b, k) => { b.disabled = true; if (k === q.a) b.classList.add("right"); else if (k === j) b.classList.add("wrong"); else b.classList.add("dim"); });
     mine.marks[i] = ok ? 1 : 0; keep();
-    const w = $("why"); w.innerHTML = ""; const tag = document.createElement("b"); tag.textContent = ok ? "Correct. " : "Not quite. "; w.append(tag, document.createTextNode(q.why)); w.classList.add("on");
+    const w = $("why"); w.innerHTML = ""; const tag = document.createElement("b"); tag.textContent = ok ? "Correct. " : "Not quite. "; w.append(tag, Object.assign(document.createElement("span"), { className: "dle-q", textContent: q.why })); w.classList.add("on");
     if (ok) { const p = $("pinky"); p.classList.remove("cheer"); void p.offsetWidth; p.classList.add("cheer"); }
     paintPips();
     const n = $("next"); n.textContent = i === G.qs.length - 1 ? "See my result" : "Next question"; n.classList.add("on"); n.focus({ preventScroll: true });
@@ -255,7 +258,7 @@ body { background: #1c120a; }
     $("grid").textContent = grid();
     $("line").textContent = s === 5 ? "A perfect scroll. Pinky is impressed." : s >= 3 ? "Well read, Keeper." : "Every Keeper learns something new. See you tomorrow.";
     $("st-streak").textContent = st.cur; $("st-best").textContent = st.best; $("st-played").textContent = st.played;
-    const text = `Dragondle #${G.n} ${s}/${G.qs.length}\n${grid()}\nThe daily Pocket Dragons puzzle 🐉`;
+    const text = `Dragondle #${G.n} ${s}/${G.qs.length}\n${grid()}\n${T("The daily Pocket Dragons puzzle")} 🐉`;
     $("share").href = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://pdtools.xyz/dragondle")}`;
     countdown();
     if (!mine.sent) {
@@ -267,7 +270,7 @@ body { background: #1c120a; }
     }
   }
   function stats(j, s) {
-    if (j.total > 1 && j.beat !== null && j.beat !== undefined) $("line").textContent = `${$("line").textContent} You did better than ${j.beat}% of Keepers today.`;
+    if (j.total > 1 && j.beat !== null && j.beat !== undefined) { $("beat").textContent = `You did better than ${j.beat}% of Keepers today.`; $("beat").hidden = false; }
     const max = Math.max(1, ...j.dist), b = $("bars"); b.innerHTML = "";
     for (let k = 5; k >= 0; k--) {
       const row = document.createElement("div"); if (k === s) row.className = "me";
@@ -305,12 +308,13 @@ body { background: #1c120a; }
     x.textAlign = "left"; x.fillStyle = "#fff7ec"; x.font = '700 150px "Fredoka", sans-serif'; x.fillText(String(score()), 66, 300);
     const sw = x.measureText(String(score())).width; x.fillStyle = "#ffcd6e"; x.font = '700 64px "Fredoka", sans-serif'; x.fillText(`/ ${G.qs.length}`, 66 + sw + 14, 300);
     x.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; x.fillText(grid(), 66, 410);
-    const st = streaks(); x.fillStyle = "#f1d9c2"; x.font = '800 28px "Nunito", sans-serif'; x.fillText(`${st.cur} day streak · The daily Pocket Dragons puzzle`, 70, 486);
+    const st = streaks(); x.fillStyle = "#f1d9c2"; x.font = '800 28px "Nunito", sans-serif'; x.fillText(`${T(st.cur === 1 ? "1 day streak" : `${st.cur} day streak`)} · ${T("The daily Pocket Dragons puzzle")}`, 70, 486);
     x.fillStyle = "#ffcd6e"; x.font = '800 26px "Nunito", sans-serif'; x.fillText("pdtools.xyz/dragondle", 70, 606);
     K.grain(x, .05);
     c.toBlob((b) => { if (!b) return; const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `dragondle-${G.n}.png`; a.click(); toast("Card saved. Add it to your post on X."); }, "image/png");
   });
 
+  if (window.radarLang && window.radarLang !== "en") $("en-note").hidden = false;
   if (mine.marks.length >= G.qs.length) finish(); else show(mine.marks.length);
 })();
 </script>

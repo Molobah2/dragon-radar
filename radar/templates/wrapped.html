@@ -178,12 +178,13 @@ body { background: #120c26; overflow-x: hidden; }
   let data = null, slides = [], cur = 0, timer = 0, startAt = 0, cardUrl = null, dragons = [], gen = 0;
   const SLIDE_MS = 6500;
   const fmt = (n) => Number(n || 0).toLocaleString();
+  const T = (t) => (window.pdT ? window.pdT(t) : t);
   function build() {
     const me = data.me, hh = data.hatchery, mon = data.month;
     dragons = hatched(data.key);
     const best = dragons.slice().sort((a, b) => RANK[b.slice(-1)] - RANK[a.slice(-1)])[0];
     const out = [];
-    out.push(`<div class="k">Hatchery Wrapped</div><h2>Your ${esc(mon)}${data.so_far ? " so far" : ""} in the hatchery</h2>
+    out.push(`<div class="k">Hatchery Wrapped</div><h2>${data.so_far ? `Your ${esc(mon)} so far in the hatchery` : `Your ${esc(mon)} in the hatchery`}</h2>
       <img class="scope" src="{{ asset('v21/blinky-scope.webp') }}" alt="" width="871" height="1000">
       <p class="hint">Tap to begin</p>`);
     out.push(me.opens ? `<div class="k">Cheering on fellow Keepers</div><div class="big" data-n="${me.opens}">${fmt(me.opens)}</div>
@@ -191,26 +192,26 @@ body { background: #120c26; overflow-x: hidden; }
       <div class="chips"><div class="chip"><b>${fmt(me.days)}</b><span>Days you showed up</span></div><div class="chip"><b>${fmt(me.streak)}</b><span>Best streak in days</span></div><div class="chip"><b>${fmt(me.keepers)}</b><span>Keepers you cheered on</span></div></div>`
       : `<div class="k">Cheering on fellow Keepers</div><h2>Your month starts with one open</h2><p>Open a post from a fellow Keeper on Blinky's Friends and your story begins to fill up.</p>
       <div class="acts"><a class="btn go" href="/friends">Open Blinky's Friends</a></div>`);
-    out.push(dragons.length ? `<div class="k">Your dragons</div><h2>You hatched ${dragons.length} ${dragons.length === 1 ? "dragon" : "dragons"}</h2>
+    out.push(dragons.length ? `<div class="k">Your dragons</div><h2>${dragons.length === 1 ? "You hatched 1 dragon" : `You hatched ${dragons.length} dragons`}</h2>
       <div class="dragon"><img src="${artOf(best, 520)}" alt="${esc(nameOf(best))}" crossorigin="anonymous"></div>
-      <span class="tier ${TIER[best.slice(-1)]}">${best.endsWith("-l") ? "Golden legend" : best.endsWith("-r") ? "Rare holo" : "Common"} · ${esc(nameOf(best))}</span>
+      <span class="tier ${TIER[best.slice(-1)]}">${best.endsWith("-l") ? "Golden legend" : best.endsWith("-r") ? "Rare holo" : "Common"} · <span class="wr-who">${esc(nameOf(best))}</span></span>
       ${dragons.length > 1 ? `<div class="minis">${dragons.filter((k) => k !== best).slice(0, 10).map((k) => `<img src="${artOf(k, 120)}" alt="${esc(nameOf(k))}" loading="lazy">`).join("")}</div>` : ""}`
       : `<div class="k">Your dragons</div><h2>Your first egg is waiting</h2><p>Finish the daily goal on Blinky's Friends to hatch an egg into a dragon.</p>`);
     const people = (me.top || []).map((p, i) => `<div class="person"><span class="n">${i + 1}</span><span class="ava">${esc((p.name || p.user)[0] || "?").toUpperCase()}<img src="/api/avatar/${encodeURIComponent(p.user)}" alt="" onerror="this.remove()"></span><span class="wr-who"><b>${esc(p.name)}</b><small>@${esc(p.user)}</small></span><em>${fmt(p.n)}</em></div>`).join("");
     const fans = data.back && data.back.top && data.back.top.length ? `<p class="hint">Signed Keepers who cheered you most: ${data.back.top.map((f) => "@" + esc(f.user)).join(", ")}</p>` : "";
-    const back = data.back ? (data.back.opens ? `<p>Your own posts were opened <b>${fmt(data.back.opens)}</b> times by fellow Keepers this month.</p>${fans}` : `<p>Share a dragon post and Keepers will cheer you back.</p>`)
+    const back = data.back ? (data.back.opens ? `<p>Fellow Keepers opened your own posts ${Number(data.back.opens)} times this month.</p>${fans}` : `<p>Share a dragon post and Keepers will cheer you back.</p>`)
       : `<p class="hint">Sign Blinky's Book of Friends to see who cheered you back.</p>`;
     out.push(people ? `<div class="k">Your Keepers</div><h2>The Keepers you cheered on most</h2><div class="people">${people}</div>${back}`
       : `<div class="k">Your Keepers</div><h2>Your Keepers will show up here</h2><p>The fellow Keepers whose posts you open most this month.</p>${back}`);
     out.push(`<div class="k">The whole hatchery</div><h2>Together in ${esc(mon)}</h2><div class="big" data-n="${hh.opens}">${fmt(hh.opens)}</div><p>opens on dragon posts shared on pdtools</p>
-      <div class="chips"><div class="chip"><b>${fmt(hh.posts)}</b><span>Dragon posts shared</span></div><div class="chip"><b>${fmt(hh.new)}</b><span>New Keepers welcomed</span></div><div class="chip"><b>${fmt(hh.hatches)}</b><span>Eggs hatched</span></div></div>`);
+      <div class="chips"><div class="chip"><b>${fmt(hh.posts)}</b><span>Dragon posts shared</span></div><div class="chip"><b>${fmt(hh.new)}</b><span>Keepers who shared their first post</span></div><div class="chip"><b>${fmt(hh.hatches)}</b><span>Eggs hatched</span></div></div>`);
     out.push(`<div class="k">Your card</div><h2>Share your ${esc(mon)}</h2><img class="card-img" id="card-img" alt="Your Hatchery Wrapped card" hidden>
       <p class="hint" id="card-wait">Painting your card…</p>
       <div class="acts"><a class="btn go" id="share" target="_blank" rel="noopener" href="#">Post on X</a><button class="btn ghost" id="save" type="button">Save the card</button></div>`);
     $("slides").innerHTML = out.map((h, i) => `<section class="slide" data-i="${i}">${h}</section>`).join("");
     slides = [...$("slides").children];
     $("bars").innerHTML = slides.map(() => "<i><b></b></i>").join("");
-    const text = `My ${mon} in the Pocket Dragons hatchery 🐉 ${fmt(me.opens)} posts from fellow Keepers opened${dragons.length ? `, ${dragons.length} ${dragons.length === 1 ? "dragon" : "dragons"} hatched` : ""}${me.streak > 1 ? `, a ${me.streak} day streak` : ""}.`;
+    const text = T(`My ${mon} in the Pocket Dragons hatchery 🐉 ${Number(me.opens)} posts opened, ${dragons.length} dragons hatched, best streak ${Number(me.streak)} days.`);
     $("share").href = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://pdtools.xyz/wrapped")}`;
     $("save").addEventListener("click", save);
     $("loading").hidden = true;
@@ -259,12 +260,12 @@ body { background: #120c26; overflow-x: hidden; }
     if (dr) { const r = 170, cxp = 900, cyp = 300; const hg = x.createRadialGradient(cxp, cyp, 10, cxp, cyp, r * 1.3); hg.addColorStop(0, "rgba(255,214,120,.55)"); hg.addColorStop(1, "rgba(255,214,120,0)");
       x.fillStyle = hg; x.beginPath(); x.arc(cxp, cyp, r * 1.3, 0, 6.283); x.fill(); const s = Math.min(2 * r / dr.width, 2 * r / dr.height); x.drawImage(dr, cxp - dr.width * s / 2, cyp - dr.height * s / 2, dr.width * s, dr.height * s); }
     if (bl) { const h = dr ? 300 : 500, w = bl.width * h / bl.height; x.save(); x.shadowColor = "rgba(0,0,0,.55)"; x.shadowBlur = 40; x.shadowOffsetY = 18; x.drawImage(bl, W - w - (dr ? 30 : 60), H - h - 16, w, h); x.restore(); }
-    K.pill(x, `HATCHERY WRAPPED · ${data.month.toUpperCase()}`, 70, 92, { bg: "#ffcd6e", ink: "#3a1a06" });
+    K.pill(x, `${T("Hatchery Wrapped")} · ${T(data.month)}`.toUpperCase(), 70, 92, { bg: "#ffcd6e", ink: "#3a1a06" });
     const stat = (n, label, X, Y) => { x.textAlign = "left"; x.fillStyle = "#fff7ec"; x.font = '700 92px "Fredoka", sans-serif'; x.fillText(fmt(n), X, Y); x.fillStyle = "#cfc4f0"; x.font = '800 22px "Nunito", sans-serif'; x.fillText(label, X + 4, Y + 34); };
-    stat(me.opens, "posts from Keepers opened", 70, 250);
-    stat(dragons.length, dragons.length === 1 ? "dragon hatched" : "dragons hatched", 70, 400);
-    stat(me.streak, "day best streak", 340, 400);
-    if (me.top && me.top[0]) { x.fillStyle = "#ffcd6e"; x.font = '800 24px "Nunito", sans-serif'; x.fillText(`Cheered on @${me.top[0].user} the most`, 74, 520); }
+    stat(me.opens, T("posts from Keepers opened"), 70, 250);
+    stat(dragons.length, T(dragons.length === 1 ? "dragon hatched" : "dragons hatched"), 70, 400);
+    stat(me.streak, T("day best streak"), 340, 400);
+    if (me.top && me.top[0]) { x.fillStyle = "#ffcd6e"; x.font = '800 24px "Nunito", sans-serif'; x.fillText(T(`Cheered on @${me.top[0].user} the most`), 74, 520); }
     x.fillStyle = "#ffcd6e"; x.font = '800 26px "Nunito", sans-serif'; x.fillText("pdtools.xyz/wrapped", 74, 606);
     K.grain(x, .05);
     return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
