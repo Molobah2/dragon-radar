@@ -61,7 +61,7 @@ self.addEventListener("fetch", (e) => {
   if (url.pathname.startsWith("/preview") || url.pathname.startsWith("/lab")) return;   // v2 preview pages are never kept offline
   if (url.pathname.startsWith("/static/audio/") || req.headers.has("range")) return;
   // share pictures take a few seconds to draw the first time, and the locked v2.1 pages are never kept offline
-  if (/\.(png|jpe?g|webp)$/.test(url.pathname) || /^\/(welcome|creator|circle|dragondle|wrapped|cheers|stickers)(\/|$)/.test(url.pathname)) return;
+  if (/\.(png|jpe?g|webp)$/.test(url.pathname) || /^\/(welcome|creator|circle|dragondle|wrapped|cheers|stickers|canvas)(\/|$)/.test(url.pathname)) return;
   if (req.mode === "navigate") { e.respondWith(page(req, e.preloadResponse)); return; }
   if (url.pathname.startsWith("/static/") && url.searchParams.get("v") === VERSION) { e.respondWith(asset(req)); return; }
 });

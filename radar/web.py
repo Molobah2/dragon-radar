@@ -1631,6 +1631,15 @@ def create_app(cfg: Config | None = None) -> Flask:
         r.headers["Content-Disposition"] = f'inline; filename="pdtools-{name}.png"'
         return r
 
+    # ---------- v2.1 wave 4: the Hatchery canvas, a sky island to decorate (locked like the rest) ----------
+    @app.get("/canvas")
+    @v21_only
+    def canvas_home():
+        from .stickers import PROPS, shelf
+        return render_template("canvas.html", cfg=cfg, shelf=shelf(), props=PROPS,
+                               og_title="Hatchery canvas · PD Tools",
+                               og_desc="Decorate a sky island with Blinky, Pinky, your dragons and more, then save it as a card.")
+
     # ---------- follow directory ----------
     @app.get("/friends/ama")
     def ama_page():

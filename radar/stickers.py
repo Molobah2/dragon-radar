@@ -22,3 +22,14 @@ KEYS = {k for k, *_ in STICKERS}
 
 def shelf() -> list[dict]:
     return [{"key": k, "who": who, "mood": mood, "word": word} for k, who, mood, word in STICKERS]
+
+
+# the extras for the Hatchery canvas: key, label, how tall it starts (share of the island's height)
+PROPS = [
+    ("nest", "Egg nest", .2),
+    ("lantern", "Lantern", .34),
+    ("flowers", "Flowers", .16),
+    ("sign", "Signpost", .3),
+    ("mush", "Mushrooms", .2),
+    ("crystal", "Crystal rock", .18),
+]

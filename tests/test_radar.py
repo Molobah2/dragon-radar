@@ -1628,7 +1628,7 @@ def test_speed_budget(cfg, Session):
         assert size < code_max, f"{path}: scripts and styles {size} bytes"
     assert len(c.get("/static/i18n.js").get_data()) < 4000
     for lang in ("es", "ru", "zh"):
-        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 38_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker, then the help page, then the v2.1 welcome lane and Creator of the week, then Wrapped and Dragondle
+        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 41_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker, then the help page, then the v2.1 welcome lane and Creator of the week, then Wrapped and Dragondle, then Cheers, the sticker shelf and the Hatchery canvas
     page = c.get("/friends").get_data(as_text=True)
     assert "e_background_removal" not in page            # icons are small stored files, not cut out per view
 
@@ -2511,3 +2511,18 @@ def test_sticker_shelf_serves_png_for_every_sticker(cfg, Session):
         assert r.status_code == 200 and r.data[:8] == b"\x89PNG\r\n\x1a\n", name
     for bad in ("nope", "p-wave-w-w", "..%2Fsecret"):
         assert c.get(f"/stickers/{bad}.png").status_code == 404
+
+
+def test_hatchery_canvas_lists_stickers_and_props(cfg, Session):
+    """The canvas is locked, lists every sticker in both kinds and every extra, and all its art files exist."""
+    from radar.stickers import PROPS, STICKERS
+    root = Path(__file__).parent.parent / "radar" / "static" / "v21"
+    for k, *_ in PROPS:
+        assert (root / "props" / f"prop-{k}.webp").exists(), k
+    for f in ("canvas-a.jpg", "canvas-a-s.jpg", "canvas-b.jpg", "canvas-b-s.jpg"):
+        assert (root / f).exists(), f
+    app, c = _v21_client(cfg)
+    assert app.test_client().get("/canvas").status_code == 404
+    html = c.get("/canvas").get_data(as_text=True)
+    assert html.count('data-kind="st"') == 2 * len(STICKERS) and html.count('data-kind="pr"') == len(PROPS)
+    assert "Jon Wynn" not in html.split("<footer")[0]           # the card and the island carry only the pdtools stamp
