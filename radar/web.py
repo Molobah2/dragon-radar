@@ -1370,14 +1370,40 @@ def create_app(cfg: Config | None = None) -> Flask:
                                og_title=f"Welcome to the hatchery, @{person['user']}",
                                og_desc=f"@{person['user']} just joined the Ancient Hatchery. Say hello on PD Tools.")
 
+    def _joined(person):
+        at = datetime.fromisoformat(person["at"].rstrip("Z"))
+        return f"{at.strftime('%b')} {at.day}, {at.year}"
+
     @app.get("/welcome/<handle>.png")
     @v21_only
     def welcome_image(handle):
-        from .v21 import welcome_card, welcome_person
+        from .welcome_cards import card
         person = welcome_one(handle)
         if not person:
             abort(404)
-        return card_png("w:" + person["user"].lower(), lambda: welcome_card(person, avatar_image(person["user"])))
+        user = person["user"]
+        return card_png("w2:" + user.lower(), lambda: card(avatar_image(user), user, person.get("name") or user, _joined(person), small=True))
+
+    @app.get("/welcome/<handle>/card.jpg")
+    @v21_only
+    def welcome_keepsake(handle):
+        """The welcome card a Keeper saves and posts with their hello, in the relic card frame.
+        "Welcomed by" is only ever the signed Keeper behind this browser."""
+        from .cheers import sender
+        from .welcome_cards import card
+        person = welcome_one(handle)
+        if not person:
+            abort(404)
+        user = person["user"]
+        by = None
+        vid = (request.args.get("vid") or "")[:32]
+        if vid:
+            with Session() as s:
+                dev = sender(s, vid)
+                if dev and dev.key != user.lower():
+                    by = dev.username
+        key = f"wk2:{user.lower()}:{(by or '').lower()}"
+        return card_png(key, lambda: card(avatar_image(user), user, person.get("name") or user, _joined(person), by=by))
 
     @app.get("/api/welcome")
     @v21_only

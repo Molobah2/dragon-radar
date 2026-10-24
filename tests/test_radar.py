@@ -2307,6 +2307,8 @@ def test_welcome_lane_shows_first_posts_waiting_first(cfg, Session, monkeypatch)
             Post(id="711", author_id="oc", author_username="OldCard", text=card, created_at=now - timedelta(hours=3)),
             Post(id="712", author_id="lj", author_username="LateJoiner", text="been here ages", created_at=now - timedelta(days=12)),
             Post(id="713", author_id="lj", author_username="LateJoiner", text=card, created_at=now - timedelta(hours=8)),
+            Post(id="714", author_id="gm", author_username="Gamer", text="Ember Chamber, night 18. Fire night. My best game tonight reached dawn, 340 Keeper of the Ancient Hatchery.", created_at=now - timedelta(hours=2)),
+            Post(id="715", author_id="gm2", author_username="Gamer2", text="Come and play tonight Night 4. Fire night. Blinky Keeper of the Ancient Hatchery.", created_at=now - timedelta(hours=2)),
             Post(id="706", author_id="tm", author_username="TeamPerson", text=card, created_at=now, is_team=True),
             Post(id="707", author_id="bl", author_username="Blocked", text=card, created_at=now),
             Post(id="708", author_id="hd", author_username="Hidden", text=card, created_at=now, hidden=True),
@@ -2319,7 +2321,7 @@ def test_welcome_lane_shows_first_posts_waiting_first(cfg, Session, monkeypatch)
     assert newbie["id"] == "701" and newbie["waited_h"] == 5 and newbie["opens"] == 0
     app, c = _v21_client(cfg)
     html = c.get("/welcome").get_data(as_text=True)
-    assert "Be the first to" in html and "Newbie" in html and "Regular" not in html and "LongFan" not in html and "pocketdragons.io/creator-kit" in html
+    assert "Be the first to" in html and "Newbie" in html and "Regular" not in html and "LongFan" not in html and "Gamer" not in html and "pocketdragons.io/creator-kit" in html
     r = c.get("/welcome/newbie"); assert r.status_code == 302 and r.headers["Location"].endswith("/welcome/Newbie")
     page = c.get("/welcome/Newbie").get_data(as_text=True)
     assert "Welcome, <span>@Newbie" in page and "/welcome/Newbie.png" in page
@@ -2635,3 +2637,31 @@ def test_audit_fixes_server(cfg, Session):
     assert stranger.get("/api/avatar/bad%20name").status_code == 404
     r = stranger.post("/api/feedback", data='{"rating":1e999}', content_type="application/json")
     assert r.status_code in (400, 429)
+
+
+def test_welcome_keepsake_cards(cfg, Session, monkeypatch):
+    """A Keeper who just joined gets a relic-style welcome card as a real JPEG (and a small one for link previews),
+    only signed Keepers are named as the welcomer (never a name typed into the link), and strangers get 404."""
+    import requests as rq
+    from radar.db import FriendDevice
+    from PIL import Image
+    import io
+    monkeypatch.setattr(rq, "get", lambda *a, **k: (_ for _ in ()).throw(rq.RequestException("offline")))
+    now = utcnow()
+    with Session() as s:
+        s.add(Post(id="801", author_id="k1", author_username="FreshOne", text="The incubator said PANDA. Keeper of the Ancient Hatchery.", created_at=now - timedelta(hours=2)))
+        s.add(FriendDevice(vid="c" * 32, key="helper", username="Helper", code="z", confirmed=True))
+        s.commit()
+    app, c = _v21_client(cfg)
+    r = c.get("/welcome/FreshOne/card.jpg?vid=" + "c" * 32)
+    assert r.status_code == 200 and r.data[:2] == b"\xff\xd8"
+    assert Image.open(io.BytesIO(r.data)).size == (2400, 1350)
+    r = c.get("/welcome/FreshOne.png")
+    assert r.status_code == 200 and Image.open(io.BytesIO(r.data)).size == (1200, 675)
+    assert c.get("/welcome/FreshOne/card/holo.jpg").status_code == 404
+    assert c.get("/welcome/Nobody/card.jpg").status_code == 404
+    from radar import welcome_cards
+    seen = {}
+    monkeypatch.setattr(welcome_cards, "card", lambda av, user, name, joined, by=None, small=False: seen.setdefault("by", by) and b"\xff\xd8x" or b"\xff\xd8x")
+    c.get("/welcome/FreshOne/card.jpg?vid=" + "d" * 32 + "&by=Elon")
+    assert seen.get("by") is None                         # an unsigned browser is never named, whatever the link says

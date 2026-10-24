@@ -25,7 +25,7 @@ PICKS_KEY = "v21:creators"
 
 
 # ---------- welcome lane ----------
-JOIN_CARD = "keeper of the ancient hatchery"     # the line on the official card every new Keeper shares when they join
+JOIN_CARD = "keeper of the ancient hatchery"     # the line on the official egg card every new Keeper shares when they join
 
 
 def welcome_lane(s, cfg, now: datetime, hours: int = WELCOME_HOURS) -> list[dict]:
@@ -35,7 +35,10 @@ def welcome_lane(s, cfg, now: datetime, hours: int = WELCOME_HOURS) -> list[dict
     since = now - timedelta(hours=hours)
     blocked = set(s.scalars(select(BlockedAuthor.author_id)))
     firsts = (select(Post.author_id, func.min(Post.created_at).label("first"))
-              .where(Post.is_team.is_(False), Post.text.ilike(f"%{JOIN_CARD}%")).group_by(Post.author_id).subquery())
+              .where(Post.is_team.is_(False), Post.text.ilike(f"%{JOIN_CARD}%"),
+                     # the same line ends every Ember Chamber score share too, so game nights are left out
+                     ~Post.text.ilike("%chamber%"), ~Post.text.ilike("% night.%"))
+              .group_by(Post.author_id).subquery())
     rows = s.execute(select(Post).join(firsts, (Post.author_id == firsts.c.author_id) & (Post.created_at == firsts.c.first))
                      .where(firsts.c.first >= since, Post.hidden.is_(False), Post.is_team.is_(False))).scalars().all()
     team = team_handles(s, cfg)
@@ -229,31 +232,6 @@ def _gradient(size, top_y, color=(18, 8, 4), alpha=235):
 def _png(img) -> bytes:
     """Share cards are painted scenes, so a high quality JPEG is a fifth of the size of a PNG and looks the same."""
     buf = io.BytesIO(); img.convert("RGB").save(buf, "JPEG", quality=90, optimize=True, progressive=True); return buf.getvalue()
-
-
-def welcome_card(person: dict, avatar) -> bytes:
-    """The hatchery gate at sunrise, the new Keeper's picture glowing in the open door, Blinky with his lantern."""
-    from PIL import Image, ImageDraw
-    W, H = 1200, 675
-    bg = _cover(ART / "welcome-bg.jpg", W, H, .35)
-    cx, cy, size = 600, 300, 196
-    bg.alpha_composite(_glow((W, H), (cx - 190, cy - 190, cx + 190, cy + 190), (255, 214, 140), 60, 230))
-    bg.alpha_composite(_gradient((W, H), 360))
-    ring = Image.new("RGBA", (size + 20, size + 20), (0, 0, 0, 0)); d = ImageDraw.Draw(ring)
-    d.ellipse((0, 0, size + 19, size + 19), fill=(255, 205, 110, 255)); d.ellipse((5, 5, size + 14, size + 14), fill=(255, 240, 200, 255))
-    ring.alpha_composite(_disc(avatar, size, person.get("name") or person.get("user")), (10, 10))
-    bg.alpha_composite(ring, (cx - ring.width // 2, cy - ring.height // 2))
-    blinky = Image.open(ART / "blinky-lantern.webp").convert("RGBA")
-    bh = 400; blinky = blinky.resize((round(blinky.width * bh / blinky.height), bh), Image.LANCZOS)
-    bg.alpha_composite(_glow((W, H), (40, 420, 380, 700), (0, 0, 0), 30, 150))
-    bg.alpha_composite(blinky, (34, H - bh - 6))
-    d = ImageDraw.Draw(bg)
-    _shadow_text(bg, (cx, 482), "Welcome to the hatchery", _font(True, 58), (255, 247, 232))
-    handle = "@" + person["user"]
-    _shadow_text(bg, (cx, 548), handle, _fit(d, handle, True, 50, 30, 520), (255, 205, 110))
-    _shadow_text(bg, (cx, 606), "Just joined the Ancient Hatchery", _font(False, 26), (255, 232, 205), blur=4)
-    _shadow_text(bg, (W - 34, H - 30), "pdtools.xyz", _font(True, 24), (255, 240, 222), anchor="rm", blur=3)
-    return _png(bg)
 
 
 def creator_card(pick: dict, avatar, week_label: str) -> bytes:

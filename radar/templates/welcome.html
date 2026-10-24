@@ -113,6 +113,21 @@ body { background: #1d0e09; }
 .more { display: flex; justify-content: center; margin-top: 18px; }
 .how { margin: 26px 0 0; padding: 18px 20px; border-radius: 22px; background: var(--glass); border: 1px solid var(--line); color: var(--mute); font-size: 14px; }
 .how b { color: var(--soft); }
+/* the welcome keepsake: a relic-style card to save and post with the hello */
+.kc { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 14px; background: rgba(12, 6, 4, .78); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); overflow-y: auto; }
+.kc[hidden] { display: none; }
+.kc-box { position: relative; width: min(560px, 100%); padding: 18px 16px 16px; border-radius: 26px; text-align: center; display: grid; gap: 12px;
+  background: linear-gradient(180deg, rgba(58, 32, 18, .97), rgba(30, 16, 10, .98)); border: 1px solid rgba(255, 220, 170, .22); box-shadow: 0 40px 80px -30px #000; animation: kcIn .4s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes kcIn { from { transform: scale(.9); opacity: 0; } }
+.kc-box h2 { margin: 0; padding: 0 44px; font: 700 22px/1.15 var(--disp); overflow-wrap: anywhere; }
+.kc-pic { position: relative; aspect-ratio: 16 / 9; width: 100%; justify-self: center; border-radius: 14px; overflow: hidden; background: rgba(255, 255, 255, .06);
+  box-shadow: 0 24px 50px -24px #000; }
+.kc-pic img { width: 100%; height: 100%; object-fit: cover; display: block; -webkit-touch-callout: default; transition: opacity .3s; }
+.kc-pic img.loading { opacity: .25; }
+.kc-pic .spin { position: absolute; inset: 0; display: grid; place-items: center; color: var(--soft); font-weight: 800; font-size: 14px; pointer-events: none; }
+.kc-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.kc-tip { margin: 0; color: var(--mute); font-size: 13.5px; }
+.kc-x { position: absolute; top: 10px; right: 10px; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .2); background: rgba(0, 0, 0, .3); color: var(--ink); font-size: 22px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -172,11 +187,24 @@ body { background: #1d0e09; }
 </main>
 
 {% include "_v21_foot.html" %}
+<div class="kc" id="kc" hidden role="dialog" aria-modal="true" aria-labelledby="kc-t">
+  <div class="kc-box">
+    <button class="kc-x" id="kc-x" type="button" aria-label="Close">&times;</button>
+    <h2 id="kc-t">A welcome card for <span class="wl-who" id="kc-who"></span></h2>
+    <div class="kc-pic"><img id="kc-img" alt=""><span class="spin" id="kc-spin">Painting the card…</span></div>
+    <div class="kc-acts">
+      <button class="btn go" id="kc-save" type="button">Save card</button>
+      <a class="btn ghost" id="kc-post" href="#" target="_blank" rel="noopener">Post on X</a>
+    </div>
+    <p class="kc-tip">Save the card, then add it to your post on X.</p>
+  </div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
 <script type="application/json" id="lane-data">{{ lane|tojson }}</script>
 <script>window.WL_FOCUS = {{ (focus.user if focus else "")|tojson }};</script>
 <script src="{{ asset('i18n.js') }}"></script>
+<script src="{{ asset('v21/save.js') }}"></script>
 <script>
 (() => {
   "use strict";
@@ -244,7 +272,7 @@ body { background: #1d0e09; }
   const fresh = new Set();   // welcomed on this visit: they stay in view so the share button is there
   function ago(h) { return h < 1 ? "just now" : h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`; }
   function shareUrl(p) {
-    const text = `Welcome to the Pocket Dragons hatchery, @${p.user}! 🐉 Glad you are here.`;
+    const text = `Welcome to the Ancient Hatchery, @${p.user}! 🐉 Blinky and Pinky made you a card. So glad you are here.`;
     return `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://pdtools.xyz/welcome/" + p.user)}`;
   }
   function card(p, i) {
@@ -260,7 +288,7 @@ body { background: #1d0e09; }
       <div class="act">
         <a class="btn go hello" href="https://x.com/${encodeURIComponent(p.user)}/status/${encodeURIComponent(p.id)}" target="_blank" rel="noopener" data-open="${esc(p.id)}">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3c-1 2.2-3 3.4-3 6a3 3 0 0 0 6 0c0-.8-.2-1.5-.6-2.1.9.3 2.6 1.6 2.6 4.6a5 5 0 0 1-10 0C7 7.6 10.4 5.3 12 3z"/></svg>Say hello on X</a>
-        <a class="btn ghost done" href="${shareUrl(p)}" target="_blank" rel="noopener">
+        <a class="btn ghost done" href="${shareUrl(p)}" target="_blank" rel="noopener" data-card="${esc(p.id)}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>Share a welcome card</a>
       </div>
       <span class="stamp">Welcomed</span>
@@ -288,6 +316,40 @@ body { background: #1d0e09; }
   $("more").addEventListener("click", () => { limit += 24; render(); });
   if (focus) { show = "all"; for (const x of document.querySelectorAll(".tab")) x.setAttribute("aria-selected", x.dataset.show === "all" ? "true" : "false"); }
   render();
+
+  /* the welcome keepsake: a relic-style card, painted on the server with "welcomed by" for signed Keepers */
+  let kp = null, kcOpener = null;
+  function myVid() { try { const v = localStorage.getItem("pd:vid") || ""; return /^[a-f0-9]{32}$/.test(v) ? v : ""; } catch (e) { return ""; } }
+  const kcUrl = () => `/welcome/${encodeURIComponent(kp.user)}/card.jpg${myVid() ? "?vid=" + myVid() : ""}`;
+  function kcShow() {
+    const im = $("kc-img"); im.classList.add("loading"); $("kc-spin").hidden = false;
+    im.onload = () => { im.classList.remove("loading"); $("kc-spin").hidden = true; };
+    im.onerror = () => { $("kc-spin").textContent = T("Could not make the card. Try again."); };
+    im.alt = `Welcome card for @${kp.user}`;
+    im.src = kcUrl();
+    $("kc-post").href = shareUrl(kp);
+  }
+  function kcOpen(p) { kp = p; kcOpener = document.activeElement; $("kc-who").textContent = "@" + p.user; $("kc-spin").textContent = T("Painting the card…"); kcShow(); $("kc").hidden = false; document.body.style.overflow = "hidden"; $("kc-x").focus(); }
+  function kcClose() { if ($("kc").hidden) return; $("kc").hidden = true; document.body.style.overflow = ""; if (kcOpener && kcOpener.focus) kcOpener.focus(); }
+  const T = (t) => (window.pdT ? window.pdT(t) : t);
+  $("kc-x").addEventListener("click", kcClose);
+  $("kc").addEventListener("click", (e) => { if (e.target === $("kc")) kcClose(); });
+  addEventListener("keydown", (e) => { if (e.key === "Escape") kcClose(); });
+  let kcBusy = false;
+  $("kc-save").addEventListener("click", async () => {
+    if (kcBusy || !kp) return; kcBusy = true;
+    try {
+      const r = await fetch(kcUrl()); if (!r.ok) throw new Error("card");
+      const how = await window.pdSave(await r.blob(), `welcome-${kp.user}.jpg`);
+      if (how === "saved" || how === "shared") toast(T("Saved. Add it to your post on X."));
+    } catch (e) { toast(T("Could not make the card. Try again.")); }
+    kcBusy = false;
+  });
+  $("grid").addEventListener("click", (e) => {
+    const a = e.target.closest("[data-card]"); if (!a) return;
+    const p = lane.find((x) => x.id === a.dataset.card); if (!p) return;
+    e.preventDefault(); kcOpen(p);
+  });
 
   /* an open counts once the visitor spends a few seconds on X and comes back, the same rule as the feed */
   const DWELL = 8000, AWAY = "pd:wl-away";
