@@ -85,6 +85,18 @@ class KeeperSave(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class Cheer(Base):
+    """A thank you lantern one signed Keeper sends another inside pdtools (v2.1). One per pair per week,
+    with one of the kind preset lines only (no free text, nothing to moderate). Nothing is posted to X."""
+    __tablename__ = "cheers"
+    week: Mapped[datetime] = mapped_column(Date, primary_key=True)          # Monday of the week (UTC)
+    from_key: Mapped[str] = mapped_column(String(32), primary_key=True)     # lower-case handle of a signed Keeper
+    to_key: Mapped[str] = mapped_column(String(32), primary_key=True, index=True)
+    to_user: Mapped[str] = mapped_column(String(32), default="")
+    preset: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class DlePlay(Base):
     """One finished Dragondle per browser per day (score 0 to 5), so the page can say how the hatchery did today.
     Keyed by the browser's own random number, like the other anonymous counts."""

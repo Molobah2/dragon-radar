@@ -1487,6 +1487,118 @@ def create_app(cfg: Config | None = None) -> Flask:
         week = [today_set(today + timedelta(days=i)) for i in range(7)]
         return render_template("dragondle_lab.html", cfg=cfg, bank=BANK, week=week)
 
+    # ---------- v2.1 wave 3: Cheers, thank you lanterns between signed Keepers (locked like the rest) ----------
+    def cheers_week_label(week):
+        return f"Week of {week.strftime('%b')} {week.day}"
+
+    @app.get("/cheers")
+    @v21_only
+    def cheers_home():
+        from .cheers import PRESETS
+        return render_template("cheers.html", cfg=cfg, presets=PRESETS, person=None,
+                               og_title="Cheers · thank a fellow Keeper on PD Tools",
+                               og_desc="Send a fellow Keeper a thank you lantern. Signed Keepers only, kind words only, nothing posted for you.")
+
+    @app.get("/api/cheers/me")
+    @v21_only
+    def api_cheers_me():
+        from .cheers import DAILY, known_author, sender, week_for, week_of
+        vid = (request.args.get("vid") or "")[:32]
+        now = utcnow()
+        with Session() as s:
+            dev = sender(s, vid)
+            if not dev:
+                return jsonify({"ok": True, "signed": False})
+            info = week_for(s, dev.key, week_of(now.date()))
+            from .db import Cheer
+            start = datetime(now.year, now.month, now.day)
+            used = s.scalar(select(func.count()).select_from(Cheer).where(Cheer.from_key == dev.key, Cheer.created_at >= start)) or 0
+            page = known_author(s, cfg, dev.username) is not None       # only Keepers with a dragon post have a public card
+        return jsonify({"ok": True, "signed": True, "user": dev.username, "left": max(0, DAILY - used), "card": page, **info})
+
+    @app.get("/api/cheers/find")
+    @v21_only
+    def api_cheers_find():
+        from .circle import team_handles
+        q = "".join(ch for ch in (request.args.get("q") or "") if ch.isalnum() or ch == "_")[:15].lower()
+        if not q:
+            return jsonify({"ok": True, "people": []})
+        with Session() as s:
+            team = team_handles(s, cfg)
+            rows = s.execute(select(Post.author_username, func.max(Post.author_name), func.max(Post.created_at).label("last"))
+                             .where(func.lower(Post.author_username).like(q.replace("_", "\\_") + "%", escape="\\"), Post.hidden.is_(False), Post.is_team.is_(False),
+                                    Post.author_id.not_in(select(BlockedAuthor.author_id)))
+                             .group_by(Post.author_username).order_by(func.max(Post.created_at).desc()).limit(12)).all()
+        people, seen = [], set()
+        for u, n, _ in rows:                       # newest spelling first, one row per person whatever the capitals
+            if u and u.lower() not in team and u.lower() not in seen:
+                seen.add(u.lower()); people.append({"user": u, "name": (n or u)[:60]})
+        people = people[:8]
+        return jsonify({"ok": True, "people": people})
+
+    @app.post("/api/cheers")
+    @v21_only
+    def api_cheers_send():
+        from .cheers import send
+        try:
+            body = _body(400)
+            vid, to, preset = str(body.get("vid", ""))[:32], str(body.get("to", ""))[:20], body.get("preset", -1)
+        except (ValueError, TypeError, AttributeError):
+            abort(400)
+        if not isinstance(preset, int) or isinstance(preset, bool):
+            abort(400)
+        if _too_many("cheer:" + client_ip(), limit=40, window=3600):
+            abort(429)
+        with Session() as s:
+            out = send(s, cfg, vid, to, preset, utcnow())
+            if out.get("ok"):
+                try:
+                    s.commit()
+                except IntegrityError:             # the same lantern sent twice at once (two tabs, a retry)
+                    s.rollback()
+                    out = {"ok": False, "why": "already"}
+        return jsonify(out), (200 if out.get("ok") else 400)
+
+    def cheers_person(handle):
+        from .cheers import known_author, week_for, week_of
+        with Session() as s:
+            user = known_author(s, cfg, handle)
+            if not user:
+                return None, None
+            week = week_of(utcnow().date())
+            return user, week_for(s, user.lower(), week)
+
+    @app.get("/cheers/<handle>")
+    @v21_only
+    def cheers_page(handle):
+        from .cheers import PRESETS
+        user, info = cheers_person(handle)
+        if not user:
+            return redirect(url_for("cheers_home"))
+        if user != handle:
+            return redirect(url_for("cheers_page", handle=user))
+        stamp = f"{info['week']}-{info['count']}"
+        return render_template("cheers.html", cfg=cfg, presets=PRESETS, person={"user": user, **info, "label": cheers_week_label(date.fromisoformat(info["week"]))},
+                               og_img=f"https://pdtools.xyz/cheers/{user}.png?v={stamp}",
+                               og_alt=f"@{user} was cheered by {info['count']} Keepers this week on PD Tools",
+                               og_title=f"@{user} was cheered by {info['count']} {'Keeper' if info['count'] == 1 else 'Keepers'} this week",
+                               og_desc="Thank you lanterns from fellow Keepers on PD Tools. Send one to someone who supports you.")
+
+    @app.get("/cheers/<handle>.png")
+    @v21_only
+    def cheers_image(handle):
+        from .cheers import card
+        user, info = cheers_person(handle)
+        if not user:
+            abort(404)
+        key = f"ch:{user.lower()}:{info['week']}:{info['count']}"
+        def make():
+            senders = []
+            for f in info["from"][:6]:
+                senders.append((f["user"], avatar_image(f["user"])))
+            return card(user, info, avatar_image(user), senders, cheers_week_label(date.fromisoformat(info["week"])))
+        return card_png(key, make)
+
     # ---------- follow directory ----------
     @app.get("/friends/ama")
     def ama_page():

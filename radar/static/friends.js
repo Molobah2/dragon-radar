@@ -143,6 +143,7 @@
   function close() { wrap.classList.remove("open"); (document.querySelector(".sheet-wrap.open") || document.body.classList.remove("sheet-open")); setTimeout(() => { if (!wrap.classList.contains("open")) wrap.hidden = true; }, 250); }
   document.querySelectorAll("[data-book]").forEach((b) => b.addEventListener("click", open));
   window.pdOpenBook = open;
+  if (location.hash === "#book") setTimeout(open, 300);   // links from other pages (Cheers) open the book straight away
   $("book-close").addEventListener("click", close);
   wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
 

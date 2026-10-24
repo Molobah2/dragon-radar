@@ -2451,3 +2451,46 @@ def test_wrapped_tells_a_keepers_month(cfg, Session):
     assert st["hatchery"]["opens"] == 5 and st["hatchery"]["posts"] == 3 and st["so_far"] and st["month"] == "October"
     app, c = _v21_client(cfg)
     assert c.get("/api/wrapped?vid=nope").status_code == 400 and c.get("/api/wrapped?vid=" + me + "&m=2031-01").status_code == 400
+
+
+def test_cheers_signed_keepers_only_once_a_week(cfg, Session, monkeypatch):
+    """Only signed Keepers send, only to Keepers who shared a dragon post, never to themselves or the team,
+    once per Keeper per week, kind preset words only. The card and the public page follow."""
+    import requests as rq
+    from radar.db import FriendDevice
+    monkeypatch.setattr(rq, "get", lambda *a, **k: (_ for _ in ()).throw(rq.RequestException("offline")))
+    now = utcnow()
+    me, anon = "a" * 32, "c" * 32
+    with Session() as s:
+        s.add_all([
+            Post(id="1001", author_id="o", author_username="Ola", text="dragon", created_at=now),
+            Post(id="1002", author_id="j", author_username="Jojo", text="mine", created_at=now),
+            Post(id="1003", author_id="t", author_username="TeamPerson", text="team", created_at=now, is_team=True),
+            FriendDevice(vid=me, key="jojo", username="Jojo", code="x", confirmed=True),
+        ])
+        s.commit()
+    app, c = _v21_client(cfg)
+    stranger = app.test_client()
+    assert stranger.get("/cheers").status_code == 404 and stranger.post("/api/cheers", json={}).status_code == 404
+    post = lambda body: c.post("/api/cheers", data=json.dumps(body), content_type="text/plain")
+    assert c.get("/api/cheers/me?vid=" + anon).get_json()["signed"] is False
+    assert post({"vid": anon, "to": "Ola", "preset": 0}).get_json()["why"] == "unsigned"
+    assert post({"vid": me, "to": "Nobody", "preset": 0}).get_json()["why"] == "unknown"
+    assert post({"vid": me, "to": "jojo", "preset": 0}).get_json()["why"] == "self"
+    assert post({"vid": me, "to": "TeamPerson", "preset": 0}).get_json()["why"] == "unknown"
+    assert post({"vid": me, "to": "ola", "preset": 99}).get_json()["why"] == "preset"
+    r = post({"vid": me, "to": "ola", "preset": 1}).get_json()
+    assert r["ok"] and r["to"] == "Ola"
+    assert post({"vid": me, "to": "Ola", "preset": 2}).get_json()["why"] == "already"
+    mine = c.get("/api/cheers/me?vid=" + me).get_json()
+    assert mine["signed"] and mine["sent"] == [{"user": "Ola", "line": "Your art made my day"}] and mine["left"] == 9
+    assert c.get("/api/cheers/find?q=ol").get_json()["people"][0]["user"] == "Ola"
+    assert "TeamPerson" not in str(c.get("/api/cheers/find?q=team").get_json())
+    page = c.get("/cheers/ola"); assert page.status_code == 302 and page.headers["Location"].endswith("/cheers/Ola")
+    html = c.get("/cheers/Ola").get_data(as_text=True)
+    assert "@Jojo" in html and "Your art made my day" in html and "/cheers/Ola.png?v=" in html
+    png = c.get("/cheers/Ola.png"); assert png.status_code == 200 and png.data[:2] == b"\xff\xd8"
+    assert c.post("/api/cheers", data='{"vid": "%s", "to": "Ola", "preset": 1e999}' % me, content_type="text/plain").status_code == 400
+    assert c.post("/api/cheers", data=json.dumps({"vid": me, "to": "Ola", "preset": True}), content_type="text/plain").status_code == 400
+    assert c.get("/api/cheers/find?q=o_").get_json()["people"] == []          # _ is a letter here, not a wildcard
+    assert mine["card"] is True
