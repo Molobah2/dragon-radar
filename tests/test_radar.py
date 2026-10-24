@@ -2582,3 +2582,24 @@ def test_new_tools_row_shows_only_when_v21_is_open(cfg, Session):
     open_c = create_app(cfg).test_client()
     assert 'id="new-tools"' in open_c.get("/").get_data(as_text=True)
     assert 'id="side-new-btn"' in open_c.get("/friends").get_data(as_text=True)
+
+
+def test_dragondle_bank_is_translated_item_for_item(cfg, Session):
+    """Every site language has all 60 questions, with the right answer staying the right answer after the
+    shuffle, and no dashes in the translated text."""
+    from datetime import date, timedelta
+    from radar.dragondle import BANK, _translations, today_set
+    tr = _translations()
+    assert set(tr) == {"es", "fr", "pt", "tr", "ru", "vi", "id", "ko", "zh"}
+    for lang, rows in tr.items():
+        assert len(rows) == len(BANK), lang
+        for r in rows:
+            assert len(r["w"]) == 3 and len({r["a"], *r["w"]}) == 4, (lang, r["q"])
+            assert not any(d in " ".join([r["q"], r["a"], r["why"], *r["w"]]) for d in ("—", "–", " - ")), (lang, r["q"])
+    for d in range(14):
+        game = today_set(date(2026, 10, 24) + timedelta(days=d))
+        for q in game["qs"]:
+            k = next(i for i, e in enumerate(BANK) if e["q"] == q["q"])
+            assert q["opts"][q["a"]] == BANK[k]["a"]
+            for lang, t in q["tr"].items():
+                assert t["opts"][q["a"]] == tr[lang][k]["a"] and sorted(t["opts"]) == sorted([tr[lang][k]["a"], *tr[lang][k]["w"]])

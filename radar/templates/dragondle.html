@@ -218,13 +218,15 @@ body { background: #1c120a; }
   let mine = { ...(plainObj(plays[G.n]) ? plays[G.n] : {}), marks: marksOf(plays[G.n]) };
   const pips = [...document.querySelectorAll(".pip")];
   function paintPips() { pips.forEach((p, i) => { p.className = "pip" + (mine.marks[i] === 1 ? " ok" : mine.marks[i] === 0 ? " no" : i === mine.marks.length ? " now" : ""); }); }
+  // the question in the Keeper's language when the bank has it (the site language is picked before this runs)
+  const loc = (q) => (q.tr && window.radarLang && q.tr[window.radarLang]) || q;
   function show(i) {
-    const q = G.qs[i];
+    const q = G.qs[i], t = loc(q);
     $("cat").textContent = CAT[q.cat] || "";
-    $("q").textContent = q.q;
+    $("q").textContent = t.q;
     $("why").className = "why"; $("why").textContent = ""; $("next").classList.remove("on");
     $("opts").innerHTML = "";
-    q.opts.forEach((o, j) => {
+    t.opts.forEach((o, j) => {
       const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.textContent = o;
       b.addEventListener("click", () => answer(i, j)); $("opts").append(b);
     });
@@ -234,7 +236,7 @@ body { background: #1c120a; }
     const q = G.qs[i], btns = [...$("opts").children], ok = j === q.a;
     btns.forEach((b, k) => { b.disabled = true; if (k === q.a) b.classList.add("right"); else if (k === j) b.classList.add("wrong"); else b.classList.add("dim"); });
     mine.marks[i] = ok ? 1 : 0; keep();
-    const w = $("why"); w.innerHTML = ""; const tag = document.createElement("b"); tag.textContent = ok ? "Correct. " : "Not quite. "; w.append(tag, Object.assign(document.createElement("span"), { className: "dle-q", textContent: q.why })); w.classList.add("on");
+    const w = $("why"); w.innerHTML = ""; const tag = document.createElement("b"); tag.textContent = ok ? "Correct. " : "Not quite. "; w.append(tag, Object.assign(document.createElement("span"), { className: "dle-q", textContent: loc(q).why })); w.classList.add("on");
     if (ok) { const p = $("pinky"); p.classList.remove("cheer"); void p.offsetWidth; p.classList.add("cheer"); }
     paintPips();
     const n = $("next"); n.textContent = i === G.qs.length - 1 ? "See my result" : "Next question"; n.classList.add("on"); n.focus({ preventScroll: true });
@@ -314,7 +316,7 @@ body { background: #1c120a; }
     c.toBlob((b) => { if (!b) return; const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `dragondle-${G.n}.png`; a.click(); toast("Card saved. Add it to your post on X."); }, "image/png");
   });
 
-  if (window.radarLang && window.radarLang !== "en") $("en-note").hidden = false;
+  if (window.radarLang && window.radarLang !== "en" && !G.qs.every((q) => q.tr && q.tr[window.radarLang])) $("en-note").hidden = false;
   if (mine.marks.length >= G.qs.length) finish(); else show(mine.marks.length);
 })();
 </script>

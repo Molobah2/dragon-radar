@@ -176,6 +176,18 @@ def _cycle(c: int) -> tuple:
     return tuple(order)
 
 
+@lru_cache(maxsize=1)
+def _translations() -> dict:
+    """The bank in the other 9 site languages, item for item in BANK order (radar/dragondle_tr.json)."""
+    import json
+    from pathlib import Path
+    try:
+        data = json.loads((Path(__file__).parent / "dragondle_tr.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {lang: rows for lang, rows in data.items() if isinstance(rows, list) and len(rows) == len(BANK)}
+
+
 def today_set(day: date) -> dict:
     """The five questions for a day, the same for everyone. The bank is a multiple of five, so every pass
     through it lines up with whole days and no question comes back until the whole bank has been asked."""
@@ -183,10 +195,17 @@ def today_set(day: date) -> dict:
     out = []
     for j in range(PER_DAY):
         pos = max(0, n - 1) * PER_DAY + j
-        e = BANK[_cycle(pos // len(BANK))[pos % len(BANK)]]
-        opts = [e["a"]] + list(e["w"])
-        random.Random(f"dragondle-{n}-{j}").shuffle(opts)
-        out.append({"q": e["q"], "opts": opts, "a": opts.index(e["a"]), "why": e["why"], "cat": e["cat"]})
+        k = _cycle(pos // len(BANK))[pos % len(BANK)]
+        e = BANK[k]
+        order = list(range(4))                       # 0 is the answer, 1 to 3 the wrong choices
+        random.Random(f"dragondle-{n}-{j}").shuffle(order)
+        en = [e["a"]] + list(e["w"])
+        tr = {}
+        for lang, rows in _translations().items():
+            t = rows[k]
+            words = [t["a"]] + list(t["w"])
+            tr[lang] = {"q": t["q"], "opts": [words[i] for i in order], "why": t["why"]}
+        out.append({"q": e["q"], "opts": [en[i] for i in order], "a": order.index(0), "why": e["why"], "cat": e["cat"], "tr": tr})
     return {"n": n, "day": day.isoformat(), "qs": out}
 
 
