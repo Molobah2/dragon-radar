@@ -127,12 +127,15 @@ def create_app(cfg: Config | None = None) -> Flask:
     def site_songs():
         return [{**s, "src": url_for("static", filename=s["src"], v=version)} for s in playlist]
 
+    from .v21 import TOOLS as V21_TOOLS
+
     @app.context_processor
     def _assets():
         return {"asset": lambda filename: url_for("static", filename=filename, v=version), "asset_version": version,
                 "site_songs": site_songs,
                 "site_credits": [{"track": x["title"], "by": x["by"], "x": x.get("x", "")} for x in playlist],
-                "v2": getattr(g, "v2", False), "circle_open": getattr(g, "circle", False), "v2_private": getattr(g, "v2", False) and not cfg.v2_public}
+                "v2": getattr(g, "v2", False), "circle_open": getattr(g, "circle", False), "v2_private": getattr(g, "v2", False) and not cfg.v2_public,
+                "v21_open": cfg.v21_public or getattr(g, "circle", False), "v21_tools": V21_TOOLS}
 
     # v2 tools in progress: add {"name", "url", "note"} here as each one is built
     LAB_TOOLS: list[dict] = [
@@ -1260,7 +1263,14 @@ def create_app(cfg: Config | None = None) -> Flask:
         return jsonify(data), (200 if data.get("ok") else 400)
 
     # ---------- v2.1 wave 1: welcome lane and Creator of the week (locked like the Circle) ----------
-    v21_only = circle_only
+    def v21_only(view):
+        """v2.1 tools: locked to the devices Jon unlocked until launch day (V21_PUBLIC=1), then open to everyone."""
+        @wraps(view)
+        def inner(*a, **k):
+            if not (cfg.v21_public or g.get("circle")):
+                abort(404)
+            return view(*a, **k)
+        return inner
     v21_cache: dict[str, tuple[float, object]] = {}
     v21_png: dict[str, tuple[float, bytes]] = {}
 
@@ -1305,9 +1315,12 @@ def create_app(cfg: Config | None = None) -> Flask:
                 v21_png.clear()
             v21_png[key] = (time.time(), make()); hit = v21_png[key]
         r = app.response_class(hit[1], mimetype="image/jpeg")
-        # locked pages: never let a shared cache hand Jon's copy to someone without the cookie
-        r.headers["Cache-Control"] = "private, no-store"
-        r.headers["Vary"] = "Cookie"
+        if cfg.v21_public:
+            r.headers["Cache-Control"] = "public, max-age=1800"     # X and browsers may keep a card for half an hour
+        else:
+            # locked pages: never let a shared cache hand Jon's copy to someone without the cookie
+            r.headers["Cache-Control"] = "private, no-store"
+            r.headers["Vary"] = "Cookie"
         return r
 
     @app.get("/welcome")
@@ -1656,7 +1669,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             buf = io.BytesIO(); Image.open(src).convert("RGBA").save(buf, "PNG", optimize=True)
             sticker_png[name] = buf.getvalue()
         r = app.response_class(sticker_png[name], mimetype="image/png")
-        r.headers["Cache-Control"] = "private, max-age=86400"
+        r.headers["Cache-Control"] = "public, max-age=86400" if cfg.v21_public else "private, max-age=86400"
         r.headers["Content-Disposition"] = f'inline; filename="pdtools-{name}.png"'
         return r
 

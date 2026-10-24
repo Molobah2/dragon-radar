@@ -213,6 +213,22 @@
     .mk-now .snd-bars i { animation: eq 1.1s ease-in-out infinite; } .mk-now .snd-bars i:nth-child(2) { animation-delay: -.35s; } .mk-now .snd-bars i:nth-child(3) { animation-delay: -.7s; }
     @media (max-width: 860px) { .makers { grid-template-columns: 1fr; } .music { padding: 20px 16px 16px; } }
     @media (prefers-reduced-motion: reduce) { .mk-now .snd-bars i { animation: none; height: 10px; } a.maker { transition: none; } }
+    /* v2.1: the new tools, each with its own scene and character */
+    .newtools { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 14px; padding-bottom: 8px; }
+    .nt { position: relative; display: flex; flex-direction: column; border-radius: 22px; overflow: hidden; text-decoration: none; color: inherit; background: var(--card);
+      border: 1px solid var(--line); box-shadow: var(--shadow); transition: transform .35s cubic-bezier(.2, .8, .2, 1), box-shadow .35s; }
+    .nt:hover { transform: translateY(-4px); }
+    .nt .nt-art { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #2a1d14; }
+    .nt .nt-art .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .8s cubic-bezier(.2, .8, .2, 1); }
+    .nt .nt-art .who { position: absolute; right: 6%; bottom: -4%; height: 92%; width: auto; filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .45)); transition: transform .5s cubic-bezier(.3, 1.4, .5, 1); }
+    .nt:hover .nt-art .bg { transform: scale(1.06); } .nt:hover .nt-art .who { transform: translateY(-4px) rotate(-3deg); }
+    .nt .nt-body { padding: 12px 14px 14px; display: grid; gap: 4px; }
+    .nt b { font-family: var(--display); font-size: 18px; }
+    .nt span { color: var(--soft); font-weight: 600; font-size: 14px; line-height: 1.35; }
+    .nt-new { position: absolute; left: 10px; top: 10px; padding: 4px 9px; border-radius: 999px; font: 800 11px/1 var(--display, inherit); letter-spacing: .06em; text-transform: uppercase; color: #3a1a06; background: linear-gradient(180deg, #ffe08f, #ffb85c); }
+    @media (max-width: 560px) { .newtools { grid-template-columns: 1fr 1fr; gap: 10px; } .nt { border-radius: 18px; } .nt .nt-body { padding: 9px 10px 11px; }
+      .nt b { font-size: 15px; line-height: 1.15; } .nt span { font-size: 12.5px; } .nt-new { left: 7px; top: 7px; font-size: 10px; padding: 3px 7px; } }
+    @media (prefers-reduced-motion: reduce) { .nt, .nt .bg, .nt .who { transition: none; } }
     /* What's new on the home page */
     .hub-news { margin: 22px 0 6px; padding: 16px 18px; border-radius: 22px; background: rgba(255, 255, 255, .14); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
       border: 1px solid rgba(255, 255, 255, .22); color: #fff; max-width: 560px; }
@@ -292,6 +308,13 @@
     </section>{% endif %}
     <a class="more-cue" href="#tools" aria-label="See all tools"><span>All tools</span><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 
+    {% if v21_open %}<div class="section-head" id="new-tools">New in pdtools</div>
+    <section class="newtools" aria-labelledby="new-tools">
+      {% for path, name, line, bg, who in v21_tools %}<a class="nt reveal" href="{{ path }}">
+        <div class="nt-art"><img class="bg" src="{{ asset(bg) }}" alt="" width="960" height="540" loading="lazy" decoding="async"><img class="who" src="{{ asset(who) }}" alt="" loading="lazy" decoding="async"><i class="nt-new">New</i></div>
+        <div class="nt-body"><b>{{ name }}</b><span>{{ line }}</span></div>
+      </a>{% endfor %}
+    </section>{% endif %}
     <div class="section-head" id="tools">Tools</div>
     <section class="tools">
       <a class="tool reveal" href="{{ url_for('feed') }}">

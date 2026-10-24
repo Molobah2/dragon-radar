@@ -1345,3 +1345,13 @@ html.theme-dark .day-chip.done span { color: #86efac; }
 .help-cap { margin: 10px 6px 4px !important; font-size: 14px; text-align: center; }
 .help-links { display: flex; flex-wrap: wrap; gap: 10px; }
 
+
+/* v2.1: the new tools under one row in the side menu */
+.side-new-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px 10px 10px; }
+.side-new-list[hidden] { display: none; }
+.side-new-list a { display: flex; align-items: center; gap: 8px; min-height: 46px; padding: 6px 8px; border-radius: 14px; text-decoration: none; color: inherit; font-weight: 800; font-size: 13.5px; line-height: 1.2;
+  background: rgba(29, 36, 51, .05); }
+.side-new-list a:hover { background: rgba(29, 36, 51, .1); }
+.side-new-list img { width: 34px; height: 34px; object-fit: contain; flex: none; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .25)); }
+body.dark-sky .side-new-list a, html.theme-dark .side-new-list a { background: rgba(255, 255, 255, .07); }
+body.dark-sky .side-new-list a:hover, html.theme-dark .side-new-list a:hover { background: rgba(255, 255, 255, .12); }

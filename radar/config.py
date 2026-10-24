@@ -46,6 +46,9 @@ class Config:
     # turns them on for that device only. V2_PUBLIC=1 is the launch switch that shows them to everyone.
     preview_key: str = field(default_factory=lambda: os.environ.get("PREVIEW_KEY", "").strip())
     v2_public: bool = field(default_factory=lambda: _bool("V2_PUBLIC", "0"))
+    # v2.1 launch switch: V21_PUBLIC=1 opens the welcome lane, Creator of the week, Wrapped, Dragondle, Cheers, the
+    # sticker shelf and the Hatchery canvas to everyone and lets shared caches keep their cards (the Circle stays locked)
+    v21_public: bool = field(default_factory=lambda: _bool("V21_PUBLIC", "0"))
     # My week card opens every Friday (UTC) for the whole day. MYWEEK_ALWAYS=1 keeps it open (local testing only)
     myweek_always: bool = field(default_factory=lambda: _bool("MYWEEK_ALWAYS", "0"))
     # test copies of the site ask search engines to stay away

@@ -281,3 +281,15 @@ def creator_card(pick: dict, avatar, week_label: str) -> bytes:
     _shadow_text(bg, (60, 622), week_label, _font(False, 28), (255, 220, 175), anchor="lm", blur=4)
     _shadow_text(bg, (W - 34, 36), "pdtools.xyz", _font(True, 24), (255, 240, 222), anchor="rm", blur=3)
     return _png(bg)
+
+
+# the v2.1 tools as the home page and the Blinky's Friends menu show them: path, name, one line, scene, character
+TOOLS = [
+    ("/welcome", "Welcome lane", "Say hi to Keepers sharing their very first dragon post.", "v21/welcome-bg-s.jpg", "v21/blinky-lantern.webp"),
+    ("/creator", "Creator of the week", "Pinky spotlights one Keeper who made the hatchery brighter.", "v21/creator-bg-s.jpg", "v21/pinky-frame.webp"),
+    ("/wrapped", "Hatchery Wrapped", "Your month in the hatchery as a story to share.", "v21/wrapped-b-s.jpg", "v21/blinky-scope.webp"),
+    ("/dragondle", "Dragondle", "Five Pocket Dragons questions a day, the same for everyone.", "v21/dragondle-a-s.jpg", "v21/pinky-scroll.webp"),
+    ("/cheers", "Cheers", "Send a thank you lantern to a fellow Keeper.", "v21/cheers-a-s.jpg", "v21/blinky-skylantern.webp"),
+    ("/stickers", "Sticker shelf", "Blinky and Pinky stickers for your posts and replies.", "v21/stickers-a-s.jpg", "v21/stickers/st-p-heart.webp"),
+    ("/canvas", "Hatchery canvas", "Decorate a sky island and save it as a card.", "v21/canvas-a-s.jpg", "v21/stickers/st-b-gm.webp"),
+]

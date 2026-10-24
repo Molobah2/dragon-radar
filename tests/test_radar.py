@@ -2552,3 +2552,33 @@ def test_avatar_big_asks_x_for_the_400px_picture(cfg, Session, monkeypatch):
     assert c.get("/api/avatar/Mira?s=big").data == b"BIG"
     assert calls[-1] == "https://pbs.twimg.com/profile_images/3/me_400x400.png"
     n = len(calls); c.get("/api/avatar/Mira?s=big"); c.get("/api/avatar/Mira"); assert len(calls) == n   # both kept for a day
+
+
+def test_v21_launch_switch_opens_tools_and_shares_cards(cfg, Session):
+    """V21_PUBLIC=1 is launch day: every v2.1 tool opens to everyone and cards may be kept by shared caches,
+    while the Dragon Circle stays locked. Before that, strangers get 404 and cards stay private."""
+    cfg.v2_public = True
+    locked = create_app(cfg).test_client()
+    for path in ("/welcome", "/creator", "/wrapped", "/dragondle", "/cheers", "/stickers", "/canvas"):
+        assert locked.get(path).status_code == 404, path
+    cfg.v21_public = True
+    c = create_app(cfg).test_client()
+    for path in ("/welcome", "/creator", "/wrapped", "/dragondle", "/cheers", "/stickers", "/canvas"):
+        assert c.get(path).status_code == 200, path
+    assert c.get("/stickers/p-wave.png").headers["Cache-Control"].startswith("public")
+    assert c.get("/circle").status_code == 404                       # the Circle keeps its own lock
+
+
+def test_new_tools_row_shows_only_when_v21_is_open(cfg, Session):
+    """The home page "New in pdtools" row and the Blinky's Friends menu group appear on unlocked devices and,
+    after launch, for everyone; before launch nobody else sees a hint of them."""
+    cfg.v2_public = True
+    assert 'id="new-tools"' not in create_app(cfg).test_client().get("/").get_data(as_text=True)
+    app, c = _v21_client(cfg)
+    html = c.get("/").get_data(as_text=True)
+    assert 'id="new-tools"' in html and html.count('class="nt reveal"') == 7
+    assert 'id="side-new-btn"' in c.get("/friends").get_data(as_text=True)
+    cfg.v21_public = True
+    open_c = create_app(cfg).test_client()
+    assert 'id="new-tools"' in open_c.get("/").get_data(as_text=True)
+    assert 'id="side-new-btn"' in open_c.get("/friends").get_data(as_text=True)
