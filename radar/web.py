@@ -1599,6 +1599,38 @@ def create_app(cfg: Config | None = None) -> Flask:
             return card(user, info, avatar_image(user), senders, cheers_week_label(date.fromisoformat(info["week"])))
         return card_png(key, make)
 
+    # ---------- v2.1 wave 4: the Blinky and Pinky sticker shelf (locked like the rest) ----------
+    sticker_png: dict[str, bytes] = {}
+
+    @app.get("/stickers")
+    @v21_only
+    def stickers_home():
+        from .stickers import shelf
+        return render_template("stickers.html", cfg=cfg, shelf=shelf(),
+                               og_title="Blinky and Pinky stickers · PD Tools",
+                               og_desc="Free Blinky and Pinky stickers for your Pocket Dragons posts and replies on X.")
+
+    @app.get("/stickers/<name>.png")
+    @v21_only
+    def sticker_file(name):
+        """The shelf shows light WebP files; saving or copying gets a PNG, which every app on X accepts."""
+        import io
+        from PIL import Image
+        from .stickers import KEYS
+        base = name[:-2] if name.endswith("-w") else name
+        if base not in KEYS:
+            abort(404)
+        if name not in sticker_png:
+            src = Path(__file__).parent / "static" / "v21" / "stickers" / f"st-{name}.webp"
+            if not src.exists():
+                abort(404)
+            buf = io.BytesIO(); Image.open(src).convert("RGBA").save(buf, "PNG", optimize=True)
+            sticker_png[name] = buf.getvalue()
+        r = app.response_class(sticker_png[name], mimetype="image/png")
+        r.headers["Cache-Control"] = "private, max-age=86400"
+        r.headers["Content-Disposition"] = f'inline; filename="pdtools-{name}.png"'
+        return r
+
     # ---------- follow directory ----------
     @app.get("/friends/ama")
     def ama_page():

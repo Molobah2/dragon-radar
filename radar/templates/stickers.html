@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Stickers · {{ cfg.hub_name or "PD Tools" }}</title>
+  <meta name="description" content="Free Blinky and Pinky stickers for your Pocket Dragons posts and replies on X. Free, unofficial community tool.">
+  <meta name="theme-color" content="#21150e">
+  {% include "_icons.html" %}
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ asset('fonts.css') }}">
+  <link rel="stylesheet" href="{{ asset('v21/v21.css') }}">
+{% include "_speed.html" %}
+<style>
+/* ===== Sticker shelf: the craft table ===== */
+body { background: #21150e; }
+.st-world { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+.st-world img { position: absolute; inset: -3%; width: 106%; height: 106%; object-fit: cover; transition: opacity 1s var(--ease); animation: drift 46s ease-in-out infinite alternate; }
+.st-world img.off { opacity: 0; }
+@keyframes drift { from { transform: scale(1.02); } to { transform: scale(1.08) translate(-1%, 1%); } }
+.st-world::after { content: ""; position: absolute; inset: 0; background: radial-gradient(110% 80% at 50% 30%, rgba(33, 21, 14, .15), rgba(33, 21, 14, .78) 70%, #21150e); }
+.st-app { position: relative; z-index: 2; min-height: 100svh; display: flex; flex-direction: column; }
+.v-bar { position: relative; }
+.scene-pick { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: rgba(30, 14, 8, .45); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.scene-pick button { height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font: 800 13px/1 var(--body); color: var(--soft); cursor: pointer; }
+.scene-pick button[aria-pressed="true"] { background: rgba(255, 220, 160, .22); color: var(--ink); }
+@media (max-width: 560px) { .scene-pick button { padding: 0 9px; font-size: 12px; } }
+
+.st-main { flex: 1; width: min(1100px, 100%); margin: 0 auto; padding: 14px clamp(16px, 4vw, 30px) 30px; display: grid; gap: 18px; align-content: start; }
+.st-head { text-align: center; display: grid; justify-items: center; gap: 10px; padding: clamp(8px, 4vh, 36px) 0 4px; }
+.kick { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(40, 16, 6, .5); border: 1px solid rgba(255, 220, 170, .35);
+  font: 800 12px/1 var(--body); letter-spacing: 2.4px; text-transform: uppercase; color: var(--gold); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.st-head h1 { margin: 0; font: 700 clamp(34px, 6vw, 62px)/1.02 var(--disp); text-shadow: 0 4px 30px rgba(0,0,0,.7); }
+.st-head h1 span { text-shadow: none; filter: drop-shadow(0 4px 16px rgba(0,0,0,.55)); background: linear-gradient(180deg, #fff1c6, #ffb45c); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.st-head p { margin: 0; color: var(--soft); max-width: 30em; text-shadow: 0 2px 12px rgba(0,0,0,.7); }
+.filters { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.filters button { height: 38px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(255, 220, 170, .25); background: rgba(30, 14, 8, .5); color: var(--soft); font: 800 14px/1 var(--body); cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.filters button[aria-pressed="true"] { background: linear-gradient(180deg, #ffe08f, #ffb85c); color: #3a1a06; border-color: transparent; }
+
+/* the corkboard of stickers */
+.board { position: relative; padding: clamp(16px, 3vw, 26px); border-radius: 26px;
+  background: radial-gradient(rgba(0,0,0,.08) 1px, transparent 1.3px) 0 0 / 7px 7px, linear-gradient(180deg, #c99a68, #b9875a);
+  box-shadow: 0 30px 60px -30px rgba(0,0,0,.9), inset 0 0 0 10px #8a5a32, inset 0 0 0 12px rgba(0,0,0,.25), inset 0 0 40px rgba(60, 30, 10, .45); }
+.grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+@media (max-width: 420px) { .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
+.grid li { opacity: 0; transform: translateY(14px) rotate(var(--r)); transition: opacity .5s var(--ease), transform .6s var(--spring); transition-delay: calc(var(--i) * 30ms); }
+.grid.in li { opacity: 1; transform: rotate(var(--r)); }
+.tile { position: relative; display: grid; justify-items: center; gap: 4px; width: 100%; padding: 10px 6px 8px; border: 0; border-radius: 18px; background: transparent; cursor: pointer; color: #3b2412;
+  transition: transform .35s var(--spring), background .3s; }
+.tile img { width: 100%; height: auto; aspect-ratio: 1; filter: drop-shadow(0 8px 10px rgba(60, 30, 10, .35)); transition: transform .35s var(--spring); }
+.tile:hover img, .tile:focus-visible img { transform: scale(1.06) rotate(-3deg); }
+.tile:focus-visible { outline: 3px solid #fff3c4; outline-offset: 2px; }
+.tile b { font: 800 13px/1.2 var(--body); background: rgba(255, 248, 235, .8); padding: 3px 10px; border-radius: 999px; }
+.tile .pin { position: absolute; top: 2px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff9e9e, #c7322f); box-shadow: 0 2px 3px rgba(0,0,0,.4); }
+
+/* the sticker up close */
+.peek { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 20px; background: rgba(20, 10, 4, .7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.peek[hidden] { display: none; }
+.peek .card { width: min(420px, 100%); padding: 22px; border-radius: 26px; text-align: center; background: linear-gradient(180deg, rgba(60, 34, 20, .95), rgba(36, 20, 12, .97)); border: 1px solid rgba(255, 220, 170, .2); box-shadow: 0 40px 80px -30px #000; animation: popin .45s var(--spring); }
+@keyframes popin { from { transform: scale(.85); opacity: 0; } }
+.peek img { width: min(300px, 80%); height: auto; filter: drop-shadow(0 16px 20px rgba(0,0,0,.45)); animation: wiggle 2.8s ease-in-out infinite; }
+@keyframes wiggle { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg) translateY(-6px); } }
+.peek h2 { margin: 8px 0 4px; font: 700 24px/1.1 var(--disp); }
+.peek .kinds { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: rgba(255,255,255,.08); margin: 6px 0 14px; }
+.peek .kinds button { height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--soft); font: 800 13px/1 var(--body); cursor: pointer; }
+.peek .kinds button[aria-pressed="true"] { background: rgba(255, 220, 160, .22); color: var(--ink); }
+.peek .acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.peek .x { position: absolute; top: 14px; right: 14px; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: rgba(0,0,0,.3); font-size: 22px; cursor: pointer; }
+.note { margin: 0; text-align: center; color: var(--mute); font-size: 13.5px; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
+</style>
+</head>
+<body>
+<div class="st-world" aria-hidden="true">
+  <img id="sc-a" alt="" src="{{ asset('v21/stickers-a-s.jpg') }}" srcset="{{ asset('v21/stickers-a-s.jpg') }} 960w, {{ asset('v21/stickers-a.jpg') }} 1920w" sizes="100vw">
+  <img id="sc-b" class="off" alt="" src="{{ asset('v21/stickers-b-s.jpg') }}" srcset="{{ asset('v21/stickers-b-s.jpg') }} 960w, {{ asset('v21/stickers-b.jpg') }} 1920w" sizes="100vw" loading="lazy">
+</div>
+<div class="st-app">
+  <header class="v-bar">
+    <a class="v-brand" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="38" height="38"><span>PD Tools<small>Stickers</small></span></a>
+    <div class="v-tools">
+      <div class="scene-pick" role="group" aria-label="Scene"><button type="button" data-sc="a" aria-pressed="true">Craft table</button><button type="button" data-sc="b" aria-pressed="false">Shop</button></div>
+      <label class="pill" title="Language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><select id="lang-select" aria-label="Language"></select></label>
+    </div>
+  </header>
+  <main class="st-main">
+    <div class="st-head">
+      <span class="kick">Sticker shelf</span>
+      <h1 data-i18n-html="stH1">Blinky and Pinky <span>stickers</span></h1>
+      <p>Save a sticker and use it in your posts and replies on X.</p>
+      <div class="filters" role="group" aria-label="Show">
+        <button type="button" data-f="all" aria-pressed="true">All</button>
+        <button type="button" data-f="blinky" aria-pressed="false">Blinky</button>
+        <button type="button" data-f="pinky" aria-pressed="false">Pinky</button>
+        <button type="button" data-f="word" aria-pressed="false">With words</button>
+      </div>
+    </div>
+    <section class="board">
+      <ul class="grid" id="grid">
+        {% for s in shelf %}{% set n = loop.index0 %}{% for w in ["", "-w"] %}
+        <li data-who="{{ s.who }}" data-word="{{ '1' if w else '' }}" style="--i:{{ n * 2 + loop.index0 }};--r:{{ [-3, 2, -1, 3, -2, 1][(n * 2 + loop.index0) % 6] }}deg">
+          <button class="tile" type="button" data-key="{{ s.key }}" data-w="{{ w }}" data-mood="{{ s.mood }}">
+            <i class="pin" aria-hidden="true"></i>
+            <img src="{{ asset('v21/stickers/st-' ~ s.key ~ w ~ '.webp') }}" alt="{{ s.mood }}{{ ', ' ~ s.word if w else '' }}" width="512" height="512" loading="lazy">
+            <b>{{ s.mood }}</b>
+          </button>
+        </li>
+        {% endfor %}{% endfor %}
+      </ul>
+    </section>
+    <p class="note">New poses of the official Blinky and Pinky, made for Keepers with permission. Free to use in Pocket Dragons posts, never for sale.</p>
+  </main>
+  {% include "_v21_foot.html" %}
+</div>
+
+<div class="peek" id="peek" hidden role="dialog" aria-modal="true" aria-labelledby="peek-t">
+  <div class="card" style="position:relative">
+    <button class="x" id="peek-x" type="button" aria-label="Close">&times;</button>
+    <img id="peek-img" alt="" width="512" height="512">
+    <h2 id="peek-t"></h2>
+    <div class="kinds" role="group" aria-label="Kind"><button type="button" data-k="" aria-pressed="true">Clean</button><button type="button" data-k="-w" aria-pressed="false">With words</button></div>
+    <div class="acts">
+      <a class="btn go" id="peek-save" href="#" download>Save sticker</a>
+      <button class="btn ghost" id="peek-copy" type="button" hidden>Copy</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="{{ asset('i18n.js') }}"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  let tt = 0;
+  function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 3200); }
+  function scene(k) {
+    $("sc-a").classList.toggle("off", k !== "a"); $("sc-b").classList.toggle("off", k !== "b");
+    document.querySelectorAll("[data-sc]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.sc === k ? "true" : "false"));
+    try { localStorage.setItem("pd:scene:stickers", k); } catch (e) { /* fine */ }
+  }
+  document.querySelectorAll("[data-sc]").forEach((b) => b.addEventListener("click", () => scene(b.dataset.sc)));
+  try { scene(localStorage.getItem("pd:scene:stickers") === "b" ? "b" : "a"); } catch (e) { scene("a"); }
+
+  const grid = $("grid");
+  requestAnimationFrame(() => requestAnimationFrame(() => grid.classList.add("in")));
+  document.querySelectorAll("[data-f]").forEach((b) => b.addEventListener("click", () => {
+    const f = b.dataset.f;
+    document.querySelectorAll("[data-f]").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    grid.querySelectorAll("li").forEach((li) => { li.hidden = !(f === "all" || (f === "word" ? li.dataset.word : li.dataset.who === f)); });
+  }));
+
+  /* up close: switch clean or with words, save as PNG, or copy straight into a post where the browser allows */
+  let cur = null, kind = "";
+  const canCopy = !!(navigator.clipboard && window.ClipboardItem);
+  $("peek-copy").hidden = !canCopy;
+  function show() {
+    const src = `/stickers/${cur.key}${kind}.png`;
+    $("peek-img").src = `/static/v21/stickers/st-${cur.key}${kind}.webp`;
+    $("peek-img").alt = cur.mood;
+    $("peek-t").textContent = cur.mood;
+    $("peek-save").href = src; $("peek-save").setAttribute("download", `pdtools-${cur.key}${kind}.png`);
+    document.querySelectorAll("[data-k]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.k === kind ? "true" : "false"));
+  }
+  function open(b) { cur = { key: b.dataset.key, mood: b.dataset.mood }; kind = b.dataset.w; show(); $("peek").hidden = false; $("peek-x").focus(); }
+  function close() { $("peek").hidden = true; }
+  grid.addEventListener("click", (e) => { const b = e.target.closest(".tile"); if (b) open(b); });
+  document.querySelectorAll("[data-k]").forEach((b) => b.addEventListener("click", () => { kind = b.dataset.k; show(); }));
+  $("peek-x").addEventListener("click", close);
+  $("peek").addEventListener("click", (e) => { if (e.target === $("peek")) close(); });
+  addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+  $("peek-save").addEventListener("click", () => setTimeout(() => toast("Saved. Add it to your post on X."), 300));
+  $("peek-copy").addEventListener("click", async () => {
+    try {
+      const blob = await (await fetch(`/stickers/${cur.key}${kind}.png`)).blob();
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toast("Copied. Paste it into your post on X.");
+    } catch (e) { toast("Your browser could not copy it. Use Save sticker instead."); }
+  });
+})();
+</script>
+<script src="{{ asset('hit.js') }}" defer></script>
+</body>
+</html>

@@ -2494,3 +2494,20 @@ def test_cheers_signed_keepers_only_once_a_week(cfg, Session, monkeypatch):
     assert c.post("/api/cheers", data=json.dumps({"vid": me, "to": "Ola", "preset": True}), content_type="text/plain").status_code == 400
     assert c.get("/api/cheers/find?q=o_").get_json()["people"] == []          # _ is a letter here, not a wildcard
     assert mine["card"] is True
+
+
+def test_sticker_shelf_serves_png_for_every_sticker(cfg, Session):
+    """Every shelf sticker exists in both kinds, the page lists them, PNGs come out for saving, and odd names 404."""
+    from radar.stickers import STICKERS
+    root = Path(__file__).parent.parent / "radar" / "static" / "v21" / "stickers"
+    for k, *_ in STICKERS:
+        assert (root / f"st-{k}.webp").exists() and (root / f"st-{k}-w.webp").exists(), k
+    app, c = _v21_client(cfg)
+    assert app.test_client().get("/stickers").status_code == 404
+    html = c.get("/stickers").get_data(as_text=True)
+    assert html.count('class="tile"') == 2 * len(STICKERS) and "never for sale" in html
+    for name in ("p-wave", "p-wave-w", "b-gm-w"):
+        r = c.get(f"/stickers/{name}.png")
+        assert r.status_code == 200 and r.data[:8] == b"\x89PNG\r\n\x1a\n", name
+    for bad in ("nope", "p-wave-w-w", "..%2Fsecret"):
+        assert c.get(f"/stickers/{bad}.png").status_code == 404
