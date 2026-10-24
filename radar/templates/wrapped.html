@@ -175,6 +175,14 @@ body { background: #120c26; overflow-x: hidden; }
     return log.filter((l) => l && typeof l.k === "string" && /-[crl]$/.test(l.k) && D.art[l.k] && String(l.day || "").slice(0, 7) === monthKey).map((l) => l.k);
   }
 
+  // every different dragon this device has hatched so far (species and finish, never the secret relics)
+  function unique() {
+    const dex = store.get("pd:dex", null), have = dex && dex.have && typeof dex.have === "object" ? dex.have : {};
+    let n = 0;
+    for (const k of Object.keys(D.art || {})) { const m = /^(.+)-([crl])$/.exec(k); if (m && ((have[m[1]] || {})[m[2]] || 0) > 0) n++; }
+    return n;
+  }
+
   /* the story itself */
   let data = null, slides = [], cur = 0, timer = 0, startAt = 0, cardUrl = null, dragons = [], gen = 0;
   const SLIDE_MS = 6500;
@@ -249,26 +257,29 @@ body { background: #120c26; overflow-x: hidden; }
   function img(src, cors) { return new Promise((res) => { const i = new Image(); if (cors) i.crossOrigin = "anonymous"; i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
   let painting = null;
   async function paint() {
+    // Blinky on the balcony with his eye to the telescope, aimed at the moon; the words sit on the calm sky
+    // to the left on one grid.
     const K = window.pdCard; await K.fonts();
     const { c, x } = K.canvas(2), W = K.W, H = K.H, me = data.me;
-    const el = $(sc === "a" ? "sc-a" : "sc-b");
-    const [bg, bl, dr] = await Promise.all([img(el.currentSrc || el.src), img("{{ asset('v21/blinky-scope.webp') }}"),
-      dragons.length ? img(artOf(dragons.slice().sort((a, b) => RANK[b.slice(-1)] - RANK[a.slice(-1)])[0], 600), true) : Promise.resolve(null)]);
+    const bg = await img("{{ asset('v21/wrapped-card.jpg') }}");
     x.fillStyle = "#120c26"; x.fillRect(0, 0, W, H);
-    if (bg) { const k = Math.max(W / bg.width, H / bg.height); x.drawImage(bg, (W - bg.width * k) / 2, (H - bg.height * k) / 2, bg.width * k, bg.height * k); }
-    let g = x.createLinearGradient(0, 0, W, 0); g.addColorStop(0, "rgba(14,10,32,.9)"); g.addColorStop(.58, "rgba(14,10,32,.45)"); g.addColorStop(1, "rgba(14,10,32,.15)");
-    x.fillStyle = g; x.fillRect(0, 0, W, H);
-    if (dr) { const r = 170, cxp = 900, cyp = 300; const hg = x.createRadialGradient(cxp, cyp, 10, cxp, cyp, r * 1.3); hg.addColorStop(0, "rgba(255,214,120,.55)"); hg.addColorStop(1, "rgba(255,214,120,0)");
-      x.fillStyle = hg; x.beginPath(); x.arc(cxp, cyp, r * 1.3, 0, 6.283); x.fill(); const s = Math.min(2 * r / dr.width, 2 * r / dr.height); x.drawImage(dr, cxp - dr.width * s / 2, cyp - dr.height * s / 2, dr.width * s, dr.height * s); }
-    if (bl) { const h = dr ? 300 : 500, w = bl.width * h / bl.height; x.save(); x.shadowColor = "rgba(0,0,0,.55)"; x.shadowBlur = 40; x.shadowOffsetY = 18; x.drawImage(bl, W - w - (dr ? 30 : 60), H - h - 16, w, h); x.restore(); }
-    K.pill(x, `${T("Hatchery Wrapped")} · ${T(data.month)}`.toUpperCase(), 70, 92, { bg: "#ffcd6e", ink: "#3a1a06" });
-    const stat = (n, label, X, Y) => { x.textAlign = "left"; x.fillStyle = "#fff7ec"; x.font = '700 92px "Fredoka", sans-serif'; x.fillText(fmt(n), X, Y); x.fillStyle = "#cfc4f0"; x.font = '800 22px "Nunito", sans-serif'; x.fillText(label, X + 4, Y + 34); };
-    stat(me.opens, T("posts from Keepers opened"), 70, 250);
-    stat(dragons.length, T(dragons.length === 1 ? "dragon hatched" : "dragons hatched"), 70, 400);
-    stat(me.streak, T("day best streak"), 340, 400);
-    if (me.top && me.top[0]) { x.fillStyle = "#ffcd6e"; x.font = '800 24px "Nunito", sans-serif'; x.fillText(T(`Cheered on @${me.top[0].user} the most`), 74, 520); }
-    x.fillStyle = "#ffcd6e"; x.font = '800 26px "Nunito", sans-serif'; x.fillText("pdtools.xyz/wrapped", 74, 606);
-    K.grain(x, .05);
+    if (bg) x.drawImage(bg, 0, 0, W, H);
+    // a soft night wash on the left so every word reads
+    let g = x.createLinearGradient(0, 0, 640, 0); g.addColorStop(0, "rgba(10, 8, 30, .72)"); g.addColorStop(.6, "rgba(10, 8, 30, .38)"); g.addColorStop(1, "rgba(10, 8, 30, 0)");
+    x.fillStyle = g; x.fillRect(0, 0, 640, H);
+    const L = 72;
+    K.pill(x, `${T("Hatchery Wrapped")} · ${T(data.month)}`.toUpperCase(), L, 64, { bg: "#ffcd6e", ink: "#3a1a06" });
+    x.textAlign = "left";
+    const num = (n, size, X, Y) => { x.save(); x.shadowColor = "rgba(0, 0, 0, .35)"; x.shadowBlur = 18; x.fillStyle = "#fff7ec"; x.font = `700 ${size}px "Fredoka", sans-serif`; x.fillText(fmt(n), X, Y); x.restore(); };
+    const lab = (t, X, Y, wmax) => { x.fillStyle = "#d9d0f5"; K.fit(x, t, X, Y, wmax, 22, 15, 800, "Nunito"); };
+    num(me.opens, 108, L - 4, 232); lab(T("posts from Keepers opened"), L, 268, 470);
+    const uniq = unique();
+    num(uniq, 74, L - 3, 374); lab(T(uniq === 1 ? "dragon hatched" : "dragons hatched"), L, 406, 236);
+    num(me.streak, 74, L + 260, 374); lab(T("day best streak"), L + 263, 406, 210);
+    x.fillStyle = "rgba(255, 214, 140, .35)"; x.fillRect(L, 444, 400, 2);
+    if (me.top && me.top[0]) { x.fillStyle = "#ffcd6e"; K.fit(x, T(`Cheered on @${me.top[0].user} the most`), L, 490, 470, 24, 16, 800, "Nunito"); }
+    x.fillStyle = "#fff7ec"; x.font = '800 22px "Nunito", sans-serif'; x.fillText("pdtools.xyz/wrapped", L, 612);
+    K.grain(x, .04);
     return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
   }
   async function buildCard() {
