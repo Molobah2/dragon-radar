@@ -107,8 +107,8 @@ BANK = [
     {"cat": "lore", "q": "In which Discord channel do the bot commands work?", "a": "dragon-chat",
      "w": ["announcements", "share-content", "general"], "why": "Typing !quests lists every quest.", "src": "Discord, October 5"},
     # ---------- pdtools ----------
-    {"cat": "pdtools", "q": "On pdtools, how many posts from fellow Keepers make your daily goal?", "a": "20",
-     "w": ["5", "10", "50"], "why": "Finish it to hatch an egg that day.", "src": "pdtools"},
+    {"cat": "pdtools", "q": "On pdtools, how many posts from fellow Keepers are part of your daily goal?", "a": "10",
+     "w": ["5", "20", "50"], "why": "Add today's Dragondle and one new follow to reach 100% and hatch an egg.", "src": "pdtools"},
     {"cat": "pdtools", "q": "How long do you spend on X before an open counts on pdtools?", "a": "8 seconds",
      "w": ["1 second", "1 minute", "5 minutes"], "why": "Real time on the post is what counts as support.", "src": "pdtools"},
     {"cat": "pdtools", "q": "How many dragon stickers can you collect on pdtools?", "a": "35",

@@ -16,6 +16,7 @@
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
   const dayGap = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
   const GOAL = (() => { try { return JSON.parse($("radar-data").textContent).goal || 20; } catch (e) { return 20; } })();
+  const MIX = (() => { try { return JSON.parse($("radar-data").textContent).goal_rule === "mix"; } catch (e) { return false; } })();
   const TIERS = ["common", "rare", "legend"], TK = { common: "c", rare: "r", legend: "l" };
   const RARITY = { common: "Common", rare: "Rare holo", legend: "Golden legend", secret: "Secret relic" };
 
@@ -68,7 +69,10 @@
 
   // a brand new Keeper's first egg needs half the usual goal (set in app.js), so the first visit ends with a dragon
   const goalNow = () => (window.pdGoalNow ? window.pdGoalNow() : GOAL);
-  function goalDone() { const g = store.get("pd:goal", null); return !!g && g.day === today() && (g.n || 0) >= goalNow(); }
+  function goalDone() {
+    if (window.pdGoalDone) return window.pdGoalDone();     // the feed knows the whole goal (v2.1: posts, Dragondle, follow)
+    const g = store.get("pd:goal", null); return !!g && g.day === today() && (g.n || 0) >= goalNow();
+  }
   // the goal streak: days in a row with the daily goal finished
   // streak freeze: one missed goal day a week is forgiven, so rares and legends stay in reach for busy Keepers
   const freezeOk = (g) => (g.count || 0) > 1 && (!g.fz || dayGap(g.fz, today()) >= 7);
@@ -314,7 +318,7 @@
     sticker(shown.entry, 520);   // start loading while they look at the egg
     $("hatch-title").textContent = t === "legend" ? "A golden egg!" : t === "rare" ? "A shimmering egg!" : "Your egg is ready";
     $("hatch-sub").textContent = t === "legend" ? "Something legendary is inside. Tap to hatch it."
-      : `You cheered on ${GOAL} fellow Keepers today. Tap the egg to hatch it.`;
+      : MIX ? "You finished today's goal. Tap the egg to hatch it." : `You cheered on ${GOAL} fellow Keepers today. Tap the egg to hatch it.`;
     $("hatch-name").textContent = ""; $("hatch-name").hidden = true;
     $("hatch-actions").hidden = true; pic.hidden = true; egg.hidden = false; egg.disabled = false;
     egg.setAttribute("aria-label", "Hatch the egg");
@@ -516,7 +520,7 @@
     const what = entry.tier === "legend" ? `a golden legendary ${entry.sp.name} dragon` : entry.tier === "rare" ? `a rare holo ${entry.sp.name} dragon` : `a ${entry.sp.name} dragon`;
     const gs = goalStreak(), streak = gs > 1 ? ` with a ${gs} day streak` : "";
     const lead = mode === "view" ? `Look at my ${what.replace(/^an? /, "")}` : `I just hatched ${what}`;
-    return `${lead} on pdtools \u{1F409} ${found()} of ${TOTAL} found${streak}. Cheer on ${GOAL} fellow Keepers a day and hatch yours at pdtools.xyz`;
+    return `${lead} on pdtools \u{1F409} ${found()} of ${TOTAL} found${streak}. ${MIX ? "Finish the daily goal and hatch yours at pdtools.xyz" : `Cheer on ${GOAL} fellow Keepers a day and hatch yours at pdtools.xyz`}`;
   };
   async function card(entry) {
     if (entry.tier === "secret") return secretCard(entry);
@@ -857,7 +861,7 @@
     const extra = [r ? `${r} rare holo` : "", l ? `${l} golden legend${l > 1 ? "s" : ""}` : ""].filter(Boolean).join(" and ");
     const tail = gs > 1 ? (extra ? `, with ${extra.replace(" and ", ", ")} and a ${gs} day streak` : ` with a ${gs} day streak`) : extra ? `, with ${extra}` : "";
     const link = bookMe && bookMe.status === "confirmed" ? `pdtools.xyz/k/${bookMe.handle}` : "pdtools.xyz";
-    return `My dragon book on pdtools \u{1F409} ${f} of ${TOTAL} found${tail}. Cheer on ${GOAL} fellow Keepers a day and start yours at ${link}`;
+    return `My dragon book on pdtools \u{1F409} ${f} of ${TOTAL} found${tail}. ${MIX ? `Finish the daily goal and start yours at ${link}` : `Cheer on ${GOAL} fellow Keepers a day and start yours at ${link}`}`;
   };
   function shade(src) {   // the dark silhouette of a dragon not found yet
     const s = document.createElement("canvas"); s.width = src.width; s.height = src.height;
@@ -939,7 +943,7 @@
     });
     // the footer, signed like every pdtools card
     x.fillStyle = K.SOFT; x.font = '700 18px "Nunito", sans-serif'; x.textAlign = "left";
-    x.fillText(`Cheer on ${GOAL} fellow Keepers a day and hatch a new dragon`, 48, H - 30);
+    x.fillText(MIX ? "Finish the daily goal and hatch a new dragon" : `Cheer on ${GOAL} fellow Keepers a day and hatch a new dragon`, 48, H - 30);
     x.textAlign = "right"; x.font = '800 20px "Nunito", sans-serif'; x.fillText("pdtools.xyz", W - 48, H - 30); x.textAlign = "left";
     if (foundIn("legend")) K.foil(x);
     K.grain(x, 0.05);
@@ -1061,7 +1065,7 @@
   addEventListener("pd:goaldone", () => { refreshGoal(); setTimeout(() => { if (canHatch() && hatchEl.hidden) openHatch(); }, 1600); });
   addEventListener("pd:goalshow", refreshGoal);
   addEventListener("pd:dexchange", () => { dex = load(); renderDex(); refreshGoal(); });
-  addEventListener("storage", (e) => { if (e.key === "pd:dex" || e.key === "pd:goal") { dex = load(); refreshGoal(); } });
+  addEventListener("storage", (e) => { if (["pd:dex", "pd:goal", "pd:dle", "radar:followed"].includes(e.key)) { dex = load(); refreshGoal(); } });
   refreshGoal();
 
   async function todayHatch() {

@@ -58,7 +58,11 @@ def merge(old: dict, new: dict) -> dict:
     goals = [x for x in (old.get("goal"), new.get("goal")) if isinstance(x, dict) and _day(x.get("day"))]
     if goals:
         top = max(x["day"] for x in goals)
-        out["goal"] = {"day": top, "n": max(_int(x.get("n")) for x in goals if x["day"] == top)}
+        same = [x for x in goals if x["day"] == top]
+        out["goal"] = {"day": top, "n": max(_int(x.get("n")) for x in same)}
+        for k in ("d", "f"):                         # v2.1 goal steps: done on either device is done
+            if any(x.get(k) is True for x in same):
+                out["goal"][k] = True
     da, db = old.get("dex") or {}, new.get("dex") or {}
     if da or db:
         have = {}

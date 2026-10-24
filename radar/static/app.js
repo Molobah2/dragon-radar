@@ -393,10 +393,11 @@
     const dexIn = mergeDex(j.dex);
     // today's goal count: saved today on the other device, keep the higher number (yesterday's count never carries)
     const gIn = j.goal || {};
-    if (gIn.day === today() && (gIn.n | 0) > 0) {
+    if (gIn.day === today() && ((gIn.n | 0) > 0 || gIn.d === true || gIn.f === true)) {
       goal = readGoal();
-      if (goal.day !== today()) goal = { day: today(), n: 0 };
+      if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false };
       if ((gIn.n | 0) > goal.n) { goal.n = Math.min(200, gIn.n | 0); store.set("pd:goal", goal); }
+      if ((gIn.d === true && !goal.d) || (gIn.f === true && !goal.f)) { goal.d = goal.d || gIn.d === true; goal.f = goal.f || gIn.f === true; store.set("pd:goal", goal); }
       showGoal();
     }
     showStreak(); render();
@@ -478,35 +479,129 @@
 
   // ---------- daily goal, an egg fills up as you go ----------
   // v1: give 5 quiet posts some love. v2: cheer on 20 fellow Keepers' posts (any post that is new to you, not the team's)
-  const GOAL = data.goal || 5, KEEPER_GOAL = data.goal_rule === "keeper";
+  // v2.1 ("mix"): one percentage from three parts. 10 Keeper posts are worth 50% (5% each), today's Dragondle 25%,
+  // following one new Keeper 25%. The egg hatches at 100%.
+  const MIX = data.goal_rule === "mix";
+  const GOAL = data.goal || 5, KEEPER_GOAL = data.goal_rule === "keeper" || MIX;
   const goalWord = KEEPER_GOAL ? "Keeper posts" : "quiet posts";
-  const readGoal = () => { const v = store.obj("pd:goal"); return { day: typeof v.day === "string" ? v.day : null, n: v.n | 0 }; };
+  const readGoal = () => { const v = store.obj("pd:goal"); return { day: typeof v.day === "string" ? v.day : null, n: v.n | 0, d: v.d === true, f: v.f === true }; };
   let goal = readGoal();
-  if (goal.day !== today()) goal = { day: today(), n: 0 };
+  if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false };
   // v2: a Keeper who has never hatched an egg needs only half the goal for the first one, so the very first
   // visit can end with a dragon. From the next day on it is the usual goal for everyone.
+  // v2.1: the first egg needs 5 posts and 1 follow; the Dragondle is a bonus that day.
   const STARTER = Math.max(1, Math.round(GOAL / 2));
-  function goalNow() {
-    if (!KEEPER_GOAL) return GOAL;
+  function firstEgg() {
     const d = store.obj("pd:dex"), log = Array.isArray(d.log) ? d.log : [];
     const before = log.some((l) => l && l.day !== today()) || (d.n | 0) > 1
       || (!log.length && d.have && typeof d.have === "object" && Object.keys(d.have).length > 0);
-    return before ? GOAL : STARTER;
+    return !before;
+  }
+  function goalNow() {
+    if (!KEEPER_GOAL) return GOAL;
+    return firstEgg() ? STARTER : GOAL;
+  }
+  // today's Dragondle: every answer saved on this device (the set changes at midnight UTC)
+  function dleDone() {
+    if (goal.d) return true;
+    const st = String(data.dle_start || ""); if (!/^\d{4}-\d{2}-\d{2}$/.test(st)) return false;
+    const now = new Date(), utc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const n = Math.floor((utc - Date.parse(st + "T00:00:00Z")) / 864e5) + 1;
+    const dle = store.obj("pd:dle"), plays = dle.plays && typeof dle.plays === "object" ? dle.plays : {};
+    const full = (k) => { const p = plays[k]; return !!p && Array.isArray(p.marks) && p.marks.length >= 5; };
+    const utcDay = new Date(utc).toISOString().slice(0, 10);
+    return full(n) || (utcDay !== today() && full(n - 1));    // the local day may still be on yesterday's set
+  }
+  // one new Keeper followed today (the "Yes, followed" tap in the Keepers directory), or nobody left to follow
+  function followDone() {
+    if (goal.f) return true;
+    const fol = store.obj("radar:followed");
+    const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    if (Object.values(fol).some((t) => typeof t === "number" && t >= t0.getTime() && t <= Date.now() + 6e4)) return true;
+    return store.get("radar:kleft", -1) === 0;
+  }
+  function goalParts() {
+    const first = firstEgg(), P = goalNow(), n = Math.min(goal.n, P);
+    const d = first || dleDone(), f = followDone();
+    if (!first && d && !goal.d) { goal.d = true; store.set("pd:goal", goal); }    // kept with the goal, so it syncs too
+    if (f && !goal.f) { goal.f = true; store.set("pd:goal", goal); }
+    const pct = Math.min(100, Math.round((n / P) * 50 + (d ? 25 : 0) + (f ? 25 : 0)));
+    return { first, P, n, d, f, pct };
+  }
+  function goalDone() {
+    if (MIX) return goalParts().pct >= 100;
+    return goal.day === today() && goal.n >= goalNow();
   }
   window.pdGoalNow = goalNow;
+  window.pdGoalDone = () => { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; return goalDone(); };
   function showGoal() {
+    if (MIX) {
+      const g = goalParts(), done = g.pct >= 100;
+      $("goal-text").textContent = done ? "Daily goal done" : `Daily goal ${g.pct}%`;
+      $("goal").classList.toggle("done", done);
+      $("goal-egg").style.setProperty("--fill", `${g.pct}%`);
+      paintSteps(g);
+      dispatchEvent(new Event("pd:goalshow"));
+      mixMoments(g);
+      return;
+    }
     const G = goalNow(), n = Math.min(goal.n, G), done = n >= G;
     $("goal-text").textContent = done ? "Daily goal done" : `${n}/${G} ${goalWord} today`;
     $("goal").classList.toggle("done", done);
     $("goal-egg").style.setProperty("--fill", `${(n / G) * 100}%`);
     dispatchEvent(new Event("pd:goalshow"));   // v2 dragons turn a finished goal into "hatch your egg"
   }
+  // the goal's moments, once a day each: a nudge with one step to go, and the cheer when it is done
+  function mixMoments(g) {
+    if (g.pct >= 100) {
+      if (store.get("pd:goalFired", "") === today()) return;
+      store.set("pd:goalFired", today());
+      toast("\u{1F423} Daily goal done. Blinky is proud of you.");
+      window.meadow && window.meadow.cheer && window.meadow.cheer();
+      dispatchEvent(new Event("pd:goaldone"));
+    } else if (g.pct >= 75 && store.get("pd:nudge", "") !== today()) {
+      store.set("pd:nudge", today());
+      toast("\u{1F95A} Just one more step and your egg hatches.");
+    }
+  }
+  // the three steps, under the goal pill: tap the pill to open them
+  let steps = null;
+  function paintSteps(g) {
+    if (!steps) return;
+    const row = (k, ok, label, extra, href, act) => `<li class="gs-row${ok ? " ok" : ""}"><i class="gs-tick" aria-hidden="true">${ok ? "\u2713" : ""}</i>`
+      + `<span class="gs-t"><b>${label}</b>${extra ? `<small>${extra}</small>` : ""}</span>`
+      + (ok ? "" : `<a class="gs-go" href="${href}" data-gs="${k}">${act}</a>`) + "</li>";
+    steps.querySelector(".gs-pct").textContent = `${g.pct}%`;
+    steps.querySelector(".gs-bar i").style.width = `${g.pct}%`;
+    steps.querySelector(".gs-list").innerHTML =
+      row("posts", g.n >= g.P, `Open ${g.P} Keeper posts`, `${g.n}/${g.P}`, "#feed", "Go")
+      + row("dle", g.d, "Play today's Dragondle", g.first ? "Not needed for your first egg" : "", "/dragondle", "Play")
+      + row("follow", g.f, "Follow 1 new Keeper", "", "/friends/keepers", "Find one");
+  }
+  if (MIX) {
+    steps = document.createElement("div");
+    steps.className = "goal-steps"; steps.id = "goal-steps"; steps.hidden = true; steps.setAttribute("role", "dialog"); steps.setAttribute("aria-label", "Today's goal");
+    steps.innerHTML = '<div class="gs-head"><b>Today\'s goal</b><span class="gs-pct">0%</span></div><div class="gs-bar"><i></i></div><ul class="gs-list"></ul>';
+    $("goal").insertAdjacentElement("afterend", steps);
+    $("goal").setAttribute("aria-controls", "goal-steps"); $("goal").setAttribute("aria-expanded", "false");
+    steps.addEventListener("click", (e) => {
+      const a = e.target.closest("[data-gs='posts']"); if (!a) return;
+      e.preventDefault(); closeSteps(); $("feed").scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
+    });
+    document.addEventListener("click", (e) => { if (!steps.hidden && !steps.contains(e.target) && !$("goal").contains(e.target)) closeSteps(); });
+    addEventListener("keydown", (e) => { if (e.key === "Escape") closeSteps(); });
+    // finished on another page or tab (the Dragondle, the Keepers directory): the goal catches up straight away
+    addEventListener("storage", (e) => { if (["pd:dle", "radar:followed", "pd:goal", "radar:kleft"].includes(e.key)) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
+  }
+  function closeSteps() { if (steps && !steps.hidden) { steps.hidden = true; $("goal").setAttribute("aria-expanded", "false"); steps.parentElement.classList.remove("gs-open"); } }
   function bumpGoal() {
     goal = readGoal();                         // another tab may have counted some already
-    if (goal.day !== today()) goal = { day: today(), n: 0 };
+    if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false };
     goal.n++;
     store.set("pd:goal", goal);
     showGoal();
+    if (MIX) return;
     const G = goalNow(), left = G - goal.n;
     // a friendly heads up near the end, once a day, so nobody stops just short of their egg
     if (KEEPER_GOAL && left === 5 && G > 5 && store.get("pd:nudge", "") !== today()) {
@@ -533,7 +628,9 @@
   addEventListener("pageshow", newDayCheck);
   addEventListener("focus", newDayCheck);
   setInterval(newDayCheck, 60 * 1000);
-  $("goal").addEventListener("click", () => { if (KEEPER_GOAL) { $("feed").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); return; } $("needsLove").checked = true; $("needsLove").dispatchEvent(new Event("change")); $("feed").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); });
+  $("goal").addEventListener("click", () => {
+    if (MIX) { const open = steps.hidden; steps.hidden = !open; steps.parentElement.classList.toggle("gs-open", open); $("goal").setAttribute("aria-expanded", open ? "true" : "false"); if (open) paintSteps(goalParts()); return; }
+    if (KEEPER_GOAL) { $("feed").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); return; } $("needsLove").checked = true; $("needsLove").dispatchEvent(new Event("change")); $("feed").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); });
 
   // ---------- team alerts: a browser notification when a new team post arrives (while a tab is open) ----------
   const canNotify = "Notification" in window;

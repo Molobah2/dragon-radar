@@ -129,6 +129,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         return [{**s, "src": url_for("static", filename=s["src"], v=version)} for s in playlist]
 
     from .v21 import TOOLS as V21_TOOLS
+    from .dragondle import START as _DLE_START
+    DLE_START = _DLE_START.isoformat()
 
     @app.context_processor
     def _assets():
@@ -136,7 +138,8 @@ def create_app(cfg: Config | None = None) -> Flask:
                 "site_songs": site_songs,
                 "site_credits": [{"track": x["title"], "by": x["by"], "x": x.get("x", "")} for x in playlist],
                 "v2": getattr(g, "v2", False), "circle_open": getattr(g, "circle", False), "v2_private": getattr(g, "v2", False) and not cfg.v2_public,
-                "v21_open": cfg.v21_public or getattr(g, "circle", False), "v21_tools": V21_TOOLS}
+                "v21_open": cfg.v21_public or getattr(g, "circle", False), "v21_tools": V21_TOOLS,
+                "dle_start": DLE_START}
 
     # v2 tools in progress: add {"name", "url", "note"} here as each one is built
     LAB_TOOLS: list[dict] = [
@@ -1923,11 +1926,15 @@ def create_app(cfg: Config | None = None) -> Flask:
         # today's daily goal count travels too, so a new device shows the same "x/20 Keeper posts today"
         goal_in = body.get("goal") if isinstance(body.get("goal"), dict) else {}
         goal_out = {"day": day(goal_in.get("day")), "n": num(goal_in.get("n"), 200)}
+        if goal_in.get("d") is True:                # v2.1 goal: today's Dragondle done
+            goal_out["d"] = True
+        if goal_in.get("f") is True:                # v2.1 goal: one new Keeper followed today
+            goal_out["f"] = True
         streak_out = {"last": day(streak.get("last")), "count": num(streak.get("count"), 5000), "best": num(streak.get("best"), 5000)}
         if day(streak.get("fz")):
             streak_out["fz"] = streak["fz"]
         return {"opened": clean, "streak": streak_out,
-                **({"goal": goal_out} if goal_out["day"] and goal_out["n"] else {}),
+                **({"goal": goal_out} if goal_out["day"] and (goal_out["n"] or goal_out.get("d") or goal_out.get("f")) else {}),
                 **({"dex": dex_out} if have or dex_out["e"] or dex_out["s"] else {})}
 
     @app.post("/api/backup")

@@ -1617,7 +1617,7 @@ def test_speed_budget(cfg, Session):
     c = v2_client(cfg)
     # /friends raised on purpose (120k to 124k): the song picker controls and the dragon book; the picker's
     # list itself (music.js) only loads when someone opens it
-    budgets = {"/friends": (130_000, 60_000),   # raised on purpose: the X app note, its move code button and the safe copy for signed Keepers, then the audit fixes (dialog focus, phone layout)
+    budgets = {"/friends": (131_000, 60_000),   # raised on purpose: the X app note, its move code button and the safe copy for signed Keepers, the audit fixes (dialog focus, phone layout), then the v2.1 daily goal steps
                 "/": (15_000, 40_000), "/friends/keepers": (60_000, 40_000)}
     for path, (code_max, html_max) in budgets.items():
         html = c.get(path).get_data(as_text=True)
@@ -2685,3 +2685,24 @@ def test_circle_links_to_cheers_and_wrapped_only_where_unlocked(cfg, Session):
     public = app.test_client()
     assert "const CIRCLE = false;" in public.get("/wrapped").get_data(as_text=True)
     assert public.get("/api/circle/Alice").status_code == 404
+
+
+def test_daily_goal_mix_with_v21(cfg, Session):
+    """With v2.1 open the daily goal is one percentage: 10 Keeper posts, today's Dragondle and one new follow.
+    Without it the feed keeps the 20 post goal. The Dragondle question about the goal says 10, the start date the
+    feed uses is Dragondle #1, and the two new steps survive a sync from either device."""
+    import json as _json, re as _re
+    from radar import cloudsave
+    from radar.dragondle import BANK, START
+    app, c = _v21_client(cfg)
+    page = c.get("/friends").get_data(as_text=True)
+    data = _json.loads(_re.search(r'<script id="radar-data" type="application/json">(.*?)</script>', page, _re.S).group(1))
+    assert data["goal_rule"] == "mix" and data["goal"] == 10 and data["dle_start"] == START.isoformat()
+    assert "Daily goal 0%" in page and "Finish the daily goal to hatch" in page
+    plain = app.test_client(); plain.get("/preview/secret-preview-phrase-123")
+    data2 = _json.loads(_re.search(r'<script id="radar-data" type="application/json">(.*?)</script>', plain.get("/friends").get_data(as_text=True), _re.S).group(1))
+    assert data2["goal_rule"] == "keeper" and data2["goal"] == 20
+    q = next(q for q in BANK if "daily goal" in q["q"])
+    assert q["a"] == "10"
+    merged = cloudsave.merge({"goal": {"day": "2026-10-25", "n": 3, "d": True}}, {"goal": {"day": "2026-10-25", "n": 7, "f": True}})
+    assert merged["goal"] == {"day": "2026-10-25", "n": 7, "d": True, "f": True}

@@ -115,7 +115,9 @@
     const end = $("k-end");
     if (end) { const all = show === "all" && !query && !hide && list.length > 0; end.hidden = !all; if (all) end.textContent = `That is everyone, all ${list.length} Keepers. New ones appear here on their own when they wear the 🐉 with a blue tick.`; }
     $("k-count").textContent = keepers.length;
-    $("k-left").textContent = keepers.filter((k) => !followed[k.username.toLowerCase()]).length;
+    const left = keepers.filter((k) => !followed[k.username.toLowerCase()]).length;
+    $("k-left").textContent = left;
+    if (keepers.length) store.set("radar:kleft", left);     // the daily goal's follow step: nobody left to follow counts as done
   }
 
   document.querySelectorAll("[data-show]").forEach((b) => b.addEventListener("click", () => {

@@ -14,6 +14,37 @@
 {% endblock %}
 {% block header_right %}{% if cfg.demo_mode %}<span class="sample-flag">Demo data</span>{% endif %}<a class="btn btn-soft nav-keepers" href="{{ url_for('keepers_page') }}">{{ ico("shield", 20) }}<span>Keepers</span></a>{% endblock %}
 {% block main %}
+{% if v2 and v21_open %}<style>
+/* ---------- v2.1 daily goal: the three steps under the goal pill ---------- */
+.progress-strip { position: relative; }
+.progress-strip:has(.goal-steps:not([hidden])), .progress-strip.gs-open { z-index: 40; }
+.goal-steps { position: absolute; right: 12px; top: calc(100% + 8px); z-index: 30; width: min(340px, calc(100vw - 24px)); padding: 14px 14px 10px;
+  border-radius: 20px; background: #fff; color: var(--ink, #1f1636); box-shadow: 0 20px 50px -18px rgba(40, 20, 90, .45), 0 0 0 1px rgba(107, 79, 216, .16);
+  animation: gsIn .25s cubic-bezier(.3, 1.4, .5, 1); }
+.goal-steps[hidden] { display: none; }
+@keyframes gsIn { from { opacity: 0; transform: translateY(-6px) scale(.97); } }
+.gs-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.gs-head b { font: 600 17px/1.2 var(--font-display); }
+.gs-pct { font: 800 20px/1 var(--font-display); color: #6b4fd8; font-variant-numeric: tabular-nums; }
+.gs-bar { height: 8px; margin: 10px 0 8px; border-radius: 8px; background: rgba(107, 79, 216, .14); overflow: hidden; }
+.gs-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #ffb347, #ff8a5c); transition: width .5s; }
+.gs-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.gs-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 2px; border-top: 1px solid rgba(107, 79, 216, .1); }
+.gs-row:first-child { border-top: 0; }
+.gs-tick { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-style: normal; font-weight: 900; font-size: 13px;
+  color: #fff; background: transparent; box-shadow: inset 0 0 0 2px rgba(107, 79, 216, .3); }
+.gs-row.ok .gs-tick { background: #22c55e; box-shadow: none; }
+.gs-t b { display: block; font-size: 14.5px; font-weight: 800; }
+.gs-row.ok .gs-t b { color: var(--ink-soft, #6b6584); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.gs-t small { display: block; font-size: 12.5px; color: var(--ink-soft, #6b6584); font-weight: 700; }
+.gs-go { display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: 999px; font-weight: 900; font-size: 13.5px; text-decoration: none;
+  color: #fff; background: linear-gradient(180deg, #8b6cf0, #6b4fd8); white-space: nowrap; }
+@media (max-width: 560px) { .goal-steps { right: 0; left: 0; margin: 0 auto; } }
+html.theme-dark .goal-steps { background: #1e1836; color: #efeafc; box-shadow: 0 20px 50px -18px rgba(0, 0, 0, .8), 0 0 0 1px rgba(169, 150, 255, .22); }
+html.theme-dark .gs-row { border-top-color: rgba(169, 150, 255, .14); }
+html.theme-dark .gs-pct { color: #c9bbff; }
+html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9; }
+</style>{% endif %}
   <section class="inapp" id="inapp" hidden aria-labelledby="ia-title">
     <div class="ia-text">
       <b id="ia-title">You are inside the X app</b>
@@ -41,7 +72,7 @@
     <img src="{{ asset('brand/badge-96.webp') }}" alt="" width="64" height="64" class="sh-badge">
     <div class="sh-text">
       <h2 id="sh-title">New here? Welcome to Blinky's Friends</h2>
-      <p>Every Pocket Dragons post the community shares, in one feed. Open a post, show it some love on X, and it leaves your list. Cheer on 20 fellow Keepers a day to hatch a dragon.</p>
+      <p>Every Pocket Dragons post the community shares, in one feed. Open a post, show it some love on X, and it leaves your list. {% if v21_open %}Finish the daily goal to hatch a dragon.{% else %}Cheer on 20 fellow Keepers a day to hatch a dragon.{% endif %}</p>
     </div>
     <div class="sh-actions">
       <button class="btn btn-go" id="sh-go" type="button">Start here</button>
@@ -89,7 +120,7 @@
     <div class="meter"><i id="meter"></i></div>
     <span class="meter-label"><span id="m-done">0 opened</span> · <span id="m-total">0 posts</span></span>
     <button class="streak" id="streak" type="button" hidden></button>
-    <button class="goal" id="goal" type="button" title="{{ 'Daily goal: open 20 posts from fellow Keepers' if v2 else 'Daily goal: open 5 posts that need love' }}"><span class="goal-egg" id="goal-egg" aria-hidden="true"></span><span id="goal-text">{{ '0/20 Keeper posts' if v2 else '0/5 quiet posts' }} today</span></button>
+    <button class="goal" id="goal" type="button" title="{{ 'Daily goal: 10 Keeper posts, the Dragondle and 1 new follow' if (v2 and v21_open) else ('Daily goal: open 20 posts from fellow Keepers' if v2 else 'Daily goal: open 5 posts that need love') }}"><span class="goal-egg" id="goal-egg" aria-hidden="true"></span><span id="goal-text">{% if v2 and v21_open %}Daily goal 0%{% else %}{{ '0/20 Keeper posts' if v2 else '0/5 quiet posts' }} today{% endif %}</span></button>
   </div>
 
   <section class="pulse" id="pulse" aria-label="Community pulse">
@@ -306,7 +337,7 @@
       </div>
       <div class="pg-block">
         <b>My dragons</b>
-        <p>Cheer on 20 fellow Keepers a day to hatch an egg. Your dragons move with the code above too.</p>
+        <p>{% if v21_open %}Finish the daily goal to hatch an egg.{% else %}Cheer on 20 fellow Keepers a day to hatch an egg.{% endif %} Your dragons move with the code above too.</p>
         <button class="btn btn-go" data-dex type="button">See my dragons</button>
       </div>{% endif %}
       <p class="kp-msg" id="pg-msg" role="status"></p>
@@ -366,7 +397,7 @@
         <span class="dex-dots" id="dex-dots" aria-hidden="true"><i></i><i></i><i></i></span>
         <button class="dex-arrow" id="dex-next-page" type="button" aria-label="Next page">&#8250;</button>
       </div>
-      <p class="dex-how">Cheer on 20 fellow Keepers a day to hatch one egg. New dragons come at a steady pace, so keep showing up every day. Rare holo dragons need a 3 day goal streak and golden legends need 7, so do not break the chain. Your dragons live on this device, and the code in My progress moves them to another one.</p>
+      <p class="dex-how">{% if v21_open %}Finish the daily goal to hatch one egg: open 10 Keeper posts, play the Dragondle and follow 1 new Keeper.{% else %}Cheer on 20 fellow Keepers a day to hatch one egg.{% endif %} New dragons come at a steady pace, so keep showing up every day. Rare holo dragons need a 3 day goal streak and golden legends need 7, so do not break the chain. Your dragons live on this device, and the code in My progress moves them to another one.</p>
       <div class="sheet-actions dex-actions">
         <button class="btn btn-go" id="dex-save" type="button">Save my book</button>
         <button class="btn btn-go" id="dex-share" type="button" hidden>Share</button>
@@ -448,7 +479,7 @@
     </div>
   </div>
   {% endif %}
-  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "updated": updated, "goal": 20 if v2 else 5, "goal_rule": "keeper" if v2 else "quiet", "v2": v2, "icons": {"bulb": cfg.icon("bulb")}} | tojson }}</script>
+  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "updated": updated, "goal": 10 if (v2 and v21_open) else (20 if v2 else 5), "goal_rule": "mix" if (v2 and v21_open) else ("keeper" if v2 else "quiet"), "dle_start": dle_start, "v2": v2, "icons": {"bulb": cfg.icon("bulb")}} | tojson }}</script>
   <script src="{{ asset('keeper.js') }}"></script>
   <script src="{{ asset('app.js') }}"></script>
   {% if v2 %}<script src="{{ asset('weekly2.js') }}" defer></script>{% else %}<script src="{{ asset('weekly.js') }}" defer></script>{% endif %}
