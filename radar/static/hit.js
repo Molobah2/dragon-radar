@@ -37,6 +37,8 @@
   const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   const ua = navigator.userAgent || "";
   const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  // in-app browsers (X, Instagram, Telegram, Discord) have no Add to Home Screen, so the iPhone how to would mislead
+  const inApp = /FBAN|FBAV|Instagram|Line\/|Twitter|Telegram|Discord|; wv\)/i.test(ua);
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
   let deferred = null;
   const buttons = () => document.querySelectorAll("[data-install]");
@@ -84,7 +86,48 @@
       if (e.target.closest && e.target.closest("[data-nudge-close]")) { store.set("pd:installNag", "done"); const n = document.getElementById("install-nudge"); if (n) n.hidden = true; return; }
       if (e.target === howEl()) closeHow();
     });
-    if (ios) { show(); maybeNudge(); }
+    if (ios && !inApp) { show(); maybeNudge(); }
+    addEventListener("keydown", (e) => { if (e.key === "Escape") { const w = howEl(); if (w && !w.hidden) closeHow(); } });
   }
   if (document.readyState === "loading") addEventListener("DOMContentLoaded", ready); else ready();
+})();
+
+/* Dialogs (the sheets): when one opens, the keyboard moves into it and stays there; when it closes, focus goes back
+   to the button that opened it. One watcher for every sheet on every page. */
+(() => {
+  "use strict";
+  const openers = new WeakMap();
+  const FOCUS = "button:not([disabled]):not([hidden]), a[href], input:not([type=hidden]):not([disabled]), select, textarea, [tabindex]:not([tabindex='-1'])";
+  const shown = (el) => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  const openSheet = () => [...document.querySelectorAll(".sheet-wrap.open")].pop();
+  function watch(w) {
+    new MutationObserver(() => {
+      const isOpen = w.classList.contains("open");
+      if (isOpen && !openers.has(w)) {
+        openers.set(w, document.activeElement);
+        setTimeout(() => {
+          if (!w.classList.contains("open") || w.contains(document.activeElement)) return;
+          const sheet = w.querySelector(".sheet") || w;
+          const first = [...sheet.querySelectorAll(FOCUS)].find(shown);
+          if (first) first.focus({ preventScroll: true });
+          else { sheet.setAttribute("tabindex", "-1"); sheet.focus({ preventScroll: true }); }
+        }, 60);
+      } else if (!isOpen && openers.has(w)) {
+        const back = openers.get(w); openers.delete(w);
+        if (back && back.focus && document.contains(back) && !openSheet()) back.focus({ preventScroll: true });
+      }
+    }).observe(w, { attributes: true, attributeFilter: ["class"] });
+  }
+  function start() {
+    document.querySelectorAll(".sheet-wrap").forEach(watch);
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Tab") return;
+      const w = openSheet(); if (!w) return;
+      const f = [...w.querySelectorAll(FOCUS)].filter(shown); if (!f.length) return;
+      const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+    });
+  }
+  if (document.readyState === "loading") addEventListener("DOMContentLoaded", start); else start();
 })();

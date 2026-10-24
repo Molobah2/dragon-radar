@@ -1617,7 +1617,7 @@ def test_speed_budget(cfg, Session):
     c = v2_client(cfg)
     # /friends raised on purpose (120k to 124k): the song picker controls and the dragon book; the picker's
     # list itself (music.js) only loads when someone opens it
-    budgets = {"/friends": (128_000, 60_000),   # raised on purpose: the X app note, its move code button and the safe copy for signed Keepers
+    budgets = {"/friends": (130_000, 60_000),   # raised on purpose: the X app note, its move code button and the safe copy for signed Keepers, then the audit fixes (dialog focus, phone layout)
                 "/": (15_000, 40_000), "/friends/keepers": (60_000, 40_000)}
     for path, (code_max, html_max) in budgets.items():
         html = c.get(path).get_data(as_text=True)
@@ -2603,3 +2603,27 @@ def test_dragondle_bank_is_translated_item_for_item(cfg, Session):
             assert q["opts"][q["a"]] == BANK[k]["a"]
             for lang, t in q["tr"].items():
                 assert t["opts"][q["a"]] == tr[lang][k]["a"] and sorted(t["opts"]) == sorted([tr[lang][k]["a"], *tr[lang][k]["w"]])
+
+
+def test_audit_fixes_server(cfg, Session):
+    """Jon's lab tools stay locked after launch, odd numbers are turned away instead of crashing, avatar
+    lookups take only real handles, and locked v2.1 answers are never kept by shared caches."""
+    cfg.v2_public = True
+    app, c = _v21_client(cfg)
+    r = c.get("/welcome")
+    assert r.status_code == 200 and "no-store" in r.headers["Cache-Control"] and "Cookie" in r.headers.get("Vary", "")
+    cfg.v21_public = True
+    stranger = create_app(cfg).test_client()
+    for path in ("/lab/creator", "/lab/dragondle"):
+        assert stranger.get(path).status_code == 404, path
+    assert stranger.post("/lab/creator/pick", data={"user": "EvilGuy"}).status_code == 404
+    assert stranger.post("/lab/creator/undo").status_code == 404
+    assert stranger.get("/welcome").status_code == 200
+    raw = '{"vid":"' + "a" * 32 + '","score":1e400,"n":1}'
+    assert stranger.post("/api/dragondle", data=raw, content_type="application/json").status_code == 400
+    assert stranger.post("/api/dragondle", json={"vid": "a" * 32, "score": 2.5, "n": 1}).status_code == 400
+    assert stranger.get("/api/wrapped?vid=" + "a" * 32 + "&m=99999999999999999999-1").status_code == 400
+    assert stranger.get("/api/avatar/" + "x" * 200).status_code == 404
+    assert stranger.get("/api/avatar/bad%20name").status_code == 404
+    r = stranger.post("/api/feedback", data='{"rating":1e999}', content_type="application/json")
+    assert r.status_code in (400, 429)

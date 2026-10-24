@@ -19,7 +19,7 @@ body { background: #1a1430; }
 .cv-world img { position: absolute; inset: -4%; width: 108%; height: 108%; object-fit: cover; filter: blur(14px) saturate(1.1); transition: opacity 1s var(--ease); }
 .cv-world img.off { opacity: 0; }
 .cv-world::after { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 20%, rgba(20, 14, 40, .25), rgba(20, 14, 40, .82) 70%, #1a1430); }
-.cv-app { position: relative; z-index: 2; min-height: 100svh; display: flex; flex-direction: column; }
+.cv-app { position: relative; z-index: 2; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
 .v-bar { position: relative; }
 .scene-pick { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: rgba(20, 12, 40, .45); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .scene-pick button { height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font: 800 13px/1 var(--body); color: var(--soft); cursor: pointer; }
@@ -37,7 +37,7 @@ body { background: #1a1430; }
 /* the island itself: 16 by 9 like the card, so what you see is what you save */
 .stage-wrap { position: relative; border-radius: 24px; padding: 6px; background: linear-gradient(180deg, rgba(255, 230, 190, .5), rgba(255, 190, 120, .2));
   box-shadow: 0 40px 80px -30px rgba(0,0,0,.95); }
-.stage { position: relative; aspect-ratio: 16 / 9; border-radius: 19px; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; background: #2a2040; }
+.stage { position: relative; aspect-ratio: 16 / 9; border-radius: 19px; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; background: #2a2040; }
 .stage > .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; transition: opacity .8s var(--ease); }
 .stage > .bg.off { opacity: 0; }
 .piece { position: absolute; transform-origin: center; cursor: grab; touch-action: none; }
@@ -62,7 +62,7 @@ body { background: #1a1430; }
 .tools button.warn { color: #ffd0c4; }
 .tools svg { width: 17px; height: 17px; }
 .tools .sign-in { padding: 0 6px 0 14px; cursor: default; }
-.tools .sign-in input { width: 150px; height: 32px; border: 0; border-radius: 999px; padding: 0 12px; background: rgba(255,255,255,.14); color: var(--ink); font: 800 14px/1 var(--body); outline: 0; }
+.tools .sign-in input { width: 150px; height: 32px; border: 0; border-radius: 999px; padding: 0 12px; background: rgba(255,255,255,.14); color: var(--ink); font: 800 16px/1 var(--body); outline: 0; }
 .tools .none { color: var(--mute); font-size: 14px; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
 
 /* the tray of things to add */
@@ -159,6 +159,7 @@ body { background: #1a1430; }
 <div class="toast" id="toast" role="status"></div>
 
 <script src="{{ asset('dex-data.js') }}"></script>
+<script src="{{ asset('v21/save.js') }}"></script>
 <script src="{{ asset('i18n.js') }}"></script>
 <script>
 (() => {
@@ -171,6 +172,7 @@ body { background: #1a1430; }
   const STK = new Set([...document.querySelectorAll('#tab-st .add')].map((b) => b.dataset.key));
   const PRH = Object.fromEntries([...document.querySelectorAll('#tab-pr .add')].map((b) => [b.dataset.key, +b.dataset.h]));
   const MAX = 30, KEY = "pd:canvas";
+  const LABEL = Object.fromEntries([...document.querySelectorAll('#tab-st .add, #tab-pr .add')].map((b) => [b.dataset.kind + ":" + b.dataset.key, b.querySelector("span").textContent]));
   let tt = 0;
   function toast(m) { const t = $("toast"); t.textContent = T(m); t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 3200); }
   const store = {
@@ -239,7 +241,8 @@ body { background: #1a1430; }
     return { id: nid++, kind: it.kind, key: String(it.key || ""), x: clamp(+it.x || .5, 0, 1), y: clamp(+it.y || .5, 0, 1), h: clamp(+it.h || .3, .06, .95),
       r: ((+it.r || 0) % 360 + 360) % 360, f: !!it.f, say: it.kind === "pr" && it.key === "sign" ? String(it.say || "").slice(0, 16) : "" };
   }
-  function save() { if (!ready) return; store.set(KEY, { sc, items: items.map(({ id, el, ...rest }) => rest) }); }
+  let laterMe = [];                       // the Keeper's picture pieces wait here until their picture is found
+  function save() { if (!ready) return; store.set(KEY, { sc, items: items.map(({ id, el, ratio, ...rest }) => rest).concat(laterMe) }); }
 
   function place(it) {
     const el = it.el;
@@ -258,7 +261,7 @@ body { background: #1a1430; }
   function draw(it, pop) {
     const el = document.createElement("div"); el.className = "piece" + (pop ? " pop" : ""); el.tabIndex = 0; el.dataset.id = it.id;
     el.setAttribute("role", "button");
-    el.setAttribute("aria-label", it.kind === "dr" ? nameOf(it.key) : it.kind === "me" ? T("Your picture") : it.key);
+    el.setAttribute("aria-label", it.kind === "dr" ? nameOf(it.key) : it.kind === "me" ? T("Your picture") : T(LABEL[it.kind + ":" + it.key] || it.key));
     const img = document.createElement("img"); img.alt = ""; img.draggable = false;
     if (it.kind === "dr") img.crossOrigin = "anonymous";
     img.onload = () => { it.ratio = img.naturalWidth / img.naturalHeight; fitSay(it); };
@@ -330,7 +333,7 @@ body { background: #1a1430; }
     e.preventDefault(); (e.deltaY < 0 ? ACT.big : ACT.small)(sel); place(sel); save();
   }, { passive: false });
   addEventListener("keydown", (e) => {
-    if (!sel || document.activeElement === $("say")) return;
+    if (!sel || (e.target.closest && e.target.closest("input, select, textarea, button, a"))) return;
     const step = e.shiftKey ? .05 : .01, mv = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
     if (mv) { e.preventDefault(); sel.x = clamp(sel.x + mv[0], 0, 1); sel.y = clamp(sel.y + mv[1], 0, 1); place(sel); save(); }
     else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); remove(sel); }
@@ -367,7 +370,12 @@ body { background: #1a1430; }
   async function findMe() {
     const box = $("tab-me"); let data = null;
     const v = vid();
-    if (v) { try { data = await (await fetch(`/api/cheers/me?vid=${v}`)).json(); } catch (e) { data = null; } }
+    if (v) {
+      const ctl = window.AbortController ? new AbortController() : null; const t = setTimeout(() => ctl && ctl.abort(), 8000);
+      try { const r = await fetch(`/api/cheers/me?vid=${v}`, ctl ? { signal: ctl.signal } : {}); data = r.ok ? await r.json() : null; } catch (e) { data = null; }
+      clearTimeout(t);
+      if (data === null) { box.innerHTML = `<p class="empty">${T("Could not find your picture right now. Try again in a moment.")}</p>`; return null; }
+    }
     if (!data || !data.signed) {
       box.innerHTML = `<p class="empty">${T("Sign Blinky's Book of Friends to add your picture.")} <a href="/friends#book">${T("Sign the book")}</a></p>`;
       return false;
@@ -394,6 +402,7 @@ body { background: #1a1430; }
 
   /* ---------- the card: drawn in the browser, nothing leaves this device ---------- */
   const W = 1200, H = 675;
+  function pill(x, X, Y, w, h, r) { x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); }
   async function card() {
     try { await document.fonts.load('700 60px "Fredoka"'); await document.fonts.load('800 20px "Nunito"'); } catch (e) { /* fine */ }
     const c = document.createElement("canvas"); c.width = W * 2; c.height = H * 2;
@@ -419,7 +428,7 @@ body { background: #1a1430; }
     }
     // the pdtools stamp, bottom right
     x.font = '800 20px "Nunito", sans-serif'; const tw = x.measureText("pdtools.xyz").width;
-    x.fillStyle = "rgba(20, 12, 40, .55)"; x.beginPath(); x.roundRect(W - tw - 52, H - 54, tw + 32, 36, 18); x.fill();
+    x.fillStyle = "rgba(20, 12, 40, .55)"; x.beginPath(); pill(x, W - tw - 52, H - 54, tw + 32, 36, 18); x.fill();
     x.fillStyle = "#fff3dd"; x.textAlign = "left"; x.textBaseline = "middle"; x.fillText("pdtools.xyz", W - tw - 36, H - 36);
     return new Promise((res) => c.toBlob(res, "image/png"));
   }
@@ -429,9 +438,8 @@ body { background: #1a1430; }
     try {
       pick(null);
       const b = await card(); if (!b) throw new Error("no card");
-      const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "pdtools-sky-island.png";
-      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-      toast("Saved. Share your island on X.");
+      const how = await window.pdSave(b, "pdtools-sky-island.png");
+      if (how === "saved" || how === "shared") toast("Saved. Share your island on X.");
     } catch (e) { toast("Could not make the card. Try again."); }
     busy = false;
   });
@@ -452,15 +460,20 @@ body { background: #1a1430; }
   /* ---------- start: bring back this device's island, or a friendly first one ---------- */
   (async () => {
     const saved = store.get(KEY, null);
-    const hasMe = await findMe();
     if (saved && typeof saved === "object" && saved.sc === "b") sc = "b";
     scene(sc);
     const list = saved && Array.isArray(saved.items) ? saved.items : START;
     for (const raw of list.slice(0, MAX)) {
-      if (!valid(raw) || (raw.kind === "me" && !hasMe)) continue;
+      if (!valid(raw)) continue;
+      if (raw.kind === "me") { laterMe.push(raw); continue; }      // drawn once the picture is found
       const it = clean(raw); items.push(it); draw(it, false);
     }
     ready = true; save();
+    const hasMe = await findMe();
+    if (hasMe === null) return;                                     // no answer: keep the picture pieces for next time
+    const wait = laterMe; laterMe = [];
+    if (hasMe) for (const raw of wait) { if (items.length >= MAX) break; const it = clean(raw); items.push(it); draw(it, false); }
+    save();
   })();
 })();
 </script>

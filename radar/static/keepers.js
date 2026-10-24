@@ -4,17 +4,18 @@
   const $ = (id) => document.getElementById(id);
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    obj(k) { const v = this.get(k, null); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
   };
-  const followed = store.get("radar:followed", {}) || {};
+  const followed = store.obj("radar:followed");
   // tapped Follow on X but not confirmed yet: X never tells the site whether you really followed (you may have cancelled),
   // so the card asks when you come back instead of guessing
-  const pending = store.get("radar:pending", {}) || {};
+  const pending = store.obj("radar:pending");
   const savePending = () => store.set("radar:pending", pending);
   let show = "all", hide = !!store.get("radar:hideFollowed", false), query = "";
   $("k-hide").checked = hide;
   let team = [], keepers = [];
-  const fans = store.get("pd:authors", {}) || {};          // whose posts you opened on the feed (this browser only)
+  const fans = store.obj("pd:authors");          // whose posts you opened on the feed (this browser only)
   const fanOf = (k) => fans[k.username.toLowerCase()] || 0;
   let sort = store.get("radar:kSort", null) || (Object.keys(fans).length ? "foryou" : "suggested");
   $("k-sort").value = sort;
@@ -128,7 +129,7 @@
 
   async function add() {
     const handle = $("k-handle").value.trim(), msg = $("k-msg");
-    if (!handle) return;
+    if (!handle || $("k-add").disabled) return;          // Enter twice in a row sends once
     $("k-add").disabled = true; msg.textContent = "Blinky is checking...";
     try {
       const r = await fetch("/api/keepers/add", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ handle }) });

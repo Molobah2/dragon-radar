@@ -18,7 +18,12 @@ self.addEventListener("install", (e) => {
 
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys()
-    .then((ks) => Promise.all(ks.filter((k) => k.startsWith("pd-") && k !== PAGES && k !== STATIC).map((k) => caches.delete(k))))
+    .then((ks) => {
+      // keep the newest older set of static files too, so a tab still open from before the update gets its own files
+      const statics = ks.filter((k) => k.startsWith("pd-static-") && k !== STATIC);
+      const keep = new Set([PAGES, STATIC, statics[statics.length - 1]]);
+      return Promise.all(ks.filter((k) => k.startsWith("pd-") && !keep.has(k)).map((k) => caches.delete(k)));
+    })
     // navigation preload: the page request starts while this helper is still waking up, so pages are not slowed by it
     .then(() => self.registration.navigationPreload && self.registration.navigationPreload.enable().catch(() => {}))
     .then(() => self.clients.claim()));
@@ -31,7 +36,9 @@ async function page(req, preload) {
   try {
     const early = preload ? await Promise.race([preload, timeout(6000)]) : null;   // undefined when preload is off
     const res = early || await Promise.race([fetch(req), timeout(6000)]);
-    if (res && res.ok && res.type === "basic") cache.put(new URL(req.url).pathname, res.clone());
+    const u = new URL(req.url);
+    // only the plain page is kept (a filtered feed would come back with the wrong posts), never a private one
+    if (res && res.ok && res.type === "basic" && !u.search && !/no-store/.test(res.headers.get("Cache-Control") || "")) cache.put(u.pathname, res.clone());
     return res;
   } catch (err) {
     const hit = await cache.match(new URL(req.url).pathname) || await cache.match("/friends") || await cache.match("/");
@@ -45,10 +52,11 @@ async function page(req, preload) {
 
 async function asset(req) {
   const cache = await caches.open(STATIC);
-  const hit = await cache.match(req);
+  const hit = await caches.match(req);       // any version this helper still holds, including the one before an update
   if (hit) return hit;
   const res = await fetch(req);
-  if (res && res.ok) cache.put(req, res.clone());
+  // only this version's files are kept: an old version's name would otherwise be stored with today's file
+  if (res && res.ok && new URL(req.url).searchParams.get("v") === VERSION) cache.put(req, res.clone());
   return res;
 }
 
@@ -63,6 +71,6 @@ self.addEventListener("fetch", (e) => {
   // share pictures take a few seconds to draw the first time, and the locked v2.1 pages are never kept offline
   if (/\.(png|jpe?g|webp)$/.test(url.pathname) || /^\/(welcome|creator|circle|dragondle|wrapped|cheers|stickers|canvas)(\/|$)/.test(url.pathname)) return;
   if (req.mode === "navigate") { e.respondWith(page(req, e.preloadResponse)); return; }
-  if (url.pathname.startsWith("/static/") && url.searchParams.get("v") === VERSION) { e.respondWith(asset(req)); return; }
+  if (url.pathname.startsWith("/static/") && url.searchParams.get("v")) { e.respondWith(asset(req)); return; }
 });
 {% endif %}

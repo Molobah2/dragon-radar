@@ -6,13 +6,14 @@
   const get = () => { try { return localStorage.getItem("pd:theme"); } catch (e) { return null; } };
   const set = (v) => { try { localStorage.setItem("pd:theme", v); } catch (e) { /* private mode */ } };
   const meta = document.querySelector('meta[name="theme-color"]');
+  const light = meta && meta.getAttribute("content");
   function paint() {
     const dark = root.classList.contains("theme-dark");
     btn.setAttribute("aria-pressed", String(dark));
     const label = btn.querySelector(".t-label");
     if (label) label.textContent = dark ? "Light" : "Dark";
     btn.title = dark ? "Light mode" : "Dark mode";
-    if (dark && meta) meta.setAttribute("content", "#0b0f1c");
+    if (meta) meta.setAttribute("content", dark ? "#0b0f1c" : light);
   }
   btn.addEventListener("click", () => {
     const dark = !root.classList.contains("theme-dark");

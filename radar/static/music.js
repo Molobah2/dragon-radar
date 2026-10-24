@@ -122,11 +122,23 @@
     if (!panel) build();
     view = by ? String(by).toLowerCase() : null;
     if (view && !makers().some((m) => m.key === view)) view = null;
+    opener = document.activeElement;
     panel.hidden = false; void panel.offsetWidth; panel.classList.add("open");
     paint();
+    setTimeout(() => { const x = panel.querySelector(".mp-x"); if (x) x.focus({ preventScroll: true }); }, 60);
   }
-  function closePanel() { if (!panel) return; panel.classList.remove("open"); setTimeout(() => { if (!panel.classList.contains("open")) panel.hidden = true; }, 250); }
+  let opener = null;
+  function closePanel() {
+    if (!panel) return;
+    if (opener && opener.focus && panel.contains(document.activeElement)) opener.focus({ preventScroll: true });
+    panel.classList.remove("open"); setTimeout(() => { if (!panel.classList.contains("open")) panel.hidden = true; }, 250); }
   addEventListener("pd:song", paint);
-  setInterval(() => { if (panel && !panel.hidden) paint(); }, 2000);
+  // a quiet check: the list is only rebuilt when the song or the mode really changed, so taps and focus stay put
+  let lastSig = "";
+  setInterval(() => {
+    if (!panel || panel.hidden) return;
+    const sig = `${S().playing()}|${S().only()}|${view}|${S().songs().length}`;
+    if (sig !== lastSig) { lastSig = sig; paint(); }
+  }, 2000);
   window.pdMusicPicker = { open: openPanel, close: closePanel };
 })();

@@ -21,7 +21,7 @@ body { background: #1c120a; }
 @keyframes drift { from { transform: scale(1.02) translate(0, 0); } to { transform: scale(1.08) translate(-1%, -1%); } }
 .dl-world::after { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 40%, rgba(28, 18, 10, .15), rgba(28, 18, 10, .78) 70%, #1c120a 100%); }
 .dl-world canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
-.dl-app { position: relative; z-index: 2; min-height: 100svh; display: flex; flex-direction: column; }
+.dl-app { position: relative; z-index: 2; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
 .v-bar { position: relative; }
 .scene-pick { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: rgba(30, 14, 8, .45); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .scene-pick button { height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font: 800 13px/1 var(--body); color: var(--soft); cursor: pointer; }
@@ -163,6 +163,7 @@ body { background: #1c120a; }
 <script type="application/json" id="game">{{ game|tojson }}</script>
 <script src="{{ asset('i18n.js') }}"></script>
 <script src="{{ asset('cardkit.js') }}"></script>
+<script src="{{ asset('v21/save.js') }}"></script>
 <script>
 (() => {
   "use strict";
@@ -295,8 +296,10 @@ body { background: #1c120a; }
 
   /* the share card: the chosen scene, Pinky, the score and a spoiler free row of eggs and dragons */
   function img(src) { return new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
+  let saving = false;
   $("save").addEventListener("click", async () => {
-    const K = window.pdCard; if (!K) return;
+    const K = window.pdCard; if (!K || saving) return;
+    saving = true; setTimeout(() => { saving = false; }, 2500);
     await K.fonts();
     const { c, x } = K.canvas(2), W = K.W, H = K.H;
     const el = $(sc === "b" ? "sc-b" : "sc-a"), bg = await img(el.currentSrc || el.src);
@@ -313,7 +316,11 @@ body { background: #1c120a; }
     const st = streaks(); x.fillStyle = "#f1d9c2"; x.font = '800 28px "Nunito", sans-serif'; x.fillText(`${T(st.cur === 1 ? "1 day streak" : `${st.cur} day streak`)} · ${T("The daily Pocket Dragons puzzle")}`, 70, 486);
     x.fillStyle = "#ffcd6e"; x.font = '800 26px "Nunito", sans-serif'; x.fillText("pdtools.xyz/dragondle", 70, 606);
     K.grain(x, .05);
-    c.toBlob((b) => { if (!b) return; const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `dragondle-${G.n}.png`; a.click(); toast("Card saved. Add it to your post on X."); }, "image/png");
+    c.toBlob(async (b) => {
+      try { const how = await window.pdSave(b, `dragondle-${G.n}.png`); if (how === "saved" || how === "shared") toast(T("Card saved. Add it to your post on X.")); }
+      catch (e) { toast(T("Could not make the card. Try again.")); }
+      saving = false;
+    }, "image/png");
   });
 
   if (window.radarLang && window.radarLang !== "en" && !G.qs.every((q) => q.tr && q.tr[window.radarLang])) $("en-note").hidden = false;

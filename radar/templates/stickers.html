@@ -20,7 +20,7 @@ body { background: #21150e; }
 .st-world img.off { opacity: 0; }
 @keyframes drift { from { transform: scale(1.02); } to { transform: scale(1.08) translate(-1%, 1%); } }
 .st-world::after { content: ""; position: absolute; inset: 0; background: radial-gradient(110% 80% at 50% 30%, rgba(33, 21, 14, .15), rgba(33, 21, 14, .78) 70%, #21150e); }
-.st-app { position: relative; z-index: 2; min-height: 100svh; display: flex; flex-direction: column; }
+.st-app { position: relative; z-index: 2; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
 .v-bar { position: relative; }
 .scene-pick { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: rgba(30, 14, 8, .45); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .scene-pick button { height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font: 800 13px/1 var(--body); color: var(--soft); cursor: pointer; }
@@ -101,7 +101,7 @@ body { background: #21150e; }
         <li data-who="{{ s.who }}" data-word="{{ '1' if w else '' }}" style="--i:{{ n * 2 + loop.index0 }};--r:{{ [-3, 2, -1, 3, -2, 1][(n * 2 + loop.index0) % 6] }}deg">
           <button class="tile" type="button" data-key="{{ s.key }}" data-w="{{ w }}" data-mood="{{ s.mood }}">
             <i class="pin" aria-hidden="true"></i>
-            <img src="{{ asset('v21/stickers/st-' ~ s.key ~ w ~ '.webp') }}" alt="{{ s.mood }}{{ ', ' ~ s.word if w else '' }}" width="512" height="512" loading="lazy">
+            <img src="{{ asset('v21/stickers/st-' ~ s.key ~ w ~ '.webp') }}" alt="{{ s.mood }}" width="512" height="512" loading="lazy">
             <b>{{ s.mood }}</b>
           </button>
         </li>
@@ -128,6 +128,7 @@ body { background: #21150e; }
 <div class="toast" id="toast" role="status"></div>
 
 <script src="{{ asset('i18n.js') }}"></script>
+<script src="{{ asset('v21/save.js') }}"></script>
 <script>
 (() => {
   "use strict";
@@ -162,18 +163,35 @@ body { background: #21150e; }
     $("peek-save").href = src; $("peek-save").setAttribute("download", `pdtools-${cur.key}${kind}.png`);
     document.querySelectorAll("[data-k]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.k === kind ? "true" : "false"));
   }
-  function open(b) { cur = { key: b.dataset.key, mood: b.dataset.mood }; kind = b.dataset.w; show(); $("peek").hidden = false; $("peek-x").focus(); }
-  function close() { $("peek").hidden = true; }
+  let opener = null;
+  function open(b) { opener = b; cur = { key: b.dataset.key, mood: b.dataset.mood }; kind = b.dataset.w; show(); $("peek").hidden = false; document.body.style.overflow = "hidden"; $("peek-x").focus(); }
+  function close() { if ($("peek").hidden) return; $("peek").hidden = true; document.body.style.overflow = ""; if (opener) opener.focus(); }
   grid.addEventListener("click", (e) => { const b = e.target.closest(".tile"); if (b) open(b); });
   document.querySelectorAll("[data-k]").forEach((b) => b.addEventListener("click", () => { kind = b.dataset.k; show(); }));
   $("peek-x").addEventListener("click", close);
   $("peek").addEventListener("click", (e) => { if (e.target === $("peek")) close(); });
-  addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
-  $("peek-save").addEventListener("click", () => setTimeout(() => toast("Saved. Add it to your post on X."), 300));
+  addEventListener("keydown", (e) => {
+    if ($("peek").hidden) return;
+    if (e.key === "Escape") close();
+    if (e.key === "Tab") {                      // keep the keyboard inside the close-up while it is open
+      const f = [...$("peek").querySelectorAll("button:not([hidden]), a[href]")]; if (!f.length) return;
+      const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    }
+  });
+  $("peek-save").addEventListener("click", async (e) => {
+    if (!window.pdSave) return;                 // the plain link still downloads
+    e.preventDefault();
+    try {
+      const how = await window.pdSave(await (await fetch(`/stickers/${cur.key}${kind}.png`)).blob(), `pdtools-${cur.key}${kind}.png`);
+      if (how === "saved" || how === "shared") toast("Saved. Add it to your post on X.");
+    } catch (err) { location.href = `/stickers/${cur.key}${kind}.png`; }
+  });
   $("peek-copy").addEventListener("click", async () => {
     try {
-      const blob = await (await fetch(`/stickers/${cur.key}${kind}.png`)).blob();
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      // the picture is handed over as a promise, so Safari still counts the tap as the reason for copying
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": fetch(`/stickers/${cur.key}${kind}.png`).then((r) => r.blob()) })]);
       toast("Copied. Paste it into your post on X.");
     } catch (e) { toast("Your browser could not copy it. Use Save sticker instead."); }
   });

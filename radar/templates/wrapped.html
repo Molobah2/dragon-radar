@@ -21,7 +21,7 @@ body { background: #120c26; overflow-x: hidden; }
 @keyframes drift { from { transform: scale(1.02); } to { transform: scale(1.09) translate(-1%, 1%); } }
 .wr-world::after { content: ""; position: absolute; inset: 0; background: radial-gradient(100% 70% at 50% 45%, rgba(18, 12, 38, .2), rgba(18, 12, 38, .8) 75%, #120c26); }
 .wr-world canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
-.wr-app { position: relative; z-index: 2; min-height: 100svh; display: flex; flex-direction: column; }
+.wr-app { position: relative; z-index: 2; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
 .v-bar { position: relative; }
 .scene-pick { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: rgba(14, 10, 30, .45); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .scene-pick button { height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font: 800 13px/1 var(--body); color: #d9d0f2; cursor: pointer; }
@@ -34,7 +34,7 @@ body { background: #120c26; overflow-x: hidden; }
 .months button[aria-pressed="true"] { background: linear-gradient(180deg, #ffe08f, #ffb85c); color: #3a1a06; border-color: transparent; }
 
 /* the story */
-.story { position: relative; width: min(440px, 100%); height: min(780px, calc(100svh - 150px)); min-height: 560px; border-radius: 30px; overflow: hidden; isolation: isolate;
+.story { position: relative; width: min(440px, 100%); height: min(780px, calc(100vh - 150px)); height: min(780px, calc(100svh - 150px)); min-height: 560px; border-radius: 30px; overflow: hidden; isolation: isolate;
   background: linear-gradient(180deg, rgba(40, 26, 90, .55), rgba(18, 12, 38, .85)); border: 1px solid rgba(255, 255, 255, .16);
   box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255,255,255,.12); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); user-select: none; -webkit-user-select: none; }
 .bars { position: absolute; top: 14px; left: 14px; right: 14px; z-index: 5; display: flex; gap: 5px; }
@@ -76,7 +76,7 @@ body { background: #120c26; overflow-x: hidden; }
 .person b { display: block; font: 700 16px/1.2 var(--disp); color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .person small { display: block; color: #b9addf; font-weight: 800; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .person em { font-style: normal; font: 700 18px/1 var(--disp); color: #fff; }
-.card-img { width: 100%; border-radius: 16px; box-shadow: 0 20px 40px -20px #000; border: 1px solid rgba(255,255,255,.15); }
+.card-img { position: relative; z-index: 6; -webkit-touch-callout: default; user-select: auto; width: 100%; border-radius: 16px; box-shadow: 0 20px 40px -20px #000; border: 1px solid rgba(255,255,255,.15); }
 .acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .acts .btn { position: relative; z-index: 6; }
 .slide .btn.ghost { color: #fff; }
@@ -116,6 +116,7 @@ body { background: #120c26; overflow-x: hidden; }
 <div class="toast" id="toast" role="status"></div>
 
 <script src="{{ asset('dex-data.js') }}"></script>
+<script src="{{ asset('v21/save.js') }}"></script>
 <script src="{{ asset('i18n.js') }}"></script>
 <script src="{{ asset('cardkit.js') }}"></script>
 <script>
@@ -242,7 +243,7 @@ body { background: #120c26; overflow-x: hidden; }
   $("prev").addEventListener("click", () => go(cur - 1));
   ["pointerdown"].forEach((e) => $("story").addEventListener(e, () => { held = true; }));
   ["pointerup", "pointercancel", "pointerleave"].forEach((e) => $("story").addEventListener(e, () => { held = false; }));
-  addEventListener("keydown", (e) => { if (e.key === "ArrowRight") go(cur + 1); if (e.key === "ArrowLeft") go(cur - 1); });
+  addEventListener("keydown", (e) => { if (e.target.closest && e.target.closest("input, select, textarea")) return; if (e.key === "ArrowRight") go(cur + 1); if (e.key === "ArrowLeft") go(cur - 1); });
 
   /* the share card */
   function img(src, cors) { return new Promise((res) => { const i = new Image(); if (cors) i.crossOrigin = "anonymous"; i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
@@ -278,13 +279,24 @@ body { background: #120c26; overflow-x: hidden; }
     cardUrl = URL.createObjectURL(b);
     const im = $("card-img"); if (im) { im.src = cardUrl; im.hidden = false; $("card-wait").hidden = true; }
   }
-  async function save() { await buildCard(); if (!cardUrl) return; const a = document.createElement("a"); a.href = cardUrl; a.download = `hatchery-wrapped-${data.key}.png`; a.click(); toast("Card saved. Add it to your post on X."); }
+  let saving = false;
+  async function save() {
+    if (saving) return; saving = true;
+    try {
+      await buildCard(); if (!cardUrl) return;
+      const how = await window.pdSave(await (await fetch(cardUrl)).blob(), `hatchery-wrapped-${data.key}.png`);
+      if (how === "saved" || how === "shared") toast(T("Card saved. Add it to your post on X."));
+    } catch (e) { toast(T("Could not make the card. Try again.")); }
+    finally { saving = false; }
+  }
 
   /* months */
   function load(key) {
     cancelAnimationFrame(timer); gen++; slides = [];
     $("loading").hidden = false; $("loading").textContent = "Looking through the telescope…"; $("slides").innerHTML = ""; cardUrl = null;
+    const mine = gen;                       // a slower answer for another month is thrown away
     fetch(`/api/wrapped?vid=${vid()}&m=${key}`).then((r) => (r.ok ? r.json() : null)).then((j) => {
+      if (mine !== gen) return;
       if (!j || !j.ok) { $("loading").textContent = "The telescope is cloudy right now. Please try again in a moment."; return; }
       data = j; build();
     }).catch(() => { $("loading").textContent = "The telescope is cloudy right now. Please try again in a moment."; });

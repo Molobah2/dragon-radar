@@ -7,6 +7,7 @@ import json
 import mimetypes
 import hmac
 import os
+import re
 import secrets
 import time
 import threading
@@ -17,7 +18,7 @@ import hashlib
 from pathlib import Path
 from functools import wraps
 
-from flask import Flask, Response, abort, g, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, Response, abort, g, has_request_context, jsonify, make_response, redirect, render_template, request, session, url_for
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 
@@ -1124,7 +1125,9 @@ def create_app(cfg: Config | None = None) -> Flask:
                 got = grab(u)
                 if got:
                     break
-        if not got and now_ts - avatar_fx_tried.get(key, 0) > 6 * 3600:
+        if not got and now_ts - avatar_fx_tried.get(key, 0) > 6 * 3600 and not (has_request_context() and _too_many("avfx:" + client_ip(), limit=30, window=3600)):
+            if len(avatar_fx_tried) > 5000:
+                avatar_fx_tried.clear()
             avatar_fx_tried[key] = now_ts
             from .fxpic import profile as fx_profile
             fx = {}
@@ -1162,6 +1165,8 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     @app.get("/api/avatar/<handle>")
     def api_avatar(handle):
+        if not re.fullmatch(r"[A-Za-z0-9_]{1,15}", handle or ""):   # only real X handles are looked up
+            abort(404)
         got = avatar_bytes(handle, big=request.args.get("s") == "big")
         if not got:
             abort(404)
@@ -1238,6 +1243,8 @@ def create_app(cfg: Config | None = None) -> Flask:
             recent = [t for t in circle_hits.get(ip, []) if nowt - t < 3600]
             if len(recent) >= 40:
                 abort(429)
+            if len(circle_hits) > 20000:
+                circle_hits.clear()
             circle_hits[ip] = recent + [nowt]
             handles = [data["handle"]] + [p["user"] for p in data["people"]]
             def pic(h):
@@ -1269,7 +1276,11 @@ def create_app(cfg: Config | None = None) -> Flask:
         def inner(*a, **k):
             if not (cfg.v21_public or g.get("circle")):
                 abort(404)
-            return view(*a, **k)
+            resp = make_response(view(*a, **k))
+            if not cfg.v21_public:                   # a locked page or answer is never kept by a shared cache
+                resp.headers["Cache-Control"] = "private, no-store"
+                resp.headers.add("Vary", "Cookie")
+            return resp
         return inner
     v21_cache: dict[str, tuple[float, object]] = {}
     v21_png: dict[str, tuple[float, bytes]] = {}
@@ -1310,6 +1321,8 @@ def create_app(cfg: Config | None = None) -> Flask:
             recent = [t for t in circle_hits.get(ip, []) if nowt - t < 3600]
             if len(recent) >= 40:
                 abort(429)
+            if len(circle_hits) > 20000:
+                circle_hits.clear()
             circle_hits[ip] = recent + [nowt]
             if len(v21_png) > 80:
                 v21_png.clear()
@@ -1331,12 +1344,19 @@ def create_app(cfg: Config | None = None) -> Flask:
                                og_title="The welcome lane · new Keepers on PD Tools",
                                og_desc="Keepers sharing their very first Pocket Dragons post. Be the first to say hello.")
 
+    def welcome_one(handle):
+        """One new Keeper for their welcome page and card, kept for 3 minutes like the lane."""
+        from .v21 import welcome_person
+        def make():
+            with Session() as s:
+                return welcome_person(s, cfg, handle, utcnow())
+        return v21_cached("wp:" + str(handle).lower()[:40], 180, make)
+
     @app.get("/welcome/<handle>")
     @v21_only
     def welcome_page(handle):
         from .v21 import welcome_person
-        with Session() as s:
-            person = welcome_person(s, cfg, handle, utcnow())
+        person = welcome_one(handle)
         if not person:
             return redirect(url_for("welcome_home"))
         if person["user"] != handle:
@@ -1354,8 +1374,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     @v21_only
     def welcome_image(handle):
         from .v21 import welcome_card, welcome_person
-        with Session() as s:
-            person = welcome_person(s, cfg, handle, utcnow())
+        person = welcome_one(handle)
         if not person:
             abort(404)
         return card_png("w:" + person["user"].lower(), lambda: welcome_card(person, avatar_image(person["user"])))
@@ -1381,7 +1400,8 @@ def create_app(cfg: Config | None = None) -> Flask:
             if pick:
                 start = datetime.fromisoformat(pick["week"])
                 end = min(now, start + timedelta(days=7))
-                stats = next((x for x in creator_stats(s, cfg, end) if x["user"].lower() == pick["user"].lower()), None)
+                stats = v21_cached(f"cstats:{pick['week']}:{pick['user'].lower()}", 600,
+                                   lambda: next((x for x in creator_stats(s, cfg, end) if x["user"].lower() == pick["user"].lower()), None))
         og = {}
         if pick:
             og = {"og_img": f"https://pdtools.xyz/creator/{pick['week']}.png?u={pick['user']}",
@@ -1408,7 +1428,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         return session["csrf"]
 
     @app.get("/lab/creator")
-    @v21_only
+    @circle_only   # Jon's tools stay locked even after launch
     def creator_lab():
         from .v21 import current_pick, suggestions, week_start
         now = utcnow()
@@ -1419,7 +1439,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                                week=week_label(week_start(now).date().isoformat()), csrf=lab_csrf())
 
     @app.post("/lab/creator/pick")
-    @v21_only
+    @circle_only   # Jon's tools stay locked even after launch
     def creator_pick():
         from .circle import clean
         from .v21 import creator_stats, save_pick
@@ -1436,7 +1456,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         return redirect(url_for("creator_lab"))
 
     @app.post("/lab/creator/undo")
-    @v21_only
+    @circle_only   # Jon's tools stay locked even after launch
     def creator_undo():
         from .v21 import drop_pick
         check_csrf()
@@ -1462,9 +1482,9 @@ def create_app(cfg: Config | None = None) -> Flask:
             return jsonify({"ok": False}), 400
         today = utcnow().date()
         try:
-            y, m = (int(x) for x in (request.args.get("m") or f"{today.year}-{today.month}").split("-")[:2])
+            y, m = (int(x) for x in (request.args.get("m") or f"{today.year}-{today.month}")[:7].split("-")[:2])
             date(y, m, 1)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, OverflowError):
             return jsonify({"ok": False}), 400
         if (y, m) > (today.year, today.month) or (y, m) < (2026, 10):
             return jsonify({"ok": False}), 400
@@ -1494,8 +1514,10 @@ def create_app(cfg: Config | None = None) -> Flask:
         from .events import VID as _VID
         try:
             body = _body(300)
-            vid, score, n = str(body.get("vid", ""))[:32], int(body.get("score", -1)), int(body.get("n", 0))
-        except (ValueError, TypeError, AttributeError):
+            vid, score, n = str(body.get("vid", ""))[:32], body.get("score", -1), body.get("n", 0)
+            if type(score) is not int or type(n) is not int:      # 1e400, 2.5, true and "3" are all turned away
+                raise TypeError
+        except (ValueError, TypeError, AttributeError, OverflowError):
             abort(400)
         from .dragondle import day_of, number
         today_n = number(utcnow().date())
@@ -1511,8 +1533,9 @@ def create_app(cfg: Config | None = None) -> Flask:
                 try:
                     with s.begin_nested():
                         s.add(DlePlay(day=day, vid=vid, score=score))
-                except IntegrityError:
-                    pass
+                except IntegrityError:                         # another tab saved first: that score is the one that counts
+                    won = s.get(DlePlay, (day, vid))
+                    score = won.score if won else score
                 s.commit()
             else:
                 score = row.score                              # the first finished game of the day is the one that counts
@@ -1522,7 +1545,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         return jsonify({"ok": True, **st})
 
     @app.get("/lab/dragondle")
-    @v21_only
+    @circle_only   # Jon's tools stay locked even after launch
     def dragondle_lab():
         from .dragondle import BANK, today_set
         today = utcnow().date()
@@ -1874,7 +1897,10 @@ def create_app(cfg: Config | None = None) -> Flask:
         # today's daily goal count travels too, so a new device shows the same "x/20 Keeper posts today"
         goal_in = body.get("goal") if isinstance(body.get("goal"), dict) else {}
         goal_out = {"day": day(goal_in.get("day")), "n": num(goal_in.get("n"), 200)}
-        return {"opened": clean, "streak": {k: streak.get(k) for k in ("last", "count", "best", "fz")},
+        streak_out = {"last": day(streak.get("last")), "count": num(streak.get("count"), 5000), "best": num(streak.get("best"), 5000)}
+        if day(streak.get("fz")):
+            streak_out["fz"] = streak["fz"]
+        return {"opened": clean, "streak": streak_out,
                 **({"goal": goal_out} if goal_out["day"] and goal_out["n"] else {}),
                 **({"dex": dex_out} if have or dex_out["e"] or dex_out["s"] else {})}
 
@@ -1997,7 +2023,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             body = {}
         try:
             rating = int(body.get("rating") or 0)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             rating = 0
         if not 1 <= rating <= 5:
             return jsonify({"ok": False, "message": "Pick from 1 to 5 stars first."}), 400

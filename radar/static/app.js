@@ -768,11 +768,13 @@
   async function poll() {
     if ((document.hidden && !alerts) || current.range === "yesterday") return;
     const newest = posts.concat(pending).reduce((m, p) => (p.t > m ? p.t : m), "");
+    const asked = JSON.stringify(current);              // a filter change while waiting throws this answer away
     const q = new URLSearchParams({ ...current, after: newest || "" });
     try {
       const r = await fetch(`/api/posts?${q}`, { headers: { Accept: "application/json" } });
       if (!r.ok) return;
       const j = await r.json();
+      if (asked !== JSON.stringify(current)) return;
       if (j.updated) { updatedAt = Date.parse(j.updated); statusLine(); }
       const have = new Set(posts.concat(pending).map((p) => p.id));
       const fresh = (j.posts || []).filter((p) => !have.has(p.id));
