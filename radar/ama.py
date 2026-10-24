@@ -7,6 +7,16 @@ of each call; everything said on a call is team stated and plans can change. Add
 from datetime import date
 
 AMAS = [
+    {"n": 7, "day": date(2026, 10, 23), "post": "2113902006297624755", "live": 1018,
+     "title": "Mint details revealed",
+     "points": [
+         "Over 1,000 Keepers joined live again, with the room passing 1,018.",
+         "Mint details revealed: Ethereum, a supply of 6,000, and mint in November with no date set yet.",
+         "A pre-sale of 2,000 spots at 0.029 ETH. The top 500 on the Keeper Ledger get guaranteed spots, and 500 more are raffled to anyone with a badge, with more badges meaning better odds.",
+         "A public auction of 4,000 eggs on the official website, with up to 10 per wallet, a maximum bid of $200, and every winner paying the lowest winning bid.",
+         "Only 16 one-of-one dragons: burn 50 eggs before the reveal, or two red dragons after it.",
+         "173 badges after mint, in bronze, silver and gold tiers.",
+     ]},
     {"n": 6, "day": date(2026, 10, 16), "post": "2111347128580653444", "live": 900,
      "title": "Badges, burning and honor",
      "points": [
