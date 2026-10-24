@@ -1403,6 +1403,90 @@ def create_app(cfg: Config | None = None) -> Flask:
         v21_png.clear()
         return redirect(url_for("creator_lab"))
 
+    # ---------- v2.1 wave 2: Hatchery Wrapped and Dragondle (locked like the rest of v2.1) ----------
+    @app.get("/wrapped")
+    @v21_only
+    def wrapped_home():
+        return render_template("wrapped.html", cfg=cfg, og_title="Hatchery Wrapped · your month on PD Tools",
+                               og_desc="Your month in the hatchery: the Keepers you cheered on, the dragons you hatched and how the whole community did.")
+
+    @app.get("/api/wrapped")
+    @v21_only
+    def api_wrapped():
+        from .events import VID as _VID
+        from .wrapped import story
+        vid = (request.args.get("vid") or "")[:32]
+        if not _VID.match(vid):
+            return jsonify({"ok": False}), 400
+        today = utcnow().date()
+        try:
+            y, m = (int(x) for x in (request.args.get("m") or f"{today.year}-{today.month}").split("-")[:2])
+            date(y, m, 1)
+        except (ValueError, TypeError):
+            return jsonify({"ok": False}), 400
+        if (y, m) > (today.year, today.month) or (y, m) < (2026, 10):
+            return jsonify({"ok": False}), 400
+        if _too_many("wrapped:" + client_ip(), limit=60, window=3600):
+            abort(429)
+        with Session() as s:
+            return jsonify(story(s, cfg, vid, y, m, today))
+
+    @app.get("/dragondle")
+    @v21_only
+    def dragondle_home():
+        from .dragondle import today_set
+        return render_template("dragondle.html", cfg=cfg, game=today_set(utcnow().date()),
+                               og_title="Dragondle · the daily Pocket Dragons puzzle",
+                               og_desc="Five questions a day about Pocket Dragons lore, badges and pdtools. Same five for everyone. Free.")
+
+    def dle_stats(s, day):
+        from .db import DlePlay
+        rows = s.execute(select(DlePlay.score, func.count()).where(DlePlay.day == day).group_by(DlePlay.score)).all()
+        dist = {int(k): int(v) for k, v in rows}
+        return {"total": sum(dist.values()), "dist": [dist.get(i, 0) for i in range(6)]}
+
+    @app.post("/api/dragondle")
+    @v21_only
+    def api_dragondle():
+        from .db import DlePlay
+        from .events import VID as _VID
+        try:
+            body = _body(300)
+            vid, score, n = str(body.get("vid", ""))[:32], int(body.get("score", -1)), int(body.get("n", 0))
+        except (ValueError, TypeError, AttributeError):
+            abort(400)
+        from .dragondle import day_of, number
+        today_n = number(utcnow().date())
+        # a game started just before midnight UTC still counts, under the day it was played
+        if not _VID.match(vid) or not 0 <= score <= 5 or n not in (today_n, today_n - 1) or n < 1:
+            abort(400)
+        day = day_of(n)
+        with Session() as s:
+            row = s.get(DlePlay, (day, vid))
+            if row is None:                                    # only new plays use up the connection's allowance
+                if _too_many("dle:" + client_ip(), limit=30, window=3600):
+                    abort(429)
+                try:
+                    with s.begin_nested():
+                        s.add(DlePlay(day=day, vid=vid, score=score))
+                except IntegrityError:
+                    pass
+                s.commit()
+            else:
+                score = row.score                              # the first finished game of the day is the one that counts
+            st = dle_stats(s, day)
+        below = sum(st["dist"][:score])
+        st["beat"] = round(100 * below / max(1, st["total"] - 1)) if st["total"] > 1 else None
+        return jsonify({"ok": True, **st})
+
+    @app.get("/lab/dragondle")
+    @v21_only
+    def dragondle_lab():
+        from .dragondle import BANK, today_set
+        today = utcnow().date()
+        week = [today_set(today + timedelta(days=i)) for i in range(7)]
+        return render_template("dragondle_lab.html", cfg=cfg, bank=BANK, week=week)
+
     # ---------- follow directory ----------
     @app.get("/friends/ama")
     def ama_page():

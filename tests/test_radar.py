@@ -2374,3 +2374,80 @@ def test_welcome_lane_hellos_count_in_the_feed():
     page = (root / "templates" / "welcome.html").read_text(encoding="utf-8")
     assert 'store.obj("pd:creditq")' in js and "credit(id, true)" in js
     assert '"pd:creditq"' in page and "DWELL = 8000" in page
+
+
+def test_wave2_pages_stay_locked(cfg, Session):
+    app, c = _v21_client(cfg)
+    stranger = app.test_client()
+    for path in ("/wrapped", "/api/wrapped?vid=" + "a" * 32, "/dragondle", "/lab/dragondle"):
+        assert stranger.get(path).status_code == 404, path
+        assert c.get(path).status_code == 200, path
+    assert stranger.post("/api/dragondle", json={"vid": "a" * 32, "score": 3, "n": 1}).status_code == 404
+
+
+def test_dragondle_bank_never_mentions_mint_and_days_are_stable():
+    """Mint is for the team only: no question, answer or note may touch it. Every day has five different
+    questions, the same for everyone, each with four different answers and exactly one right one."""
+    import re
+    from datetime import date as _d, timedelta as _td
+    from radar.dragondle import BANK, MINT_WORDS, today_set
+    assert len(BANK) >= 60
+    for b in BANK:
+        text = " ".join([b["q"], b["a"], b["why"]] + b["w"]).lower()
+        assert not any(re.search(r"\b" + re.escape(w) + r"\b", text) for w in MINT_WORDS), b["q"]
+        assert len({b["a"], *b["w"]}) == 4 and b["src"]
+    day = _d(2026, 10, 30)
+    a, b = today_set(day), today_set(day)
+    assert a == b and len({q["q"] for q in a["qs"]}) == 5
+    for q in a["qs"]:
+        assert 0 <= q["a"] < 4 and len(set(q["opts"])) == 4
+    assert today_set(day + _td(days=1))["qs"] != a["qs"]
+    # no question comes back within a whole pass of the bank, even across the pass boundary
+    start = _d(2026, 10, 24); per = len(BANK) // 5
+    asked = [q["q"] for i in range(per * 3) for q in today_set(start + _td(days=i))["qs"]]
+    for i in range(0, len(asked) - 30 + 1, 5):           # nothing is asked twice within six days
+        window = asked[i:i + 30]
+        assert len(window) == len(set(window)), i
+
+
+def test_dragondle_scores_count_once_a_day(cfg, Session):
+    from radar.dragondle import number
+    app, c = _v21_client(cfg)
+    n = number(utcnow().date())
+    r = c.post("/api/dragondle", data=json.dumps({"vid": "a" * 32, "score": 4, "n": n}), content_type="text/plain").get_json()
+    assert r["ok"] and r["total"] == 1 and r["dist"][4] == 1
+    c.post("/api/dragondle", data=json.dumps({"vid": "a" * 32, "score": 5, "n": n}), content_type="text/plain")     # a replay never changes it
+    r = c.post("/api/dragondle", data=json.dumps({"vid": "b" * 32, "score": 2, "n": n}), content_type="text/plain").get_json()
+    assert r["total"] == 2 and r["dist"][4] == 1 and r["dist"][5] == 0 and r["beat"] == 0
+    assert c.post("/api/dragondle", data=json.dumps({"vid": "c" * 32, "score": 9, "n": n}), content_type="text/plain").status_code == 400
+    assert c.post("/api/dragondle", data=json.dumps({"vid": "c" * 32, "score": 3, "n": n + 1}), content_type="text/plain").status_code == 400
+
+
+def test_wrapped_tells_a_keepers_month(cfg, Session):
+    """My opens, best streak and the Keepers I cheered on most; a signed Keeper also sees opens from other
+    signed Keepers on their own posts; plus the hatchery's own month."""
+    from datetime import date as _d
+    from radar.db import Event, FriendDevice
+    me, fan = "a" * 32, "b" * 32
+    with Session() as s:
+        s.add_all([
+            Post(id="901", author_id="x1", author_username="Ola", author_name="Ola", text="dragon", created_at=datetime(2026, 10, 10), opens=5),
+            Post(id="902", author_id="x2", author_username="Rae", text="dragon", created_at=datetime(2026, 10, 11), opens=2),
+            Post(id="903", author_id="me", author_username="Jojo", text="mine", created_at=datetime(2026, 10, 12), opens=1),
+            Event(day=_d(2026, 10, 10), vid=me, kind="open", ref="901"), Event(day=_d(2026, 10, 11), vid=me, kind="open", ref="902"),
+            Event(day=_d(2026, 10, 12), vid=me, kind="open", ref="901"), Event(day=_d(2026, 10, 20), vid=me, kind="open", ref="901"),
+            Event(day=_d(2026, 10, 12), vid=me, kind="hatch", ref="common"),
+            Event(day=_d(2026, 10, 13), vid=fan, kind="open", ref="903"),
+            FriendDevice(vid=me, key="jojo", username="Jojo", code="x", confirmed=True),
+            FriendDevice(vid=fan, key="ola", username="Ola", code="y", confirmed=True),
+        ])
+        s.commit()
+        from radar.wrapped import story
+        st = story(s, cfg, me, 2026, 10, _d(2026, 10, 24))
+    m = st["me"]
+    assert (m["opens"], m["days"], m["streak"], m["keepers"], m["hatches"]) == (4, 4, 3, 2, 1)
+    assert m["top"][0] == {"user": "Ola", "name": "Ola", "n": 3}
+    assert st["back"]["opens"] == 1 and st["back"]["top"] == [{"user": "Ola", "n": 1}]
+    assert st["hatchery"]["opens"] == 5 and st["hatchery"]["posts"] == 3 and st["so_far"] and st["month"] == "October"
+    app, c = _v21_client(cfg)
+    assert c.get("/api/wrapped?vid=nope").status_code == 400 and c.get("/api/wrapped?vid=" + me + "&m=2031-01").status_code == 400

@@ -1247,7 +1247,7 @@
   // never touch people's own words, names or handles
   // dragon names ("Light" is a dragon, not the light mode), song titles and music makers stay as they are
   const NAMES = ".hatch-name b, .dex-card:not(.secret) .dex-cap b, .dex-card.secret.have .dex-cap b, .mw-egg, .mc-row a, .mk-songs, .mk-name, .mc-song, .mk-song, .mp-title, .mp-by, .mp-by-chip, .ama-handle";
-  const SKIP = ".post .text, .post .who, .newbie-text b, .kp-card .who, .wl-who, .wl-text, .cw-name, .cw-handle, .note-t, .cw-post p, .cw-hall b, script, style, textarea, input, #lang-select, " + NAMES;
+  const SKIP = ".post .text, .post .who, .newbie-text b, .kp-card .who, .wl-who, .wl-text, .wr-who, .cw-name, .cw-handle, .note-t, .cw-post p, .cw-hall b, script, style, textarea, input, #lang-select, " + NAMES;
   const done = new WeakSet();
   function textNode(n) {
     if (done.has(n)) return;

@@ -85,6 +85,15 @@ class KeeperSave(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class DlePlay(Base):
+    """One finished Dragondle per browser per day (score 0 to 5), so the page can say how the hatchery did today.
+    Keyed by the browser's own random number, like the other anonymous counts."""
+    __tablename__ = "dle_plays"
+    day: Mapped[datetime] = mapped_column(Date, primary_key=True)
+    vid: Mapped[str] = mapped_column(String(32), primary_key=True)
+    score: Mapped[int] = mapped_column(Integer, default=0)
+
+
 class BlockedAuthor(Base):
     __tablename__ = "blocked_authors"
     author_id: Mapped[str] = mapped_column(String(32), primary_key=True)

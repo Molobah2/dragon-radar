@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Dragondle questions · {{ cfg.hub_name }}{% endblock %}
+{% block body_class %}ready static-page{% endblock %}
+{% block main %}
+<section class="panel dl">
+  <h2>Dragondle question bank</h2>
+  <p>{{ bank|length }} questions. Every day shows five of them, the same five for everyone, mixing badges, lore and pdtools. Mint never comes up. The right answer is in bold, with where it comes from. To change or remove a question, tell Claude its number.</p>
+  <h3>The next 7 days</h3>
+  <ol class="dl-week">
+    {% for d in week %}<li><b>#{{ d.n }} · {{ d.day }}</b><span>{% for q in d.qs %}{{ q.q }}{% if not loop.last %} · {% endif %}{% endfor %}</span></li>{% endfor %}
+  </ol>
+  <h3>Every question</h3>
+  <ol class="dl-bank">
+    {% for b in bank %}
+    <li><span class="dl-cat">{{ b.cat }}</span><b>{{ b.q }}</b>
+      <span class="dl-opts"><strong>{{ b.a }}</strong>{% for w in b.w %} · {{ w }}{% endfor %}</span>
+      <small>{{ b.why }} Source: {{ b.src }}</small></li>
+    {% endfor %}
+  </ol>
+</section>
+<style>
+  .dl { padding: 26px; margin-bottom: 26px; }
+  .dl h2 { margin: 0 0 8px; font-family: var(--font-display); font-size: 30px; }
+  .dl h3 { margin: 20px 0 8px; font-family: var(--font-display); font-size: 21px; }
+  .dl > p { margin: 0; color: var(--ink-soft); font-weight: 600; }
+  .dl-week, .dl-bank { margin: 0; padding-left: 26px; display: grid; gap: 8px; }
+  .dl-week li, .dl-bank li { padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, .75); color: #2a160c; }
+  .dl-week span, .dl-opts, .dl-bank small { display: block; font-size: 13.5px; color: #6b4a32; }
+  .dl-opts strong { color: #1f7a3f; }
+  .dl-cat { display: inline-block; margin-right: 8px; padding: 1px 8px; border-radius: 999px; background: #ffd58a; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+</style>
+{% endblock %}

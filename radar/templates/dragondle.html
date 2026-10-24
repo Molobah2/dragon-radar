@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dragondle #{{ game.n }} · {{ cfg.hub_name or "PD Tools" }}</title>
+  <meta name="description" content="Five questions a day about Pocket Dragons lore, badges and pdtools. The same five for everyone. Free, unofficial community tool.">
+  <meta name="theme-color" content="#1c120a">
+  {% include "_icons.html" %}
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ asset('fonts.css') }}">
+  <link rel="stylesheet" href="{{ asset('v21/v21.css') }}">
+{% include "_speed.html" %}
+<style>
+/* ===== Dragondle: the scroll library ===== */
+body { background: #1c120a; }
+.dl-world { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+.dl-world img { position: absolute; inset: -2%; width: 104%; height: 104%; object-fit: cover; transition: opacity 1s var(--ease); animation: drift 40s ease-in-out infinite alternate; }
+.dl-world img.off { opacity: 0; }
+@keyframes drift { from { transform: scale(1.02) translate(0, 0); } to { transform: scale(1.08) translate(-1%, -1%); } }
+.dl-world::after { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 40%, rgba(28, 18, 10, .15), rgba(28, 18, 10, .78) 70%, #1c120a 100%); }
+.dl-world canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.dl-app { position: relative; z-index: 2; min-height: 100svh; display: flex; flex-direction: column; }
+.v-bar { position: relative; }
+.scene-pick { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: rgba(30, 14, 8, .45); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.scene-pick button { height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font: 800 13px/1 var(--body); color: var(--soft); cursor: pointer; }
+.scene-pick button[aria-pressed="true"] { background: rgba(255, 220, 160, .22); color: var(--ink); }
+@media (max-width: 560px) { .scene-pick button { padding: 0 9px; font-size: 12px; } }
+
+.dl-main { flex: 1; width: min(760px, 100%); margin: 0 auto; padding: 10px clamp(16px, 4vw, 30px) 30px; display: grid; align-content: start; gap: 18px; }
+.dl-head { text-align: center; display: grid; justify-items: center; gap: 8px; padding-top: 6px; }
+.kick { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(40, 16, 6, .5); border: 1px solid rgba(255, 220, 170, .35);
+  font: 800 12px/1 var(--body); letter-spacing: 2.4px; text-transform: uppercase; color: var(--gold); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.dl-head h1 { margin: 0; font: 700 clamp(34px, 6vw, 58px)/1 var(--disp); text-shadow: 0 4px 30px rgba(0,0,0,.7); }
+.dl-head h1 span { background: linear-gradient(180deg, #fff1c6, #ffb45c); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.dl-head p { margin: 0; color: var(--soft); max-width: 30em; text-shadow: 0 2px 10px rgba(0,0,0,.7); }
+
+/* the five eggs along the top */
+.pips { display: flex; justify-content: center; gap: 10px; margin-top: 4px; }
+.pip { width: 30px; height: 38px; border-radius: 50% 50% 46% 46% / 60% 60% 40% 40%; background: rgba(255, 240, 220, .14); box-shadow: inset 0 -4px 0 rgba(0,0,0,.18);
+  transition: background .4s, transform .5s var(--spring), box-shadow .4s; position: relative; }
+.pip.now { box-shadow: 0 0 0 3px rgba(255, 205, 110, .55), inset 0 -4px 0 rgba(0,0,0,.18); transform: translateY(-3px); }
+.pip.ok { background: radial-gradient(circle at 35% 30%, #fff3c4, #ffc24d 45%, #e08a1e); transform: scale(1.06); }
+.pip.no { background: radial-gradient(circle at 35% 30%, #f0e6da, #b8a898 60%, #7c6b5c); }
+.pip.ok::after { content: "🐉"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 17px; }
+
+/* parchment */
+.sheet { position: relative; padding: clamp(20px, 4vw, 34px); border-radius: 22px; color: #3b2412;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, .5), transparent 60%),
+    radial-gradient(80% 60% at 90% 100%, rgba(150, 90, 30, .18), transparent 70%),
+    radial-gradient(70% 50% at 0% 90%, rgba(150, 90, 30, .16), transparent 70%),
+    linear-gradient(180deg, #f6e7c8, #ecd6aa);
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .9), 0 0 0 1px rgba(120, 70, 20, .25), inset 0 0 40px rgba(140, 80, 20, .22); }
+.sheet::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: .3; mix-blend-mode: multiply;
+  background-image: radial-gradient(rgba(120, 70, 20, .35) 1px, transparent 1.2px); background-size: 5px 5px; }
+.sheet > * { position: relative; }
+.sheet .cat { display: inline-block; padding: 4px 10px; border-radius: 999px; background: rgba(120, 60, 20, .12); font: 800 11px/1 var(--body); letter-spacing: 1.6px; text-transform: uppercase; color: #8a4f1c; }
+.sheet h2 { margin: 12px 0 18px; font: 700 clamp(22px, 3.6vw, 30px)/1.2 var(--disp); color: #2e1a0b; }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 560px) { .opts { grid-template-columns: 1fr; } }
+.opt { min-height: 56px; padding: 12px 16px; border-radius: 16px; border: 2px solid rgba(120, 70, 20, .25); background: rgba(255, 250, 238, .7); cursor: pointer; text-align: left;
+  font: 800 16px/1.25 var(--body); color: #3b2412; transition: transform .3s var(--spring), background .3s, border-color .3s, box-shadow .3s; }
+.opt:hover:not(:disabled) { transform: translateY(-2px); border-color: rgba(180, 100, 30, .6); background: #fffaf0; box-shadow: 0 10px 20px -14px rgba(80, 40, 0, .8); }
+.opt:focus-visible { outline: 3px solid #c77a1e; outline-offset: 2px; }
+.opt:disabled { cursor: default; }
+.opt.right { background: linear-gradient(180deg, #e3f7d4, #c4ecae); border-color: #4c9a35; color: #1f4a12; animation: pop .5s var(--spring); }
+.opt.wrong { background: #f6d6cc; border-color: #c2553a; color: #6e2412; animation: shake .45s; }
+.opt.dim { opacity: .55; }
+@keyframes pop { 50% { transform: scale(1.04); } }
+@keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+.why { margin: 16px 0 0; padding: 12px 14px; border-radius: 14px; background: rgba(120, 60, 20, .1); font-style: italic; color: #5a3618; display: none; }
+.why b { font-style: normal; }
+.why.on { display: block; animation: fade .4s var(--ease); }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } }
+.sheet .next { margin-top: 16px; display: none; }
+.sheet .next.on { display: inline-flex; }
+
+/* result */
+.result { text-align: center; display: grid; justify-items: center; gap: 10px; }
+.result .score { font: 700 clamp(60px, 12vw, 96px)/1 var(--disp); color: #2e1a0b; }
+.result .score small { font-size: .4em; color: #8a5a2c; }
+.result .grid { font-size: 34px; letter-spacing: 6px; }
+.result .line { margin: 0; color: #5a3618; font-weight: 800; }
+.result .nums { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 6px; }
+.result .nums div { min-width: 110px; padding: 10px 14px; border-radius: 16px; background: rgba(120, 60, 20, .1); }
+.result .nums b { display: block; font: 700 26px/1 var(--disp); color: #2e1a0b; }
+.result .nums span { font-size: 12.5px; font-weight: 800; color: #8a5a2c; }
+.result .acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 10px; }
+.result .btn.ghost { color: #3b2412; background: rgba(255, 250, 238, .7); border-color: rgba(120, 70, 20, .3); }
+.result .next-in { font-size: 13.5px; color: #8a5a2c; font-weight: 800; }
+.bars { width: min(360px, 100%); display: grid; gap: 4px; margin-top: 8px; }
+.bars div { display: grid; grid-template-columns: 22px 1fr 34px; align-items: center; gap: 8px; font: 800 13px/1 var(--body); color: #6b4a32; }
+.bars i { display: block; height: 14px; border-radius: 6px; background: rgba(120, 60, 20, .12); overflow: hidden; }
+.bars i::after { content: ""; display: block; height: 100%; width: var(--w); background: linear-gradient(90deg, #ffcf6b, #ff9d5c); border-radius: inherit; transition: width 1s var(--ease); }
+.bars .me i::after { background: linear-gradient(90deg, #79c95a, #3f9a35); }
+
+.pinky { position: fixed; right: clamp(-10px, 2vw, 40px); bottom: clamp(10px, 4vh, 40px); width: clamp(110px, 16vw, 220px); z-index: 1; pointer-events: none;
+  filter: drop-shadow(0 24px 30px rgba(0, 0, 0, .55)); animation: bob 5s ease-in-out infinite; }
+.pinky img { display: block; width: 100%; height: auto; }
+.pinky.cheer { animation: cheer .8s var(--spring), bob 5s ease-in-out .8s infinite; }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(1deg); } 50% { transform: translateY(-10px) rotate(-1deg); } }
+@keyframes cheer { 40% { transform: translateY(-26px) rotate(-5deg) scale(1.05); } }
+@media (max-width: 860px) { .pinky { opacity: .0; } }
+.how { color: var(--mute); font-size: 13.5px; text-align: center; margin: 0; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
+</style>
+</head>
+<body>
+<div class="dl-world" aria-hidden="true">
+  <img id="sc-a" alt="" src="{{ asset('v21/dragondle-a-s.jpg') }}" srcset="{{ asset('v21/dragondle-a-s.jpg') }} 960w, {{ asset('v21/dragondle-a.jpg') }} 1920w" sizes="100vw">
+  <img id="sc-b" class="off" alt="" src="{{ asset('v21/dragondle-b-s.jpg') }}" srcset="{{ asset('v21/dragondle-b-s.jpg') }} 960w, {{ asset('v21/dragondle-b.jpg') }} 1920w" sizes="100vw" loading="lazy">
+  <canvas id="dust"></canvas>
+</div>
+<div class="pinky" id="pinky" aria-hidden="true"><img src="{{ asset('v21/pinky-scroll.webp') }}" alt="" width="784" height="1000"></div>
+
+<div class="dl-app">
+  <header class="v-bar">
+    <a class="v-brand" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="38" height="38"><span>PD Tools<small>Dragondle</small></span></a>
+    <div class="v-tools">
+      <div class="scene-pick" role="group" aria-label="Scene"><button type="button" data-sc="a" aria-pressed="true">Library</button><button type="button" data-sc="b" aria-pressed="false">Archive</button></div>
+      <label class="pill" title="Language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><select id="lang-select" aria-label="Language"></select></label>
+    </div>
+  </header>
+
+  <main class="dl-main">
+    <div class="dl-head">
+      <span class="kick">Dragondle #{{ game.n }}</span>
+      <h1 data-i18n-html="dlH1">Five questions. <span>Same for everyone.</span></h1>
+      <p>Pocket Dragons lore, badges and pdtools. A new set every day at midnight UTC.</p>
+      <div class="pips" id="pips" aria-hidden="true">{% for q in game.qs %}<i class="pip"></i>{% endfor %}</div>
+    </div>
+
+    <section class="sheet" id="play" aria-live="polite">
+      <span class="cat" id="cat"></span>
+      <h2 id="q"></h2>
+      <div class="opts" id="opts"></div>
+      <p class="why" id="why"></p>
+      <button class="btn go next" id="next" type="button">Next question</button>
+    </section>
+
+    <section class="sheet result" id="done" hidden>
+      <span class="cat">Dragondle #{{ game.n }}</span>
+      <div class="score" id="score"></div>
+      <div class="grid" id="grid" aria-label="Your answers"></div>
+      <p class="line" id="line"></p>
+      <div class="nums"><div><b id="st-streak">0</b><span>Day streak</span></div><div><b id="st-best">0</b><span>Best streak</span></div><div><b id="st-played">0</b><span>Days played</span></div></div>
+      <div class="bars" id="bars" hidden></div>
+      <div class="acts">
+        <a class="btn go" id="share" target="_blank" rel="noopener" href="#"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.2 2.5h3.4l-7.4 8.4 8.7 11.6h-6.8l-5.3-7-6.1 7H1.3l7.9-9L.9 2.5h7l4.8 6.4 5.5-6.4z"/></svg>Share your grid</a>
+        <button class="btn ghost" id="save" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Save the card</button>
+      </div>
+      <p class="next-in" id="next-in"></p>
+    </section>
+    <p class="how">No spoilers in your grid. Answers come from what the team shared in public and how pdtools works.</p>
+  </main>
+  {% include "_v21_foot.html" %}
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script type="application/json" id="game">{{ game|tojson }}</script>
+<script src="{{ asset('i18n.js') }}"></script>
+<script src="{{ asset('cardkit.js') }}"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const G = JSON.parse($("game").textContent);
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } },
+  };
+  function vid() {
+    let v = ""; try { v = localStorage.getItem("pd:vid") || ""; } catch (e) { /* private */ }
+    if (!/^[a-f0-9]{32}$/.test(v)) {
+      const b = new Uint8Array(16); crypto.getRandomValues(b); v = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+      try { localStorage.setItem("pd:vid", v); } catch (e) { /* fine */ }
+    }
+    return v;
+  }
+  let tt = 0;
+  function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 3200); }
+
+  /* two scenes, the Keeper picks (remembered on this device) */
+  function scene(k) {
+    sc = k;
+    $("sc-a").classList.toggle("off", k !== "a"); $("sc-b").classList.toggle("off", k !== "b");
+    document.querySelectorAll("[data-sc]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.sc === k ? "true" : "false"));
+    try { localStorage.setItem("pd:scene:dle", k); } catch (e) { /* fine */ }
+  }
+  document.querySelectorAll("[data-sc]").forEach((b) => b.addEventListener("click", () => scene(b.dataset.sc)));
+  let sc = "a"; try { sc = localStorage.getItem("pd:scene:dle") === "b" ? "b" : "a"; } catch (e) { /* fine */ }
+  scene(sc);
+
+  /* candle dust floating in the light */
+  const cv = $("dust"), cx = cv.getContext("2d"); let W = 0, H = 0, motes = [];
+  function size() { const d = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0);
+    motes = Array.from({ length: W < 640 ? 22 : 44 }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.6 + .4, v: .08 + Math.random() * .25, p: Math.random() * 6.28 })); }
+  function frame(t) {
+    if (!document.hidden) { cx.clearRect(0, 0, W, H);
+      for (const m of motes) { m.y -= m.v; m.x += Math.sin(m.p + t / 2200) * .2; if (m.y < -6) { m.y = H + 6; m.x = Math.random() * W; }
+        cx.globalAlpha = .25 + .35 * Math.sin(m.p + t / 1100) ** 2; cx.fillStyle = "#ffe2b0"; cx.beginPath(); cx.arc(m.x, m.y, m.r, 0, 6.283); cx.fill(); } }
+    if (!calm) requestAnimationFrame(frame);
+  }
+  size(); addEventListener("resize", size, { passive: true }); if (!calm) requestAnimationFrame(frame);
+
+  /* the game */
+  const CAT = { badge: "Badges and quests", lore: "Hatchery and lore", pdtools: "pdtools" };
+  const saveKey = "pd:dle";
+  const plainObj = (v) => v && typeof v === "object" && !Array.isArray(v);
+  let all = store.get(saveKey, {}); if (!plainObj(all)) all = {};
+  const plays = plainObj(all.plays) ? all.plays : {};
+  const marksOf = (p) => (plainObj(p) && Array.isArray(p.marks) ? p.marks.filter((m) => m === 0 || m === 1).slice(0, 5) : []);
+  let mine = { ...(plainObj(plays[G.n]) ? plays[G.n] : {}), marks: marksOf(plays[G.n]) };
+  const pips = [...document.querySelectorAll(".pip")];
+  function paintPips() { pips.forEach((p, i) => { p.className = "pip" + (mine.marks[i] === 1 ? " ok" : mine.marks[i] === 0 ? " no" : i === mine.marks.length ? " now" : ""); }); }
+  function show(i) {
+    const q = G.qs[i];
+    $("cat").textContent = CAT[q.cat] || "";
+    $("q").textContent = q.q;
+    $("why").className = "why"; $("why").textContent = ""; $("next").classList.remove("on");
+    $("opts").innerHTML = "";
+    q.opts.forEach((o, j) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.textContent = o;
+      b.addEventListener("click", () => answer(i, j)); $("opts").append(b);
+    });
+    paintPips();
+  }
+  function answer(i, j) {
+    const q = G.qs[i], btns = [...$("opts").children], ok = j === q.a;
+    btns.forEach((b, k) => { b.disabled = true; if (k === q.a) b.classList.add("right"); else if (k === j) b.classList.add("wrong"); else b.classList.add("dim"); });
+    mine.marks[i] = ok ? 1 : 0; keep();
+    const w = $("why"); w.innerHTML = ""; const tag = document.createElement("b"); tag.textContent = ok ? "Correct. " : "Not quite. "; w.append(tag, document.createTextNode(q.why)); w.classList.add("on");
+    if (ok) { const p = $("pinky"); p.classList.remove("cheer"); void p.offsetWidth; p.classList.add("cheer"); }
+    paintPips();
+    const n = $("next"); n.textContent = i === G.qs.length - 1 ? "See my result" : "Next question"; n.classList.add("on"); n.focus({ preventScroll: true });
+  }
+  $("next").addEventListener("click", () => { const i = mine.marks.length; if (i >= G.qs.length) finish(); else show(i); });
+  function keep() { plays[G.n] = mine; const keys = Object.keys(plays).map(Number).sort((a, b) => b - a).slice(0, 60); const trimmed = {}; keys.forEach((k) => { trimmed[k] = plays[k]; }); all.plays = trimmed; store.set(saveKey, all); }
+
+  function streaks() {
+    const done = Object.keys(plays).map(Number).filter((k) => marksOf(plays[k]).length === G.qs.length).sort((a, b) => a - b);
+    let best = 0, run = 0, prev = null;
+    for (const k of done) { run = prev !== null && k === prev + 1 ? run + 1 : 1; best = Math.max(best, run); prev = k; }
+    const cur = done.length && done[done.length - 1] === G.n ? run : 0;
+    return { cur, best, played: done.length };
+  }
+  const score = () => mine.marks.filter((m) => m === 1).length;
+  const grid = () => mine.marks.map((m) => (m === 1 ? "🐉" : "🥚")).join("");
+  function finish() {
+    $("play").hidden = true; $("done").hidden = false; paintPips();
+    const s = score(), st = streaks();
+    $("score").innerHTML = ""; $("score").append(document.createTextNode(String(s)), Object.assign(document.createElement("small"), { textContent: " / " + G.qs.length }));
+    $("grid").textContent = grid();
+    $("line").textContent = s === 5 ? "A perfect scroll. Pinky is impressed." : s >= 3 ? "Well read, Keeper." : "Every Keeper learns something new. See you tomorrow.";
+    $("st-streak").textContent = st.cur; $("st-best").textContent = st.best; $("st-played").textContent = st.played;
+    const text = `Dragondle #${G.n} ${s}/${G.qs.length}\n${grid()}\nThe daily Pocket Dragons puzzle 🐉`;
+    $("share").href = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://pdtools.xyz/dragondle")}`;
+    countdown();
+    if (!mine.sent) {
+      fetch("/api/dragondle", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: vid(), score: s, n: G.n }) })
+        .then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.ok) { mine.sent = 1; keep(); stats(j, s); } }).catch(() => {});
+    } else {
+      fetch("/api/dragondle", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: vid(), score: s, n: G.n }) })
+        .then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.ok) stats(j, s); }).catch(() => {});
+    }
+  }
+  function stats(j, s) {
+    if (j.total > 1 && j.beat !== null && j.beat !== undefined) $("line").textContent = `${$("line").textContent} You did better than ${j.beat}% of Keepers today.`;
+    const max = Math.max(1, ...j.dist), b = $("bars"); b.innerHTML = "";
+    for (let k = 5; k >= 0; k--) {
+      const row = document.createElement("div"); if (k === s) row.className = "me";
+      const n = document.createElement("span"); n.textContent = k;
+      const bar = document.createElement("i"); bar.style.setProperty("--w", "0%");
+      const c = document.createElement("span"); c.textContent = j.dist[k];
+      row.append(n, bar, c); b.append(row);
+      requestAnimationFrame(() => requestAnimationFrame(() => bar.style.setProperty("--w", Math.round(100 * j.dist[k] / max) + "%")));
+    }
+    b.hidden = false;
+  }
+  function countdown() {
+    const tick = () => {
+      const now = new Date(), next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+      const ms = next - now.getTime(), h = Math.floor(ms / 3600e3), m = Math.floor(ms / 60e3) % 60;
+      $("next-in").textContent = `Next Dragondle in ${h}h ${m}m`;
+    };
+    tick(); setInterval(tick, 30e3);
+  }
+
+  /* the share card: the chosen scene, Pinky, the score and a spoiler free row of eggs and dragons */
+  function img(src) { return new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
+  $("save").addEventListener("click", async () => {
+    const K = window.pdCard; if (!K) return;
+    await K.fonts();
+    const { c, x } = K.canvas(2), W = K.W, H = K.H;
+    const el = $(sc === "b" ? "sc-b" : "sc-a"), bg = await img(el.currentSrc || el.src);
+    const pk = await img("{{ asset('v21/pinky-scroll.webp') }}");
+    x.fillStyle = "#1c120a"; x.fillRect(0, 0, W, H);
+    if (bg) { const k = Math.max(W / bg.width, H / bg.height); x.drawImage(bg, (W - bg.width * k) / 2, (H - bg.height * k) / 2, bg.width * k, bg.height * k); }
+    let g = x.createLinearGradient(0, 0, W, 0); g.addColorStop(0, "rgba(20,10,4,.86)"); g.addColorStop(.62, "rgba(20,10,4,.35)"); g.addColorStop(1, "rgba(20,10,4,.1)");
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    if (pk) { const h = 520, w = pk.width * h / pk.height; x.save(); x.shadowColor = "rgba(0,0,0,.55)"; x.shadowBlur = 40; x.shadowOffsetY = 20; x.drawImage(pk, W - w - 40, H - h - 20, w, h); x.restore(); }
+    K.pill(x, `DRAGONDLE #${G.n}`, 70, 92, { bg: "#ffcd6e", ink: "#3a1a06" });
+    x.textAlign = "left"; x.fillStyle = "#fff7ec"; x.font = '700 150px "Fredoka", sans-serif'; x.fillText(String(score()), 66, 300);
+    const sw = x.measureText(String(score())).width; x.fillStyle = "#ffcd6e"; x.font = '700 64px "Fredoka", sans-serif'; x.fillText(`/ ${G.qs.length}`, 66 + sw + 14, 300);
+    x.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; x.fillText(grid(), 66, 410);
+    const st = streaks(); x.fillStyle = "#f1d9c2"; x.font = '800 28px "Nunito", sans-serif'; x.fillText(`${st.cur} day streak · The daily Pocket Dragons puzzle`, 70, 486);
+    x.fillStyle = "#ffcd6e"; x.font = '800 26px "Nunito", sans-serif'; x.fillText("pdtools.xyz/dragondle", 70, 606);
+    K.grain(x, .05);
+    c.toBlob((b) => { if (!b) return; const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `dragondle-${G.n}.png`; a.click(); toast("Card saved. Add it to your post on X."); }, "image/png");
+  });
+
+  if (mine.marks.length >= G.qs.length) finish(); else show(mine.marks.length);
+})();
+</script>
+<script src="{{ asset('hit.js') }}" defer></script>
+</body>
+</html>

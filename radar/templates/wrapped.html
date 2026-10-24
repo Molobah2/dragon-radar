@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hatchery Wrapped · {{ cfg.hub_name or "PD Tools" }}</title>
+  <meta name="description" content="Your month in the hatchery: the Keepers you cheered on, the dragons you hatched and how the whole community did. Free, unofficial community tool.">
+  <meta name="theme-color" content="#120c26">
+  {% include "_icons.html" %}
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ asset('fonts.css') }}">
+  <link rel="stylesheet" href="{{ asset('v21/v21.css') }}">
+{% include "_speed.html" %}
+<style>
+/* ===== Hatchery Wrapped: the observatory under the stars ===== */
+body { background: #120c26; overflow-x: hidden; }
+.wr-world { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+.wr-world img { position: absolute; inset: -3%; width: 106%; height: 106%; object-fit: cover; transition: opacity 1s var(--ease); animation: drift 46s ease-in-out infinite alternate; }
+.wr-world img.off { opacity: 0; }
+@keyframes drift { from { transform: scale(1.02); } to { transform: scale(1.09) translate(-1%, 1%); } }
+.wr-world::after { content: ""; position: absolute; inset: 0; background: radial-gradient(100% 70% at 50% 45%, rgba(18, 12, 38, .2), rgba(18, 12, 38, .8) 75%, #120c26); }
+.wr-world canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.wr-app { position: relative; z-index: 2; min-height: 100svh; display: flex; flex-direction: column; }
+.v-bar { position: relative; }
+.scene-pick { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: rgba(14, 10, 30, .45); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.scene-pick button { height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font: 800 13px/1 var(--body); color: #d9d0f2; cursor: pointer; }
+.scene-pick button[aria-pressed="true"] { background: rgba(200, 180, 255, .22); color: #fff; }
+@media (max-width: 560px) { .scene-pick button { padding: 0 9px; font-size: 12px; } }
+
+.wr-main { flex: 1; display: grid; place-items: center; padding: 6px 16px 24px; }
+.months { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+.months button { height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.2); background: rgba(14, 10, 30, .45); color: #e8e0ff; font: 800 13px/1 var(--body); cursor: pointer; }
+.months button[aria-pressed="true"] { background: linear-gradient(180deg, #ffe08f, #ffb85c); color: #3a1a06; border-color: transparent; }
+
+/* the story */
+.story { position: relative; width: min(440px, 100%); height: min(780px, calc(100svh - 150px)); min-height: 560px; border-radius: 30px; overflow: hidden; isolation: isolate;
+  background: linear-gradient(180deg, rgba(40, 26, 90, .55), rgba(18, 12, 38, .85)); border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255,255,255,.12); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); user-select: none; -webkit-user-select: none; }
+.bars { position: absolute; top: 14px; left: 14px; right: 14px; z-index: 5; display: flex; gap: 5px; }
+.bars i { flex: 1; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .25); overflow: hidden; }
+.bars i b { display: block; height: 100%; width: 0; background: #fff; border-radius: inherit; }
+.bars i.done b { width: 100%; }
+.tap { position: absolute; top: 0; bottom: 0; z-index: 4; width: 34%; border: 0; background: transparent; cursor: pointer; }
+.tap.l { left: 0; } .tap.r { right: 0; width: 66%; }
+.tap:focus-visible { outline: 3px solid var(--gold); outline-offset: -6px; border-radius: 30px; }
+.slide { position: absolute; inset: 0; padding: 54px 26px 28px; display: flex; flex-direction: column; justify-content: center; gap: 14px; text-align: center;
+  opacity: 0; transform: translateY(18px) scale(.98); transition: opacity .55s var(--ease), transform .7s var(--ease); pointer-events: none; }
+.slide.on { opacity: 1; transform: none; pointer-events: auto; }
+.slide .k { font: 800 12px/1 var(--body); letter-spacing: 2.4px; text-transform: uppercase; color: #ffd98e; }
+.slide h2 { margin: 0; font: 700 clamp(28px, 7vw, 38px)/1.08 var(--disp); color: #fff; text-shadow: 0 4px 24px rgba(0,0,0,.5); }
+.slide p { margin: 0; color: #d9d0f2; font-size: 15.5px; }
+.big { font: 700 clamp(76px, 22vw, 116px)/.95 var(--disp); color: #fff; letter-spacing: -2px;
+  background: linear-gradient(180deg, #fff6d8, #ffc25a 70%, #ff9a5a); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 8px 30px rgba(255, 170, 80, .35)); }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.chip { padding: 10px 14px; border-radius: 16px; background: rgba(255, 255, 255, .09); border: 1px solid rgba(255, 255, 255, .12); }
+.chip b { display: block; font: 700 24px/1 var(--disp); color: #fff; }
+.chip span { display: block; margin-top: 4px; font-size: 12px; font-weight: 800; color: #b9addf; }
+.scope { width: 64%; margin: 0 auto; filter: drop-shadow(0 20px 30px rgba(0,0,0,.5)); animation: bob 5s ease-in-out infinite; }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-10px) rotate(1deg); } }
+.hint { font-size: 13px; color: #a79bd0; font-weight: 800; }
+.dragon { position: relative; width: 62%; aspect-ratio: 1; margin: 0 auto; display: grid; place-items: center; }
+.dragon::before { content: ""; position: absolute; inset: 4%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 214, 120, .55), rgba(255, 170, 80, .1) 60%, transparent 75%); animation: halo 3.6s ease-in-out infinite; }
+.dragon img { position: relative; width: 92%; height: auto; filter: drop-shadow(0 18px 24px rgba(0,0,0,.5)); }
+@keyframes halo { 50% { transform: scale(1.08); opacity: .8; } }
+.tier { display: inline-block; margin: 0 auto; padding: 5px 12px; border-radius: 999px; font: 800 12px/1 var(--body); letter-spacing: 1.4px; text-transform: uppercase; }
+.tier.legend { background: linear-gradient(180deg, #ffe58a, #e3a420); color: #3a2204; }
+.tier.rare { background: linear-gradient(90deg, #b6f3ff, #e0b6ff, #ffd0e6); color: #2a1a4a; }
+.tier.common { background: rgba(255,255,255,.14); color: #fff; }
+.minis { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.minis img { width: 46px; height: 46px; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(0,0,0,.4)); }
+.people { display: grid; gap: 10px; text-align: left; }
+.person { display: grid; grid-template-columns: 26px 50px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 18px; background: rgba(255,255,255,.08); }
+.person .n { font: 700 18px/1 var(--disp); color: #ffd98e; text-align: center; }
+.person .ava { width: 50px; height: 50px; box-shadow: 0 0 0 2px rgba(255, 217, 142, .5); }
+.person b { display: block; font: 700 16px/1.2 var(--disp); color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.person small { display: block; color: #b9addf; font-weight: 800; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.person em { font-style: normal; font: 700 18px/1 var(--disp); color: #fff; }
+.card-img { width: 100%; border-radius: 16px; box-shadow: 0 20px 40px -20px #000; border: 1px solid rgba(255,255,255,.15); }
+.acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.acts .btn { position: relative; z-index: 6; }
+.slide .btn.ghost { color: #fff; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; color: #d9d0f2; font-weight: 800; }
+.note { margin: 14px auto 0; max-width: 440px; text-align: center; color: #a79bd0; font-size: 12.5px; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
+</style>
+</head>
+<body>
+<div class="wr-world" aria-hidden="true">
+  <img id="sc-a" class="off" alt="" src="{{ asset('v21/wrapped-a-s.jpg') }}" srcset="{{ asset('v21/wrapped-a-s.jpg') }} 960w, {{ asset('v21/wrapped-a.jpg') }} 1920w" sizes="100vw" loading="lazy">
+  <img id="sc-b" alt="" src="{{ asset('v21/wrapped-b-s.jpg') }}" srcset="{{ asset('v21/wrapped-b-s.jpg') }} 960w, {{ asset('v21/wrapped-b.jpg') }} 1920w" sizes="100vw">
+  <canvas id="stars"></canvas>
+</div>
+<div class="wr-app">
+  <header class="v-bar">
+    <a class="v-brand" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="38" height="38"><span>PD Tools<small>Hatchery Wrapped</small></span></a>
+    <div class="v-tools">
+      <div class="scene-pick" role="group" aria-label="Scene"><button type="button" data-sc="b" aria-pressed="true">Balcony</button><button type="button" data-sc="a" aria-pressed="false">Observatory</button></div>
+      <label class="pill" title="Language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><select id="lang-select" aria-label="Language"></select></label>
+    </div>
+  </header>
+  <main class="wr-main">
+    <div>
+      <div class="months" id="months" hidden></div>
+      <section class="story" id="story" aria-roledescription="story" aria-live="polite">
+        <div class="bars" id="bars" aria-hidden="true"></div>
+        <div class="loading" id="loading">Looking through the telescope…</div>
+        <div id="slides"></div>
+        <button class="tap l" id="prev" type="button" aria-label="Back"></button>
+        <button class="tap r" id="fwd" type="button" aria-label="Next"></button>
+      </section>
+      <p class="note">Made from what you did on pdtools on this device. Dragons come from your own collection here, and secret relics always stay secret.</p>
+    </div>
+  </main>
+  {% include "_v21_foot.html" %}
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="{{ asset('dex-data.js') }}"></script>
+<script src="{{ asset('i18n.js') }}"></script>
+<script src="{{ asset('cardkit.js') }}"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const D = window.PD_DEX || { art: {}, art2d: {}, dragons: [], legends: [] };
+  const BASE = "https://res.cloudinary.com/gosbi0oh";
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } } };
+  function vid() {
+    let v = ""; try { v = localStorage.getItem("pd:vid") || ""; } catch (e) { /* private */ }
+    if (!/^[a-f0-9]{32}$/.test(v)) { const b = new Uint8Array(16); crypto.getRandomValues(b); v = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("pd:vid", v); } catch (e) { /* fine */ } }
+    return v;
+  }
+  let tt = 0;
+  function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 3200); }
+
+  /* scenes */
+  let sc = "b";
+  function scene(k) {
+    sc = k; $("sc-a").classList.toggle("off", k !== "a"); $("sc-b").classList.toggle("off", k !== "b");
+    document.querySelectorAll("[data-sc]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.sc === k ? "true" : "false"));
+    try { localStorage.setItem("pd:scene:wrapped", k); } catch (e) { /* fine */ }
+    cardUrl = null; gen++;
+  }
+  document.querySelectorAll("[data-sc]").forEach((b) => b.addEventListener("click", () => { scene(b.dataset.sc); if (cur === slides.length - 1) buildCard(); }));
+  try { if (localStorage.getItem("pd:scene:wrapped") === "a") sc = "a"; } catch (e) { /* fine */ }
+
+  /* twinkling stars and the odd shooting star */
+  const cv = $("stars"), cx = cv.getContext("2d"); let W = 0, H = 0, st = [], shoot = null;
+  function size() { const d = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0);
+    st = Array.from({ length: Math.round(W * H / 9000) }, () => ({ x: Math.random() * W, y: Math.random() * H * .7, r: Math.random() * 1.2 + .3, p: Math.random() * 6.28, s: .5 + Math.random() * 1.5 })); }
+  function frame(t) {
+    if (!document.hidden) { cx.clearRect(0, 0, W, H);
+      for (const s of st) { cx.globalAlpha = .25 + .6 * (.5 + .5 * Math.sin(s.p + t / 1000 * s.s)); cx.fillStyle = "#fff"; cx.beginPath(); cx.arc(s.x, s.y, s.r, 0, 6.283); cx.fill(); }
+      if (!shoot && Math.random() < .005) shoot = { x: Math.random() * W * .6 + W * .3, y: Math.random() * H * .3, l: 0 };
+      if (shoot) { shoot.l++; const k = shoot.l / 55, x = shoot.x - k * 300, y = shoot.y + k * 150; const g = cx.createLinearGradient(x, y, x + 90, y - 45);
+        g.addColorStop(0, "rgba(255,240,220,.9)"); g.addColorStop(1, "rgba(255,240,220,0)"); cx.globalAlpha = 1 - k; cx.strokeStyle = g; cx.lineWidth = 1.6; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x + 90, y - 45); cx.stroke(); if (shoot.l > 55) shoot = null; }
+      cx.globalAlpha = 1; }
+    if (!calm) requestAnimationFrame(frame);
+  }
+  size(); addEventListener("resize", size, { passive: true }); if (!calm) requestAnimationFrame(frame);
+
+  /* dragons from this device's own collection (never the secret relics) */
+  const TIER = { c: "common", r: "rare", l: "legend" }, RANK = { l: 3, r: 2, c: 1 };
+  const nameOf = (key) => { const id = key.replace(/-[crl]$/, ""); const d = [...(D.dragons || []), ...(D.legends || [])].find((x) => x.id === id); return d ? d.name : id; };
+  function artOf(key, w) {
+    if (D.art2d && D.art2d[key]) return `${BASE}/image/upload/c_scale,w_${w}/f_png/${D.art2d[key]}/dragon-radar/dex2d/${key}`;
+    return `${BASE}/image/upload/c_scale,w_${w}/f_png/${D.art[key] || "v1"}/dragon-radar/dex3/${key}`;
+  }
+  function hatched(monthKey) {
+    const dex = store.get("pd:dex", null);
+    const log = dex && Array.isArray(dex.log) ? dex.log : [];
+    return log.filter((l) => l && typeof l.k === "string" && /-[crl]$/.test(l.k) && D.art[l.k] && String(l.day || "").slice(0, 7) === monthKey).map((l) => l.k);
+  }
+
+  /* the story itself */
+  let data = null, slides = [], cur = 0, timer = 0, startAt = 0, cardUrl = null, dragons = [], gen = 0;
+  const SLIDE_MS = 6500;
+  const fmt = (n) => Number(n || 0).toLocaleString();
+  function build() {
+    const me = data.me, hh = data.hatchery, mon = data.month;
+    dragons = hatched(data.key);
+    const best = dragons.slice().sort((a, b) => RANK[b.slice(-1)] - RANK[a.slice(-1)])[0];
+    const out = [];
+    out.push(`<div class="k">Hatchery Wrapped</div><h2>Your ${esc(mon)}${data.so_far ? " so far" : ""} in the hatchery</h2>
+      <img class="scope" src="{{ asset('v21/blinky-scope.webp') }}" alt="" width="871" height="1000">
+      <p class="hint">Tap to begin</p>`);
+    out.push(me.opens ? `<div class="k">Cheering on fellow Keepers</div><div class="big" data-n="${me.opens}">${fmt(me.opens)}</div>
+      <h2>posts from fellow Keepers opened</h2>
+      <div class="chips"><div class="chip"><b>${fmt(me.days)}</b><span>Days you showed up</span></div><div class="chip"><b>${fmt(me.streak)}</b><span>Best streak in days</span></div><div class="chip"><b>${fmt(me.keepers)}</b><span>Keepers you cheered on</span></div></div>`
+      : `<div class="k">Cheering on fellow Keepers</div><h2>Your month starts with one open</h2><p>Open a post from a fellow Keeper on Blinky's Friends and your story begins to fill up.</p>
+      <div class="acts"><a class="btn go" href="/friends">Open Blinky's Friends</a></div>`);
+    out.push(dragons.length ? `<div class="k">Your dragons</div><h2>You hatched ${dragons.length} ${dragons.length === 1 ? "dragon" : "dragons"}</h2>
+      <div class="dragon"><img src="${artOf(best, 520)}" alt="${esc(nameOf(best))}" crossorigin="anonymous"></div>
+      <span class="tier ${TIER[best.slice(-1)]}">${best.endsWith("-l") ? "Golden legend" : best.endsWith("-r") ? "Rare holo" : "Common"} · ${esc(nameOf(best))}</span>
+      ${dragons.length > 1 ? `<div class="minis">${dragons.filter((k) => k !== best).slice(0, 10).map((k) => `<img src="${artOf(k, 120)}" alt="${esc(nameOf(k))}" loading="lazy">`).join("")}</div>` : ""}`
+      : `<div class="k">Your dragons</div><h2>Your first egg is waiting</h2><p>Finish the daily goal on Blinky's Friends to hatch an egg into a dragon.</p>`);
+    const people = (me.top || []).map((p, i) => `<div class="person"><span class="n">${i + 1}</span><span class="ava">${esc((p.name || p.user)[0] || "?").toUpperCase()}<img src="/api/avatar/${encodeURIComponent(p.user)}" alt="" onerror="this.remove()"></span><span class="wr-who"><b>${esc(p.name)}</b><small>@${esc(p.user)}</small></span><em>${fmt(p.n)}</em></div>`).join("");
+    const fans = data.back && data.back.top && data.back.top.length ? `<p class="hint">Signed Keepers who cheered you most: ${data.back.top.map((f) => "@" + esc(f.user)).join(", ")}</p>` : "";
+    const back = data.back ? (data.back.opens ? `<p>Your own posts were opened <b>${fmt(data.back.opens)}</b> times by fellow Keepers this month.</p>${fans}` : `<p>Share a dragon post and Keepers will cheer you back.</p>`)
+      : `<p class="hint">Sign Blinky's Book of Friends to see who cheered you back.</p>`;
+    out.push(people ? `<div class="k">Your Keepers</div><h2>The Keepers you cheered on most</h2><div class="people">${people}</div>${back}`
+      : `<div class="k">Your Keepers</div><h2>Your Keepers will show up here</h2><p>The fellow Keepers whose posts you open most this month.</p>${back}`);
+    out.push(`<div class="k">The whole hatchery</div><h2>Together in ${esc(mon)}</h2><div class="big" data-n="${hh.opens}">${fmt(hh.opens)}</div><p>opens on dragon posts shared on pdtools</p>
+      <div class="chips"><div class="chip"><b>${fmt(hh.posts)}</b><span>Dragon posts shared</span></div><div class="chip"><b>${fmt(hh.new)}</b><span>New Keepers welcomed</span></div><div class="chip"><b>${fmt(hh.hatches)}</b><span>Eggs hatched</span></div></div>`);
+    out.push(`<div class="k">Your card</div><h2>Share your ${esc(mon)}</h2><img class="card-img" id="card-img" alt="Your Hatchery Wrapped card" hidden>
+      <p class="hint" id="card-wait">Painting your card…</p>
+      <div class="acts"><a class="btn go" id="share" target="_blank" rel="noopener" href="#">Post on X</a><button class="btn ghost" id="save" type="button">Save the card</button></div>`);
+    $("slides").innerHTML = out.map((h, i) => `<section class="slide" data-i="${i}">${h}</section>`).join("");
+    slides = [...$("slides").children];
+    $("bars").innerHTML = slides.map(() => "<i><b></b></i>").join("");
+    const text = `My ${mon} in the Pocket Dragons hatchery 🐉 ${fmt(me.opens)} posts from fellow Keepers opened${dragons.length ? `, ${dragons.length} ${dragons.length === 1 ? "dragon" : "dragons"} hatched` : ""}${me.streak > 1 ? `, a ${me.streak} day streak` : ""}.`;
+    $("share").href = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://pdtools.xyz/wrapped")}`;
+    $("save").addEventListener("click", save);
+    $("loading").hidden = true;
+    go(0);
+  }
+  function countUp(el) {
+    const n = +el.dataset.n; if (calm || !n || el.dataset.done) return; el.dataset.done = 1;
+    const t0 = performance.now(); (function step(t) { const k = Math.min(1, (t - t0) / 1200); el.textContent = fmt(Math.round(n * (1 - Math.pow(1 - k, 3)))); if (k < 1) requestAnimationFrame(step); })(t0);
+  }
+  function go(i) {
+    if (!slides.length) return;
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, k) => s.classList.toggle("on", k === cur));
+    [...$("bars").children].forEach((b, k) => { b.classList.toggle("done", k < cur); b.firstChild.style.width = k < cur ? "100%" : "0"; });
+    slides[cur].querySelectorAll(".big").forEach(countUp);
+    if (cur === slides.length - 1) { buildCard(); $("bars").lastChild.firstChild.style.width = "100%"; }
+    cancelAnimationFrame(timer); startAt = performance.now();
+    if (cur < slides.length - 1 && !calm) timer = requestAnimationFrame(tick);
+  }
+  function tick(t) {
+    if (document.hidden || held) { startAt += 16; timer = requestAnimationFrame(tick); return; }
+    const k = Math.min(1, (t - startAt) / SLIDE_MS);
+    $("bars").children[cur].firstChild.style.width = (k * 100) + "%";
+    if (k >= 1) go(cur + 1); else timer = requestAnimationFrame(tick);
+  }
+  let held = false;
+  $("fwd").addEventListener("click", () => go(cur + 1));
+  $("prev").addEventListener("click", () => go(cur - 1));
+  ["pointerdown"].forEach((e) => $("story").addEventListener(e, () => { held = true; }));
+  ["pointerup", "pointercancel", "pointerleave"].forEach((e) => $("story").addEventListener(e, () => { held = false; }));
+  addEventListener("keydown", (e) => { if (e.key === "ArrowRight") go(cur + 1); if (e.key === "ArrowLeft") go(cur - 1); });
+
+  /* the share card */
+  function img(src, cors) { return new Promise((res) => { const i = new Image(); if (cors) i.crossOrigin = "anonymous"; i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
+  let painting = null;
+  async function paint() {
+    const K = window.pdCard; await K.fonts();
+    const { c, x } = K.canvas(2), W = K.W, H = K.H, me = data.me;
+    const el = $(sc === "a" ? "sc-a" : "sc-b");
+    const [bg, bl, dr] = await Promise.all([img(el.currentSrc || el.src), img("{{ asset('v21/blinky-scope.webp') }}"),
+      dragons.length ? img(artOf(dragons.slice().sort((a, b) => RANK[b.slice(-1)] - RANK[a.slice(-1)])[0], 600), true) : Promise.resolve(null)]);
+    x.fillStyle = "#120c26"; x.fillRect(0, 0, W, H);
+    if (bg) { const k = Math.max(W / bg.width, H / bg.height); x.drawImage(bg, (W - bg.width * k) / 2, (H - bg.height * k) / 2, bg.width * k, bg.height * k); }
+    let g = x.createLinearGradient(0, 0, W, 0); g.addColorStop(0, "rgba(14,10,32,.9)"); g.addColorStop(.58, "rgba(14,10,32,.45)"); g.addColorStop(1, "rgba(14,10,32,.15)");
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    if (dr) { const r = 170, cxp = 900, cyp = 300; const hg = x.createRadialGradient(cxp, cyp, 10, cxp, cyp, r * 1.3); hg.addColorStop(0, "rgba(255,214,120,.55)"); hg.addColorStop(1, "rgba(255,214,120,0)");
+      x.fillStyle = hg; x.beginPath(); x.arc(cxp, cyp, r * 1.3, 0, 6.283); x.fill(); const s = Math.min(2 * r / dr.width, 2 * r / dr.height); x.drawImage(dr, cxp - dr.width * s / 2, cyp - dr.height * s / 2, dr.width * s, dr.height * s); }
+    if (bl) { const h = dr ? 300 : 500, w = bl.width * h / bl.height; x.save(); x.shadowColor = "rgba(0,0,0,.55)"; x.shadowBlur = 40; x.shadowOffsetY = 18; x.drawImage(bl, W - w - (dr ? 30 : 60), H - h - 16, w, h); x.restore(); }
+    K.pill(x, `HATCHERY WRAPPED · ${data.month.toUpperCase()}`, 70, 92, { bg: "#ffcd6e", ink: "#3a1a06" });
+    const stat = (n, label, X, Y) => { x.textAlign = "left"; x.fillStyle = "#fff7ec"; x.font = '700 92px "Fredoka", sans-serif'; x.fillText(fmt(n), X, Y); x.fillStyle = "#cfc4f0"; x.font = '800 22px "Nunito", sans-serif'; x.fillText(label, X + 4, Y + 34); };
+    stat(me.opens, "posts from Keepers opened", 70, 250);
+    stat(dragons.length, dragons.length === 1 ? "dragon hatched" : "dragons hatched", 70, 400);
+    stat(me.streak, "day best streak", 340, 400);
+    if (me.top && me.top[0]) { x.fillStyle = "#ffcd6e"; x.font = '800 24px "Nunito", sans-serif'; x.fillText(`Cheered on @${me.top[0].user} the most`, 74, 520); }
+    x.fillStyle = "#ffcd6e"; x.font = '800 26px "Nunito", sans-serif'; x.fillText("pdtools.xyz/wrapped", 74, 606);
+    K.grain(x, .05);
+    return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
+  }
+  async function buildCard() {
+    if (cardUrl) return;
+    const mine = gen;                     // a month or scene change while painting throws this card away
+    if (!painting || painting.gen !== mine) { painting = paint(); painting.gen = mine; }
+    const b = await painting; if (!b || mine !== gen) return;
+    cardUrl = URL.createObjectURL(b);
+    const im = $("card-img"); if (im) { im.src = cardUrl; im.hidden = false; $("card-wait").hidden = true; }
+  }
+  async function save() { await buildCard(); if (!cardUrl) return; const a = document.createElement("a"); a.href = cardUrl; a.download = `hatchery-wrapped-${data.key}.png`; a.click(); toast("Card saved. Add it to your post on X."); }
+
+  /* months */
+  function load(key) {
+    cancelAnimationFrame(timer); gen++; slides = [];
+    $("loading").hidden = false; $("loading").textContent = "Looking through the telescope…"; $("slides").innerHTML = ""; cardUrl = null;
+    fetch(`/api/wrapped?vid=${vid()}&m=${key}`).then((r) => (r.ok ? r.json() : null)).then((j) => {
+      if (!j || !j.ok) { $("loading").textContent = "The telescope is cloudy right now. Please try again in a moment."; return; }
+      data = j; build();
+    }).catch(() => { $("loading").textContent = "The telescope is cloudy right now. Please try again in a moment."; });
+  }
+  const now = new Date(), months = [];
+  for (let y = 2026, m = 10; y < now.getUTCFullYear() || (y === now.getUTCFullYear() && m <= now.getUTCMonth() + 1); m === 12 ? (y++, m = 1) : m++) months.push(`${y}-${String(m).padStart(2, "0")}`);
+  if (months.length > 1) {
+    const box = $("months"); box.hidden = false;
+    months.slice(-3).forEach((k) => { const b = document.createElement("button"); b.type = "button"; b.dataset.m = k;
+      b.textContent = new Date(k + "-01T12:00:00Z").toLocaleString(undefined, { month: "long" });
+      b.addEventListener("click", () => { box.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false")); load(k); }); box.append(b); });
+    box.lastChild.setAttribute("aria-pressed", "true");
+  }
+  scene(sc);
+  load(months[months.length - 1] || "2026-10");
+})();
+</script>
+<script src="{{ asset('hit.js') }}" defer></script>
+</body>
+</html>
