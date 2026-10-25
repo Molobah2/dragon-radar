@@ -1491,6 +1491,17 @@ def create_app(cfg: Config | None = None) -> Flask:
             session["csrf"] = secrets.token_hex(16)
         return session["csrf"]
 
+    @app.get("/lab/welcome/add")
+    @circle_only   # Jon's tools stay locked even after launch
+    def welcome_add():
+        """Jon adds a newcomer by pasting their post link: /lab/welcome/add?post=https://x.com/name/status/123"""
+        from .v21 import add_to_welcome
+        m = re.search(r"(\d{6,25})", request.args.get("post", ""))
+        with Session() as s:
+            ok = bool(m) and add_to_welcome(s, m.group(1))
+        v21_cache.pop("lane", None)
+        return redirect("/welcome" if ok else "/lab")
+
     @app.get("/lab/creator")
     @circle_only   # Jon's tools stay locked even after launch
     def creator_lab():

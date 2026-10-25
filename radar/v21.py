@@ -33,6 +33,26 @@ GAME_SQUARES = re.compile("[\U0001F7E8\U0001F7E7\U0001F7E5\u2B1B]{3,}")     # th
 NIGHT = re.compile(r"\bnight\s*\d")
 VETERAN = re.compile(r"\branked\s*#?\s*\d|\bbadges?\s+collected\b|\b\d+\s*(?:/|out of|of)\s*16\s+eggs\b")
 NEW_GRACE = timedelta(days=3)     # a newcomer may post about Pocket Dragons a day or two before they onboard
+WELCOME_ADD_KEY = "v21:welcome_add"   # post ids Jon added by hand: real newcomers who wrote their join post in their own words
+
+
+def welcome_added(s) -> list[str]:
+    try:
+        got = json.loads(get_setting(s, WELCOME_ADD_KEY, "[]") or "[]")
+    except ValueError:
+        return []
+    return [str(x) for x in got if str(x).isdigit()]
+
+
+def add_to_welcome(s, post_id: str) -> bool:
+    """Jon adds a newcomer's post to the welcome lane. Kept to the last 50, they age out of the lane on their own."""
+    post_id = str(post_id or "").strip()
+    if not post_id.isdigit() or not s.get(Post, post_id):
+        return False
+    ids = [x for x in welcome_added(s) if x != post_id] + [post_id]
+    set_setting(s, WELCOME_ADD_KEY, json.dumps(ids[-50:]))
+    s.commit()
+    return True
 
 
 def game_share(text: str | None) -> bool:
@@ -52,10 +72,8 @@ def welcome_lane(s, cfg, now: datetime, hours: int = WELCOME_HOURS) -> list[dict
     recent = s.scalars(select(Post).where(Post.is_team.is_(False), Post.created_at >= since,
                                           Post.text.ilike(f"%{JOIN_CARD}%"))).all()
     authors = {p.author_id for p in recent if not game_share(p.text) and p.author_id not in blocked}
-    if not authors:
-        return []
     history: dict[str, list] = {}
-    for p in s.scalars(select(Post).where(Post.author_id.in_(authors))):
+    for p in (s.scalars(select(Post).where(Post.author_id.in_(authors))) if authors else []):
         history.setdefault(p.author_id, []).append(p)
     team = team_handles(s, cfg)
     out = []
@@ -78,6 +96,19 @@ def welcome_lane(s, cfg, now: datetime, hours: int = WELCOME_HOURS) -> list[dict
         out.append({"id": first.id, "user": user, "name": (first.author_name or user)[:60], "text": (first.text or "")[:280],
                     "at": first.created_at.isoformat() + "Z", "waited_h": max(0, int((now - first.created_at).total_seconds() // 3600)),
                     "opens": int(first.opens or 0), "media": bool(first.has_media)})
+    # newcomers Jon added by hand (their join post did not use the card's words); his word is enough, so no history check
+    seen = {x["user"].lower() for x in out}
+    for pid in welcome_added(s):
+        p = s.get(Post, pid)
+        if not p or p.hidden or p.is_team or p.created_at < since or p.author_id in blocked:
+            continue
+        user = (p.author_username or "").strip()
+        if not user or user.lower() in seen or user.lower() in team_handles(s, cfg):
+            continue
+        seen.add(user.lower())
+        out.append({"id": p.id, "user": user, "name": (p.author_name or user)[:60], "text": (p.text or "")[:280],
+                    "at": p.created_at.isoformat() + "Z", "waited_h": max(0, int((now - p.created_at).total_seconds() // 3600)),
+                    "opens": int(p.opens or 0), "media": bool(p.has_media)})
     out.sort(key=lambda x: (x["opens"] > 0, x["opens"], x["at"]))
     return out
 

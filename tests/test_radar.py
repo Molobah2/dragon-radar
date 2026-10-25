@@ -2942,3 +2942,27 @@ def test_dragon_circle_sits_with_the_other_new_tools(cfg, Session):
     menu = page.split('id="side-new-list"')[1].split("</div>")[0]
     assert "9 new" in page and menu.index('href="/cheers"') < menu.index('href="/circle"') < menu.index('href="/quiz"')
     assert 'href="/wallpaper"' in menu and "My Dragon Circle</span>" not in page
+
+
+def test_jon_can_add_a_newcomer_who_wrote_their_own_words(cfg, Session):
+    """Some newcomers write their join post in their own words, so the join card check misses them. Jon adds the
+    post from his unlocked device and the Keeper shows in the welcome lane until it ages out. Nobody else can add."""
+    from radar.v21 import welcome_lane
+    now = utcnow()
+    with Session() as s:
+        s.add(Post(id="2114222907412840583", author_id="u:k34tyt", author_username="k34tyt", author_name="K 34",
+                   text="Pocket Dragons are waking up! Who is ready to become a Keeper?", created_at=now - timedelta(hours=3)))
+        s.add(Post(id="2114222907412840999", author_id="u:old", author_username="OldOne", text="hi", created_at=now - timedelta(days=5)))
+        s.commit()
+    app, c = _v21_client(cfg)
+    assert app.test_client().get("/lab/welcome/add?post=https://x.com/k34tyt/status/2114222907412840583").status_code == 404
+    with Session() as s:
+        assert "k34tyt" not in [x["user"] for x in welcome_lane(s, cfg, now)]
+    c.get("/lab/circle/on")
+    r = c.get("/lab/welcome/add?post=https://x.com/k34tyt/status/2114222907412840583")
+    assert r.status_code == 302 and r.headers["Location"].endswith("/welcome")
+    c.get("/lab/welcome/add?post=https://x.com/OldOne/status/2114222907412840999")
+    with Session() as s:
+        users = [x["user"] for x in welcome_lane(s, cfg, now)]
+    assert "k34tyt" in users and "OldOne" not in users        # an old post is past the lane's three days
+    assert c.get("/lab/welcome/add?post=https://x.com/a/status/999999999").headers["Location"].endswith("/lab")
