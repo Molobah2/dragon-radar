@@ -27,7 +27,7 @@ body { background: #140d2a; overflow-x: hidden; }
 .wp-head p { margin: 0; max-width: 52ch; color: #e2d8f6; }
 
 /* the scenes, tall like the phone */
-.wp-scenes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.wp-scenes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; padding: 4px; list-style: none; max-height: min(calc(100svh - 280px), 740px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.25) transparent; }
 .wp-scenes button { position: relative; display: block; width: 100%; aspect-ratio: 9 / 16; padding: 0; border: 0; border-radius: 18px; overflow: hidden; cursor: pointer; background: #2a1d44;
   box-shadow: 0 12px 24px -14px #000; outline: 2px solid transparent; outline-offset: 3px; transition: transform .3s var(--spring), outline-color .2s; }
 .wp-scenes img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -76,7 +76,7 @@ body { background: #140d2a; overflow-x: hidden; }
 
 @media (max-width: 980px) {
   .wp-main { grid-template-columns: minmax(0, 1fr) 320px; }
-  .wp-scenes { grid-column: 1 / -1; grid-row: 3; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 92px; overflow-x: auto; padding: 4px 4px 8px; scrollbar-width: none; }
+  .wp-scenes { max-height: none; overflow-y: visible; grid-column: 1 / -1; grid-row: 3; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 92px; overflow-x: auto; padding: 4px 4px 8px; scrollbar-width: none; }
   .wp-scenes::-webkit-scrollbar { display: none; }
 }
 @media (max-width: 720px) {
@@ -104,7 +104,7 @@ body { background: #140d2a; overflow-x: hidden; }
     </div>
 
     <ul class="wp-scenes" id="scenes" aria-label="Scene">
-      {% for key, name in [("glow", "Glow wood"), ("lake", "Sunrise lake"), ("sunflower", "Sunflower nap"), ("pond", "Frost pond"), ("blossom", "Blossom bridge"), ("shore", "Tide pools")] %}
+      {% for key, name in [("glow", "Glow wood"), ("lake", "Sunrise lake"), ("sunflower", "Sunflower nap"), ("pond", "Frost pond"), ("blossom", "Blossom bridge"), ("shore", "Tide pools"), ("autumn", "Autumn path"), ("lavender", "Lavender dusk"), ("kite", "Kite hill"), ("oasis", "Desert stars"), ("falls", "Rainbow falls")] %}
       <li><button type="button" data-sc="{{ key }}" aria-pressed="{{ 'true' if loop.first else 'false' }}"><img src="{{ asset('v21/wall/' ~ key ~ '-t.jpg') }}" alt="" width="200" height="358" loading="{{ 'eager' if loop.index < 4 else 'lazy' }}" decoding="async"><span>{{ name }}</span></button></li>
       {% endfor %}
     </ul>
