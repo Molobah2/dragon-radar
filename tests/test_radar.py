@@ -2661,10 +2661,21 @@ def test_welcome_keepsake_cards(cfg, Session, monkeypatch):
     assert c.get("/welcome/FreshOne/card/holo.jpg").status_code == 404
     assert c.get("/welcome/Nobody/card.jpg").status_code == 404
     from radar import welcome_cards
+    assert c.get("/welcome/FreshOne/card.jpg?style=holo").status_code == 404
     seen = {}
-    monkeypatch.setattr(welcome_cards, "card", lambda av, user, name, joined, by=None, small=False: seen.setdefault("by", by) and b"\xff\xd8x" or b"\xff\xd8x")
-    c.get("/welcome/FreshOne/card.jpg?vid=" + "d" * 32 + "&by=Elon")
-    assert seen.get("by") is None                         # an unsigned browser is never named, whatever the link says
+    def fake(av, user, name, joined, by=None, small=False, style="dusk"):
+        seen.update(by=by, style=style); return b"\xff\xd8x"
+    real = welcome_cards.card
+    monkeypatch.setattr(welcome_cards, "card", fake)
+    c.get("/welcome/FreshOne/card.jpg?style=feast&vid=" + "d" * 32 + "&by=Elon")
+    assert seen.get("by") is None and seen.get("style") == "feast"   # an unsigned browser is never named, whatever the link says
+    monkeypatch.setattr(welcome_cards, "card", real)
+    for look in [x for x in welcome_cards.STYLES if x != "feast"]:   # five looks, each a real card with its own picker thumbnail
+        r = c.get(f"/welcome/FreshOne/card.jpg?style={look}")
+        assert r.status_code == 200 and Image.open(io.BytesIO(r.data)).size == (2400, 1350)
+        assert (Path(welcome_cards.__file__).parent / "static" / "v21" / f"wthumb-{look}.webp").exists()
+    page = c.get("/welcome").get_data(as_text=True)
+    assert page.count("data-look=") == 5
 
 
 def test_circle_links_to_cheers_and_wrapped_only_where_unlocked(cfg, Session):

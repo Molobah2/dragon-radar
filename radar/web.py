@@ -1317,19 +1317,24 @@ def create_app(cfg: Config | None = None) -> Flask:
         except Exception:  # noqa: BLE001  a broken picture shows the first letter instead
             return None
 
+    render_lock = threading.Lock()
+
     def card_png(key, make, mime="image/jpeg"):
         hit = v21_png.get(key)
         if not (hit and time.time() - hit[0] < 6 * 3600):
             ip = client_ip(); nowt = time.time()
             recent = [t for t in circle_hits.get(ip, []) if nowt - t < 3600]
-            if len(recent) >= 40:
+            if len(recent) >= 150:                   # five welcome looks and six Dragondle cards add up quickly
                 abort(429)
             if len(circle_hits) > 20000:
                 circle_hits.clear()
             circle_hits[ip] = recent + [nowt]
-            if len(v21_png) > 80:
+            if len(v21_png) > 80 or sum(len(v[1]) for v in v21_png.values()) > 40_000_000:
                 v21_png.clear()
-            v21_png[key] = (time.time(), make()); hit = v21_png[key]
+            with render_lock:                        # one heavy picture at a time: the server is small
+                hit = v21_png.get(key)
+                if not (hit and time.time() - hit[0] < 6 * 3600):
+                    v21_png[key] = (time.time(), make()); hit = v21_png[key]
         r = app.response_class(hit[1], mimetype=mime)
         if cfg.v21_public:
             r.headers["Cache-Control"] = "public, max-age=1800"     # X and browsers may keep a card for half an hour
@@ -1400,7 +1405,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     @app.get("/welcome/<handle>/card.jpg")
     @v21_only
     def welcome_keepsake(handle):
-        """The welcome card a Keeper saves and posts with their hello, in the relic card frame.
+        """The welcome card a Keeper saves and posts with their hello, in one of five looks (?style=).
         "Welcomed by" is only ever the signed Keeper behind this browser."""
         from .cheers import sender
         from .welcome_cards import card
@@ -1415,8 +1420,12 @@ def create_app(cfg: Config | None = None) -> Flask:
                 dev = sender(s, vid)
                 if dev and dev.key != user.lower():
                     by = dev.username
-        key = f"wk2:{user.lower()}:{(by or '').lower()}"
-        return card_png(key, lambda: card(avatar_image(user), user, person.get("name") or user, _joined(person), by=by))
+        from .welcome_cards import STYLES
+        style = request.args.get("style", "dusk")
+        if style not in STYLES:
+            abort(404)
+        key = f"wk3:{style}:{user.lower()}:{(by or '').lower()}"
+        return card_png(key, lambda: card(avatar_image(user), user, person.get("name") or user, _joined(person), by=by, style=style))
 
     @app.get("/api/welcome")
     @v21_only

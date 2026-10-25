@@ -74,11 +74,10 @@ def card(n: int, marks: list[int], streak: int) -> bytes:
     f_pill, f_big, f_tail, f_line, f_small = _font(15), _font(82), _font(40), _font(22, False), _font(16, False)
     # the timeline: eggs land, then each one wobbles and hatches (or dozes off) in turn, then confetti
     LAND, STEP, CONF = 8, 9, 16
-    frames, durations = [], []
     total_frames = LAND + STEP * total + CONF
     confetti = [(rnd.uniform(0, W), rnd.uniform(-H, 0), rnd.uniform(3, 7), rnd.uniform(0, 6.28),
                  rnd.choice([(255, 126, 182), (255, 211, 106), (126, 224, 195), (159, 179, 255), (255, 163, 108)])) for _ in range(70)]
-    for f in range(total_frames):
+    def draw(f):
         im = base.copy(); d = ImageDraw.Draw(im)
         score = 0
         for i, m in enumerate(marks):
@@ -145,11 +144,13 @@ def card(n: int, marks: list[int], streak: int) -> bytes:
                 if 0 < y < H:
                     xx = cxp + math.sin(ph + t * .5) * 14
                     d.rectangle((xx - 5, y - 2, xx + 5, y + 2), fill=col)
-        frames.append(im.convert("RGB"))
-        durations.append(80)
-    durations[-1] = 2600
-    pal = frames[-1].quantize(colors=200, method=Image.Quantize.MEDIANCUT)
-    q = [fr.quantize(palette=pal, dither=Image.Dither.NONE) for fr in frames]
+        return im.convert("RGB")
+
+    # the palette comes from the finished picture, then every frame is reduced to it as soon as it is drawn,
+    # so only small 8 bit frames are ever kept (the server is small)
+    pal = draw(total_frames - 1).quantize(colors=200, method=Image.Quantize.MEDIANCUT)
+    q = [draw(f).quantize(palette=pal, dither=Image.Dither.NONE) for f in range(total_frames)]
+    durations = [80] * total_frames; durations[-1] = 2600
     buf = io.BytesIO()
     q[0].save(buf, "GIF", save_all=True, append_images=q[1:], duration=durations, loop=0, optimize=True, disposal=1)
     return buf.getvalue()
