@@ -16,7 +16,7 @@ import math
 import random
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 FONTS = Path(__file__).parent / "fonts"
 ART = Path(__file__).parent / "static" / "v21"
@@ -65,8 +65,7 @@ class Soft:
         ImageDraw.Draw(m).ellipse((self.q(cx - rx), self.q(cy - ry), self.q(cx + rx), self.q(cy + ry)), fill=alpha)
         m = m.filter(ImageFilter.GaussianBlur(max(1, self.q(blur))))
         self.rgb = Image.composite(Image.new("RGB", self.rgb.size, color), self.rgb, m)
-        self.a = Image.composite(Image.new("L", self.a.size, 255), self.a, m) if alpha >= 250 else Image.fromarray(
-            __import__("numpy").maximum(__import__("numpy").asarray(self.a), __import__("numpy").asarray(m)))
+        self.a = Image.composite(Image.new("L", self.a.size, 255), self.a, m) if alpha >= 250 else ImageChops.lighter(self.a, m)
 
     def onto(self, img):
         lay = self.rgb.resize(img.size, Image.BICUBIC).convert("RGBA")

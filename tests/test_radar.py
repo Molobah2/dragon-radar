@@ -2676,6 +2676,9 @@ def test_welcome_keepsake_cards(cfg, Session, monkeypatch):
         assert (Path(welcome_cards.__file__).parent / "static" / "v21" / f"wthumb-{look}.webp").exists()
     page = c.get("/welcome").get_data(as_text=True)
     assert page.count("data-look=") == 5
+    reqs = (Path(welcome_cards.__file__).parent.parent / "requirements.txt").read_text().lower()
+    if "numpy" not in reqs:                                # the server has no numpy, so the card code must never need it
+        assert "numpy" not in Path(welcome_cards.__file__).read_text()
 
 
 def test_circle_links_to_cheers_and_wrapped_only_where_unlocked(cfg, Session):
