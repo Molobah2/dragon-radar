@@ -2290,7 +2290,8 @@ def test_v21_pages_stay_locked_to_unlocked_devices(cfg, Session):
 def test_welcome_lane_shows_first_posts_waiting_first(cfg, Session, monkeypatch):
     """Only Keepers who shared the official join card ("Keeper of the Ancient Hatchery") for the first time in the
     last three days, the unopened ones first. A first post here without the card, an old card shared again, the team,
-    blocked and hidden posts never show. The welcome card is a real picture."""
+    blocked and hidden posts never show, and neither does anyone pdtools already knows as a Keeper: Ember Chamber
+    shares in any format, rank or badge posts, or posts long before the card. The welcome card is a real picture."""
     import requests as rq
     monkeypatch.setattr(rq, "get", lambda *a, **k: (_ for _ in ()).throw(rq.RequestException("offline")))
     now = utcnow()
@@ -2309,6 +2310,14 @@ def test_welcome_lane_shows_first_posts_waiting_first(cfg, Session, monkeypatch)
             Post(id="713", author_id="lj", author_username="LateJoiner", text=card, created_at=now - timedelta(hours=8)),
             Post(id="714", author_id="gm", author_username="Gamer", text="Ember Chamber, night 18. Fire night. My best game tonight reached dawn, 340 Keeper of the Ancient Hatchery.", created_at=now - timedelta(hours=2)),
             Post(id="715", author_id="gm2", author_username="Gamer2", text="Come and play tonight Night 4. Fire night. Blinky Keeper of the Ancient Hatchery.", created_at=now - timedelta(hours=2)),
+            # Keepers pdtools already knows are never "new", whatever they post next
+            Post(id="716", author_id="vt", author_username="Veteran", text="Ember Chamber, night 16. Egg night. 312 Keeper of the Ancient Hatchery.", created_at=now - timedelta(days=3)),
+            Post(id="717", author_id="vt", author_username="Veteran", text=card, created_at=now - timedelta(hours=2)),
+            Post(id="718", author_id="rk", author_username="Ranker", text="Ranked #55 among 11,000+ Keepers with 11 badges collected!", created_at=now - timedelta(hours=20)),
+            Post(id="719", author_id="rk", author_username="Ranker", text=card, created_at=now - timedelta(hours=2)),
+            Post(id="720", author_id="sq", author_username="Squares", text="It's Ember night 17 Fast night 🟨🟨🟨🟧🥚🌅 Keeper of the Ancient Hatchery", created_at=now - timedelta(hours=2)),
+            Post(id="721", author_id="eb", author_username="EarlyBird", text="can't wait to join the hatchery tomorrow", created_at=now - timedelta(days=1)),
+            Post(id="722", author_id="eb", author_username="EarlyBird", text=card, created_at=now - timedelta(hours=4)),
             Post(id="706", author_id="tm", author_username="TeamPerson", text=card, created_at=now, is_team=True),
             Post(id="707", author_id="bl", author_username="Blocked", text=card, created_at=now),
             Post(id="708", author_id="hd", author_username="Hidden", text=card, created_at=now, hidden=True),
@@ -2316,7 +2325,8 @@ def test_welcome_lane_shows_first_posts_waiting_first(cfg, Session, monkeypatch)
         s.add(BlockedAuthor(author_id="bl")); s.commit()
         from radar.v21 import welcome_lane
         lane = welcome_lane(s, cfg, now)
-    assert [x["user"] for x in lane] == ["LateJoiner", "Newbie", "Opened"]
+    # LateJoiner posted about Pocket Dragons 12 days before the card, so they are not new; EarlyBird's post a day before is fine
+    assert [x["user"] for x in lane] == ["Newbie", "EarlyBird", "Opened"]
     newbie = next(x for x in lane if x["user"] == "Newbie")
     assert newbie["id"] == "701" and newbie["waited_h"] == 5 and newbie["opens"] == 0
     app, c = _v21_client(cfg)

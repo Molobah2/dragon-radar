@@ -9,6 +9,7 @@ Nothing is ever chosen on its own: a pick is saved only when Jon approves it on 
 """
 import io
 import json
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -28,29 +29,55 @@ PICKS_KEY = "v21:creators"
 JOIN_CARD = "keeper of the ancient hatchery"     # the line on the official egg card every new Keeper shares when they join
 
 
+GAME_SQUARES = re.compile("[\U0001F7E8\U0001F7E7\U0001F7E5\u2B1B]{3,}")     # the coloured strip of an Ember Chamber share
+NIGHT = re.compile(r"\bnight\s*\d")
+VETERAN = re.compile(r"\branked\s*#?\s*\d|\bbadges?\s+collected\b|\b\d+\s*(?:/|out of|of)\s*16\s+eggs\b")
+NEW_GRACE = timedelta(days=3)     # a newcomer may post about Pocket Dragons a day or two before they onboard
+
+
+def game_share(text: str | None) -> bool:
+    """An Ember Chamber score share, in any of the ways players write it. The same "Keeper of the Ancient Hatchery"
+    line ends these too, but only Keepers who already joined can play, so a share is never a join card."""
+    t = (text or "").lower()
+    return "chamber" in t or "\U0001F305" in t or bool(NIGHT.search(t) or GAME_SQUARES.search(t))
+
+
 def welcome_lane(s, cfg, now: datetime, hours: int = WELCOME_HOURS) -> list[dict]:
     """Keepers who just joined: each one's first post of the official join card ("Keeper of the Ancient Hatchery")
-    from the last few days, the ones nobody opened yet first. A first post on pdtools alone is not enough, since many
-    long time fans only get their first post shared here much later."""
+    from the last few days, the ones nobody opened yet first. Someone pdtools already knows as a Keeper never shows:
+    an Ember Chamber share, a rank or badge count post, or any Pocket Dragons post from more than three days before
+    their card means they are not new."""
     since = now - timedelta(hours=hours)
     blocked = set(s.scalars(select(BlockedAuthor.author_id)))
-    firsts = (select(Post.author_id, func.min(Post.created_at).label("first"))
-              .where(Post.is_team.is_(False), Post.text.ilike(f"%{JOIN_CARD}%"),
-                     # the same line ends every Ember Chamber score share too, so game nights are left out
-                     ~Post.text.ilike("%chamber%"), ~Post.text.ilike("% night.%"))
-              .group_by(Post.author_id).subquery())
-    rows = s.execute(select(Post).join(firsts, (Post.author_id == firsts.c.author_id) & (Post.created_at == firsts.c.first))
-                     .where(firsts.c.first >= since, Post.hidden.is_(False), Post.is_team.is_(False))).scalars().all()
+    recent = s.scalars(select(Post).where(Post.is_team.is_(False), Post.created_at >= since,
+                                          Post.text.ilike(f"%{JOIN_CARD}%"))).all()
+    authors = {p.author_id for p in recent if not game_share(p.text) and p.author_id not in blocked}
+    if not authors:
+        return []
+    history: dict[str, list] = {}
+    for p in s.scalars(select(Post).where(Post.author_id.in_(authors))):
+        history.setdefault(p.author_id, []).append(p)
     team = team_handles(s, cfg)
-    out, seen = [], set()
-    for p in rows:
-        user = (p.author_username or "").strip()
-        if not user or p.author_id in blocked or user.lower() in team or p.author_id in seen:
+    out = []
+    for aid in authors:
+        posts = sorted(history.get(aid, []), key=lambda p: p.created_at)
+        cards = [p for p in posts if JOIN_CARD in (p.text or "").lower() and not game_share(p.text)]
+        if not cards:
             continue
-        seen.add(p.author_id)
-        out.append({"id": p.id, "user": user, "name": (p.author_name or user)[:60], "text": (p.text or "")[:280],
-                    "at": p.created_at.isoformat() + "Z", "waited_h": max(0, int((now - p.created_at).total_seconds() // 3600)),
-                    "opens": int(p.opens or 0), "media": bool(p.has_media)})
+        first = cards[0]
+        if first.created_at < since or first.hidden:
+            continue                                   # the card itself is old, shared again now, or hidden
+        before = [p for p in posts if p.created_at < first.created_at]
+        if any(game_share(p.text) or VETERAN.search((p.text or "").lower()) for p in before):
+            continue                                   # already playing or collecting: not new
+        if any(p.created_at < first.created_at - NEW_GRACE for p in before):
+            continue                                   # posting about Pocket Dragons long before the card
+        user = (first.author_username or "").strip()
+        if not user or user.lower() in team:
+            continue
+        out.append({"id": first.id, "user": user, "name": (first.author_name or user)[:60], "text": (first.text or "")[:280],
+                    "at": first.created_at.isoformat() + "Z", "waited_h": max(0, int((now - first.created_at).total_seconds() // 3600)),
+                    "opens": int(first.opens or 0), "media": bool(first.has_media)})
     out.sort(key=lambda x: (x["opens"] > 0, x["opens"], x["at"]))
     return out
 
