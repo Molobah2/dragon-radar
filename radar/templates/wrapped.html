@@ -119,6 +119,7 @@ body { background: #120c26; overflow-x: hidden; }
 <script src="{{ asset('v21/save.js') }}"></script>
 <script src="{{ asset('i18n.js') }}"></script>
 <script src="{{ asset('cardkit.js') }}"></script>
+<script src="{{ asset('v21/wrapvideo.js') }}"></script>
 <script>
 (() => {
   "use strict";
@@ -166,6 +167,9 @@ body { background: #120c26; overflow-x: hidden; }
   /* dragons from this device's own collection (never the secret relics) */
   const TIER = { c: "common", r: "rare", l: "legend" }, RANK = { l: 3, r: 2, c: 1 };
   const nameOf = (key) => { const id = key.replace(/-[crl]$/, ""); const d = [...(D.dragons || []), ...(D.legends || [])].find((x) => x.id === id); return d ? d.name : id; };
+  // the dragons without their grey card background, kept on pdtools itself (static/v21/dex-cut, one per species and finish)
+  const CUT = "{{ url_for('static', filename='v21/dex-cut/') }}", CUT_V = "{{ asset_version }}";
+  const cutOf = (key) => `${CUT}${key}.webp?v=${CUT_V}`;
   function artOf(key, w) {
     if (D.art2d && D.art2d[key]) return `${BASE}/image/upload/c_scale,w_${w}/f_png/${D.art2d[key]}/dragon-radar/dex2d/${key}`;
     return `${BASE}/image/upload/c_scale,w_${w}/f_png/${D.art[key] || "v1"}/dragon-radar/dex3/${key}`;
@@ -203,9 +207,9 @@ body { background: #120c26; overflow-x: hidden; }
       : `<div class="k">Cheering on fellow Keepers</div><h2>Your month starts with one open</h2><p>Open a post from a fellow Keeper on Blinky's Friends and your story begins to fill up.</p>
       <div class="acts"><a class="btn go" href="/friends">Open Blinky's Friends</a></div>`);
     out.push(dragons.length ? `<div class="k">Your dragons</div><h2>${dragons.length === 1 ? "You hatched 1 dragon" : `You hatched ${dragons.length} dragons`}</h2>
-      <div class="dragon"><img src="${artOf(best, 520)}" alt="${esc(nameOf(best))}" crossorigin="anonymous"></div>
+      <div class="dragon"><img src="${cutOf(best)}" alt="${esc(nameOf(best))}"></div>
       <span class="tier ${TIER[best.slice(-1)]}">${best.endsWith("-l") ? "Golden legend" : best.endsWith("-r") ? "Rare holo" : "Common"} · <span class="wr-who">${esc(nameOf(best))}</span></span>
-      ${dragons.length > 1 ? `<div class="minis">${dragons.filter((k) => k !== best).slice(0, 10).map((k) => `<img src="${artOf(k, 120)}" alt="${esc(nameOf(k))}" loading="lazy">`).join("")}</div>` : ""}`
+      ${dragons.length > 1 ? `<div class="minis">${dragons.filter((k) => k !== best).slice(0, 10).map((k) => `<img src="${cutOf(k)}" alt="${esc(nameOf(k))}" loading="lazy">`).join("")}</div>` : ""}`
       : `<div class="k">Your dragons</div><h2>Your first egg is waiting</h2><p>Finish the daily goal on Blinky's Friends to hatch an egg into a dragon.</p>`);
     const people = (me.top || []).map((p, i) => `<div class="person"><span class="n">${i + 1}</span><span class="ava">${esc((p.name || p.user)[0] || "?").toUpperCase()}<img src="/api/avatar/${encodeURIComponent(p.user)}" alt="" onerror="this.remove()"></span><span class="wr-who"><b>${esc(p.name)}</b><small>@${esc(p.user)}</small></span><em>${fmt(p.n)}</em></div>`).join("");
     const fans = data.back && data.back.top && data.back.top.length ? `<p class="hint">Signed Keepers who cheered you most: ${data.back.top.map((f) => "@" + esc(f.user)).join(", ")}</p>` : "";
@@ -220,13 +224,20 @@ body { background: #120c26; overflow-x: hidden; }
       <div class="chips"><div class="chip"><b>${fmt(hh.posts)}</b><span>Dragon posts shared</span></div><div class="chip"><b>${fmt(hh.new)}</b><span>Keepers who shared their first post</span></div><div class="chip"><b>${fmt(hh.hatches)}</b><span>Eggs hatched</span></div></div>`);
     out.push(`<div class="k">Your card</div><h2>Share your ${esc(mon)}</h2><img class="card-img" id="card-img" alt="Your Hatchery Wrapped card" hidden>
       <p class="hint" id="card-wait">Painting your card…</p>
-      <div class="acts"><a class="btn go" id="share" target="_blank" rel="noopener" href="#">Post on X</a><button class="btn ghost" id="save" type="button">Save the card</button></div>`);
+      <div class="acts"><a class="btn go" id="share" target="_blank" rel="noopener" href="#">Post on X</a><button class="btn ghost" id="save" type="button">Save the card</button><button class="btn ghost" id="save-vid" type="button" hidden>Save video</button></div>
+      <p class="hint" id="vid-hint" hidden>Open pdtools in your browser to save the video.</p>`);
     $("slides").innerHTML = out.map((h, i) => `<section class="slide" data-i="${i}">${h}</section>`).join("");
     slides = [...$("slides").children];
     $("bars").innerHTML = slides.map(() => "<i><b></b></i>").join("");
     const text = T(`My ${mon} in the Pocket Dragons hatchery 🐉 ${Number(me.opens)} posts opened, ${dragons.length} dragons hatched, best streak ${Number(me.streak)} days.`);
     $("share").href = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://pdtools.xyz/wrapped")}`;
     $("save").addEventListener("click", save);
+    // the video sits next to the still card wherever this browser can record MP4; in-app browsers cannot save it
+    if (window.pdWrapVideo) pdWrapVideo.ready().then((ok) => {
+      if (!ok || !$("save-vid")) return;
+      if (IN_APP) $("vid-hint").hidden = false;
+      else { $("save-vid").hidden = false; $("save-vid").addEventListener("click", saveVideo); }
+    });
     $("loading").hidden = true;
     go(0);
     if (circleUser) fillCircle(circleUser, gen);
@@ -312,6 +323,47 @@ body { background: #120c26; overflow-x: hidden; }
       if (how === "saved" || how === "shared") toast(T("Card saved. Add it to your post on X."));
     } catch (e) { toast(T("Could not make the card. Try again.")); }
     finally { saving = false; }
+  }
+
+  /* the video: the same story, played and recorded on this device (static/v21/wrapvideo.js) */
+  const IN_APP = /FBAN|FBAV|Instagram|Line\/|Twitter|Telegram|Discord|; wv\)/i.test(navigator.userAgent || "");
+  let filming = false, muxing = null;
+  // the MP4 packer is only fetched when someone asks for a video
+  function loadMuxer() {
+    if (window.Mp4Muxer) return Promise.resolve(window.Mp4Muxer);
+    return muxing || (muxing = new Promise((res) => { const sc = document.createElement("script"); sc.src = "{{ asset('v21/mp4-muxer.min.js') }}";
+      sc.onload = () => res(window.Mp4Muxer || null); sc.onerror = () => { muxing = null; res(null); }; document.head.append(sc); }));
+  }
+  async function saveVideo() {
+    if (filming || !data) return; filming = true;
+    const btn = $("save-vid"), label = btn.textContent, mine = gen;
+    btn.disabled = true; btn.textContent = T("Getting ready…");
+    try {
+      await buildCard();
+      const keys = [...new Set(dragons)].sort((a, b) => RANK[b.slice(-1)] - RANK[a.slice(-1)]).slice(0, 7);
+      const circleUser = CIRCLE && data.back && data.back.user ? data.back.user : "";
+      let circle = [];
+      if (circleUser) { try { const j = await (await fetch("/api/circle/" + encodeURIComponent(circleUser))).json(); if (j && j.ok) circle = (j.people || []).slice(0, 3); } catch (e) { /* left out */ } }
+      const pic = (p) => img(`/api/avatar/${encodeURIComponent(p.user)}`);
+      const [scenePic, blinky, card, ds, top, circ] = await Promise.all([
+        img(sc === "a" ? "{{ asset('v21/wrapped-a.jpg') }}" : "{{ asset('v21/wrapped-b.jpg') }}"),
+        img("{{ asset('v21/blinky-scope.webp') }}"),
+        cardUrl ? img(cardUrl) : null,
+        Promise.all(keys.map(async (k) => ({ img: (await img(cutOf(k))) || (await img(artOf(k, 360), true)), name: nameOf(k), tier: k.slice(-1) }))),
+        Promise.all((data.me.top || []).slice(0, 3).map(async (p) => ({ ...p, img: await pic(p) }))),
+        Promise.all(circle.map(async (p) => ({ ...p, img: p.has_pic ? await pic(p) : null }))),
+      ]);
+      if (mine !== gen) return;
+      const muxer = await loadMuxer();
+      const blob = await pdWrapVideo.make({ muxer,
+        month: data.month, soFar: data.so_far, me: data.me, hatchery: data.hatchery, uniq: unique(),
+        dragons: ds.filter((d) => d.img), top, circle: circ, scene: scenePic, blinky, card, T,
+        onProgress: (k) => { btn.textContent = T(`Making your video… ${Math.round(k * 100)}%`); },
+      });
+      const how = await window.pdSave(blob, `hatchery-wrapped-${data.key}.mp4`);
+      if (how === "saved" || how === "shared") toast(T("Video saved. Add it to your post on X."));
+    } catch (e) { toast(T("Could not make the video. Try again.")); }
+    finally { filming = false; btn.disabled = false; btn.textContent = label; }
   }
 
   /* months */

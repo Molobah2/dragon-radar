@@ -2779,3 +2779,33 @@ def test_tester_bar_walks_testers_through_every_tool(cfg, Session):
     assert 'id="tbar"' not in plain.get("/friends").get_data(as_text=True)
     cfg.v21_public = True
     assert 'id="tbar"' not in c.get("/welcome").get_data(as_text=True)
+
+
+def test_wrapped_offers_a_video_next_to_the_card(cfg, Session):
+    """Wrapped can also be saved as a short video, made on the Keeper's own device. The button starts hidden and only
+    shows where the browser can record H.264 MP4 (X refuses other video), and the still card always stays."""
+    from pathlib import Path
+    app, c = _v21_client(cfg)
+    page = c.get("/wrapped").get_data(as_text=True)
+    assert "v21/wrapvideo.js" in page and 'id="save-vid" type="button" hidden' in page and 'id="save" type="button">Save the card' in page
+    js = (Path(__file__).parent.parent / "radar" / "static" / "v21" / "wrapvideo.js").read_text()
+    assert "avc1" in js and "VideoEncoder" in js and "captureStream" in js and "video/webm" not in js
+    # the MP4 packer is fetched only when a Keeper asks for a video, so the page stays light
+    assert "v21/mp4-muxer.min.js" in page and '<script src="/static/v21/mp4-muxer.min.js' not in page
+    assert (Path(__file__).parent.parent / "radar" / "static" / "v21" / "mp4-muxer.min.js").read_text().startswith("/*! mp4-muxer")
+
+
+def test_every_dragon_has_a_clean_cutout_for_wrapped():
+    """Wrapped shows dragons without their grey card background: every species and finish in the dex art list has
+    its own transparent cut out on pdtools, and Wrapped uses those."""
+    import re
+    from pathlib import Path
+    from PIL import Image
+    static = Path(__file__).parent.parent / "radar" / "static"
+    keys = set(re.findall(r'"([a-z]+-[crl])"\s*:\s*"v\d+"', (static / "dex-data.js").read_text()))
+    assert len(keys) >= 35
+    for k in keys:
+        f = static / "v21" / "dex-cut" / f"{k}.webp"
+        assert f.exists(), k
+        im = Image.open(f)
+        assert im.mode == "RGBA" and im.getpixel((2, 2))[3] == 0, k          # the corner is see-through
