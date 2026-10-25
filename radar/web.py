@@ -1491,6 +1491,23 @@ def create_app(cfg: Config | None = None) -> Flask:
             session["csrf"] = secrets.token_hex(16)
         return session["csrf"]
 
+    @app.post("/api/welcome/suggest")
+    @v21_only
+    def api_welcome_suggest():
+        """Any Keeper can point the lane at a newcomer it missed (checked the same way as a join card)."""
+        from .v21 import welcome_suggest
+        try:
+            link = str(_body(600).get("link", ""))[:300]
+        except (ValueError, TypeError, AttributeError):
+            abort(400)
+        if _too_many("wsuggest:" + client_ip(), limit=12, window=3600):
+            abort(429)
+        with Session() as s:
+            out = welcome_suggest(s, cfg, link, utcnow())
+        if out.get("ok"):
+            v21_cache.pop("lane", None)
+        return jsonify(out)
+
     @app.get("/lab/welcome/add")
     @circle_only   # Jon's tools stay locked even after launch
     def welcome_add():

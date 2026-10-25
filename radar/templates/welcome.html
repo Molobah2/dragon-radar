@@ -111,6 +111,17 @@ body { background: #1d0e09; }
 .empty b { font: 700 22px/1.2 var(--disp); color: var(--gold); }
 .empty p { margin: 0; color: var(--soft); max-width: 30em; }
 .more { display: flex; justify-content: center; margin-top: 18px; }
+.suggest { display: flex; gap: 16px; align-items: flex-start; margin: 26px 0 0; padding: 18px 20px; border-radius: 22px; background: var(--glass); border: 1px solid var(--line); }
+.suggest > img { flex: none; width: 56px; height: auto; filter: drop-shadow(0 8px 12px rgba(0,0,0,.35)); }
+.sg-body { flex: 1; min-width: 0; display: grid; gap: 8px; }
+.sg-body b { font: 700 19px/1.2 var(--disp); }
+.sg-body > p { margin: 0; color: var(--mute); font-size: 14px; }
+.sg-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.sg-row input { flex: 1 1 240px; min-width: 0; height: 46px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.1); color: inherit; font: 700 15px var(--body); }
+.sg-row input:focus { outline: 3px solid var(--gold); outline-offset: 1px; }
+.sg-msg { min-height: 1.3em; margin: 0; font-weight: 800; font-size: 14px; }
+.sg-msg.ok { color: #8ff0c8; } .sg-msg.no { color: #ffb4a8; }
+@media (max-width: 520px) { .suggest > img { display: none; } .sg-row .btn { width: 100%; } }
 .how { margin: 26px 0 0; padding: 18px 20px; border-radius: 22px; background: var(--glass); border: 1px solid var(--line); color: var(--mute); font-size: 14px; }
 .how b { color: var(--soft); }
 /* the welcome keepsake: a relic-style card to save and post with the hello */
@@ -190,6 +201,16 @@ body { background: #1d0e09; }
     <p>Every new Keeper has had at least one visit. Blinky is keeping the lantern lit for the next one.</p>
   </div>
   <div class="more"><button class="btn ghost" id="more" type="button" hidden>Show more</button></div>
+  <form class="suggest rise" id="suggest" autocomplete="off">
+    <img src="{{ asset('v21/blinky-lantern.webp') }}" alt="" width="64" height="84" loading="lazy">
+    <div class="sg-body">
+      <b>Know a new Keeper we missed?</b>
+      <p>Some newcomers write their own words instead of the card. Paste the link to their join post, or their X name if their post is already on pdtools, and they join the lane.</p>
+      <div class="sg-row"><input id="sg-in" type="text" maxlength="300" placeholder="x.com/name/status/... or @name" aria-label="Link to their join post or their X name" autocapitalize="off" spellcheck="false">
+        <button class="btn go" id="sg-go" type="submit">Add to the lane</button></div>
+      <p class="sg-msg" id="sg-msg" role="status"></p>
+    </div>
+  </form>
   <p class="how rise"><b>How it works.</b> A Keeper shows up here the first time they share their Keeper of the Ancient Hatchery card. Open it, spend a moment on X, reply if you like, and come back. Your open counts toward your daily goal and streak in Blinky's Friends, just like the feed.</p>
 </main>
 
@@ -276,6 +297,26 @@ body { background: #1d0e09; }
     const t0 = performance.now(); el.textContent = "0";
     (function step(t) { const k = Math.min(1, (t - t0) / 1100); el.textContent = Math.round(n * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); })(t0);
   }
+
+  /* a Keeper adds a newcomer the lane missed */
+  const SGW = { link: "Paste the link to their join post, or their X name.", nopost: "Their post is not on pdtools yet. Paste the link to their join post instead.",
+    old: "That post is more than three days old, so they are not new any more.", busy: "X is busy right now. Try again in a minute.", gone: "That post could not be found on X.",
+    topic: "That post does not look like a Pocket Dragons join post.", known: "This Keeper has been around for a while already, so they are not new.",
+    no: "That post cannot be added.", fail: "Could not add them. Try again." };
+  $("suggest").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const v = $("sg-in").value.trim(), msg = $("sg-msg"), b = $("sg-go");
+    const say = (t, ok) => { msg.textContent = T(t); msg.className = "sg-msg " + (ok ? "ok" : "no"); };
+    if (!v) return say(SGW.link);
+    b.disabled = true;
+    try {
+      const r = await fetch("/api/welcome/suggest", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ link: v }) });
+      const j = r.status === 429 ? { ok: false, why: "busy" } : await r.json();
+      if (j.ok) { say(j.why === "already" ? "They are already in the lane. Thank you!" : "Thank you! They are in the lane now.", true); setTimeout(() => location.reload(), 1400); }
+      else say(SGW[j.why] || SGW.fail);
+    } catch (err) { say(SGW.fail); }
+    b.disabled = false;
+  });
 
   /* the lane */
   const lane = JSON.parse($("lane-data").textContent || "[]");

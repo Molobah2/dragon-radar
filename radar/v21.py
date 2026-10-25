@@ -44,6 +44,66 @@ def welcome_added(s) -> list[str]:
     return [str(x) for x in got if str(x).isdigit()]
 
 
+TOPIC = re.compile(r"pocket[_ ]?dragons|keeper|hatchery|dragon", re.I)
+
+
+def welcome_suggest(s, cfg, link: str, now: datetime, fetch=None) -> dict:
+    """A Keeper points pdtools at a newcomer it missed: a link to their join post, or their X name when that post is
+    already in the feed. The post is read for free (oEmbed) if pdtools never saw it. It must be recent, about Pocket
+    Dragons and from someone pdtools does not already know as a Keeper, then it joins the lane like any join card."""
+    from .discord_share import x_time
+    text = (link or "").strip()
+    m = re.search(r"status(?:es)?/(\d{6,25})", text)
+    if m:
+        pid = m.group(1)
+    else:
+        h = clean(text).lower()
+        if not h:
+            return {"ok": False, "why": "link"}
+        since = now - timedelta(hours=WELCOME_HOURS)
+        p = s.scalars(select(Post).where(func.lower(Post.author_username) == h, Post.created_at >= since, Post.is_team.is_(False))
+                      .order_by(Post.created_at)).first()
+        if not p:
+            return {"ok": False, "why": "nopost"}
+        pid = p.id
+    if pid in welcome_added(s):
+        return {"ok": True, "why": "already"}
+    made = x_time(pid)
+    if not made or made < now - timedelta(hours=WELCOME_HOURS) or made > now + timedelta(hours=1):
+        return {"ok": False, "why": "old"}
+    post = s.get(Post, pid)
+    if post is None:
+        from . import oembed
+        from .collector import blocklist, is_blocked_text
+        got = (fetch or oembed.fetch)(pid)
+        if got is None:
+            return {"ok": False, "why": "busy"}
+        if not got or not got.get("username"):
+            return {"ok": False, "why": "gone"}
+        if is_blocked_text(got.get("text") or "", blocklist(s, cfg)):
+            return {"ok": False, "why": "no"}
+        post = Post(id=pid, author_id=f"u:{got['username'].lower()}", created_at=made, is_quote=False, is_team=False,
+                    collected_at=now, text=(got.get("text") or "")[:1200], author_name=(got.get("name") or "")[:100] or None,
+                    author_username=got["username"][:32], has_media=bool(got.get("media")))
+        s.add(post); s.flush()
+    user = (post.author_username or "").lower()
+    if post.is_team or post.hidden or user in team_handles(s, cfg):
+        return {"ok": False, "why": "no"}
+    blocked = set(s.scalars(select(BlockedAuthor.author_id)))
+    if post.author_id in blocked or f"u:{user}" in blocked:
+        return {"ok": False, "why": "no"}
+    if not TOPIC.search(post.text or "") or game_share(post.text):
+        return {"ok": False, "why": "topic"}
+    before = s.scalars(select(Post).where(or_(Post.author_id == post.author_id, func.lower(Post.author_username) == user),
+                                          Post.created_at < post.created_at)).all()
+    if any(game_share(p.text) or VETERAN.search((p.text or "").lower()) or p.created_at < post.created_at - NEW_GRACE for p in before):
+        return {"ok": False, "why": "known"}
+    ids = [x for x in welcome_added(s) if x != pid] + [pid]
+    set_setting(s, WELCOME_ADD_KEY, json.dumps(ids[-50:]))
+    s.commit()
+    return {"ok": True, "user": post.author_username}
+
+
 def add_to_welcome(s, post_id: str) -> bool:
     """Jon adds a newcomer's post to the welcome lane. Kept to the last 50, they age out of the lane on their own."""
     post_id = str(post_id or "").strip()

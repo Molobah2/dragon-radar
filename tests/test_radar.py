@@ -2966,3 +2966,40 @@ def test_jon_can_add_a_newcomer_who_wrote_their_own_words(cfg, Session):
         users = [x["user"] for x in welcome_lane(s, cfg, now)]
     assert "k34tyt" in users and "OldOne" not in users        # an old post is past the lane's three days
     assert c.get("/lab/welcome/add?post=https://x.com/a/status/999999999").headers["Location"].endswith("/lab")
+
+
+def test_keepers_can_add_a_missed_newcomer_to_the_welcome_lane(cfg, Session, monkeypatch):
+    """Anyone can paste a newcomer's join post (or their X name when the post is already on pdtools). A post pdtools
+    never saw is read for free through oEmbed. Old posts, off topic posts, Ember Chamber shares, the team, blocked
+    authors and Keepers pdtools already knows are turned away."""
+    from radar import oembed
+    from radar.discord_share import x_time
+    from radar.v21 import welcome_lane
+    now = utcnow()
+    fresh = "2114103143474647069"                      # Smoke's join card, shared only on X
+    made = x_time(fresh)
+    monkeypatch.setattr("radar.web.utcnow", lambda: made + timedelta(hours=20))
+    seen = {}
+    def fake(pid, session=None, timeout=10):
+        seen[pid] = True
+        return {"name": "Smoke", "username": "Smoke_defi", "text": "Keeper of the Ancient Hatchery.\n\n@Pocket_Dragons_ gave me a Water egg.", "media": True}
+    monkeypatch.setattr(oembed, "fetch", fake)
+    app, c = _v21_client(cfg)
+    assert app.test_client().post("/api/welcome/suggest", data='{"link":"x"}').status_code == 404
+    j = c.post("/api/welcome/suggest", data=json.dumps({"link": f"https://x.com/Smoke_defi/status/{fresh}/photo/1"})).get_json()
+    assert j["ok"] and j["user"] == "Smoke_defi" and seen.get(fresh)
+    with Session() as s:
+        assert "Smoke_defi" in [x["user"] for x in welcome_lane(s, cfg, made + timedelta(hours=20))]
+    assert c.post("/api/welcome/suggest", data=json.dumps({"link": "@smoke_defi"})).get_json()["why"] == "already"
+    # an old post, and a Keeper pdtools already knows
+    old = c.post("/api/welcome/suggest", data=json.dumps({"link": "https://x.com/a/status/1800000000000000000"})).get_json()
+    assert old == {"ok": False, "why": "old"}
+    with Session() as s:
+        t = made + timedelta(hours=19)
+        s.add(Post(id="9100000000000000001", author_id="u:vet", author_username="Vet", text="Ranked #4 with 12 badges collected", created_at=t - timedelta(days=9)))
+        s.add(Post(id="9100000000000000002", author_id="u:vet", author_username="Vet", text="hello Pocket Dragons", created_at=t))
+        s.commit()
+    assert c.post("/api/welcome/suggest", data=json.dumps({"link": "@Vet"})).get_json()["why"] in ("known", "old")
+    assert c.post("/api/welcome/suggest", data=json.dumps({"link": "@nobody_here"})).get_json()["why"] == "nopost"
+    page = c.get("/welcome").get_data(as_text=True)
+    assert 'id="suggest"' in page and "/api/welcome/suggest" in page
