@@ -1084,7 +1084,7 @@
     if (location.hash === "#progress") { showStreak(); pgMsg("", true); openSheet("progress"); history.replaceState(null, "", location.pathname + location.search); }
   }
   addEventListener("hashchange", fromHash);
-  $("tab-progress") && $("tab-progress").addEventListener("click", (e) => { e.preventDefault(); showStreak(); pgMsg("", true); openSheet("progress"); });
+  document.querySelectorAll("#tab-progress, [data-pd-progress]").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); showStreak(); pgMsg("", true); openSheet("progress"); }));
 
   render();
   renderWelcome();

@@ -1628,7 +1628,7 @@ def test_speed_budget(cfg, Session):
         assert size < code_max, f"{path}: scripts and styles {size} bytes"
     assert len(c.get("/static/i18n.js").get_data()) < 4000
     for lang in ("es", "ru", "zh"):
-        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 42_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker, then the help page, then the v2.1 welcome lane and Creator of the week, then Wrapped and Dragondle, then Cheers, the sticker shelf and the Hatchery canvas, then the v2.1 daily goal and the Dragondle card looks
+        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 47_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker, then the help page, then the v2.1 welcome lane and Creator of the week, then Wrapped and Dragondle, then Cheers, the sticker shelf and the Hatchery canvas, then the v2.1 daily goal and the Dragondle card looks, then the four sections and the dock, then the nests, the Keeper badge and the wallpaper
     page = c.get("/friends").get_data(as_text=True)
     assert "e_background_removal" not in page            # icons are small stored files, not cut out per view
 
@@ -2598,17 +2598,17 @@ def test_v21_launch_switch_opens_tools_and_shares_cards(cfg, Session):
 
 
 def test_new_tools_row_shows_only_when_v21_is_open(cfg, Session):
-    """The home page "New in pdtools" row and the Blinky's Friends menu group appear on unlocked devices and,
+    """The home page sections (Feed, Community, Learn, Create, which replaced the "New in pdtools" row) and the Blinky's Friends menu group appear on unlocked devices and,
     after launch, for everyone; before launch nobody else sees a hint of them."""
     cfg.v2_public = True
-    assert 'id="new-tools"' not in create_app(cfg).test_client().get("/").get_data(as_text=True)
+    assert 'class="nests"' not in create_app(cfg).test_client().get("/").get_data(as_text=True)
     app, c = _v21_client(cfg)
     html = c.get("/").get_data(as_text=True)
-    assert 'id="new-tools"' in html and html.count('class="nt reveal"') == 7
+    assert 'class="nests"' in html and html.count('class="nst reveal"') == 4
     assert 'id="side-new-btn"' in c.get("/friends").get_data(as_text=True)
     cfg.v21_public = True
     open_c = create_app(cfg).test_client()
-    assert 'id="new-tools"' in open_c.get("/").get_data(as_text=True)
+    assert 'class="nests"' in open_c.get("/").get_data(as_text=True)
     assert 'id="side-new-btn"' in open_c.get("/friends").get_data(as_text=True)
 
 
@@ -2767,14 +2767,14 @@ def test_dragondle_cards_and_gif(cfg, Session):
 
 def test_tester_bar_walks_testers_through_every_tool(cfg, Session):
     """Unlocked testers get one small bar on each tool to test: the step number, a tick, the next tool, and a list
-    of all nine. Unlocking starts them at step 1. Strangers never see it, and it goes away when v2.1 opens."""
+    of all ten. Unlocking starts them at step 1. Strangers never see it, and it goes away when v2.1 opens."""
     app, c = _v21_client(cfg)
     r = c.get("/lab/circle/on"); assert r.status_code == 302 and r.headers["Location"].endswith("/welcome")
-    order = ["/welcome", "/creator", "/wrapped", "/quiz", "/cheers", "/stickers", "/canvas", "/circle", "/friends"]
+    order = ["/welcome", "/creator", "/wrapped", "/quiz", "/cheers", "/stickers", "/canvas", "/wallpaper", "/circle", "/friends"]
     for i, path in enumerate(order):
         page = c.get(path).get_data(as_text=True)
         assert 'id="tbar"' in page, path
-        assert f'<span id="tb-count">{i + 1}</span> of 9' in page, path
+        assert f'<span id="tb-count">{i + 1}</span> of 10' in page, path
         if i + 1 < len(order):
             assert f'class="tb-next" href="{order[i + 1]}"' in page, path
         else:
@@ -2840,3 +2840,71 @@ def test_dragon_quiz_three_tries_and_fifteen_points(cfg, Session):
         assert "Three tries a question" in c.get("/quiz").get_data(as_text=True)
     finally:
         _w.utcnow = real
+
+
+def test_four_sections_group_the_tools_with_one_dock_everywhere(cfg, Session):
+    """pdtools is grouped into Feed, Community, Learn and Create. Each section has a home page with its tools side by
+    side, one dock at the bottom of every page shows the sections and the tabs of the one you are in, and the hub
+    shows the four sections. The section pages stay locked like the rest of v2.1, and old links keep working."""
+    from radar.v21 import nav_for
+    app, c = _v21_client(cfg)
+    plain = app.test_client()
+    for path in ("/community", "/learn", "/create"):
+        assert plain.get(path).status_code == 404, path
+    c.get("/lab/circle/on")
+    n = nav_for("/friends/keepers", True, True)
+    assert [s["key"] for s in n["sections"]] == ["feed", "community", "learn", "create"]
+    assert n["cur"] == "community" and n["tab"] == "keepers"
+    assert nav_for("/quiz", True, False)["cur"] == "learn" and nav_for("/quiz", True, False)["tab"] == "quiz"
+    assert nav_for("/friends", True, False)["tab"] == "friends"
+    assert "circle" not in [t["key"] for s in nav_for("/", True, False)["sections"] for t in s["tabs"]]
+    # without v2.1 only the tools that already exist show
+    old = nav_for("/", False, False)
+    assert all(t["key"] in ("friends", "progress", "keepers", "ama", "help") for s in old["sections"] for t in s["tabs"])
+    for path, names in (("/community", ["Keepers", "Welcome lane", "Creator of the week", "Cheers", "Dragon Circle"]),
+                        ("/learn", ["Dragon Quiz", "AMA Library", "Help and guides"]),
+                        ("/create", ["Sticker shelf", "Hatchery canvas", "Hatchery Wrapped", "My Hatchery wallpaper"])):
+        page = c.get(path).get_data(as_text=True)
+        assert all(f"<b>{x}</b>" in page for x in names), path
+        assert 'class="pdnav"' in page
+    for path in ("/friends", "/friends/keepers", "/quiz", "/welcome", "/stickers", "/circle", "/friends/ama", "/"):
+        page = c.get(path).get_data(as_text=True)
+        assert 'class="pdnav"' in page, path
+    quiz = c.get("/quiz").get_data(as_text=True)
+    assert 'href="/learn"' in quiz and 'href="/friends/ama"' in quiz and 'href="/help"' in quiz
+    hub = c.get("/").get_data(as_text=True)
+    assert 'class="nests"' in hub and 'class="newtools"' not in hub
+    # before launch, strangers keep the old hub and no dock
+    home = plain.get("/").get_data(as_text=True)
+    assert 'class="nests"' not in home and 'class="pdnav"' not in home and 'class="tools"' in home
+    assert c.get("/dragondle").status_code == 301
+
+
+def test_my_hatchery_wallpaper_puts_the_keepers_dragons_in_a_phone_scene(cfg, Session):
+    """The wallpaper is drawn on the Keeper's device from six scenes made for it, with their own hatched dragons and,
+    once they signed Blinky's Book of Friends, their X name. Locked like the rest of v2.1 until launch."""
+    from pathlib import Path
+    app, c = _v21_client(cfg)
+    assert app.test_client().get("/wallpaper").status_code == 404
+    page = c.get("/wallpaper").get_data(as_text=True)
+    for k in ("glow", "lake", "sunflower", "pond", "blossom", "shore"):
+        assert f'data-sc="{k}"' in page
+        for v in ("", "-m", "-t"):
+            assert (Path(__file__).parent.parent / "radar" / "static" / "v21" / "wall" / f"{k}{v}.jpg").is_file(), k + v
+    assert 'value="1290x2796"' in page and 'value="1080x2400"' in page and "pd:dex" in page and "pdMe" in page
+    assert 'class="pdnav"' in page and 'id="pd-me"' in page
+
+
+def test_keeper_badge_and_four_nests(cfg, Session):
+    """The dock carries a Keeper badge that shows who signed on this device (or invites them to sign), and the home
+    page shows the four sections as nests, each with its own egg art and the tools that rise out of it."""
+    from pathlib import Path
+    app, c = _v21_client(cfg)
+    c.get("/lab/circle/on")
+    hub = c.get("/").get_data(as_text=True)
+    for k in ("feed", "community", "learn", "create"):
+        assert f'v21/nest/{k}.webp' in hub
+        assert (Path(__file__).parent.parent / "radar" / "static" / "v21" / "nest" / f"{k}.webp").is_file()
+    assert hub.count('class="nst reveal"') == 4 and 'href="/wallpaper"' in hub
+    page = c.get("/quiz").get_data(as_text=True)
+    assert 'id="pd-me"' in page and 'href="/friends#book"' in page and "/api/book/me" in page

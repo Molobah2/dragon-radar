@@ -5,7 +5,7 @@
 {% set steps = [
   ("welcome", "/welcome", "Welcome lane"), ("creator", "/creator", "Creator of the week"), ("wrapped", "/wrapped", "Hatchery Wrapped"),
   ("dragondle", "/quiz", "Dragon Quiz"), ("cheers", "/cheers", "Cheers"), ("stickers", "/stickers", "Sticker shelf"),
-  ("canvas", "/canvas", "Hatchery canvas"), ("circle", "/circle", "Dragon Circle"), ("goal", "/friends", "Daily goal")] %}
+  ("canvas", "/canvas", "Hatchery canvas"), ("wallpaper", "/wallpaper", "My Hatchery wallpaper"), ("circle", "/circle", "Dragon Circle"), ("goal", "/friends", "Daily goal")] %}
 {% set ns = namespace(i=-1) %}
 {% for key, path, label in steps %}{% if request.path == path or request.path.startswith(path + "/") and path != "/friends" %}{% set ns.i = loop.index0 %}{% endif %}{% endfor %}
 {% if ns.i >= 0 %}
@@ -66,6 +66,9 @@
   body.has-tbar { padding-bottom: 104px; }
   body.has-tbar .v2-pill { display: none; }
   @media (max-width: 760px) { body.has-tabbar .tbar, body.has-tabbar .tb-pill { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); } body.has-tbar.has-tabbar { padding-bottom: 180px; } }
+  /* with the pdtools dock at the bottom, the tester bar sits just above it */
+  body.has-pdnav .tbar, body.has-pdnav .tb-pill { bottom: calc(var(--pdnav-h, 80px) + 18px + env(safe-area-inset-bottom, 0px)) !important; }
+  body.has-tbar.has-pdnav { padding-bottom: calc(var(--pdnav-h, 80px) + 130px) !important; }
   @media (max-width: 420px) { .tb-next span { display: none; } .tb-list ol { grid-template-columns: 1fr; } }
 </style>
 <script>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{{ sec.name }} · {{ cfg.hub_name or "PD Tools" }}</title>
+  <meta name="description" content="{{ sec.line }} Free, unofficial community tools for Pocket Dragons Keepers.">
+  <meta name="theme-color" content="#1a1230">
+  {% include "_icons.html" %}
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ asset('fonts.css') }}">
+  <link rel="stylesheet" href="{{ asset('v21/v21.css') }}">
+{% include "_speed.html" %}
+<style>
+/* ===== a section page: every tool of one part of pdtools side by side ===== */
+body { background: radial-gradient(1200px 700px at 20% -10%, #4b2a6e, transparent 60%), radial-gradient(900px 600px at 100% 10%, #6b3a2a, transparent 55%), #1a1230; min-height: 100vh; }
+.sx-main { width: min(1120px, 100%); margin: 0 auto; padding: calc(84px + env(safe-area-inset-top, 0px)) clamp(16px, 4vw, 32px) 30px; display: grid; gap: 22px; }
+.sx-head { display: grid; gap: 8px; justify-items: start; }
+.sx-head .kick { font: 800 12px/1 var(--body); letter-spacing: 2.4px; text-transform: uppercase; color: var(--gold); }
+.sx-head h1 { margin: 0; font: 700 clamp(36px, 6vw, 60px)/1 var(--disp); text-shadow: 0 6px 30px rgba(0,0,0,.5); }
+.sx-head p { margin: 0; max-width: 46ch; color: #e6dcf5; font-size: 17px; }
+.sx-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.sx-card { position: relative; display: grid; height: 100%; border-radius: 24px; overflow: hidden; text-decoration: none; background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 24px 50px -28px #000; transition: transform .35s var(--spring), border-color .3s; }
+.sx-card:hover { transform: translateY(-4px); border-color: rgba(255, 207, 107, .55); }
+.sx-art { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #2a1d40; }
+.sx-art .bg { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .8s var(--ease); }
+.sx-card:hover .sx-art .bg { transform: scale(1.05); }
+.sx-art.aurora { background: radial-gradient(70% 90% at 20% 10%, rgba(150, 90, 255, .7), transparent 60%), radial-gradient(60% 80% at 90% 30%, rgba(255, 120, 170, .5), transparent 60%), radial-gradient(80% 70% at 40% 110%, rgba(80, 200, 220, .45), transparent 60%), #170c38; }
+.sx-art .who { position: absolute; right: 6%; bottom: 0; height: 82%; width: auto; max-width: 48%; object-fit: contain; filter: drop-shadow(0 12px 18px rgba(0,0,0,.55)); }
+.sx-art .who.round { height: 58%; bottom: 12%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 4px rgba(255, 207, 107, .8); }
+.sx-body { display: grid; gap: 6px; padding: 16px 18px 18px; }
+.sx-body b { font: 700 22px/1.1 var(--disp); }
+.sx-body span { color: #d9cfee; font-size: 15px; line-height: 1.4; }
+.sx-go { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--gold); font-weight: 800; font-size: 14px; }
+.sx-others { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: #cfc4e6; font-weight: 700; font-size: 14px; }
+.sx-others a { padding: 8px 14px; border-radius: 999px; background: rgba(255, 255, 255, .08); text-decoration: none; font-weight: 800; color: #fff; }
+.sx-others a:hover { background: rgba(255, 255, 255, .16); }
+</style>
+</head>
+<body>
+  <header class="v-bar">
+    <a class="v-brand" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="38" height="38"><span>PD Tools<small>{{ sec.name }}</small></span></a>
+    <div class="v-tools">
+      <label class="pill" title="Language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><select id="lang-select" aria-label="Language"></select></label>
+    </div>
+  </header>
+  <main class="sx-main">
+    <div class="sx-head">
+      <span class="kick">pdtools</span>
+      <h1>{{ sec.name }}</h1>
+      <p>{{ sec.line }}</p>
+    </div>
+    <ul class="sx-grid">
+      {% for t in sec.tabs %}<li><a class="sx-card" href="{{ t.path }}">
+        <div class="sx-art{% if not t.bg %} aurora{% endif %}">
+          {% if t.bg.startswith("cloud:") %}{% if cfg.scene_base %}<img class="bg" src="{{ cfg.scene_base }}/image/upload/c_fill,g_auto,h_540,w_960/f_auto/q_auto/v1792252414/{{ cfg.scene_folder }}/{{ t.bg[6:] }}" alt="" width="960" height="540" loading="lazy" decoding="async">{% endif %}
+          {% elif t.bg %}<img class="bg" src="{{ asset(t.bg) }}" alt="" width="960" height="540" {% if loop.index > 2 %}loading="lazy"{% else %}fetchpriority="high"{% endif %} decoding="async">{% endif %}
+          {% if t.who %}<img class="who{% if t.who.endswith('.jpg') %} round{% endif %}" src="{{ asset(t.who) }}" alt="" loading="lazy" decoding="async">{% endif %}
+        </div>
+        <div class="sx-body"><b>{{ t.name }}</b><span>{{ t.line }}</span><span class="sx-go">Open <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11m-4-4 4 4-4 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+      </a></li>{% endfor %}
+    </ul>
+    <div class="sx-others"><span>More of pdtools:</span>{% for s in nav.sections if s.key != sec.key %}<a href="{{ s.home }}">{{ s.name }}</a>{% endfor %}</div>
+  </main>
+  {% include "_v21_foot.html" %}
+<script src="{{ asset('i18n.js') }}"></script>
+<script src="{{ asset('hit.js') }}" defer></script>
+</body>
+</html>

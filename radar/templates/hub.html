@@ -216,6 +216,32 @@
     @media (max-width: 860px) { .makers { grid-template-columns: 1fr; } .music { padding: 20px 16px 16px; } }
     @media (prefers-reduced-motion: reduce) { .mk-now .snd-bars i { animation: none; height: 10px; } a.maker { transition: none; } }
     /* v2.1: the new tools, each with its own scene and character */
+    /* the four nests: each part of pdtools is an egg in its own nest. Hover (or a first tap on phones) cracks it
+       with warm light and its tools rise out of it; the name under it goes straight to the section. */
+    .nests { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(10px, 2.4vw, 28px); padding: 6px 0 36px; }
+    .nst { position: relative; display: grid; justify-items: center; align-content: start; text-align: center; }
+    .nst-egg { position: relative; display: block; width: 100%; max-width: 260px; aspect-ratio: 520 / 465; -webkit-tap-highlight-color: transparent; }
+    .nst-egg::after { content: ""; position: absolute; left: 12%; right: 12%; bottom: -2%; height: 14%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .5), transparent); z-index: -1; }
+    .nst-egg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 14px 18px rgba(0, 0, 0, .35)); transform-origin: 50% 88%; transition: transform .5s cubic-bezier(.3, 1.5, .5, 1), filter .4s; }
+    .nst-glow { position: absolute; left: 22%; right: 22%; top: 2%; bottom: 30%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 214, 120, .85), rgba(255, 170, 70, .25) 60%, transparent); opacity: 0; transform: scale(.7); transition: opacity .45s, transform .6s cubic-bezier(.2, .8, .2, 1); }
+    .nst-crack { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .nst-crack path { fill: none; stroke: #fff4c8; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 70; stroke-dashoffset: 70; filter: drop-shadow(0 0 3px #ffd36b) drop-shadow(0 0 6px #ffb24a); transition: stroke-dashoffset .55s .1s ease-out; }
+    .nst-tools { position: absolute; z-index: 3; left: 50%; top: 4%; transform: translateX(-50%); width: max-content; max-width: 100%; margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; justify-items: center; pointer-events: none; }
+    .nst-tools li { opacity: 0; transform: translateY(46px) scale(.6); transition: opacity .3s calc(var(--i) * 55ms + 120ms), transform .5s cubic-bezier(.3, 1.5, .5, 1) calc(var(--i) * 55ms + 120ms); }
+    .nst-tools a { display: block; padding: 7px 12px; border-radius: 12px 12px 12px 4px; background: #fff7e6; color: #3a2208; font-weight: 800; font-size: 13px; line-height: 1.1; text-decoration: none; white-space: nowrap; box-shadow: 0 8px 18px -8px rgba(0, 0, 0, .6), inset 0 -2px 0 rgba(160, 110, 40, .25); }
+    .nst-tools a:hover, .nst-tools a:focus-visible { background: #ffd977; outline: none; }
+    .nst-name { display: grid; gap: 4px; justify-items: center; margin-top: 8px; color: #fff; text-decoration: none; }
+    .nst-name b { padding: 6px 16px 7px; border-radius: 999px; background: #fff3d6; color: #3a2208; font: 700 clamp(17px, 1.8vw, 22px)/1 var(--display, inherit); box-shadow: 0 10px 20px -10px rgba(0, 0, 0, .6); }
+    .nst-name span { max-width: 26ch; font-size: 13.5px; line-height: 1.35; font-weight: 700; text-shadow: 0 1px 8px rgba(0, 0, 0, .8), 0 0 2px rgba(0, 0, 0, .6); }
+    .nst:hover .nst-egg img, .nst:focus-within .nst-egg img, .nst.open .nst-egg img { transform: rotate(-4deg) translateY(-3px); filter: drop-shadow(0 18px 22px rgba(0, 0, 0, .4)) brightness(1.06); animation: nst-wob .9s ease-in-out .1s; }
+    .nst:hover .nst-glow, .nst:focus-within .nst-glow, .nst.open .nst-glow { opacity: 1; transform: scale(1.1); }
+    .nst:hover .nst-crack path, .nst:focus-within .nst-crack path, .nst.open .nst-crack path { stroke-dashoffset: 0; }
+    .nst:hover .nst-tools, .nst:focus-within .nst-tools, .nst.open .nst-tools { pointer-events: auto; }
+    .nst:hover .nst-tools li, .nst:focus-within .nst-tools li, .nst.open .nst-tools li { opacity: 1; transform: none; }
+    .nst:hover .nst-name b, .nst:focus-within .nst-name b, .nst.open .nst-name b { background: linear-gradient(180deg, #ffe08f, #ffb85c); }
+    @keyframes nst-wob { 0%, 100% { rotate: 0deg; } 25% { rotate: 3deg; } 50% { rotate: -2deg; } 75% { rotate: 1.5deg; } }
+    @media (max-width: 760px) { .nests { grid-template-columns: 1fr 1fr; row-gap: 22px; } .nst-tools a { font-size: 12px; padding: 6px 10px; } .nst-tools { gap: 4px; } .nst-name span { font-size: 12.5px; } }
+    @media (prefers-reduced-motion: reduce) { .nst-egg img, .nst-tools li, .nst-glow, .nst-crack path { transition: none; animation: none !important; } }
     .newtools { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 14px; padding-bottom: 8px; }
     .nt { position: relative; display: flex; flex-direction: column; border-radius: 22px; overflow: hidden; text-decoration: none; color: inherit; background: var(--card);
       border: 1px solid var(--line); box-shadow: var(--shadow); transition: transform .35s cubic-bezier(.2, .8, .2, 1), box-shadow .35s; }
@@ -310,13 +336,33 @@
     </section>{% endif %}
     <a class="more-cue" href="#tools" aria-label="See all tools"><span>All tools</span><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 
-    {% if v21_open %}<div class="section-head" id="new-tools">New in pdtools</div>
-    <section class="newtools" aria-labelledby="new-tools">
-      {% for path, name, line, bg, who in v21_tools %}<a class="nt reveal" href="{{ path }}">
-        <div class="nt-art"><img class="bg" src="{{ asset(bg) }}" alt="" width="960" height="540" loading="lazy" decoding="async"><img class="who" src="{{ asset(who) }}" alt="" loading="lazy" decoding="async"><i class="nt-new">New</i></div>
-        <div class="nt-body"><b>{{ name }}</b><span>{{ line }}</span></div>
-      </a>{% endfor %}
-    </section>{% endif %}
+    {% if v21_open and nav and nav.sections %}<div class="section-head" id="tools">Pick a nest</div>
+    <section class="nests" id="nests" aria-label="The four parts of pdtools">
+      {% for s in nav.sections %}{% set home = s.home if s.key != 'feed' else '/friends' %}{% set tl = s.tabs|rejectattr("key", "equalto", "progress")|list %}
+      <div class="nst reveal" data-k="{{ s.key }}">
+        <a class="nst-egg" href="{{ home }}" aria-label="{{ s.name }}" aria-describedby="nst-l-{{ s.key }}">
+          <i class="nst-glow" aria-hidden="true"></i>
+          <img src="{{ asset('v21/nest/' ~ s.key ~ '.webp') }}" alt="" width="520" height="465" decoding="async"{% if loop.index > 2 %} loading="lazy"{% endif %}>
+          <svg class="nst-crack" viewBox="0 0 100 100" aria-hidden="true"><path d="M41 20 46 26 43 32 50 36 47 43 54 47 52 53"/></svg>
+        </a>
+        <ul class="nst-tools" aria-label="{{ s.name }}">{% for t in tl %}<li style="--i:{{ loop.index0 }}"><a href="{{ t.path }}">{{ t.name }}</a></li>{% endfor %}</ul>
+        <a class="nst-name" href="{{ home }}" tabindex="-1"><b>{{ s.name }}</b><span id="nst-l-{{ s.key }}">{{ s.line }}</span></a>
+      </div>{% endfor %}
+    </section>
+    <script>
+    // touch screens have no hover: the first tap on an egg cracks it open and shows its tools, the second goes in
+    (() => {
+      const box = document.getElementById("nests"); if (!box) return;
+      const coarse = matchMedia("(hover: none)");
+      box.addEventListener("click", (e) => {
+        const egg = e.target.closest(".nst-egg"); if (!egg || !coarse.matches) return;
+        const n = egg.closest(".nst");
+        if (!n.classList.contains("open")) { e.preventDefault(); box.querySelectorAll(".nst.open").forEach((x) => x.classList.remove("open")); n.classList.add("open"); }
+      });
+      document.addEventListener("click", (e) => { if (!e.target.closest(".nst")) box.querySelectorAll(".nst.open").forEach((x) => x.classList.remove("open")); });
+    })();
+    </script>
+    {% else %}
     <div class="section-head" id="tools">Tools</div>
     <section class="tools">
       <a class="tool reveal" href="{{ url_for('feed') }}">
@@ -365,6 +411,7 @@
         </div>
       </div>
     </section>
+    {% endif %}
 
     <section class="music reveal" id="music" aria-labelledby="music-title">
       <h2 class="music-title" id="music-title"><span class="mt-note" aria-hidden="true">&#9835;</span> <span>Music by the community</span></h2>
@@ -412,5 +459,6 @@
   <script>if ("serviceWorker" in navigator && location.protocol === "https:") addEventListener("load", () => navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {}));</script>
   <script src="{{ asset('hit.js') }}" defer></script>
   {% include "_preview.html" %}
+{% include "_dock.html" %}
 </body>
 </html>

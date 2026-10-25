@@ -303,3 +303,54 @@ TOOLS = [
     ("/stickers", "Sticker shelf", "Blinky and Pinky stickers for your posts and replies.", "v21/stickers-a-s.jpg", "v21/stickers/st-p-heart.webp"),
     ("/canvas", "Hatchery canvas", "Decorate a sky island and save it as a card.", "v21/canvas-a-s.jpg", "v21/stickers/st-b-gm.webp"),
 ]
+
+
+# ---------- the four sections (TJ's feedback: fewer places, each with its tools side by side) ----------
+# key, name, landing page, one line, then the tabs: key, name, path, who can see it ("" everyone, "v21" open v2.1,
+# "circle" the locked Dragon Circle), one line, scene ("cloud:<name>" for a Cloudinary scene, "" for the aurora), character
+# Each card uses its own tool's art, never another tool's.
+SECTIONS = [
+    ("feed", "Feed", "/friends", "Every Pocket Dragons post the community shares, and your daily goal.", [
+        ("friends", "Blinky's Friends", "/friends", "", "", "", ""),
+        ("progress", "My progress", "/friends#progress", "", "", "", ""),
+    ]),
+    ("community", "Community", "/community", "Find Keepers, welcome new ones and thank the ones who help.", [
+        ("keepers", "Keepers", "/friends/keepers", "", "Find verified Keepers to follow and talk with.", "keeper-bg.jpg", "blinky-avatar.jpg"),
+        ("welcome", "Welcome lane", "/welcome", "v21", "Say hi to Keepers who just joined the Ancient Hatchery.", "v21/welcome-bg-s.jpg", "v21/blinky-lantern.webp"),
+        ("creator", "Creator of the week", "/creator", "v21", "Pinky spotlights one Keeper who made the hatchery brighter.", "v21/creator-bg-s.jpg", "v21/pinky-frame.webp"),
+        ("cheers", "Cheers", "/cheers", "v21", "Send a thank you lantern to a fellow Keeper.", "v21/cheers-a-s.jpg", "v21/blinky-skylantern.webp"),
+        ("circle", "Dragon Circle", "/circle", "circle", "The Keepers you are closest to in dragon posts.", "", "v21/pinky-heart.webp"),
+    ]),
+    ("learn", "Learn", "/learn", "Learn the hatchery: the daily quiz, every AMA and the guides.", [
+        ("quiz", "Dragon Quiz", "/quiz", "v21", "Five Pocket Dragons questions a day, three tries each.", "v21/dragondle-a-s.jpg", "v21/pinky-scroll.webp"),
+        ("ama", "AMA Library", "/friends/ama", "", "Every AMA in one place: the recordings and what was shared.", "cloud:ama-library", ""),
+        ("help", "Help and guides", "/help", "", "How pdtools works and answers to the questions Keepers ask most.", "help/poster.jpg", ""),
+    ]),
+    ("create", "Create", "/create", "Make something to share: stickers, a sky island, your month, your wallpaper.", [
+        ("stickers", "Sticker shelf", "/stickers", "v21", "Blinky and Pinky stickers for your posts and replies.", "v21/stickers-a-s.jpg", "v21/stickers/st-p-heart.webp"),
+        ("canvas", "Hatchery canvas", "/canvas", "v21", "Decorate a sky island and save it as a card.", "v21/canvas-a-s.jpg", "v21/stickers/st-b-gm.webp"),
+        ("wrapped", "Hatchery Wrapped", "/wrapped", "v21", "Your month in the hatchery as a story and a video.", "v21/wrapped-b-s.jpg", "v21/blinky-scope.webp"),
+        ("wallpaper", "My Hatchery wallpaper", "/wallpaper", "v21", "Your hatched dragons in a phone wallpaper made for your screen.", "v21/wall/glow-m.jpg", ""),
+    ]),
+]
+
+
+def nav_for(path: str, v21: bool, circle: bool) -> dict:
+    """The sections this visitor can see, and which section and tab the page belongs to."""
+    ok = {"": True, "v21": v21, "circle": circle}
+    secs, cur, tab = [], None, None
+    for key, name, home, line, tabs in SECTIONS:
+        seen = [{"key": t[0], "name": t[1], "path": t[2], "line": t[4], "bg": t[5], "who": t[6]} for t in tabs if ok[t[3]]]
+        if not seen:
+            continue
+        secs.append({"key": key, "name": name, "home": home, "line": line, "tabs": seen})
+    # the longest matching path wins, so /friends/keepers belongs to Keepers and not to Blinky's Friends
+    best = -1
+    for sec in secs:
+        if path == sec["home"] and len(path) > best:
+            best, cur, tab = len(path), sec["key"], None
+        for t in sec["tabs"]:
+            p = t["path"].split("#")[0]
+            if (path == p or path.startswith(p.rstrip("/") + "/")) and len(p) >= best and not t["path"].endswith("#progress"):
+                best, cur, tab = len(p), sec["key"], t["key"]
+    return {"sections": secs, "cur": cur, "tab": tab}

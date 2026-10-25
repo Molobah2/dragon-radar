@@ -1,0 +1,128 @@
+{# The pdtools navigation once v2.1 is open: four sections at the bottom of every page (Home, Feed, Community,
+   Learn, Create), and above them the tools of the section you are in, side by side, so moving between them is
+   one tap. Old addresses keep working; this only links them together. #}
+{% if v21_open and nav and nav.sections %}
+{% set cur = nav.cur %}
+{% set sec_now = (nav.sections|selectattr("key", "equalto", cur)|list)[0] if cur else None %}
+<nav class="pdnav" id="pdnav" aria-label="pdtools">
+  {% if sec_now and sec_now.tabs|length > 1 %}
+  <div class="pd-tabs" aria-label="{{ sec_now.name }}">
+    {% for t in sec_now.tabs %}<a class="pd-t{% if t.key == nav.tab %} on{% endif %}" href="{{ t.path }}"{% if t.key == nav.tab %} aria-current="page"{% endif %}{% if t.key == "progress" %} data-pd-progress{% endif %}>{{ t.name }}</a>{% endfor %}
+  </div>
+  {% endif %}
+  <div class="pd-secs">
+    <a class="pd-s{% if request.path == '/' %} on{% endif %}" href="/"{% if request.path == '/' %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
+    {% for sec in nav.sections %}<a class="pd-s{% if sec.key == cur %} on{% endif %}" href="{{ sec.home }}"{% if sec.key == cur and not nav.tab %} aria-current="page"{% endif %}>
+      {% if sec.key == "feed" %}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H10l-4.5 3.5V16H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg>
+      {% elif sec.key == "community" %}<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="3.2"/><circle cx="16.5" cy="10" r="2.6"/><path d="M3.5 19c.6-3.2 2.9-5 5.5-5s4.9 1.8 5.5 5M14 15.2c.8-.7 1.7-1 2.6-1 2.1 0 3.7 1.5 4.1 4"/></svg>
+      {% elif sec.key == "learn" %}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5C6.5 5 9.5 5 12 6.8 14.5 5 17.5 5 20 6.5V18c-2.5-1.4-5.5-1.4-8 .4-2.5-1.8-5.5-1.8-8-.4zM12 6.8v11.6"/></svg>
+      {% else %}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 4.6 4.6 1.9-4.6 1.9L12 16.5l-1.9-4.6L5.5 10l4.6-1.9zM18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg>{% endif %}
+      <span>{{ sec.name }}</span></a>{% endfor %}
+    <button class="pd-s pd-me" id="pd-me" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="pd-me-pop">
+      <i class="pd-ava" id="pd-ava" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.2c3.6 0 6.3 4.4 6.3 9 0 4.4-2.8 7.6-6.3 7.6s-6.3-3.2-6.3-7.6c0-4.6 2.7-9 6.3-9z"/><path d="M8.6 12.4l1.6 1.4 1.8-1.9 1.8 1.9 1.6-1.4"/></svg></i><span id="pd-me-l">Me</span></button>
+  </div>
+  <div class="pd-pop" id="pd-me-pop" role="dialog" aria-label="Your Keeper badge" hidden>
+    <div class="pd-pop-none" id="pd-pop-none">
+      <b>Make pdtools yours</b>
+      <p>Sign Blinky's Book of Friends with your X name once. Then Wrapped, Cheers, your wallpaper and more open on you.</p>
+      <a class="pd-pop-go" href="/friends#book">Sign the book</a>
+    </div>
+    <div class="pd-pop-wait" id="pd-pop-wait" hidden>
+      <b>Almost there</b>
+      <p>Your X name is waiting for its quick proof post.</p>
+      <a class="pd-pop-go" href="/friends#book">Finish signing</a>
+    </div>
+    <div class="pd-pop-me" id="pd-pop-me" hidden>
+      <div class="pd-pop-who"><img id="pd-pop-img" alt="" width="52" height="52"><div><small>Keeper</small><b id="pd-pop-h"></b></div></div>
+      <div class="pd-pop-links">
+        <a href="/wrapped">My Wrapped</a>
+        <a href="/wallpaper">My wallpaper</a>
+        <a href="/cheers">My cheers</a>
+        {% if circle_open %}<a href="/circle">My Dragon Circle</a>{% endif %}
+        <a href="/friends#progress">My progress</a>
+      </div>
+      <a class="pd-pop-other" href="/friends#book">Use a different X name</a>
+    </div>
+  </div>
+</nav>
+<style>
+  .pdnav { position: fixed; z-index: 92; left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: min(640px, calc(100% - 16px));
+    display: grid; gap: 4px; padding: 6px; border-radius: 22px; background: rgba(24, 16, 44, .9); color: #fff; font-family: "Nunito", system-ui, sans-serif;
+    box-shadow: 0 16px 36px -14px rgba(0, 0, 0, .75), inset 0 0 0 1px rgba(255, 255, 255, .08); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  .pd-secs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; }
+  .pd-s { display: grid; justify-items: center; gap: 2px; padding: 6px 4px 5px; border-radius: 16px; color: rgba(255, 255, 255, .72); text-decoration: none; font-weight: 800; font-size: 11.5px; line-height: 1.1; }
+  .pd-s svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .pd-s.on { color: #2a1606; background: linear-gradient(180deg, #ffe08f, #ffb85c); }
+  .pd-s:hover:not(.on) { color: #fff; background: rgba(255, 255, 255, .08); }
+  .pd-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 4px; border-bottom: 1px solid rgba(255, 255, 255, .1); -webkit-mask-image: linear-gradient(90deg, #000 92%, transparent); mask-image: linear-gradient(90deg, #000 92%, transparent); }
+  .pd-tabs::-webkit-scrollbar { display: none; }
+  .pd-t { flex: none; padding: 8px 13px; border-radius: 999px; color: #e8e1ff; background: rgba(255, 255, 255, .08); text-decoration: none; font-weight: 800; font-size: 13.5px; white-space: nowrap; }
+  .pd-t.on { color: #2a1606; background: #ffcf6b; }
+  .pdnav a:focus-visible { outline: 3px solid #ffcf6b; outline-offset: 2px; }
+  body.has-pdnav { padding-bottom: calc(var(--pdnav-h, 80px) + 24px); }
+  body.sheet-open .pdnav, body.has-pdnav .tabbar { display: none; }
+  @media (min-width: 900px) { .pdnav { width: min(720px, calc(100% - 32px)); } .pd-secs { grid-auto-flow: column; } .pd-s { grid-template-columns: auto auto; justify-content: center; align-items: center; gap: 8px; font-size: 14px; padding: 9px 10px; } .pd-s svg { width: 20px; height: 20px; } }
+  .pd-me { border: 0; background: none; cursor: pointer; font-family: inherit; }
+  .pdnav.pop-open { z-index: 99; }
+  .pd-me span { max-width: 10ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pd-ava { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; overflow: hidden; }
+  .pd-ava svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .pd-ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pd-me.signed .pd-ava { box-shadow: 0 0 0 2px #ffcf6b; }
+  .pd-me[aria-expanded="true"] { color: #fff; background: rgba(255, 255, 255, .12); }
+  .pd-pop { position: absolute; right: 6px; bottom: calc(100% + 10px); width: min(300px, calc(100vw - 28px)); padding: 16px; border-radius: 20px; background: #221640; color: #fff;
+    box-shadow: 0 22px 44px -16px rgba(0, 0, 0, .8), inset 0 0 0 1px rgba(255, 207, 107, .25); display: grid; gap: 10px; font-size: 14px; line-height: 1.4; }
+  .pd-pop[hidden], .pd-pop > [hidden] { display: none; }
+  .pd-pop > div { display: grid; gap: 10px; }
+  .pd-pop b { font: 700 18px/1.15 "Fredoka", system-ui, sans-serif; }
+  .pd-pop p { margin: 0; color: #d8cdf2; }
+  .pd-pop-go { display: grid; place-items: center; height: 44px; border-radius: 14px; background: linear-gradient(180deg, #ffe08f, #ffb85c); color: #2a1606; font-weight: 800; text-decoration: none; }
+  .pd-pop-who { display: flex !important; align-items: center; gap: 12px; }
+  .pd-pop-who img { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 3px #ffcf6b; background: #3a2a60; }
+  .pd-pop-who small { display: block; color: #ffcf6b; font-weight: 800; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+  .pd-pop-links { display: grid !important; grid-template-columns: 1fr 1fr; gap: 6px !important; }
+  .pd-pop-links a { padding: 10px; border-radius: 12px; background: rgba(255, 255, 255, .08); color: #fff; text-decoration: none; font-weight: 800; font-size: 13.5px; }
+  .pd-pop-links a:hover { background: rgba(255, 255, 255, .15); }
+  .pd-pop-other { justify-self: start; color: #ffcf6b; font-weight: 700; font-size: 13px; }
+  .pdnav button:focus-visible, .pd-pop a:focus-visible { outline: 3px solid #ffcf6b; outline-offset: 2px; }
+  @media print { .pdnav { display: none; } }
+</style>
+<script>
+(() => {
+  const nav = document.getElementById("pdnav"); if (!nav) return;
+  document.body.classList.add("has-pdnav");
+  const fit = () => document.body.style.setProperty("--pdnav-h", nav.offsetHeight + "px");
+  fit(); addEventListener("resize", fit, { passive: true });
+  const row = nav.querySelector(".pd-tabs"), on = nav.querySelector(".pd-t.on");
+  if (row && on) row.scrollLeft = Math.max(0, on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2);
+
+  /* the Keeper badge: who this device signed Blinky's Book of Friends as. Asked once, then kept for ten minutes
+     in this tab (pd:me), and shared with the tools through window.pdMe, so they can open on you. */
+  const $ = (id) => document.getElementById(id), btn = $("pd-me"), pop = $("pd-me-pop");
+  function vid() { try { const v = localStorage.getItem("pd:vid") || ""; return /^[a-f0-9]{32}$/.test(v) ? v : ""; } catch (e) { return ""; } }
+  function cached() { try { const c = JSON.parse(sessionStorage.getItem("pd:me") || "null"); return c && Date.now() - c.t < 600000 && c.v === vid() ? c : null; } catch (e) { return null; } }
+  window.pdMe = (async () => {
+    const c = cached(); if (c) return c;
+    const v = vid(); if (!v) return { st: "none", h: "" };
+    try {
+      const j = await (await fetch(`/api/book/me?vid=${v}`, { headers: { Accept: "application/json" } })).json();
+      const me = { st: j.status || "none", h: j.handle || "", t: Date.now(), v };
+      try { sessionStorage.setItem("pd:me", JSON.stringify(me)); } catch (e) { /* fine */ }
+      return me;
+    } catch (e) { return { st: "none", h: "" }; }
+  })();
+  window.pdMe.then((me) => {
+    $("pd-pop-none").hidden = me.st !== "none"; $("pd-pop-wait").hidden = me.st !== "pending"; $("pd-pop-me").hidden = me.st !== "confirmed";
+    if (me.st !== "confirmed" || !/^[A-Za-z0-9_]{1,15}$/.test(me.h)) return;
+    btn.classList.add("signed"); btn.title = "@" + me.h; $("pd-pop-h").textContent = "@" + me.h;
+    const src = `/api/avatar/${me.h}`, im = new Image(); im.alt = ""; im.decoding = "async";
+    im.onload = () => { $("pd-ava").replaceChildren(im); $("pd-pop-img").src = src; };
+    im.src = src;
+  });
+  function show(open) { pop.hidden = !open; btn.setAttribute("aria-expanded", open ? "true" : "false"); nav.classList.toggle("pop-open", open); }
+  btn.addEventListener("click", (e) => { e.stopPropagation(); show(pop.hidden); });
+  document.addEventListener("click", (e) => { if (!pop.hidden && !pop.contains(e.target)) show(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !pop.hidden) { show(false); btn.focus(); } });
+})();
+</script>
+{% endif %}

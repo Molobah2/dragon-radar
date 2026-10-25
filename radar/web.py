@@ -128,7 +128,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     def site_songs():
         return [{**s, "src": url_for("static", filename=s["src"], v=version)} for s in playlist]
 
-    from .v21 import TOOLS as V21_TOOLS
+    from .v21 import TOOLS as V21_TOOLS, nav_for
     from .dragondle import START as _DLE_START
     DLE_START = _DLE_START.isoformat()
 
@@ -139,7 +139,8 @@ def create_app(cfg: Config | None = None) -> Flask:
                 "site_credits": [{"track": x["title"], "by": x["by"], "x": x.get("x", "")} for x in playlist],
                 "v2": getattr(g, "v2", False), "circle_open": getattr(g, "circle", False), "v2_private": getattr(g, "v2", False) and not cfg.v2_public,
                 "v21_open": cfg.v21_public or getattr(g, "circle", False), "v21_tools": V21_TOOLS,
-                "dle_start": DLE_START}
+                "dle_start": DLE_START,
+                "nav": nav_for(request.path if has_request_context() else "/", cfg.v21_public or getattr(g, "circle", False), getattr(g, "circle", False))}
 
     # v2 tools in progress: add {"name", "url", "note"} here as each one is built
     LAB_TOOLS: list[dict] = [
@@ -1547,6 +1548,30 @@ def create_app(cfg: Config | None = None) -> Flask:
         with Session() as s:
             return jsonify(story(s, cfg, vid, y, m, today))
 
+    # ---------- the four sections (TJ's feedback): one page per section with its tools side by side ----------
+    def section_page(key):
+        from .v21 import nav_for
+        nav = nav_for(request.path, True, getattr(g, "circle", False))
+        sec = next((x for x in nav["sections"] if x["key"] == key), None)
+        if not sec:
+            abort(404)
+        return render_template("section.html", cfg=cfg, sec=sec, og_title=f"{sec['name']} · pdtools", og_desc=sec["line"])
+
+    @app.get("/community")
+    @v21_only
+    def section_community():
+        return section_page("community")
+
+    @app.get("/learn")
+    @v21_only
+    def section_learn():
+        return section_page("learn")
+
+    @app.get("/create")
+    @v21_only
+    def section_create():
+        return section_page("create")
+
     @app.get("/quiz")
     @v21_only
     def dragondle_home():
@@ -1755,6 +1780,13 @@ def create_app(cfg: Config | None = None) -> Flask:
         r.headers["Cache-Control"] = "public, max-age=86400" if cfg.v21_public else "private, max-age=86400"
         r.headers["Content-Disposition"] = f'inline; filename="pdtools-{name}.png"'
         return r
+
+    # ---------- My Hatchery wallpaper: the Keeper's own dragons in a tall scene, drawn on their device ----------
+    @app.get("/wallpaper")
+    @v21_only
+    def wallpaper_home():
+        return render_template("wallpaper.html", cfg=cfg, og_title="My Hatchery wallpaper · PD Tools",
+                               og_desc="Your hatched Pocket Dragons gathered in a phone wallpaper made for your screen.")
 
     # ---------- v2.1 wave 4: the Hatchery canvas, a sky island to decorate (locked like the rest) ----------
     @app.get("/canvas")

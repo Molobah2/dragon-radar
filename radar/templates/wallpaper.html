@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>My Hatchery wallpaper · {{ cfg.hub_name or "PD Tools" }}</title>
+  <meta name="description" content="Your hatched Pocket Dragons gathered in a phone wallpaper made for your screen. Free, unofficial community tools for Pocket Dragons Keepers.">
+  <meta name="theme-color" content="#140d2a">
+  {% include "_icons.html" %}
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ asset('fonts.css') }}">
+  <link rel="stylesheet" href="{{ asset('v21/v21.css') }}">
+{% include "_speed.html" %}
+<style>
+/* ===== My Hatchery wallpaper: your own dragons in a scene made for your phone ===== */
+body { background: #140d2a; overflow-x: hidden; }
+.wp-amb { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+.wp-amb img { position: absolute; inset: -8%; width: 116%; height: 116%; object-fit: cover; filter: blur(36px) saturate(1.2); opacity: .55; transition: opacity .6s; }
+.wp-amb::after { content: ""; position: absolute; inset: 0; background: radial-gradient(90% 70% at 50% 40%, rgba(20, 13, 42, .25), rgba(20, 13, 42, .88) 80%); }
+.wp-app { position: relative; z-index: 1; min-height: 100vh; min-height: 100svh; }
+.wp-main { width: min(1180px, 100%); margin: 0 auto; padding: calc(80px + env(safe-area-inset-top, 0px)) clamp(16px, 3vw, 28px) 30px;
+  display: grid; grid-template-columns: 196px minmax(0, 1fr) 330px; gap: clamp(18px, 3vw, 40px); align-items: start; }
+.wp-head { grid-column: 1 / -1; display: grid; gap: 6px; text-align: center; justify-items: center; }
+.wp-head .kick { font: 800 12px/1 var(--body); letter-spacing: 2.4px; text-transform: uppercase; color: var(--gold); }
+.wp-head h1 { margin: 0; font: 700 clamp(30px, 5vw, 48px)/1.05 var(--disp); text-shadow: 0 6px 30px rgba(0,0,0,.5); }
+.wp-head p { margin: 0; max-width: 52ch; color: #e2d8f6; }
+
+/* the scenes, tall like the phone */
+.wp-scenes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.wp-scenes button { position: relative; display: block; width: 100%; aspect-ratio: 9 / 16; padding: 0; border: 0; border-radius: 18px; overflow: hidden; cursor: pointer; background: #2a1d44;
+  box-shadow: 0 12px 24px -14px #000; outline: 2px solid transparent; outline-offset: 3px; transition: transform .3s var(--spring), outline-color .2s; }
+.wp-scenes img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.wp-scenes span { position: absolute; left: 6px; right: 6px; bottom: 6px; padding: 4px 6px; border-radius: 10px; background: rgba(20, 13, 42, .72); color: #fff; font: 800 11.5px/1.15 var(--body); }
+.wp-scenes button[aria-pressed="true"] { outline-color: var(--gold); transform: scale(1.03); }
+.wp-scenes button:hover { transform: translateY(-2px); }
+
+/* the phone */
+.wp-stage { display: grid; justify-items: center; gap: 14px; }
+.wp-phone { position: relative; height: min(calc(100vh - 300px), 720px); height: min(calc(100svh - 300px), 720px); min-height: 460px; aspect-ratio: var(--ar, 1179 / 2556); border-radius: 46px; padding: 10px; background: linear-gradient(160deg, #3a2c5a, #150e28 60%, #2b2044);
+  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .95), inset 0 0 0 1px rgba(255, 255, 255, .14), 0 0 0 1px rgba(0, 0, 0, .6); }
+.wp-screen { position: relative; width: 100%; height: 100%; border-radius: 37px; overflow: hidden; background: #241a3d; }
+.wp-screen canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.wp-clock { position: absolute; left: 0; right: 0; top: 9%; display: grid; justify-items: center; color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, .35); pointer-events: none; font-family: -apple-system, "SF Pro Display", "Segoe UI", system-ui, sans-serif; }
+.wp-clock small { font-size: clamp(12px, 4.2vw, 15px); font-weight: 600; opacity: .92; }
+.wp-clock b { font-size: clamp(56px, 22vw, 84px); font-weight: 700; line-height: 1; letter-spacing: -1px; }
+.wp-notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 30%; height: 24px; border-radius: 20px; background: #000; pointer-events: none; }
+.wp-busy { position: absolute; inset: 0; display: grid; place-items: center; color: #efe6ff; font-weight: 800; background: rgba(20, 13, 42, .4); }
+.wp-busy[hidden] { display: none; }
+.wp-cap { margin: 0; color: #cfc3ea; font-size: 13.5px; text-align: center; max-width: 34ch; }
+
+/* the options */
+.wp-opts { display: grid; gap: 14px; padding: 18px; border-radius: 26px; background: rgba(30, 20, 56, .72); border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 30px 60px -30px #000;
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.wp-opts h2 { margin: 0; font: 700 19px/1.1 var(--disp); }
+.wp-row { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, .1); }
+.wp-row:last-of-type { border-bottom: 0; padding-bottom: 0; }
+.wp-row label, .wp-lab { font: 800 12px/1 var(--body); letter-spacing: 1.6px; text-transform: uppercase; color: var(--gold); }
+.wp-row p { margin: 0; color: #d6cbef; font-size: 14px; line-height: 1.4; }
+.wp-row select { height: 44px; padding: 0 12px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .2); background: rgba(255, 255, 255, .08); color: #fff; font: 700 15px var(--body); }
+.wp-row select option { color: #1e1433; }
+.wp-row .wp-sw { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #fff; font: 800 15px/1.3 var(--body); letter-spacing: 0; text-transform: none; cursor: pointer; }
+.wp-sw input { appearance: none; -webkit-appearance: none; flex: none; width: 46px; height: 28px; border-radius: 999px; background: rgba(255, 255, 255, .2); position: relative; cursor: pointer; transition: background .2s; margin: 0; }
+.wp-sw input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform .25s var(--spring); }
+.wp-sw input:checked { background: #5fd39a; }
+.wp-sw input:checked::after { transform: translateX(18px); }
+.wp-sw input:disabled { opacity: .4; }
+.wp-sw input:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.wp-mini { display: flex; flex-wrap: wrap; gap: 4px; }
+.wp-mini img { width: 38px; height: 38px; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .4)); }
+.wp-small { justify-self: start; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .22); background: rgba(255, 255, 255, .08); color: #fff; font: 800 13.5px var(--body); cursor: pointer; }
+.wp-small[hidden] { display: none; }
+.wp-opts .btn.go { width: 100%; }
+.wp-note { margin: 0; color: #b8abd8; font-size: 12.5px; text-align: center; }
+.wp-opts a { color: var(--gold); font-weight: 800; }
+
+@media (max-width: 980px) {
+  .wp-main { grid-template-columns: minmax(0, 1fr) 320px; }
+  .wp-scenes { grid-column: 1 / -1; grid-row: 3; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 92px; overflow-x: auto; padding: 4px 4px 8px; scrollbar-width: none; }
+  .wp-scenes::-webkit-scrollbar { display: none; }
+}
+@media (max-width: 720px) {
+  .wp-main { grid-template-columns: minmax(0, 1fr); }
+  .wp-scenes { grid-row: auto; grid-auto-columns: 84px; }
+  .wp-phone { height: auto; min-height: 0; width: min(300px, 74vw); border-radius: 40px; }
+  .wp-screen { border-radius: 31px; }
+}
+</style>
+</head>
+<body>
+<div class="wp-amb" aria-hidden="true"><img id="amb" alt="" src="{{ asset('v21/wall/glow-t.jpg') }}"></div>
+<div class="wp-app">
+  <header class="v-bar">
+    <a class="v-brand" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="38" height="38"><span>PD Tools<small>My Hatchery wallpaper</small></span></a>
+    <div class="v-tools">
+      <label class="pill" title="Language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><select id="lang-select" aria-label="Language"></select></label>
+    </div>
+  </header>
+  <main class="wp-main">
+    <div class="wp-head">
+      <span class="kick">Create</span>
+      <h1>My Hatchery wallpaper</h1>
+      <p>The dragons you hatched gather in a scene of your choice, sized for your phone. Pick, peek and save.</p>
+    </div>
+
+    <ul class="wp-scenes" id="scenes" aria-label="Scene">
+      {% for key, name in [("glow", "Glow wood"), ("lake", "Sunrise lake"), ("sunflower", "Sunflower nap"), ("pond", "Frost pond"), ("blossom", "Blossom bridge"), ("shore", "Tide pools")] %}
+      <li><button type="button" data-sc="{{ key }}" aria-pressed="{{ 'true' if loop.first else 'false' }}"><img src="{{ asset('v21/wall/' ~ key ~ '-t.jpg') }}" alt="" width="200" height="358" loading="{{ 'eager' if loop.index < 4 else 'lazy' }}" decoding="async"><span>{{ name }}</span></button></li>
+      {% endfor %}
+    </ul>
+
+    <div class="wp-stage">
+      <div class="wp-phone" id="phone">
+        <div class="wp-screen">
+          <canvas id="cv" role="img" aria-label="Wallpaper preview"></canvas>
+          <div class="wp-clock" id="clock" aria-hidden="true"><small id="clock-d"></small><b id="clock-t"></b></div>
+          <i class="wp-notch" aria-hidden="true"></i>
+          <div class="wp-busy" id="busy">Setting the scene…</div>
+        </div>
+      </div>
+      <p class="wp-cap" id="cap"></p>
+    </div>
+
+    <section class="wp-opts" aria-labelledby="opts-h">
+      <h2 id="opts-h">Make it yours</h2>
+      <div class="wp-row">
+        <label for="size">Phone</label>
+        <select id="size">
+          <option value="1290x2796">iPhone Pro Max and Plus</option>
+          <option value="1206x2622">iPhone 16 Pro</option>
+          <option value="1179x2556">iPhone Pro and iPhone 15, 16</option>
+          <option value="1170x2532">iPhone 12, 13, 14</option>
+          <option value="1080x2400">Android</option>
+          <option value="1440x3200">Android, large screen</option>
+        </select>
+      </div>
+      <div class="wp-row">
+        <span class="wp-lab">My dragons</span>
+        <label class="wp-sw"><span id="dr-l">Bring my dragons</span><input type="checkbox" id="dr" checked></label>
+        <div class="wp-mini" id="mini"></div>
+        <p id="dr-p"></p>
+        <button class="wp-small" id="shuffle" type="button" hidden>Shuffle the spots</button>
+      </div>
+      <div class="wp-row">
+        <span class="wp-lab">My name</span>
+        <label class="wp-sw"><span id="nm-l">Add my X name</span><input type="checkbox" id="nm" disabled></label>
+        <p id="nm-p">Sign Blinky's Book of Friends and your X name can sit at the bottom of your wallpaper. <a href="/friends#book">Sign the book</a></p>
+      </div>
+      <div class="wp-row">
+        <label class="wp-sw"><span>Peek with the lock screen clock</span><input type="checkbox" id="ck" checked></label>
+        <p>Only for the preview. Your phone adds its own clock.</p>
+      </div>
+      <button class="btn go" id="save" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>Save my wallpaper</button>
+      <p class="wp-note">Made on your device. Dragons come from your own collection here, and secret relics always stay secret.</p>
+    </section>
+  </main>
+  {% include "_v21_foot.html" %}
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script src="{{ asset('dex-data.js') }}"></script>
+<script src="{{ asset('v21/save.js') }}"></script>
+<script src="{{ asset('i18n.js') }}"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const T = (t) => (window.pdT ? window.pdT(t) : t);
+  const D = window.PD_DEX || { art: {}, dragons: [], legends: [] };
+  const WALL = "{{ url_for('static', filename='v21/wall/') }}", CUT = "{{ url_for('static', filename='v21/dex-cut/') }}", V = "{{ asset_version }}";
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* fine */ } } };
+  let tt = 0;
+  function toast(m) { if (!m) return; const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 3200); }
+
+  /* where the dragons stand: x centre and feet line as parts of the picture, size as a part of its width.
+     The biggest spots go to the best dragons. Kept clear of the clock at the top and the hero in the middle. */
+  const SPOTS = [[.17, .935, .27], [.83, .935, .27], [.35, .955, .19], [.65, .955, .19], [.09, .80, .18], [.91, .80, .18], [.27, .855, .15], [.73, .855, .15]];
+  const RANK = { l: 3, r: 2, c: 1 };
+  const prefs = Object.assign({ sc: "glow", size: "", dr: true, nm: true, ck: true, seed: 0 }, store.get("pd:wall", {}));
+
+  // every different dragon this device has hatched (species and finish), best first, never the secret relics
+  function mine() {
+    const dex = store.get("pd:dex", null), have = dex && dex.have && typeof dex.have === "object" ? dex.have : {};
+    const out = [];
+    for (const k of Object.keys(D.art || {})) { const m = /^(.+)-([crl])$/.exec(k); if (m && ((have[m[1]] || {})[m[2]] || 0) > 0) out.push(k); }
+    return out.sort((a, b) => RANK[b.slice(-1)] - RANK[a.slice(-1)]);
+  }
+  const nameOf = (key) => { const id = key.replace(/-[crl]$/, ""); const d = [...(D.dragons || []), ...(D.legends || [])].find((x) => x.id === id); return d ? d.name : id; };
+  const dragons = mine();
+
+  // a small steady shuffle, so "Shuffle the spots" changes the picture and the same choice comes back next time
+  function order(list, seed) {
+    if (!seed) return list.slice(0, SPOTS.length);
+    const a = list.slice(0, SPOTS.length); let s = seed;
+    for (let i = a.length - 1; i > 0; i--) { s = (s * 9301 + 49297) % 233280; const j = Math.floor(s / 233280 * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+
+  const cache = new Map();
+  function img(src) {
+    if (!cache.has(src)) cache.set(src, new Promise((ok) => { const i = new Image(); i.decoding = "async"; i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; }));
+    return cache.get(src);
+  }
+  let handle = "";
+
+  async function draw(cv, W, H, full) {
+    const g = cv.getContext("2d");
+    const bg = await img(`${WALL}${prefs.sc}${full ? "" : "-m"}.jpg?v=${V}`);
+    g.fillStyle = "#241a3d"; g.fillRect(0, 0, W, H);
+    if (bg) { const s = Math.max(W / bg.width, H / bg.height), w = bg.width * s, h = bg.height * s; g.drawImage(bg, (W - w) / 2, (H - h) / 2, w, h); }
+    if (prefs.dr && dragons.length) {
+      const keys = order(dragons, prefs.seed), pics = await Promise.all(keys.map((k) => img(`${CUT}${k}.webp?v=${V}`)));
+      // back row first, so the front dragons overlap the ones behind
+      const idx = keys.map((k, i) => i).sort((a, b) => SPOTS[a][1] - SPOTS[b][1]);
+      for (const i of idx) {
+        const p = pics[i]; if (!p) continue;
+        const [x, y, sz] = SPOTS[i], w = sz * W, h = w * p.height / p.width, cx = x * W, fy = y * H;
+        g.save(); g.globalAlpha = .35; g.fillStyle = "#000"; g.beginPath(); g.ellipse(cx, fy - h * .03, w * .34, w * .07, 0, 0, 6.283); g.fill(); g.restore();
+        g.save(); g.shadowColor = "rgba(0,0,0,.35)"; g.shadowBlur = w * .06; g.shadowOffsetY = w * .03;
+        g.drawImage(p, cx - w / 2, fy - h, w, h); g.restore();
+      }
+    }
+    if (prefs.nm && handle) {
+      const fs = Math.round(W * .03);
+      g.font = `700 ${fs}px Fredoka, "Trebuchet MS", sans-serif`; g.textAlign = "center"; g.textBaseline = "alphabetic";
+      const txt = "@" + handle, tw = g.measureText(txt).width, px = fs * .7, bw = tw + px * 2, bh = fs * 1.7, bx = (W - bw) / 2, by = H * .985 - bh;
+      g.fillStyle = "rgba(20, 13, 42, .55)"; g.beginPath(); g.roundRect ? g.roundRect(bx, by, bw, bh, bh / 2) : g.rect(bx, by, bw, bh); g.fill();
+      g.fillStyle = "#fff6e0"; g.fillText(txt, W / 2, by + bh * .68);
+    }
+  }
+
+  function dims() { const [w, h] = (prefs.size || "1179x2556").split("x").map(Number); return { w, h }; }
+  let gen = 0;
+  async function preview() {
+    const my = ++gen, { w, h } = dims(), cv = $("cv");
+    $("phone").style.setProperty("--ar", `${w} / ${h}`);
+    const r = cv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
+    const W = Math.max(200, Math.round(r.width * d)), H = Math.round(W * h / w);
+    const tmp = document.createElement("canvas"); tmp.width = W; tmp.height = H;
+    await draw(tmp, W, H, false);
+    if (my !== gen) return;
+    cv.width = W; cv.height = H; cv.getContext("2d").drawImage(tmp, 0, 0);
+    $("busy").hidden = true;
+  }
+
+  /* the controls */
+  function paintScenes() { document.querySelectorAll("[data-sc]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.sc === prefs.sc ? "true" : "false")); $("amb").src = `${WALL}${prefs.sc}-t.jpg?v=${V}`; }
+  function save() { store.set("pd:wall", prefs); }
+  document.querySelectorAll("[data-sc]").forEach((b) => b.addEventListener("click", () => { prefs.sc = b.dataset.sc; save(); paintScenes(); preview(); }));
+  if (!prefs.size) prefs.size = /iPhone/.test(navigator.userAgent) ? "1179x2556" : /Android/.test(navigator.userAgent) ? "1080x2400" : "1179x2556";
+  $("size").value = prefs.size; if ($("size").value !== prefs.size) { prefs.size = "1179x2556"; $("size").value = prefs.size; }
+  $("size").addEventListener("change", () => { prefs.size = $("size").value; save(); preview(); });
+  $("dr").checked = prefs.dr; $("ck").checked = prefs.ck; $("clock").hidden = !prefs.ck;
+  $("dr").addEventListener("change", () => { prefs.dr = $("dr").checked; save(); preview(); });
+  $("ck").addEventListener("change", () => { prefs.ck = $("ck").checked; $("clock").hidden = !prefs.ck; save(); });
+  $("nm").addEventListener("change", () => { prefs.nm = $("nm").checked; save(); preview(); });
+  $("shuffle").addEventListener("click", () => { prefs.seed = 1 + Math.floor(Math.random() * 99999); save(); preview(); });
+
+  const n = dragons.length;
+  if (!n) {
+    $("dr").checked = false; $("dr").disabled = true;
+    $("dr-p").replaceChildren(document.createTextNode(T("Hatch eggs on Blinky's Friends and they join your wallpaper here.") + " "), Object.assign(document.createElement("a"), { href: "/friends", textContent: T("Hatch an egg") }));
+  } else {
+    $("mini").replaceChildren(...dragons.slice(0, SPOTS.length).map((k) => Object.assign(new Image(), { src: `${CUT}${k}.webp?v=${V}`, alt: nameOf(k), title: nameOf(k), loading: "lazy" })));
+    $("dr-p").textContent = n === 1 ? T("Your dragon joins the scene.") : n > SPOTS.length ? T(`Your best ${SPOTS.length} dragons join the scene.`) : T(`Your ${n} dragons join the scene.`);
+    $("shuffle").hidden = n < 2;
+  }
+  $("cap").textContent = n ? (n === 1 ? T("1 dragon from your hatchery") : T(`${Math.min(n, SPOTS.length)} dragons from your hatchery`)) : T("Your hatchery is ready for its first dragon");
+
+  // the clock in the preview shows the real time here
+  function tick() { const now = new Date(); $("clock-t").textContent = now.toLocaleTimeString(document.documentElement.lang || undefined, { hour: "numeric", minute: "2-digit" }).replace(/\s?[AP]M$/i, "");
+    $("clock-d").textContent = now.toLocaleDateString(document.documentElement.lang || undefined, { weekday: "long", month: "long", day: "numeric" }); }
+  tick(); setInterval(tick, 20000);
+
+  // the Keeper badge knows who signed on this device
+  (window.pdMe || Promise.resolve({ st: "none" })).then((me) => {
+    if (me.st !== "confirmed" || !/^[A-Za-z0-9_]{1,15}$/.test(me.h || "")) { $("nm").checked = false; return; }
+    handle = me.h; $("nm").disabled = false; $("nm").checked = prefs.nm; $("nm-l").textContent = T("Add my X name") + ` (@${handle})`;
+    $("nm-p").textContent = T("A small name tag at the bottom, so everyone knows whose hatchery it is.");
+    preview();
+  });
+
+  $("save").addEventListener("click", async () => {
+    const b = $("save"); if (b.disabled) return; b.disabled = true;
+    try {
+      const { w, h } = dims(), cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+      await draw(cv, w, h, true);
+      const blob = await new Promise((ok) => cv.toBlob(ok, "image/jpeg", .93));
+      const how = await window.pdSave(blob, `my-hatchery-wallpaper-${prefs.sc}.jpg`);
+      toast(window.pdSaveToast(how, T("Wallpaper saved. Set it from your photos.")));
+      try { window.pdTrack && window.pdTrack("save", "wallpaper"); } catch (e) { /* fine */ }
+    } catch (e) { toast(T("Could not make the wallpaper. Try again.")); }
+    b.disabled = false;
+  });
+
+  paintScenes();
+  (document.fonts && document.fonts.load ? document.fonts.load('700 20px Fredoka') : Promise.resolve()).finally(preview);
+  let rt = 0; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(preview, 200); }, { passive: true });
+})();
+</script>
+<script src="{{ asset('hit.js') }}" defer></script>
+</body>
+</html>
