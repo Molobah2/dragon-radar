@@ -2927,3 +2927,18 @@ def test_launch_switches_open_everything_but_jons_own_tools(cfg, Session):
         assert 'id="tbar"' not in r.get_data(as_text=True), path
     assert 'href="/circle"' in stranger.get("/community").get_data(as_text=True)
     assert stranger.get("/lab/creator").status_code == 404 and stranger.get("/lab/dragondle").status_code == 404
+
+
+def test_dragon_circle_sits_with_the_other_new_tools(cfg, Session):
+    """The Dragon Circle is one of the new tools, listed with them in the menu (next to Cheers, in the Community
+    group) rather than as a separate button, and the wallpaper is there too. Before the Circle opens it is left out."""
+    from radar.web import create_app
+    cfg.v2_public = True
+    cfg.v21_public = True
+    page = create_app(cfg).test_client().get("/friends").get_data(as_text=True)
+    assert 'href="/circle"><img' not in page and "9 new" not in page and "8 new" in page
+    cfg.circle_public = True
+    page = create_app(cfg).test_client().get("/friends").get_data(as_text=True)
+    menu = page.split('id="side-new-list"')[1].split("</div>")[0]
+    assert "9 new" in page and menu.index('href="/cheers"') < menu.index('href="/circle"') < menu.index('href="/quiz"')
+    assert 'href="/wallpaper"' in menu and "My Dragon Circle</span>" not in page

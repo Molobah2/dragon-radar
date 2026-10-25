@@ -294,14 +294,16 @@ def creator_card(pick: dict, avatar, week_label: str) -> bytes:
 
 
 # the v2.1 tools as the home page and the Blinky's Friends menu show them: path, name, one line, scene, character
-TOOLS = [
+TOOLS = [   # grouped like the sections: Community, then Learn, then Create
     ("/welcome", "Welcome lane", "Say hi to Keepers who just joined the Ancient Hatchery.", "v21/welcome-bg-s.jpg", "v21/blinky-lantern.webp"),
     ("/creator", "Creator of the week", "Pinky spotlights one Keeper who made the hatchery brighter.", "v21/creator-bg-s.jpg", "v21/pinky-frame.webp"),
-    ("/wrapped", "Hatchery Wrapped", "Your month in the hatchery as a story to share.", "v21/wrapped-b-s.jpg", "v21/blinky-scope.webp"),
-    ("/quiz", "Dragon Quiz", "Five Pocket Dragons questions a day, the same for everyone.", "v21/dragondle-a-s.jpg", "v21/pinky-scroll.webp"),
     ("/cheers", "Cheers", "Send a thank you lantern to a fellow Keeper.", "v21/cheers-a-s.jpg", "v21/blinky-skylantern.webp"),
+    ("/circle", "Dragon Circle", "The Keepers you are closest to in dragon posts.", "", "v21/pinky-heart.webp"),
+    ("/quiz", "Dragon Quiz", "Five Pocket Dragons questions a day, three tries each.", "v21/dragondle-a-s.jpg", "v21/pinky-scroll.webp"),
     ("/stickers", "Sticker shelf", "Blinky and Pinky stickers for your posts and replies.", "v21/stickers-a-s.jpg", "v21/stickers/st-p-heart.webp"),
     ("/canvas", "Hatchery canvas", "Decorate a sky island and save it as a card.", "v21/canvas-a-s.jpg", "v21/stickers/st-b-gm.webp"),
+    ("/wrapped", "Hatchery Wrapped", "Your month in the hatchery as a story and a video.", "v21/wrapped-b-s.jpg", "v21/blinky-scope.webp"),
+    ("/wallpaper", "My Hatchery wallpaper", "Your hatched dragons in a phone wallpaper made for your screen.", "v21/wall/glow-m.jpg", "v21/wall/glow-t.jpg"),
 ]
 
 

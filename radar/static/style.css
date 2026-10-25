@@ -1353,6 +1353,7 @@ html.theme-dark .day-chip.done span { color: #86efac; }
   background: rgba(29, 36, 51, .05); }
 .side-new-list a:hover { background: rgba(29, 36, 51, .1); }
 .side-new-list img { width: 34px; height: 34px; object-fit: contain; flex: none; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .25)); }
+.side-new-list img.snl-photo { object-fit: cover; border-radius: 10px; }
 body.dark-sky .side-new-list a, html.theme-dark .side-new-list a { background: rgba(255, 255, 255, .07); }
 body.dark-sky .side-new-list a:hover, html.theme-dark .side-new-list a:hover { background: rgba(255, 255, 255, .12); }
 
