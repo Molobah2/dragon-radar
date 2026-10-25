@@ -89,6 +89,17 @@ body { background: #1c120a; }
 .result .nums span { font-size: 12.5px; font-weight: 800; color: #8a5a2c; }
 .result .acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 10px; }
 .result .btn.ghost { color: #3b2412; background: rgba(255, 250, 238, .7); border-color: rgba(120, 70, 20, .3); }
+/* card styles: pick a look, see it, save it */
+.cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
+.cards button { display: grid; justify-items: center; gap: 4px; width: 84px; padding: 6px 4px 7px; border-radius: 14px; border: 2px solid transparent;
+  background: rgba(120, 60, 20, .08); cursor: pointer; font: 800 11.5px/1.15 var(--body); color: #6b4a32; transition: transform .2s var(--ease), border-color .2s; }
+.cards button img { width: 72px; height: 40px; object-fit: cover; border-radius: 8px; display: block; }
+.cards button[aria-checked="true"] { border-color: #e0922f; background: rgba(255, 196, 110, .28); color: #3b2412; transform: translateY(-2px); }
+.cards button:focus-visible { outline: 3px solid #e0922f; outline-offset: 2px; }
+.card-prev { position: relative; width: min(560px, 100%); aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: rgba(120, 60, 20, .1); box-shadow: 0 18px 40px -22px rgba(60, 30, 10, .8); }
+.card-prev img { width: 100%; height: 100%; display: block; object-fit: cover; -webkit-touch-callout: default; transition: opacity .25s; }
+.card-prev img.loading { opacity: .3; }
+.card-prev span { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 800; color: #8a5a2c; pointer-events: none; }
 .result .next-in { font-size: 13.5px; color: #8a5a2c; font-weight: 800; }
 .bars { width: min(360px, 100%); display: grid; gap: 4px; margin-top: 8px; }
 .bars div { display: grid; grid-template-columns: 22px 1fr 34px; align-items: center; gap: 8px; font: 800 13px/1 var(--body); color: #6b4a32; }
@@ -147,6 +158,15 @@ body { background: #1c120a; }
       <p class="line" id="beat" hidden></p>
       <div class="nums"><div><b id="st-streak">0</b><span>Day streak</span></div><div><b id="st-best">0</b><span>Best streak</span></div><div><b id="st-played">0</b><span>Days played</span></div></div>
       <div class="bars" id="bars" hidden></div>
+      <div class="cards" id="cards" role="radiogroup" aria-label="Card style">
+        <button type="button" role="radio" data-card="classic" aria-checked="true"><img src="{{ asset('v21/dragondle-a-s.jpg') }}" alt="" loading="lazy">Classic</button>
+        <button type="button" role="radio" data-card="hatch" aria-checked="false"><img src="{{ asset('v21/dle-nest.jpg') }}" alt="" loading="lazy">Hatch day</button>
+        <button type="button" role="radio" data-card="gif" aria-checked="false"><img src="{{ asset('v21/dle-egg-blinky.webp') }}" alt="" loading="lazy" style="object-fit:contain;background:#ffe6d2">Animated</button>
+        <button type="button" role="radio" data-card="report" aria-checked="false"><img src="{{ asset('v21/dle-pinky-quill.webp') }}" alt="" loading="lazy" style="object-fit:contain;background:#f5e3bd">Report card</button>
+        <button type="button" role="radio" data-card="stars" aria-checked="false"><img src="{{ asset('v21/dle-stars.jpg') }}" alt="" loading="lazy">Stargazing</button>
+        <button type="button" role="radio" data-card="polaroid" aria-checked="false"><img src="{{ asset('v21/dle-polaroid.jpg') }}" alt="" loading="lazy">Polaroid</button>
+      </div>
+      <div class="card-prev"><img id="card-prev" alt="Your Dragondle card"><span id="card-wait">Painting your card…</span></div>
       <div class="acts">
         <a class="btn go" id="share" target="_blank" rel="noopener" href="#"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.2 2.5h3.4l-7.4 8.4 8.7 11.6h-6.8l-5.3-7-6.1 7H1.3l7.9-9L.9 2.5h7l4.8 6.4 5.5-6.4z"/></svg>Share your grid</a>
         <button class="btn ghost" id="save" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Save the card</button>
@@ -163,6 +183,7 @@ body { background: #1c120a; }
 <script type="application/json" id="game">{{ game|tojson }}</script>
 <script src="{{ asset('i18n.js') }}"></script>
 <script src="{{ asset('cardkit.js') }}"></script>
+<script src="{{ asset('v21/dlecards.js') }}"></script>
 <script src="{{ asset('v21/save.js') }}"></script>
 <script>
 (() => {
@@ -193,7 +214,7 @@ body { background: #1c120a; }
     document.querySelectorAll("[data-sc]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.sc === k ? "true" : "false"));
     try { localStorage.setItem("pd:scene:dle", k); } catch (e) { /* fine */ }
   }
-  document.querySelectorAll("[data-sc]").forEach((b) => b.addEventListener("click", () => scene(b.dataset.sc)));
+  document.querySelectorAll("[data-sc]").forEach((b) => b.addEventListener("click", () => { scene(b.dataset.sc); if (typeof look !== "undefined" && look === "classic") preview(); }));
   let sc = "a"; try { sc = localStorage.getItem("pd:scene:dle") === "b" ? "b" : "a"; } catch (e) { /* fine */ }
   scene(sc);
 
@@ -263,7 +284,7 @@ body { background: #1c120a; }
     $("st-streak").textContent = st.cur; $("st-best").textContent = st.best; $("st-played").textContent = st.played;
     const text = `Dragondle #${G.n} ${s}/${G.qs.length}\n${grid()}\n${T("The daily Pocket Dragons puzzle")} 🐉`;
     $("share").href = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://pdtools.xyz/dragondle")}`;
-    countdown();
+    countdown(); preview();
     if (!mine.sent) {
       fetch("/api/dragondle", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: vid(), score: s, n: G.n }) })
         .then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.ok) { mine.sent = 1; keep(); stats(j, s); } }).catch(() => {});
@@ -294,14 +315,13 @@ body { background: #1c120a; }
     tick(); setInterval(tick, 30e3);
   }
 
-  /* the share card: the chosen scene, Pinky, the score and a spoiler free row of eggs and dragons */
+  /* the share cards. Classic: the chosen scene, Pinky, the score and a spoiler free row of eggs and dragons.
+     Five more looks: Hatch day, Report card, Stargazing and Polaroid are drawn here (v21/dlecards.js), and the
+     animated one is painted on the server as a GIF. The Keeper's pick is remembered on this device. */
   function img(src) { return new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
-  let saving = false;
-  $("save").addEventListener("click", async () => {
-    const K = window.pdCard; if (!K || saving) return;
-    saving = true; setTimeout(() => { saving = false; }, 2500);
-    await K.fonts();
-    const { c, x } = K.canvas(2), W = K.W, H = K.H;
+  async function classic(scale) {
+    const K = window.pdCard; await K.fonts();
+    const { c, x } = K.canvas(scale), W = K.W, H = K.H;
     const el = $(sc === "b" ? "sc-b" : "sc-a"), bg = await img(el.currentSrc || el.src);
     const pk = await img("{{ asset('v21/pinky-scroll.webp') }}");
     x.fillStyle = "#1c120a"; x.fillRect(0, 0, W, H);
@@ -316,11 +336,47 @@ body { background: #1c120a; }
     const st = streaks(); x.fillStyle = "#f1d9c2"; x.font = '800 28px "Nunito", sans-serif'; x.fillText(`${T(st.cur === 1 ? "1 day streak" : `${st.cur} day streak`)} · ${T("The daily Pocket Dragons puzzle")}`, 70, 486);
     x.fillStyle = "#ffcd6e"; x.font = '800 26px "Nunito", sans-serif'; x.fillText("pdtools.xyz/dragondle", 70, 606);
     K.grain(x, .05);
-    c.toBlob(async (b) => {
-      try { const how = await window.pdSave(b, `dragondle-${G.n}.png`); if (how === "saved" || how === "shared") toast(T("Card saved. Add it to your post on X.")); }
-      catch (e) { toast(T("Could not make the card. Try again.")); }
-      saving = false;
-    }, "image/png");
+    return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
+  }
+  const ART = { nest: "{{ asset('v21/dle-nest.jpg') }}", egg: "{{ asset('v21/dle-egg.webp') }}", eggB: "{{ asset('v21/dle-egg-blinky.webp') }}",
+    eggP: "{{ asset('v21/dle-egg-pinky.webp') }}", library: "{{ asset('v21/dragondle-a-s.jpg') }}", pinkyQuill: "{{ asset('v21/dle-pinky-quill.webp') }}",
+    stars: "{{ asset('v21/dle-stars.jpg') }}", photo: "{{ asset('v21/dle-polaroid.jpg') }}", stickerA: "{{ asset('v21/stickers/st-b-party.webp') }}", stickerB: "{{ asset('v21/stickers/st-p-heart.webp') }}" };
+  const gifUrl = () => `/dragondle/card.gif?n=${G.n}&m=${mine.marks.join("")}&st=${streaks().cur}`;
+  async function makeCard(style, scale) {
+    if (style === "gif") { const r = await fetch(gifUrl()); if (!r.ok) throw new Error("gif"); return r.blob(); }
+    if (style !== "classic" && window.pdDleCards) {
+      if (window.pdCard) await window.pdCard.fonts();
+      return window.pdDleCards.draw(style, { n: G.n, marks: mine.marks, total: G.qs.length, streak: streaks().cur, T, art: ART }, scale);
+    }
+    return classic(scale);
+  }
+  let look = "classic"; try { const v = localStorage.getItem("pd:dle:card"); if (["classic", "hatch", "gif", "report", "stars", "polaroid"].includes(v)) look = v; } catch (e) { /* fine */ }
+  let prevUrl = null, prevGen = 0;
+  async function preview() {
+    if (mine.marks.length < G.qs.length) return;
+    const me = ++prevGen, im = $("card-prev"); im.classList.add("loading"); $("card-wait").hidden = false;
+    document.querySelectorAll("[data-card]").forEach((b) => b.setAttribute("aria-checked", b.dataset.card === look ? "true" : "false"));
+    try {
+      const src = look === "gif" ? gifUrl() : URL.createObjectURL(await makeCard(look, 1));
+      if (me !== prevGen) return;
+      if (prevUrl) URL.revokeObjectURL(prevUrl); prevUrl = look === "gif" ? null : src;
+      im.onload = () => { if (me === prevGen) { im.classList.remove("loading"); $("card-wait").hidden = true; } };
+      im.src = src;
+    } catch (e) { $("card-wait").textContent = T("Could not make the card. Try again."); }
+  }
+  document.querySelectorAll("[data-card]").forEach((b) => b.addEventListener("click", () => {
+    look = b.dataset.card; try { localStorage.setItem("pd:dle:card", look); } catch (e) { /* fine */ }
+    $("card-wait").textContent = T("Painting your card…"); preview();
+  }));
+  let saving = false;
+  $("save").addEventListener("click", async () => {
+    if (saving) return; saving = true;
+    try {
+      const b = await makeCard(look, 2);
+      const how = await window.pdSave(b, `dragondle-${G.n}${look === "classic" ? "" : "-" + look}.${look === "gif" ? "gif" : "png"}`);
+      if (how === "saved" || how === "shared") toast(T("Card saved. Add it to your post on X."));
+    } catch (e) { toast(T("Could not make the card. Try again.")); }
+    saving = false;
   });
 
   if (window.radarLang && window.radarLang !== "en" && !G.qs.every((q) => q.tr && q.tr[window.radarLang])) $("en-note").hidden = false;

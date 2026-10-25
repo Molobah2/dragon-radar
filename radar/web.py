@@ -1317,7 +1317,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         except Exception:  # noqa: BLE001  a broken picture shows the first letter instead
             return None
 
-    def card_png(key, make):
+    def card_png(key, make, mime="image/jpeg"):
         hit = v21_png.get(key)
         if not (hit and time.time() - hit[0] < 6 * 3600):
             ip = client_ip(); nowt = time.time()
@@ -1330,7 +1330,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             if len(v21_png) > 80:
                 v21_png.clear()
             v21_png[key] = (time.time(), make()); hit = v21_png[key]
-        r = app.response_class(hit[1], mimetype="image/jpeg")
+        r = app.response_class(hit[1], mimetype=mime)
         if cfg.v21_public:
             r.headers["Cache-Control"] = "public, max-age=1800"     # X and browsers may keep a card for half an hour
         else:
@@ -1376,6 +1376,16 @@ def create_app(cfg: Config | None = None) -> Flask:
     def _joined(person):
         at = datetime.fromisoformat(person["at"].rstrip("Z"))
         return f"{at.strftime('%b')} {at.day}, {at.year}"
+
+    @app.get("/dragondle/card.gif")
+    @v21_only
+    def dragondle_gif():
+        """The animated Dragondle card. It only ever knows right or wrong per question, never an answer."""
+        from .dle_gif import card
+        n, m, st = request.args.get("n", ""), request.args.get("m", ""), request.args.get("st", "0")
+        if not (n.isdigit() and 0 < int(n) < 100000 and re.fullmatch(r"[01]{5}", m) and st.isdigit() and int(st) < 100000):
+            abort(404)
+        return card_png(f"dg:{n}:{m}:{st}", lambda: card(int(n), [int(c) for c in m], int(st)), mime="image/gif")
 
     @app.get("/welcome/<handle>.png")
     @v21_only

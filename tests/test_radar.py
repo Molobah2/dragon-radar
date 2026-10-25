@@ -1628,7 +1628,7 @@ def test_speed_budget(cfg, Session):
         assert size < code_max, f"{path}: scripts and styles {size} bytes"
     assert len(c.get("/static/i18n.js").get_data()) < 4000
     for lang in ("es", "ru", "zh"):
-        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 41_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker, then the help page, then the v2.1 welcome lane and Creator of the week, then Wrapped and Dragondle, then Cheers, the sticker shelf and the Hatchery canvas
+        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 42_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker, then the help page, then the v2.1 welcome lane and Creator of the week, then Wrapped and Dragondle, then Cheers, the sticker shelf and the Hatchery canvas, then the v2.1 daily goal and the Dragondle card looks
     page = c.get("/friends").get_data(as_text=True)
     assert "e_background_removal" not in page            # icons are small stored files, not cut out per view
 
@@ -2706,3 +2706,24 @@ def test_daily_goal_mix_with_v21(cfg, Session):
     assert q["a"] == "10"
     merged = cloudsave.merge({"goal": {"day": "2026-10-25", "n": 3, "d": True}}, {"goal": {"day": "2026-10-25", "n": 7, "f": True}})
     assert merged["goal"] == {"day": "2026-10-25", "n": 7, "d": True, "f": True}
+
+
+def test_dragondle_cards_and_gif(cfg, Session):
+    """The result screen offers six card looks, and the animated one is a real looping GIF painted from right or wrong
+    per question only. Bad input gets a 404, and the GIF stays behind the v2.1 lock."""
+    from PIL import Image
+    import io
+    app, c = _v21_client(cfg)
+    page = c.get("/dragondle").get_data(as_text=True)
+    for look in ("classic", "hatch", "gif", "report", "stars", "polaroid"):
+        assert f'data-card="{look}"' in page
+    assert "v21/dlecards.js" in page
+    r = c.get("/dragondle/card.gif?n=2&m=10110&st=3")
+    assert r.status_code == 200 and r.mimetype == "image/gif" and r.data[:3] == b"GIF"
+    im = Image.open(io.BytesIO(r.data))
+    assert im.size == (800, 450) and im.n_frames > 30
+    assert len(r.data) < 2_500_000
+    for bad in ("n=2&m=1011&st=3", "n=x&m=10110&st=3", "n=2&m=10210&st=3", "n=2&m=10110&st=-1"):
+        assert c.get("/dragondle/card.gif?" + bad).status_code == 404, bad
+    stranger = app.test_client()
+    assert stranger.get("/dragondle/card.gif?n=2&m=10110&st=3").status_code == 404
