@@ -2748,3 +2748,24 @@ def test_dragondle_cards_and_gif(cfg, Session):
         assert c.get("/dragondle/card.gif?" + bad).status_code == 404, bad
     stranger = app.test_client()
     assert stranger.get("/dragondle/card.gif?n=2&m=10110&st=3").status_code == 404
+
+
+def test_tester_bar_walks_testers_through_every_tool(cfg, Session):
+    """Unlocked testers get one small bar on each tool to test: the step number, a tick, the next tool, and a list
+    of all nine. Unlocking starts them at step 1. Strangers never see it, and it goes away when v2.1 opens."""
+    app, c = _v21_client(cfg)
+    r = c.get("/lab/circle/on"); assert r.status_code == 302 and r.headers["Location"].endswith("/welcome")
+    order = ["/welcome", "/creator", "/wrapped", "/dragondle", "/cheers", "/stickers", "/canvas", "/circle", "/friends"]
+    for i, path in enumerate(order):
+        page = c.get(path).get_data(as_text=True)
+        assert 'id="tbar"' in page, path
+        assert f'<span id="tb-count">{i + 1}</span> of 9' in page, path
+        if i + 1 < len(order):
+            assert f'class="tb-next" href="{order[i + 1]}"' in page, path
+        else:
+            assert "Report" in page
+    assert 'id="tbar"' not in c.get("/").get_data(as_text=True) and 'id="tbar"' not in c.get("/friends/keepers").get_data(as_text=True)
+    plain = app.test_client(); plain.get("/preview/secret-preview-phrase-123")
+    assert 'id="tbar"' not in plain.get("/friends").get_data(as_text=True)
+    cfg.v21_public = True
+    assert 'id="tbar"' not in c.get("/welcome").get_data(as_text=True)

@@ -239,7 +239,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         """Jon turns the locked Dragon Circle on or off for the one device he is holding."""
         if mode not in ("on", "off") or not cfg.preview_key or not hmac.compare_digest(request.cookies.get(PREVIEW_COOKIE, ""), preview_token()):
             abort(404)
-        resp = redirect("/circle" if mode == "on" else url_for("lab"))
+        resp = redirect("/welcome" if mode == "on" else url_for("lab"))     # testers start at step 1 of the tester bar
         if mode == "on":
             resp.set_cookie(CIRCLE_COOKIE, circle_token(), max_age=60 * 60 * 24 * 365, secure=request.is_secure, httponly=True, samesite="Lax", path="/")
         else:
