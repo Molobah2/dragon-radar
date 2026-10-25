@@ -70,7 +70,7 @@
   // a brand new Keeper's first egg needs half the usual goal (set in app.js), so the first visit ends with a dragon
   const goalNow = () => (window.pdGoalNow ? window.pdGoalNow() : GOAL);
   function goalDone() {
-    if (window.pdGoalDone) return window.pdGoalDone();     // the feed knows the whole goal (v2.1: posts, Dragondle, follow)
+    if (window.pdGoalDone) return window.pdGoalDone();     // the feed knows the whole goal (v2.1: posts, Dragon Quiz, follow)
     const g = store.get("pd:goal", null); return !!g && g.day === today() && (g.n || 0) >= goalNow();
   }
   // the goal streak: days in a row with the daily goal finished

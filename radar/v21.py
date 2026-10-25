@@ -298,7 +298,7 @@ TOOLS = [
     ("/welcome", "Welcome lane", "Say hi to Keepers who just joined the Ancient Hatchery.", "v21/welcome-bg-s.jpg", "v21/blinky-lantern.webp"),
     ("/creator", "Creator of the week", "Pinky spotlights one Keeper who made the hatchery brighter.", "v21/creator-bg-s.jpg", "v21/pinky-frame.webp"),
     ("/wrapped", "Hatchery Wrapped", "Your month in the hatchery as a story to share.", "v21/wrapped-b-s.jpg", "v21/blinky-scope.webp"),
-    ("/dragondle", "Dragondle", "Five Pocket Dragons questions a day, the same for everyone.", "v21/dragondle-a-s.jpg", "v21/pinky-scroll.webp"),
+    ("/quiz", "Dragon Quiz", "Five Pocket Dragons questions a day, the same for everyone.", "v21/dragondle-a-s.jpg", "v21/pinky-scroll.webp"),
     ("/cheers", "Cheers", "Send a thank you lantern to a fellow Keeper.", "v21/cheers-a-s.jpg", "v21/blinky-skylantern.webp"),
     ("/stickers", "Sticker shelf", "Blinky and Pinky stickers for your posts and replies.", "v21/stickers-a-s.jpg", "v21/stickers/st-p-heart.webp"),
     ("/canvas", "Hatchery canvas", "Decorate a sky island and save it as a card.", "v21/canvas-a-s.jpg", "v21/stickers/st-b-gm.webp"),

@@ -36,6 +36,7 @@
 .gs-row.ok .gs-tick { background: #22c55e; box-shadow: none; }
 .gs-t b { display: block; font-size: 14.5px; font-weight: 800; }
 .gs-row.ok .gs-t b { color: var(--ink-soft, #6b6584); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.gs-row.skip { opacity: .62; } .gs-row.skip .gs-tick { background: rgba(107, 79, 216, .12); color: var(--ink-soft, #6b6584); box-shadow: none; }
 .gs-t small { display: block; font-size: 12.5px; color: var(--ink-soft, #6b6584); font-weight: 700; }
 .gs-go { display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: 999px; font-weight: 900; font-size: 13.5px; text-decoration: none;
   color: #fff; background: linear-gradient(180deg, #8b6cf0, #6b4fd8); white-space: nowrap; }
@@ -120,7 +121,7 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
     <div class="meter"><i id="meter"></i></div>
     <span class="meter-label"><span id="m-done">0 opened</span> · <span id="m-total">0 posts</span></span>
     <button class="streak" id="streak" type="button" hidden></button>
-    <button class="goal" id="goal" type="button" title="{{ 'Daily goal: 10 Keeper posts, the Dragondle and 1 new follow' if (v2 and v21_open) else ('Daily goal: open 20 posts from fellow Keepers' if v2 else 'Daily goal: open 5 posts that need love') }}"><span class="goal-egg" id="goal-egg" aria-hidden="true"></span><span id="goal-text">{% if v2 and v21_open %}Daily goal 0%{% else %}{{ '0/20 Keeper posts' if v2 else '0/5 quiet posts' }} today{% endif %}</span></button>
+    <button class="goal" id="goal" type="button" title="{{ 'Daily goal: 10 Keeper posts, the Dragon Quiz and 1 new follow' if (v2 and v21_open) else ('Daily goal: open 20 posts from fellow Keepers' if v2 else 'Daily goal: open 5 posts that need love') }}"><span class="goal-egg" id="goal-egg" aria-hidden="true"></span><span id="goal-text">{% if v2 and v21_open %}Daily goal 0%{% else %}{{ '0/20 Keeper posts' if v2 else '0/5 quiet posts' }} today{% endif %}</span></button>
   </div>
 
   <section class="pulse" id="pulse" aria-label="Community pulse">
@@ -397,7 +398,7 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
         <span class="dex-dots" id="dex-dots" aria-hidden="true"><i></i><i></i><i></i></span>
         <button class="dex-arrow" id="dex-next-page" type="button" aria-label="Next page">&#8250;</button>
       </div>
-      <p class="dex-how">{% if v21_open %}Finish the daily goal to hatch one egg: open 10 Keeper posts, play the Dragondle and follow 1 new Keeper.{% else %}Cheer on 20 fellow Keepers a day to hatch one egg.{% endif %} New dragons come at a steady pace, so keep showing up every day. Rare holo dragons need a 3 day goal streak and golden legends need 7, so do not break the chain. Your dragons live on this device, and the code in My progress moves them to another one.</p>
+      <p class="dex-how">{% if v21_open %}Finish the daily goal to hatch one egg: open 10 Keeper posts, play the Dragon Quiz and follow 1 new Keeper.{% else %}Cheer on 20 fellow Keepers a day to hatch one egg.{% endif %} New dragons come at a steady pace, so keep showing up every day. Rare holo dragons need a 3 day goal streak and golden legends need 7, so do not break the chain. Your dragons live on this device, and the code in My progress moves them to another one.</p>
       <div class="sheet-actions dex-actions">
         <button class="btn btn-go" id="dex-save" type="button">Save my book</button>
         <button class="btn btn-go" id="dex-share" type="button" hidden>Share</button>

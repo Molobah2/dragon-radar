@@ -4,7 +4,7 @@
 {% if circle_open and not cfg.v21_public %}
 {% set steps = [
   ("welcome", "/welcome", "Welcome lane"), ("creator", "/creator", "Creator of the week"), ("wrapped", "/wrapped", "Hatchery Wrapped"),
-  ("dragondle", "/dragondle", "Dragondle"), ("cheers", "/cheers", "Cheers"), ("stickers", "/stickers", "Sticker shelf"),
+  ("dragondle", "/quiz", "Dragon Quiz"), ("cheers", "/cheers", "Cheers"), ("stickers", "/stickers", "Sticker shelf"),
   ("canvas", "/canvas", "Hatchery canvas"), ("circle", "/circle", "Dragon Circle"), ("goal", "/friends", "Daily goal")] %}
 {% set ns = namespace(i=-1) %}
 {% for key, path, label in steps %}{% if request.path == path or request.path.startswith(path + "/") and path != "/friends" %}{% set ns.i = loop.index0 %}{% endif %}{% endfor %}

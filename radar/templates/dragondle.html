@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Dragondle #{{ game.n }} · {{ cfg.hub_name or "PD Tools" }}</title>
+  <title>Dragon Quiz #{{ game.n }} · {{ cfg.hub_name or "PD Tools" }}</title>
   <meta name="description" content="Five questions a day about Pocket Dragons lore, badges and pdtools. The same five for everyone. Free, unofficial community tool.">
   <meta name="theme-color" content="#1c120a">
   {% include "_icons.html" %}
@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="{{ asset('v21/v21.css') }}">
 {% include "_speed.html" %}
 <style>
-/* ===== Dragondle: the scroll library ===== */
+/* ===== Dragon Quiz: the scroll library ===== */
 body { background: #1c120a; }
 .dl-world { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
 .dl-world img { position: absolute; inset: -2%; width: 104%; height: 104%; object-fit: cover; transition: opacity 1s var(--ease); animation: drift 40s ease-in-out infinite alternate; }
@@ -43,6 +43,10 @@ body { background: #1c120a; }
 .pip.now { box-shadow: 0 0 0 3px rgba(255, 205, 110, .55), inset 0 -4px 0 rgba(0,0,0,.18); transform: translateY(-3px); }
 .pip.ok { background: radial-gradient(circle at 35% 30%, #fff3c4, #ffc24d 45%, #e08a1e); transform: scale(1.06); }
 .pip.no { background: radial-gradient(circle at 35% 30%, #f0e6da, #b8a898 60%, #7c6b5c); }
+.pip.ok2 { background: radial-gradient(circle at 35% 30%, #ffffff, #d9e1ee 45%, #98a6bb); }
+.pip.ok3 { background: radial-gradient(circle at 35% 30%, #ffe4cc, #f0a66a 45%, #b8692f); }
+.why.retry { font-style: normal; background: rgba(194, 85, 58, .12); color: #7a2a14; }
+.grid-key { margin: -4px 0 6px; font: 800 13px/1.4 var(--body, sans-serif); color: #8a5a32; text-align: center; }
 .pip.ok::after { content: "🐉"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 17px; }
 
 /* parchment */
@@ -102,7 +106,8 @@ body { background: #1c120a; }
 .card-prev span { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 800; color: #8a5a2c; pointer-events: none; }
 .result .next-in { font-size: 13.5px; color: #8a5a2c; font-weight: 800; }
 .bars { width: min(360px, 100%); display: grid; gap: 4px; margin-top: 8px; }
-.bars div { display: grid; grid-template-columns: 22px 1fr 34px; align-items: center; gap: 8px; font: 800 13px/1 var(--body); color: #6b4a32; }
+.bars div { display: grid; grid-template-columns: 62px 1fr 34px; align-items: center; gap: 8px; font: 800 13px/1 var(--body); color: #6b4a32; }
+.bars div span:first-child { white-space: nowrap; text-align: right; min-width: 22px; }
 .bars i { display: block; height: 14px; border-radius: 6px; background: rgba(120, 60, 20, .12); overflow: hidden; }
 .bars i::after { content: ""; display: block; height: 100%; width: var(--w); background: linear-gradient(90deg, #ffcf6b, #ff9d5c); border-radius: inherit; transition: width 1s var(--ease); }
 .bars .me i::after { background: linear-gradient(90deg, #79c95a, #3f9a35); }
@@ -127,7 +132,7 @@ body { background: #1c120a; }
 
 <div class="dl-app">
   <header class="v-bar">
-    <a class="v-brand" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="38" height="38"><span>PD Tools<small>Dragondle</small></span></a>
+    <a class="v-brand" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="38" height="38"><span>PD Tools<small>Dragon Quiz</small></span></a>
     <div class="v-tools">
       <div class="scene-pick" role="group" aria-label="Scene"><button type="button" data-sc="a" aria-pressed="true">Library</button><button type="button" data-sc="b" aria-pressed="false">Archive</button></div>
       <label class="pill" title="Language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><select id="lang-select" aria-label="Language"></select></label>
@@ -136,9 +141,9 @@ body { background: #1c120a; }
 
   <main class="dl-main">
     <div class="dl-head">
-      <span class="kick">Dragondle #{{ game.n }}</span>
+      <span class="kick">Dragon Quiz #{{ game.n }}</span>
       <h1 data-i18n-html="dlH1">Five questions. <span>Same for everyone.</span></h1>
-      <p>Pocket Dragons lore, badges and pdtools. A new set every day at midnight UTC.</p>
+      <p>{% if game.tries > 1 %}Pocket Dragons lore, badges and pdtools. Three tries a question. A new set every day at midnight UTC.{% else %}Pocket Dragons lore, badges and pdtools. A new set every day at midnight UTC.{% endif %}</p>
       <div class="pips" id="pips" aria-hidden="true">{% for q in game.qs %}<i class="pip"></i>{% endfor %}</div>
     </div>
 
@@ -151,9 +156,10 @@ body { background: #1c120a; }
     </section>
 
     <section class="sheet result" id="done" hidden>
-      <span class="cat">Dragondle #{{ game.n }}</span>
+      <span class="cat">Dragon Quiz #{{ game.n }}</span>
       <div class="score" id="score"></div>
       <div class="grid" id="grid" aria-label="Your answers"></div>
+      <p class="grid-key" id="grid-key" hidden>🟩 First try · 🟨 Second try · 🟧 Third try · 🟥 Missed</p>
       <p class="line" id="line"></p>
       <p class="line" id="beat" hidden></p>
       <div class="nums"><div><b id="st-streak">0</b><span>Day streak</span></div><div><b id="st-best">0</b><span>Best streak</span></div><div><b id="st-played">0</b><span>Days played</span></div></div>
@@ -166,7 +172,7 @@ body { background: #1c120a; }
         <button type="button" role="radio" data-card="stars" aria-checked="false"><img src="{{ asset('v21/dle-stars.jpg') }}" alt="" loading="lazy">Stargazing</button>
         <button type="button" role="radio" data-card="polaroid" aria-checked="false"><img src="{{ asset('v21/dle-polaroid.jpg') }}" alt="" loading="lazy">Polaroid</button>
       </div>
-      <div class="card-prev"><img id="card-prev" alt="Your Dragondle card"><span id="card-wait">Painting your card…</span></div>
+      <div class="card-prev"><img id="card-prev" alt="Your Dragon Quiz card"><span id="card-wait">Painting your card…</span></div>
       <div class="acts">
         <a class="btn go" id="share" target="_blank" rel="noopener" href="#"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.2 2.5h3.4l-7.4 8.4 8.7 11.6h-6.8l-5.3-7-6.1 7H1.3l7.9-9L.9 2.5h7l4.8 6.4 5.5-6.4z"/></svg>Share your grid</a>
         <button class="btn ghost" id="save" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Save the card</button>
@@ -237,9 +243,15 @@ body { background: #1c120a; }
   let all = store.get(saveKey, {}); if (!plainObj(all)) all = {};
   const plays = plainObj(all.plays) ? all.plays : {};
   const marksOf = (p) => (plainObj(p) && Array.isArray(p.marks) ? p.marks.filter((m) => m === 0 || m === 1).slice(0, 5) : []);
+  // from Dragon Quiz #3: three tries a question. t holds the try each was solved on (1 to 3, 0 missed), w the wrong
+  // picks so far on the open question, so a reload carries on where the Keeper left off
+  const MAXT = G.tries || 1, MAX = G.max || G.qs.length;
+  const triesOf = (p) => (plainObj(p) && Array.isArray(p.t) ? p.t.filter((v) => v >= 0 && v <= MAXT && v === (v | 0)).slice(0, 5) : []);
   let mine = { ...(plainObj(plays[G.n]) ? plays[G.n] : {}), marks: marksOf(plays[G.n]) };
+  if (MAXT > 1) { mine.t = triesOf(plays[G.n]); mine.marks = mine.t.map((v) => (v ? 1 : 0)); mine.w = Array.isArray(mine.w) ? mine.w.filter((v) => v >= 0 && v < 4).slice(0, 3) : []; }
   const pips = [...document.querySelectorAll(".pip")];
-  function paintPips() { pips.forEach((p, i) => { p.className = "pip" + (mine.marks[i] === 1 ? " ok" : mine.marks[i] === 0 ? " no" : i === mine.marks.length ? " now" : ""); }); }
+  function paintPips() { pips.forEach((p, i) => { const t = mine.t ? mine.t[i] : mine.marks[i];
+    p.className = "pip" + (mine.marks[i] === 1 ? (t === 2 ? " ok ok2" : t === 3 ? " ok ok3" : " ok") : mine.marks[i] === 0 ? " no" : i === mine.marks.length ? " now" : ""); }); }
   // the question in the Keeper's language when the bank has it (the site language is picked before this runs)
   const loc = (q) => (q.tr && window.radarLang && q.tr[window.radarLang]) || q;
   function show(i) {
@@ -252,13 +264,30 @@ body { background: #1c120a; }
       const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.textContent = o;
       b.addEventListener("click", () => answer(i, j)); $("opts").append(b);
     });
+    if (MAXT > 1 && mine.w.length) { const btns = [...$("opts").children]; mine.w.forEach((k) => { if (btns[k]) { btns[k].disabled = true; btns[k].classList.add("wrong"); } }); hint(); }
     paintPips();
+  }
+  // a wrong pick on a three tries day: cross it out and let the Keeper try again
+  function hint() {
+    const left = MAXT - mine.w.length, w = $("why"); w.innerHTML = "";
+    const tag = document.createElement("b"); tag.textContent = T("Not quite.") + " ";
+    w.append(tag, document.createTextNode(T(left === 1 ? "Try again, 1 try left." : `Try again, ${left} tries left.`))); w.className = "why on retry";
   }
   function answer(i, j) {
     const q = G.qs[i], btns = [...$("opts").children], ok = j === q.a;
-    btns.forEach((b, k) => { b.disabled = true; if (k === q.a) b.classList.add("right"); else if (k === j) b.classList.add("wrong"); else b.classList.add("dim"); });
-    mine.marks[i] = ok ? 1 : 0; keep();
-    const w = $("why"); w.innerHTML = ""; const tag = document.createElement("b"); tag.textContent = ok ? "Correct. " : "Not quite. "; w.append(tag, Object.assign(document.createElement("span"), { className: "dle-q", textContent: loc(q).why })); w.classList.add("on");
+    if (MAXT > 1 && !ok && mine.w.length + 1 < MAXT) {          // a try left: cross this one out and carry on
+      if (!mine.w.includes(j)) mine.w.push(j);
+      btns[j].disabled = true; btns[j].classList.add("wrong"); keep(); hint();
+      return;
+    }
+    btns.forEach((b, k) => { b.disabled = true; if (k === q.a) b.classList.add("right"); else if (k === j || (mine.w || []).includes(k)) b.classList.add("wrong"); else b.classList.add("dim"); });
+    const tryNo = MAXT > 1 ? (mine.w.length + 1) : 1;
+    mine.marks[i] = ok ? 1 : 0;
+    if (MAXT > 1) { mine.t[i] = ok ? tryNo : 0; mine.w = []; }
+    keep();
+    const w = $("why"); w.innerHTML = ""; const tag = document.createElement("b");
+    tag.textContent = (!ok ? T("Not quite.") : tryNo === 1 ? T("Correct.") : T(`Got it on try ${tryNo}.`)) + " ";
+    w.append(tag, Object.assign(document.createElement("span"), { className: "dle-q", textContent: loc(q).why })); w.className = "why on";
     if (ok) { const p = $("pinky"); p.classList.remove("cheer"); void p.offsetWidth; p.classList.add("cheer"); }
     paintPips();
     const n = $("next"); n.textContent = i === G.qs.length - 1 ? "See my result" : "Next question"; n.classList.add("on"); n.focus({ preventScroll: true });
@@ -273,17 +302,19 @@ body { background: #1c120a; }
     const cur = done.length && done[done.length - 1] === G.n ? run : 0;
     return { cur, best, played: done.length };
   }
-  const score = () => mine.marks.filter((m) => m === 1).length;
-  const grid = () => mine.marks.map((m) => (m === 1 ? "🐉" : "🥚")).join("");
+  // three tries days: 3 points on the first try, 2 on the second, 1 on the third; the grid shows the try in colour
+  const score = () => (MAXT > 1 ? mine.t.reduce((a, v) => a + (v ? MAXT + 1 - v : 0), 0) : mine.marks.filter((m) => m === 1).length);
+  const grid = () => (MAXT > 1 ? mine.t.map((v) => ["🟥", "🟩", "🟨", "🟧"][v] || "🟥").join("") : mine.marks.map((m) => (m === 1 ? "🐉" : "🥚")).join(""));
   function finish() {
     $("play").hidden = true; $("done").hidden = false; paintPips();
     const s = score(), st = streaks();
-    $("score").innerHTML = ""; $("score").append(document.createTextNode(String(s)), Object.assign(document.createElement("small"), { textContent: " / " + G.qs.length }));
+    $("score").innerHTML = ""; $("score").append(document.createTextNode(String(s)), Object.assign(document.createElement("small"), { textContent: " / " + MAX }));
     $("grid").textContent = grid();
-    $("line").textContent = s === 5 ? "A perfect scroll. Pinky is impressed." : s >= 3 ? "Well read, Keeper." : "Every Keeper learns something new. See you tomorrow.";
+    $("line").textContent = s === MAX ? "A perfect scroll. Pinky is impressed." : s >= MAX * .6 ? "Well read, Keeper." : "Every Keeper learns something new. See you tomorrow.";
+    if (MAXT > 1) $("grid-key").hidden = false;
     $("st-streak").textContent = st.cur; $("st-best").textContent = st.best; $("st-played").textContent = st.played;
-    const text = `Dragondle #${G.n} ${s}/${G.qs.length}\n${grid()}\n${T("The daily Pocket Dragons puzzle")} 🐉`;
-    $("share").href = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://pdtools.xyz/dragondle")}`;
+    const text = `Dragon Quiz #${G.n} ${s}/${MAX}\n${grid()}\n${T("The daily Pocket Dragons quiz")} 🐉`;
+    $("share").href = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://pdtools.xyz/quiz")}`;
     countdown(); preview();
     if (!mine.sent) {
       fetch("/api/dragondle", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: vid(), score: s, n: G.n }) })
@@ -295,22 +326,27 @@ body { background: #1c120a; }
   }
   function stats(j, s) {
     if (j.total > 1 && j.beat !== null && j.beat !== undefined) { $("beat").textContent = `You did better than ${j.beat}% of Keepers today.`; $("beat").hidden = false; }
-    const max = Math.max(1, ...j.dist), b = $("bars"); b.innerHTML = "";
-    for (let k = 5; k >= 0; k--) {
-      const row = document.createElement("div"); if (k === s) row.className = "me";
-      const n = document.createElement("span"); n.textContent = k;
+    const top = j.dist.length - 1;
+    // out of 5: one row per score. Out of 15: six bands, 15 on its own and then three scores per row
+    const bands = top <= 5 ? Array.from({ length: top + 1 }, (_, k) => [top - k, top - k])
+      : [[15, 15], [12, 14], [9, 11], [6, 8], [3, 5], [0, 2]].filter(([a]) => a <= top);
+    const counts = bands.map(([a, z]) => j.dist.slice(a, z + 1).reduce((x, y) => x + y, 0));
+    const max = Math.max(1, ...counts), b = $("bars"); b.innerHTML = "";
+    bands.forEach(([a, z], k) => {
+      const row = document.createElement("div"); if (s >= a && s <= z) row.className = "me";
+      const n = document.createElement("span"); n.textContent = a === z ? String(a) : `${a} to ${z}`;
       const bar = document.createElement("i"); bar.style.setProperty("--w", "0%");
-      const c = document.createElement("span"); c.textContent = j.dist[k];
+      const c = document.createElement("span"); c.textContent = counts[k];
       row.append(n, bar, c); b.append(row);
-      requestAnimationFrame(() => requestAnimationFrame(() => bar.style.setProperty("--w", Math.round(100 * j.dist[k] / max) + "%")));
-    }
+      requestAnimationFrame(() => requestAnimationFrame(() => bar.style.setProperty("--w", Math.round(100 * counts[k] / max) + "%")));
+    });
     b.hidden = false;
   }
   function countdown() {
     const tick = () => {
       const now = new Date(), next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
       const ms = next - now.getTime(), h = Math.floor(ms / 3600e3), m = Math.floor(ms / 60e3) % 60;
-      $("next-in").textContent = `Next Dragondle in ${h}h ${m}m`;
+      $("next-in").textContent = `Next Dragon Quiz in ${h}h ${m}m`;
     };
     tick(); setInterval(tick, 30e3);
   }
@@ -329,24 +365,24 @@ body { background: #1c120a; }
     let g = x.createLinearGradient(0, 0, W, 0); g.addColorStop(0, "rgba(20,10,4,.86)"); g.addColorStop(.62, "rgba(20,10,4,.35)"); g.addColorStop(1, "rgba(20,10,4,.1)");
     x.fillStyle = g; x.fillRect(0, 0, W, H);
     if (pk) { const h = 520, w = pk.width * h / pk.height; x.save(); x.shadowColor = "rgba(0,0,0,.55)"; x.shadowBlur = 40; x.shadowOffsetY = 20; x.drawImage(pk, W - w - 40, H - h - 20, w, h); x.restore(); }
-    K.pill(x, `DRAGONDLE #${G.n}`, 70, 92, { bg: "#ffcd6e", ink: "#3a1a06" });
+    K.pill(x, `DRAGON QUIZ #${G.n}`, 70, 92, { bg: "#ffcd6e", ink: "#3a1a06" });
     x.textAlign = "left"; x.fillStyle = "#fff7ec"; x.font = '700 150px "Fredoka", sans-serif'; x.fillText(String(score()), 66, 300);
-    const sw = x.measureText(String(score())).width; x.fillStyle = "#ffcd6e"; x.font = '700 64px "Fredoka", sans-serif'; x.fillText(`/ ${G.qs.length}`, 66 + sw + 14, 300);
+    const sw = x.measureText(String(score())).width; x.fillStyle = "#ffcd6e"; x.font = '700 64px "Fredoka", sans-serif'; x.fillText(`/ ${MAX}`, 66 + sw + 14, 300);
     x.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; x.fillText(grid(), 66, 410);
-    const st = streaks(); x.fillStyle = "#f1d9c2"; x.font = '800 28px "Nunito", sans-serif'; x.fillText(`${T(st.cur === 1 ? "1 day streak" : `${st.cur} day streak`)} · ${T("The daily Pocket Dragons puzzle")}`, 70, 486);
-    x.fillStyle = "#ffcd6e"; x.font = '800 26px "Nunito", sans-serif'; x.fillText("pdtools.xyz/dragondle", 70, 606);
+    const st = streaks(); x.fillStyle = "#f1d9c2"; x.font = '800 28px "Nunito", sans-serif'; x.fillText(`${T(st.cur === 1 ? "1 day streak" : `${st.cur} day streak`)} · ${T("The daily Pocket Dragons quiz")}`, 70, 486);
+    x.fillStyle = "#ffcd6e"; x.font = '800 26px "Nunito", sans-serif'; x.fillText("pdtools.xyz/quiz", 70, 606);
     K.grain(x, .05);
     return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
   }
   const ART = { nest: "{{ asset('v21/dle-nest.jpg') }}", egg: "{{ asset('v21/dle-egg.webp') }}", eggB: "{{ asset('v21/dle-egg-blinky.webp') }}",
     eggP: "{{ asset('v21/dle-egg-pinky.webp') }}", library: "{{ asset('v21/dragondle-a-s.jpg') }}", pinkyQuill: "{{ asset('v21/dle-pinky-quill.webp') }}",
     stars: "{{ asset('v21/dle-stars.jpg') }}", photo: "{{ asset('v21/dle-polaroid.jpg') }}", stickerA: "{{ asset('v21/stickers/st-b-party.webp') }}", stickerB: "{{ asset('v21/stickers/st-p-heart.webp') }}" };
-  const gifUrl = () => `/dragondle/card.gif?n=${G.n}&m=${mine.marks.join("")}&st=${streaks().cur}`;
+  const gifUrl = () => `/quiz/card.gif?n=${G.n}&m=${(MAXT > 1 ? mine.t : mine.marks).join("")}&st=${streaks().cur}`;
   async function makeCard(style, scale) {
     if (style === "gif") { const r = await fetch(gifUrl()); if (!r.ok) throw new Error("gif"); return r.blob(); }
     if (style !== "classic" && window.pdDleCards) {
       if (window.pdCard) await window.pdCard.fonts();
-      return window.pdDleCards.draw(style, { n: G.n, marks: mine.marks, total: G.qs.length, streak: streaks().cur, T, art: ART }, scale);
+      return window.pdDleCards.draw(style, { n: G.n, marks: mine.marks, tries: MAXT > 1 ? mine.t : null, points: score(), max: MAX, total: G.qs.length, streak: streaks().cur, T, art: ART }, scale);
     }
     return classic(scale);
   }
@@ -373,7 +409,7 @@ body { background: #1c120a; }
     if (saving) return; saving = true;
     try {
       const b = await makeCard(look, 2);
-      const how = await window.pdSave(b, `dragondle-${G.n}${look === "classic" ? "" : "-" + look}.${look === "gif" ? "gif" : "png"}`);
+      const how = await window.pdSave(b, `dragon-quiz-${G.n}${look === "classic" ? "" : "-" + look}.${look === "gif" ? "gif" : "png"}`);
       if (how === "saved" || how === "shared") toast(T("Card saved. Add it to your post on X."));
     } catch (e) { toast(T("Could not make the card. Try again.")); }
     saving = false;

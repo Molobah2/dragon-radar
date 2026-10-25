@@ -2401,9 +2401,10 @@ def test_welcome_lane_hellos_count_in_the_feed():
 def test_wave2_pages_stay_locked(cfg, Session):
     app, c = _v21_client(cfg)
     stranger = app.test_client()
-    for path in ("/wrapped", "/api/wrapped?vid=" + "a" * 32, "/dragondle", "/lab/dragondle"):
+    for path in ("/wrapped", "/api/wrapped?vid=" + "a" * 32, "/quiz", "/dragondle", "/lab/dragondle"):
         assert stranger.get(path).status_code == 404, path
-        assert c.get(path).status_code == 200, path
+        assert c.get(path).status_code == (301 if path == "/dragondle" else 200), path
+    assert c.get("/dragondle").headers["Location"].endswith("/quiz")          # the old name keeps working
     assert stranger.post("/api/dragondle", json={"vid": "a" * 32, "score": 3, "n": 1}).status_code == 404
 
 
@@ -2586,11 +2587,11 @@ def test_v21_launch_switch_opens_tools_and_shares_cards(cfg, Session):
     while the Dragon Circle stays locked. Before that, strangers get 404 and cards stay private."""
     cfg.v2_public = True
     locked = create_app(cfg).test_client()
-    for path in ("/welcome", "/creator", "/wrapped", "/dragondle", "/cheers", "/stickers", "/canvas"):
+    for path in ("/welcome", "/creator", "/wrapped", "/quiz", "/cheers", "/stickers", "/canvas"):
         assert locked.get(path).status_code == 404, path
     cfg.v21_public = True
     c = create_app(cfg).test_client()
-    for path in ("/welcome", "/creator", "/wrapped", "/dragondle", "/cheers", "/stickers", "/canvas"):
+    for path in ("/welcome", "/creator", "/wrapped", "/quiz", "/cheers", "/stickers", "/canvas"):
         assert c.get(path).status_code == 200, path
     assert c.get("/stickers/p-wave.png").headers["Cache-Control"].startswith("public")
     assert c.get("/circle").status_code == 404                       # the Circle keeps its own lock
@@ -2745,7 +2746,7 @@ def test_dragondle_cards_and_gif(cfg, Session):
     from PIL import Image
     import io
     app, c = _v21_client(cfg)
-    page = c.get("/dragondle").get_data(as_text=True)
+    page = c.get("/quiz").get_data(as_text=True)
     for look in ("classic", "hatch", "gif", "report", "stars", "polaroid"):
         assert f'data-card="{look}"' in page
     assert "v21/dlecards.js" in page
@@ -2758,6 +2759,10 @@ def test_dragondle_cards_and_gif(cfg, Session):
         assert c.get("/dragondle/card.gif?" + bad).status_code == 404, bad
     stranger = app.test_client()
     assert stranger.get("/dragondle/card.gif?n=2&m=10110&st=3").status_code == 404
+    # from Dragon Quiz #3 each digit is the try it was solved on (1 to 3, 0 missed), at the new address
+    r = c.get("/quiz/card.gif?n=3&m=12301&st=2")
+    assert r.status_code == 200 and r.data[:3] == b"GIF"
+    assert c.get("/quiz/card.gif?n=3&m=12401&st=2").status_code == 404 and c.get("/quiz/card.gif?n=2&m=12301&st=2").status_code == 404
 
 
 def test_tester_bar_walks_testers_through_every_tool(cfg, Session):
@@ -2765,7 +2770,7 @@ def test_tester_bar_walks_testers_through_every_tool(cfg, Session):
     of all nine. Unlocking starts them at step 1. Strangers never see it, and it goes away when v2.1 opens."""
     app, c = _v21_client(cfg)
     r = c.get("/lab/circle/on"); assert r.status_code == 302 and r.headers["Location"].endswith("/welcome")
-    order = ["/welcome", "/creator", "/wrapped", "/dragondle", "/cheers", "/stickers", "/canvas", "/circle", "/friends"]
+    order = ["/welcome", "/creator", "/wrapped", "/quiz", "/cheers", "/stickers", "/canvas", "/circle", "/friends"]
     for i, path in enumerate(order):
         page = c.get(path).get_data(as_text=True)
         assert 'id="tbar"' in page, path
@@ -2809,3 +2814,29 @@ def test_every_dragon_has_a_clean_cutout_for_wrapped():
         assert f.exists(), k
         im = Image.open(f)
         assert im.mode == "RGBA" and im.getpixel((2, 2))[3] == 0, k          # the corner is see-through
+
+
+def test_dragon_quiz_three_tries_and_fifteen_points(cfg, Session):
+    """The quiz is now the Dragon Quiz at /quiz. From #3 every question gets three tries (3, 2 or 1 points, 0 if
+    missed), so a day scores out of 15; days 1 and 2 keep their old score out of 5. The API takes scores up to the
+    day's own maximum and the results come back for every possible score."""
+    import json as _json
+    from datetime import timedelta as _td
+    from radar.dragondle import START, max_score, today_set, uses_tries
+    assert not uses_tries(2) and uses_tries(3) and max_score(2) == 5 and max_score(3) == 15
+    g2, g3 = today_set(START + _td(days=1)), today_set(START + _td(days=2))
+    assert (g2["tries"], g2["max"], g3["tries"], g3["max"]) == (1, 5, 3, 15)
+    app, c = _v21_client(cfg)
+    page = c.get("/quiz").get_data(as_text=True)
+    assert "Dragon Quiz #" in page and "Dragondle" not in page
+    from radar import web as _w
+    import radar.dragondle as dle
+    real = _w.utcnow
+    try:
+        _w.utcnow = lambda: real().replace(year=2026, month=10, day=26, hour=12)     # Dragon Quiz #3
+        ok = c.post("/api/dragondle", data=_json.dumps({"vid": "a" * 32, "score": 13, "n": 3}), content_type="text/plain").get_json()
+        assert ok["ok"] and ok["max"] == 15 and len(ok["dist"]) == 16 and ok["dist"][13] == 1
+        assert c.post("/api/dragondle", data=_json.dumps({"vid": "b" * 32, "score": 16, "n": 3}), content_type="text/plain").status_code == 400
+        assert "Three tries a question" in c.get("/quiz").get_data(as_text=True)
+    finally:
+        _w.utcnow = real

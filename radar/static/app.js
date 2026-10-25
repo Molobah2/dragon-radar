@@ -479,7 +479,7 @@
 
   // ---------- daily goal, an egg fills up as you go ----------
   // v1: give 5 quiet posts some love. v2: cheer on 20 fellow Keepers' posts (any post that is new to you, not the team's)
-  // v2.1 ("mix"): one percentage from three parts. 10 Keeper posts are worth 50% (5% each), today's Dragondle 25%,
+  // v2.1 ("mix"): one percentage from three parts. 10 Keeper posts are worth 50% (5% each), today's Dragon Quiz 25%,
   // following one new Keeper 25%. The egg hatches at 100%.
   const MIX = data.goal_rule === "mix";
   const GOAL = data.goal || 5, KEEPER_GOAL = data.goal_rule === "keeper" || MIX;
@@ -489,7 +489,7 @@
   if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false };
   // v2: a Keeper who has never hatched an egg needs only half the goal for the first one, so the very first
   // visit can end with a dragon. From the next day on it is the usual goal for everyone.
-  // v2.1: the first egg needs 5 posts and 1 follow; the Dragondle is a bonus that day.
+  // v2.1: the first egg needs 5 posts and 1 follow; the Dragon Quiz is a bonus that day.
   const STARTER = Math.max(1, Math.round(GOAL / 2));
   function firstEgg() {
     const d = store.obj("pd:dex"), log = Array.isArray(d.log) ? d.log : [];
@@ -501,7 +501,7 @@
     if (!KEEPER_GOAL) return GOAL;
     return firstEgg() ? STARTER : GOAL;
   }
-  // today's Dragondle: every answer saved on this device (the set changes at midnight UTC)
+  // today's Dragon Quiz: every answer saved on this device (the set changes at midnight UTC)
   function dleDone() {
     if (goal.d) return true;
     const st = String(data.dle_start || ""); if (!/^\d{4}-\d{2}-\d{2}$/.test(st)) return false;
@@ -525,7 +525,10 @@
     const d = first || dleDone(), f = followDone();
     if (!first && d && !goal.d) { goal.d = true; store.set("pd:goal", goal); }    // kept with the goal, so it syncs too
     if (f && !goal.f) { goal.f = true; store.set("pd:goal", goal); }
-    const pct = Math.min(100, Math.round((n / P) * 50 + (d ? 25 : 0) + (f ? 25 : 0)));
+    // a brand new Keeper's first egg skips the Dragon Quiz, so posts and the follow share the whole 100%
+    // (no free 25% on arrival, which looked like the goal had not loaded right)
+    const pct = first ? Math.min(100, Math.round((n / P) * 70 + (f ? 30 : 0)))
+      : Math.min(100, Math.round((n / P) * 50 + (d ? 25 : 0) + (f ? 25 : 0)));
     return { first, P, n, d, f, pct };
   }
   function goalDone() {
@@ -575,7 +578,8 @@
     steps.querySelector(".gs-bar i").style.width = `${g.pct}%`;
     steps.querySelector(".gs-list").innerHTML =
       row("posts", g.n >= g.P, `Open ${g.P} Keeper posts`, `${g.n}/${g.P}`, "#feed", "Go")
-      + row("dle", g.d, "Play today's Dragondle", g.first ? "Not needed for your first egg" : "", "/dragondle", "Play")
+      + (g.first ? `<li class="gs-row skip"><i class="gs-tick" aria-hidden="true">\u2013</i><span class="gs-t"><b>Play today's Dragon Quiz</b><small>Not needed for your first egg</small></span></li>`
+        : row("dle", g.d, "Play today's Dragon Quiz", "", "/quiz", "Play"))
       + row("follow", g.f, "Follow 1 new Keeper", "", "/friends/keepers", "Find one");
   }
   if (MIX) {
@@ -590,7 +594,7 @@
     });
     document.addEventListener("click", (e) => { if (!steps.hidden && !steps.contains(e.target) && !$("goal").contains(e.target)) closeSteps(); });
     addEventListener("keydown", (e) => { if (e.key === "Escape") closeSteps(); });
-    // finished on another page or tab (the Dragondle, the Keepers directory): the goal catches up straight away
+    // finished on another page or tab (the Dragon Quiz, the Keepers directory): the goal catches up straight away
     addEventListener("storage", (e) => { if (["pd:dle", "radar:followed", "pd:goal", "radar:kleft"].includes(e.key)) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
   }

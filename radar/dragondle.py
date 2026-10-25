@@ -7,8 +7,19 @@ the economy. Each entry keeps a short note on where the answer comes from so Jon
 import random
 from datetime import date
 
-START = date(2026, 10, 24)          # Dragondle #1
+START = date(2026, 10, 24)          # Dragondle #1 (renamed Dragon Quiz on day 2)
 PER_DAY = 5
+# From Dragon Quiz #3 each question gets three tries: 3 points on the first, 2 on the second, 1 on the third, 0 missed,
+# so a day scores out of 15. Days before that scored one point per right answer, out of 5.
+TRIES_FROM, TRIES = 3, 3
+
+
+def uses_tries(n: int) -> bool:
+    return n >= TRIES_FROM
+
+
+def max_score(n: int) -> int:
+    return PER_DAY * TRIES if uses_tries(n) else PER_DAY
 
 # q: question, a: right answer, w: three wrong answers, why: one line shown after answering, src: where it comes from
 BANK = [
@@ -108,7 +119,7 @@ BANK = [
      "w": ["announcements", "share-content", "general"], "why": "Typing !quests lists every quest.", "src": "Discord, October 5"},
     # ---------- pdtools ----------
     {"cat": "pdtools", "q": "On pdtools, how many posts from fellow Keepers are part of your daily goal?", "a": "10",
-     "w": ["5", "20", "50"], "why": "Add today's Dragondle and one new follow to reach 100% and hatch an egg.", "src": "pdtools"},
+     "w": ["5", "20", "50"], "why": "Add today's Dragon Quiz and one new follow to reach 100% and hatch an egg.", "src": "pdtools"},
     {"cat": "pdtools", "q": "How long do you spend on X before an open counts on pdtools?", "a": "8 seconds",
      "w": ["1 second", "1 minute", "5 minutes"], "why": "Real time on the post is what counts as support.", "src": "pdtools"},
     {"cat": "pdtools", "q": "How many dragon stickers can you collect on pdtools?", "a": "35",
@@ -278,7 +289,7 @@ def today_set(day: date) -> dict:
             words = [t["a"]] + list(t["w"])
             tr[lang] = {"q": t["q"], "opts": [words[i] for i in order], "why": t["why"]}
         out.append({"q": e["q"], "opts": [en[i] for i in order], "a": order.index(0), "why": e["why"], "cat": e["cat"], "tr": tr})
-    return {"n": n, "day": day.isoformat(), "qs": out}
+    return {"n": n, "day": day.isoformat(), "qs": out, "tries": TRIES if uses_tries(n) else 1, "max": max_score(n)}
 
 
 def day_of(n: int) -> date:

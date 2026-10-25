@@ -98,7 +98,7 @@ class Cheer(Base):
 
 
 class DlePlay(Base):
-    """One finished Dragondle per browser per day (score 0 to 5), so the page can say how the hatchery did today.
+    """One finished Dragon Quiz per browser per day (score 0 to 5), so the page can say how the hatchery did today.
     Keyed by the browser's own random number, like the other anonymous counts."""
     __tablename__ = "dle_plays"
     day: Mapped[datetime] = mapped_column(Date, primary_key=True)

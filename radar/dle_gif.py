@@ -1,4 +1,4 @@
-"""The animated Dragondle card: five eggs on the straw ledge at sunrise wobble and hatch one by one (only the right
+"""The animated Dragon Quiz card: five eggs on the straw ledge at sunrise wobble and hatch one by one (only the right
 answers hatch), the score counts up, and confetti falls at the end. 800 x 450, about 5 seconds, then it rests on the
 finished picture. No spoilers: it only knows which answers were right."""
 import io
@@ -54,9 +54,13 @@ def _star(d, x, y, r, fill):
     d.polygon(pts, fill=fill)
 
 
-def card(n: int, marks: list[int], streak: int) -> bytes:
-    marks = [1 if m else 0 for m in marks][:5] + [0] * max(0, 5 - len(marks))
-    total = len(marks)
+def card(n: int, marks: list[int], streak: int, tries: bool = False) -> bytes:
+    """marks: one number per question. With tries, the try it was solved on (1 to 3, 0 missed), worth 3, 2, 1 or 0
+    points out of 15; without, 1 right and 0 wrong, out of 5. Solved eggs hatch."""
+    raw = [max(0, min(3 if tries else 1, int(m))) for m in marks][:5] + [0] * max(0, 5 - len(marks))
+    points = [(4 - v if v else 0) if tries else v for v in raw]
+    marks = [1 if v else 0 for v in raw]
+    total = 15 if tries else len(marks)
     rnd = random.Random(n * 31 + sum(m << i for i, m in enumerate(marks)))
     bg = Image.open(ART / "dle-nest.jpg").convert("RGB")
     k = max(W / bg.width, H / bg.height)
@@ -89,7 +93,7 @@ def card(n: int, marks: list[int], streak: int) -> bytes:
             sh = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(sh).ellipse((cx - 44, ground - 12, cx + 44, ground + 6), fill=(80, 50, 20, 70))
             im.alpha_composite(sh)
             if local >= 5 and m:
-                score += 1
+                score += points[i]
                 p = _spring((local - 5) / 4) if local < 9 else 1
                 sprite = hatched[(sum(marks[:i])) % 2]
                 sc = 0.75 + 0.25 * p
@@ -120,7 +124,7 @@ def card(n: int, marks: list[int], streak: int) -> bytes:
                     t = (f * 0.35 + j * 2.1 + i) % 3.0
                     _star(d, xs[i] - 50 + (j * 47 + i * 13) % 100, ground - 120 - t * 30, 3 + (j % 2) * 2, (255, 236, 160, int(255 * (1 - t / 3))))
         # the words
-        pill_text = f"DRAGONDLE #{n}"
+        pill_text = f"DRAGON QUIZ #{n}"
         pw = d.textlength(pill_text, font=f_pill) + 30
         d.rounded_rectangle((W / 2 - pw / 2, 18, W / 2 + pw / 2, 48), radius=15, fill=(255, 255, 255))
         d.text((W / 2, 33), pill_text, font=f_pill, fill=(106, 47, 92), anchor="mm")
@@ -133,9 +137,9 @@ def card(n: int, marks: list[int], streak: int) -> bytes:
         d.text((x0, 138), main, font=f_big, fill=(91, 35, 80), anchor="ls")
         d.text((x0 + mw + 4, 138), tail, font=f_tail, fill=(192, 81, 127), anchor="ls")
         done = f >= LAND + STEP * total
-        line = _mood(sum(marks)) if done else "Hatching your answers..."
+        line = _mood(round(sum(points) * 5 / total)) if done else "Hatching your answers..."
         d.text((W / 2, 172), line, font=f_line, fill=(106, 47, 92), anchor="mm")
-        d.text((W / 2, 198), f"{streak} day streak · pdtools.xyz/dragondle" if streak != 1 else "1 day streak · pdtools.xyz/dragondle",
+        d.text((W / 2, 198), f"{streak} day streak · pdtools.xyz/quiz" if streak != 1 else "1 day streak · pdtools.xyz/quiz",
                font=f_small, fill=(154, 79, 122), anchor="mm")
         if done and sum(marks):
             t = f - (LAND + STEP * total)

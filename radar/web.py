@@ -1382,15 +1382,21 @@ def create_app(cfg: Config | None = None) -> Flask:
         at = datetime.fromisoformat(person["at"].rstrip("Z"))
         return f"{at.strftime('%b')} {at.day}, {at.year}"
 
+    @app.get("/quiz/card.gif")
     @app.get("/dragondle/card.gif")
     @v21_only
     def dragondle_gif():
-        """The animated Dragondle card. It only ever knows right or wrong per question, never an answer."""
+        """The animated Dragon Quiz card. m is one digit per question: from the 3 tries days, the try it was solved
+        on (1 to 3, 0 missed); before that 1 right, 0 wrong. It never knows an answer."""
         from .dle_gif import card
+        from .dragondle import uses_tries
         n, m, st = request.args.get("n", ""), request.args.get("m", ""), request.args.get("st", "0")
-        if not (n.isdigit() and 0 < int(n) < 100000 and re.fullmatch(r"[01]{5}", m) and st.isdigit() and int(st) < 100000):
+        if not (n.isdigit() and 0 < int(n) < 100000 and st.isdigit() and int(st) < 100000):
             abort(404)
-        return card_png(f"dg:{n}:{m}:{st}", lambda: card(int(n), [int(c) for c in m], int(st)), mime="image/gif")
+        tries = uses_tries(int(n))
+        if not re.fullmatch(r"[0-3]{5}" if tries else r"[01]{5}", m):
+            abort(404)
+        return card_png(f"dg:{n}:{m}:{st}", lambda: card(int(n), [int(c) for c in m], int(st), tries=tries), mime="image/gif")
 
     @app.get("/welcome/<handle>.png")
     @v21_only
@@ -1541,19 +1547,25 @@ def create_app(cfg: Config | None = None) -> Flask:
         with Session() as s:
             return jsonify(story(s, cfg, vid, y, m, today))
 
-    @app.get("/dragondle")
+    @app.get("/quiz")
     @v21_only
     def dragondle_home():
         from .dragondle import today_set
         return render_template("dragondle.html", cfg=cfg, game=today_set(utcnow().date()),
-                               og_title="Dragondle · the daily Pocket Dragons puzzle",
-                               og_desc="Five questions a day about Pocket Dragons lore, badges and pdtools. Same five for everyone. Free.")
+                               og_title="Dragon Quiz · the daily Pocket Dragons quiz",
+                               og_desc="Five questions a day about Pocket Dragons lore, badges and pdtools, three tries each. Same five for everyone. Free.")
 
-    def dle_stats(s, day):
+    @app.get("/dragondle")
+    @v21_only            # still locked like the quiz itself until launch
+    def dragondle_old():
+        """The quiz was called Dragondle at first; old links keep working."""
+        return redirect("/quiz", code=301)
+
+    def dle_stats(s, day, top=5):
         from .db import DlePlay
         rows = s.execute(select(DlePlay.score, func.count()).where(DlePlay.day == day).group_by(DlePlay.score)).all()
         dist = {int(k): int(v) for k, v in rows}
-        return {"total": sum(dist.values()), "dist": [dist.get(i, 0) for i in range(6)]}
+        return {"total": sum(dist.values()), "dist": [dist.get(i, 0) for i in range(top + 1)], "max": top}
 
     @app.post("/api/dragondle")
     @v21_only
@@ -1567,10 +1579,10 @@ def create_app(cfg: Config | None = None) -> Flask:
                 raise TypeError
         except (ValueError, TypeError, AttributeError, OverflowError):
             abort(400)
-        from .dragondle import day_of, number
+        from .dragondle import day_of, max_score, number
         today_n = number(utcnow().date())
         # a game started just before midnight UTC still counts, under the day it was played
-        if not _VID.match(vid) or not 0 <= score <= 5 or n not in (today_n, today_n - 1) or n < 1:
+        if not _VID.match(vid) or n not in (today_n, today_n - 1) or n < 1 or not 0 <= score <= max_score(n):
             abort(400)
         day = day_of(n)
         with Session() as s:
@@ -1587,7 +1599,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                 s.commit()
             else:
                 score = row.score                              # the first finished game of the day is the one that counts
-            st = dle_stats(s, day)
+            st = dle_stats(s, day, max_score(n))
         below = sum(st["dist"][:score])
         st["beat"] = round(100 * below / max(1, st["total"] - 1)) if st["total"] > 1 else None
         return jsonify({"ok": True, **st})
