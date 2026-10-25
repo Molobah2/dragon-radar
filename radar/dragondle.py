@@ -135,6 +135,37 @@ BANK = [
      "w": ["Sam", "Hearty", "Nacho"], "why": "Thank you Ismail for helping bring it to pdtools.", "src": "pdtools AMA Library"},
     {"cat": "pdtools", "q": "Who made the community song Pocket Full of Dragons?", "a": "Nacho",
      "w": ["Ismail HA", "Anastasiya", "The Panda"], "why": "It joined the pdtools playlist in October.", "src": "pdtools playlist"},
+    # ---------- more badge questions (from Dragondle #3, Ismail's idea: every badge gets its turn) ----------
+    {"cat": "badge", "q": "After adopting the server tag on Discord, what else do you need to do for Standard Bearer?", "a": "Claim the badge on the website",
+     "w": ["Post about it on X", "Wait for the next AMA", "Nothing, it arrives by itself"], "why": "Wearing the tag is step one. The badge still has to be claimed on the site.", "src": "Jon's own Standard Bearer guide"},
+    {"cat": "badge", "q": "Where in Discord do you find the Server Tag option?", "a": "In the menu under the server name",
+     "w": ["In your profile settings", "Inside the dragon-chat channel", "In your direct messages"], "why": "Open the arrow next to the server name, pick Server Tag, then Adopt Tag.", "src": "Jon's own Standard Bearer guide"},
+    {"cat": "badge", "q": "How does the team review posts for Chronicler and Community Keeper?", "a": "By hand, with human eyes",
+     "w": ["With an AI bot", "By a vote of Keepers", "By counting likes"], "why": "Hearty showed the sheet he scores accounts and posts with.", "src": "AMA 7"},
+    {"cat": "badge", "q": "A Chronicler post should be shared from which account?", "a": "Your own X account",
+     "w": ["The official Pocket Dragons account", "A friend's account", "A new account made for it"], "why": "Then drop the link in the share content channel on Discord.", "src": "AMA 7; Jon, verified directly"},
+    {"cat": "badge", "q": "For Community Keeper, whose posts does the team want you to interact with?", "a": "Other Keepers, not only the official accounts",
+     "w": ["Only the official accounts", "Only team members", "Only your own posts"], "why": "Support the whole community. Be real, be human.", "src": "AMA 5"},
+    {"cat": "badge", "q": "Which two quests are the secret rite quests?", "a": "Shellbreaker and Atmokinetic",
+     "w": ["Chronicler and Standard Bearer", "Blinky Says and Ember Chamber", "Community Keeper and AMA Attendee"], "why": "Their hints are short, so the Quests page shows a percentage to guide you.", "src": "Site Quests panel; Jon, verified directly"},
+    {"cat": "badge", "q": "For Atmokinetic, what can happen if you click through the weather too fast?", "a": "A change might not register",
+     "w": ["You lose the badge", "The egg cracks", "The sound turns off"], "why": "Take your time and check the window behind the egg after each click.", "src": "Jon, earned it himself"},
+    {"cat": "badge", "q": "Where is the weather icon in the Hatchery?", "a": "Top right, just left of the sound button",
+     "w": ["Bottom left, under the egg", "Inside the Keeper card", "On the Quests page"], "why": "Cycle through each weather to work on Atmokinetic.", "src": "Jon, earned Atmokinetic himself"},
+    {"cat": "badge", "q": "How many AMAs do you need to attend for the AMA Attendee badge?", "a": "3",
+     "w": ["1", "7", "10"], "why": "Stay for the call each time so it counts.", "src": "Site Quests panel"},
+    {"cat": "badge", "q": "How long do you need to stay in an AMA for it to count?", "a": "At least 46 minutes",
+     "w": ["10 minutes", "The first 5 minutes", "Only the last minute"], "why": "The website states the 46 minute rule on the quest card.", "src": "Site Quests panel"},
+    {"cat": "badge", "q": "For Bring 3 Keepers, what must each friend do after joining through your link?", "a": "Finish onboarding and claim their own badge",
+     "w": ["Follow you on X", "Post in dragon-chat", "Attend one AMA"], "why": "They also need a verified tick on X for it to count.", "src": "Jon, verified directly"},
+    {"cat": "badge", "q": "How does the Bring 3 Keepers card track your friends?", "a": "Arrived, finished and counted",
+     "w": ["Invited, liked and shared", "Joined, posted and voted", "Sent, opened and saved"], "why": "Each friend is marked COUNTED once every step is done.", "src": "Site Quests panel; Jon, verified directly"},
+    {"cat": "badge", "q": "Who on the team built the Ember Chamber game?", "a": "TJ",
+     "w": ["Hearty", "Godwin", "Sam"], "why": "Sam said TJ went through many versions to get it right.", "src": "AMA 4; AMA 5"},
+    {"cat": "badge", "q": "Sam said the Dragon Space badge would work in a way similar to which badge?", "a": "The AMA badge",
+     "w": ["Chronicler", "Standard Bearer", "Shellbreaker"], "why": "The team planned to run X Spaces again for it.", "src": "AMA 6"},
+    {"cat": "badge", "q": "What can you do with the 3D badge seals on the website?", "a": "Grab, throw, spin or flip them",
+     "w": ["Only look at them", "Trade them with other Keepers", "Paint them a new colour"], "why": "Godwin designed the seals for the first Keeper Quests.", "src": "TJ's tech update, September 16"},
 ]
 
 # a test checks that none of these words appear anywhere in the bank
@@ -146,6 +177,10 @@ def number(day: date) -> int:
 
 
 from functools import lru_cache
+
+# The bank grows in steps. Each step starts on a Dragondle number and uses the first `size` questions, so a day
+# that has already been played never changes when questions are added later.
+EPOCHS = ((1, 60), (3, 75))              # (first Dragondle number, questions in use)
 
 
 def _mix(order: list[int]) -> list[int]:
@@ -161,19 +196,57 @@ def _mix(order: list[int]) -> list[int]:
     return out
 
 
+def _spread(order: list[int]) -> list[int]:
+    """Like _mix, but each kind is spread evenly through the pass, so a bigger kind never bunches up at the end."""
+    kinds = {}
+    for i in order:
+        kinds.setdefault(BANK[i]["cat"], []).append(i)
+    slots = []
+    for k, items in kinds.items():
+        n = len(items)
+        slots += [((j + .5) / n, k, i) for j, i in enumerate(items)]
+    return [i for _, _, i in sorted(slots)]
+
+
+def _epoch(n: int) -> int:
+    e = 0
+    for k, (first, _) in enumerate(EPOCHS):
+        if n >= first:
+            e = k
+    return e
+
+
 @lru_cache(maxsize=64)
-def _cycle(c: int) -> tuple:
-    """One pass through the whole bank. A new pass never opens with the questions the last pass ended on,
-    so nothing comes back within six days."""
-    order = list(range(len(BANK)))
-    random.Random(f"dragondle-{c}").shuffle(order)
-    order = _mix(order)
+def _cycle(c: int, e: int = 0) -> tuple:
+    """One pass through the questions of step e. A new pass never opens with the questions asked in the six days
+    before it (from the last pass, or from the step before), so nothing comes back within six days."""
+    first, size = EPOCHS[e]
+    order = list(range(size))
+    if e == 0:
+        random.Random(f"dragondle-{c}").shuffle(order)
+        order = _mix(order)
+    else:
+        random.Random(f"dragondle-e{e}-{c}").shuffle(order)
+        order = _spread(order)
     if c > 0:
-        keep_apart = len(BANK) // 2        # half the bank: at least six days between repeats
-        recent = set(_cycle(c - 1)[-keep_apart:])
+        recent = set(_cycle(c - 1, e)[-(size // 2):])
+    elif e > 0:
+        recent = {_pick(n, j) for n in range(max(1, first - 6), first) for j in range(PER_DAY)}
+    else:
+        recent = set()
+    if recent:
+        keep_apart = size // 2             # half the bank: at least six days between repeats
         head = [i for i in order if i not in recent][:keep_apart]
         order = head + [i for i in order if i not in head]
     return tuple(order)
+
+
+def _pick(n: int, j: int) -> int:
+    """The bank index of question j on Dragondle n."""
+    e = _epoch(n)
+    first, size = EPOCHS[e]
+    pos = max(0, n - first) * PER_DAY + j
+    return _cycle(pos // size, e)[pos % size]
 
 
 @lru_cache(maxsize=1)
@@ -194,8 +267,7 @@ def today_set(day: date) -> dict:
     n = number(day)
     out = []
     for j in range(PER_DAY):
-        pos = max(0, n - 1) * PER_DAY + j
-        k = _cycle(pos // len(BANK))[pos % len(BANK)]
+        k = _pick(n, j)
         e = BANK[k]
         order = list(range(4))                       # 0 is the answer, 1 to 3 the wrong choices
         random.Random(f"dragondle-{n}-{j}").shuffle(order)

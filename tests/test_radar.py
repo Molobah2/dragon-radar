@@ -2414,6 +2414,13 @@ def test_dragondle_bank_never_mentions_mint_and_days_are_stable():
     for q in a["qs"]:
         assert 0 <= q["a"] < 4 and len(set(q["opts"])) == 4
     assert today_set(day + _td(days=1))["qs"] != a["qs"]
+    # the bank grows in steps, and a day that was already played never changes when questions are added
+    from radar.dragondle import EPOCHS, _pick
+    assert EPOCHS[-1][1] == len(BANK) and all(size % 5 == 0 for _, size in EPOCHS)
+    assert [q["q"] for q in today_set(_d(2026, 10, 24))["qs"]][:2] == ["Which two badges could Keepers earn when onboarding first opened?", "Which day of the week are the AMAs held?"]
+    assert [q["q"] for q in today_set(_d(2026, 10, 25))["qs"]][:2] == ["Whose idea was the AMA Library on pdtools?", "Which badge do you earn by adopting the Pocket Dragons server tag on Discord?"]
+    first, size = EPOCHS[-1]
+    assert len({_pick(n, j) for n in range(first, first + size // 5) for j in range(5)}) == size   # every question gets its turn
     # no question comes back within a whole pass of the bank, even across the pass boundary
     start = _d(2026, 10, 24); per = len(BANK) // 5
     asked = [q["q"] for i in range(per * 3) for q in today_set(start + _td(days=i))["qs"]]
@@ -2595,7 +2602,7 @@ def test_new_tools_row_shows_only_when_v21_is_open(cfg, Session):
 
 
 def test_dragondle_bank_is_translated_item_for_item(cfg, Session):
-    """Every site language has all 60 questions, with the right answer staying the right answer after the
+    """Every site language has every question, with the right answer staying the right answer after the
     shuffle, and no dashes in the translated text."""
     from datetime import date, timedelta
     from radar.dragondle import BANK, _translations, today_set
