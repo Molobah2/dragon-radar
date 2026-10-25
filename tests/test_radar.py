@@ -2908,3 +2908,22 @@ def test_keeper_badge_and_four_nests(cfg, Session):
     assert hub.count('class="nst reveal"') == 4 and 'href="/wallpaper"' in hub
     page = c.get("/quiz").get_data(as_text=True)
     assert 'id="pd-me"' in page and 'href="/friends#book"' in page and "/api/book/me" in page
+
+
+def test_launch_switches_open_everything_but_jons_own_tools(cfg, Session):
+    """Launch day: V21_PUBLIC=1 and CIRCLE_PUBLIC=1 open every tool, the Dragon Circle included, to everyone with no
+    tester bar. Jon's own picking tools stay locked to his unlocked devices."""
+    from radar.web import create_app
+    cfg.v2_public = True
+    stranger = create_app(cfg).test_client()
+    assert stranger.get("/circle").status_code == 404 and stranger.get("/wallpaper").status_code == 404
+    cfg.v21_public = True
+    cfg.circle_public = True
+    stranger = create_app(cfg).test_client()
+    for path in ("/", "/welcome", "/creator", "/wrapped", "/quiz", "/cheers", "/stickers", "/canvas", "/wallpaper",
+                 "/community", "/learn", "/create", "/circle"):
+        r = stranger.get(path)
+        assert r.status_code == 200, path
+        assert 'id="tbar"' not in r.get_data(as_text=True), path
+    assert 'href="/circle"' in stranger.get("/community").get_data(as_text=True)
+    assert stranger.get("/lab/creator").status_code == 404 and stranger.get("/lab/dragondle").status_code == 404

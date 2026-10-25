@@ -49,6 +49,9 @@ class Config:
     # v2.1 launch switch: V21_PUBLIC=1 opens the welcome lane, Creator of the week, Wrapped, Dragon Quiz, Cheers, the
     # sticker shelf and the Hatchery canvas to everyone and lets shared caches keep their cards (the Circle stays locked)
     v21_public: bool = field(default_factory=lambda: _bool("V21_PUBLIC", "0"))
+    # Dragon Circle launch switch: CIRCLE_PUBLIC=1 opens /circle to everyone. Jon's own tools (/lab/creator,
+    # /lab/dragondle) and the tester bar stay with the devices he unlocked.
+    circle_public: bool = field(default_factory=lambda: _bool("CIRCLE_PUBLIC", "0"))
     # My week card opens every Friday (UTC) for the whole day. MYWEEK_ALWAYS=1 keeps it open (local testing only)
     myweek_always: bool = field(default_factory=lambda: _bool("MYWEEK_ALWAYS", "0"))
     # test copies of the site ask search engines to stay away

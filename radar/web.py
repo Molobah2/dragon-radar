@@ -137,10 +137,10 @@ def create_app(cfg: Config | None = None) -> Flask:
         return {"asset": lambda filename: url_for("static", filename=filename, v=version), "asset_version": version,
                 "site_songs": site_songs,
                 "site_credits": [{"track": x["title"], "by": x["by"], "x": x.get("x", "")} for x in playlist],
-                "v2": getattr(g, "v2", False), "circle_open": getattr(g, "circle", False), "v2_private": getattr(g, "v2", False) and not cfg.v2_public,
+                "v2": getattr(g, "v2", False), "circle_open": getattr(g, "circle", False) or cfg.circle_public, "tester": getattr(g, "circle", False), "v2_private": getattr(g, "v2", False) and not cfg.v2_public,
                 "v21_open": cfg.v21_public or getattr(g, "circle", False), "v21_tools": V21_TOOLS,
                 "dle_start": DLE_START,
-                "nav": nav_for(request.path if has_request_context() else "/", cfg.v21_public or getattr(g, "circle", False), getattr(g, "circle", False))}
+                "nav": nav_for(request.path if has_request_context() else "/", cfg.v21_public or getattr(g, "circle", False), getattr(g, "circle", False) or cfg.circle_public)}
 
     # v2 tools in progress: add {"name", "url", "note"} here as each one is built
     LAB_TOOLS: list[dict] = [
@@ -184,6 +184,15 @@ def create_app(cfg: Config | None = None) -> Flask:
             return view(*a, **k)
         return inner
     app.extensions["radar"]["v2_only"] = v2_only
+
+    def circle_page_only(view):
+        """The Dragon Circle pages: locked to unlocked devices until CIRCLE_PUBLIC=1, then open to everyone."""
+        @wraps(view)
+        def inner(*a, **k):
+            if not (g.get("circle") or cfg.circle_public):
+                abort(404)
+            return view(*a, **k)
+        return inner
 
     def circle_only(view):
         """Dragon Circle while it is locked: 404 everywhere except the devices Jon unlocked."""
@@ -476,7 +485,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                   for m in COMMUNITY_MUSIC]
         from .ama import AMAS
         return render_template("hub.html", cfg=cfg, stats=public_stats() if g.get("v2") else None, music_makers=makers,
-                               ama_count=len(AMAS), news=[n for n in NEWS if g.get("circle") or n.get("href") != "/circle"][:3])
+                               ama_count=len(AMAS), news=[n for n in NEWS if g.get("circle") or cfg.circle_public or n.get("href") != "/circle"][:3])
 
     @app.get("/keepers")
     def keepers_old():
@@ -1203,7 +1212,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         return hashlib.sha1(raw.encode()).hexdigest()[:10]
 
     @app.get("/circle")
-    @circle_only
+    @circle_page_only
     def circle_home():
         h = (request.args.get("h") or "").strip().lstrip("@")
         if h:
@@ -1215,7 +1224,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                                og_desc="See the Keepers who engage with you most in Pocket Dragons posts. Free, no login.")
 
     @app.get("/circle/<handle>")
-    @circle_only
+    @circle_page_only
     def circle_page(handle):
         data = circle_data(handle)
         if not data.get("ok"):
@@ -1230,7 +1239,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                                og_desc=f"The {len(data['people'])} Keepers who engage with @{data['handle']} most in Pocket Dragons posts. Draw yours, free.")
 
     @app.get("/circle/<handle>.png")
-    @circle_only
+    @circle_page_only
     def circle_image(handle):
         import io
         from concurrent.futures import ThreadPoolExecutor
@@ -1268,7 +1277,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         return r
 
     @app.get("/api/circle/<handle>")
-    @circle_only
+    @circle_page_only
     def api_circle(handle):
         data = circle_data(handle)
         return jsonify(data), (200 if data.get("ok") else 400)
@@ -1551,7 +1560,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     # ---------- the four sections (TJ's feedback): one page per section with its tools side by side ----------
     def section_page(key):
         from .v21 import nav_for
-        nav = nav_for(request.path, True, getattr(g, "circle", False))
+        nav = nav_for(request.path, True, getattr(g, "circle", False) or cfg.circle_public)
         sec = next((x for x in nav["sections"] if x["key"] == key), None)
         if not sec:
             abort(404)

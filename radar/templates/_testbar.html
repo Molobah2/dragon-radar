@@ -1,7 +1,7 @@
 {# The tester path: only on devices unlocked for testing, and only until v2.1 opens to everyone.
    One small bar on every tool to test, with the step number, a tick for "done" and a button straight to the next
    tool, plus a list of all the steps. What is done is kept on this device (pd:test:done). #}
-{% if circle_open and not cfg.v21_public %}
+{% if tester and not cfg.v21_public %}
 {% set steps = [
   ("welcome", "/welcome", "Welcome lane"), ("creator", "/creator", "Creator of the week"), ("wrapped", "/wrapped", "Hatchery Wrapped"),
   ("dragondle", "/quiz", "Dragon Quiz"), ("cheers", "/cheers", "Cheers"), ("stickers", "/stickers", "Sticker shelf"),
