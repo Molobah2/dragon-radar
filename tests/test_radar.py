@@ -3003,3 +3003,11 @@ def test_keepers_can_add_a_missed_newcomer_to_the_welcome_lane(cfg, Session, mon
     assert c.post("/api/welcome/suggest", data=json.dumps({"link": "@nobody_here"})).get_json()["why"] == "nopost"
     page = c.get("/welcome").get_data(as_text=True)
     assert 'id="suggest"' in page and "/api/welcome/suggest" in page
+
+
+def test_dragon_circle_card_is_stamped_pdtools_not_a_name():
+    """The Circle share card carries the pdtools.xyz stamp in the corner, never a person's name."""
+    from pathlib import Path
+    src = (Path(__file__).parent.parent / "radar" / "circle.py").read_text()
+    card = src[src.index("DRAGON CIRCLE"):src.index("def layout")]
+    assert "Jon Wynn" not in card and '"pdtools.xyz"' in card

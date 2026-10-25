@@ -1208,7 +1208,7 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     def circle_stamp(data):
         import hashlib
-        raw = "|".join([data.get("handle", "")] + [f"{p['user']}:{p['score']}" for p in data.get("people", [])])
+        raw = "|".join(["card2", data.get("handle", "")] + [f"{p['user']}:{p['score']}" for p in data.get("people", [])])   # card2: the pdtools.xyz stamp
         return hashlib.sha1(raw.encode()).hexdigest()[:10]
 
     @app.get("/circle")

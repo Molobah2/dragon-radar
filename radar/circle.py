@@ -204,7 +204,7 @@ def render(data: dict, avatars: dict, font_dir: str) -> bytes:
     d.text((60, 410), f"{len(ppl)} Keepers in my circle", font=f7(30), fill=(255, 214, 150), anchor="lm")
     d.text((60, 560), "pdtools.xyz/circle", font=f7(30), fill=(255, 160, 116), anchor="lm")
     d.text((60, 600), "free, unofficial community tool", font=f6(22), fill=(196, 182, 228), anchor="lm")
-    d.text((W - 36, H - 30), "Jon Wynn", font=f7(26), fill=(255, 246, 228, 220), anchor="rm")
+    d.text((W - 36, H - 30), "pdtools.xyz", font=f7(26), fill=(255, 246, 228, 220), anchor="rm")
     buf = io.BytesIO(); bg.convert("RGB").save(buf, "PNG", optimize=True); return buf.getvalue()
 
 
