@@ -3046,3 +3046,13 @@ def test_lite_mode_and_resting_forest_keep_scrolling_smooth():
     assert "if (far && stage === \"loop\") loop.pause();" in forest        # the loop rests once the tools cover it
     assert "if (far && stage === \"loop\") return;" in forest              # and nudge never restarts it down there
     assert "!window.PD_LITE && cfg.video" in open("radar/static/scene.js", encoding="utf-8").read()
+
+
+def test_create_page_shows_keeper_studio_made_by_a_keeper(cfg):
+    import os
+    app, c = _v21_client(cfg)
+    body = c.get("/create").get_data(as_text=True)
+    assert 'href="https://anastas36.github.io/keeper-studio/" target="_blank" rel="noopener"' in body
+    assert "Keeper Studio" in body and "@BugaenkoNastya" in body and "Made by a Keeper" in body
+    assert "v21/keeper-studio.webp" in body and os.path.exists("radar/static/v21/keeper-studio.webp")
+    assert "keeper-studio" not in c.get("/learn").get_data(as_text=True)          # only on the Create page

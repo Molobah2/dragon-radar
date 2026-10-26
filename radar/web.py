@@ -1593,12 +1593,13 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     # ---------- the four sections (TJ's feedback): one page per section with its tools side by side ----------
     def section_page(key):
-        from .v21 import nav_for
+        from .v21 import friend_sites, nav_for
         nav = nav_for(request.path, True, getattr(g, "circle", False) or cfg.circle_public)
         sec = next((x for x in nav["sections"] if x["key"] == key), None)
         if not sec:
             abort(404)
-        return render_template("section.html", cfg=cfg, sec=sec, og_title=f"{sec['name']} · pdtools", og_desc=sec["line"])
+        return render_template("section.html", cfg=cfg, sec=sec, friends=friend_sites(key),
+                               og_title=f"{sec['name']} · pdtools", og_desc=sec["line"])
 
     @app.get("/community")
     @v21_only

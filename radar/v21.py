@@ -428,6 +428,19 @@ SECTIONS = [
 ]
 
 
+# Made by Keepers: sites friends of pdtools built for Pocket Dragons, shown on a section page beside its tools.
+# They open in a new tab. (section key, name, link, line, picture, maker's X handle)
+FRIEND_SITES = [
+    ("create", "Keeper Studio", "https://anastas36.github.io/keeper-studio/",
+     "A cozy studio for making Pocket Dragons greetings and stories with Creator Kit art.",
+     "v21/keeper-studio.webp", "BugaenkoNastya"),
+]
+
+
+def friend_sites(key: str) -> list:
+    return [{"name": n, "url": u, "line": l, "bg": b, "by": h} for k, n, u, l, b, h in FRIEND_SITES if k == key]
+
+
 def nav_for(path: str, v21: bool, circle: bool) -> dict:
     """The sections this visitor can see, and which section and tab the page belongs to."""
     ok = {"": True, "v21": v21, "circle": circle}
