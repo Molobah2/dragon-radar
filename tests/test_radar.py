@@ -3056,3 +3056,11 @@ def test_create_page_shows_keeper_studio_made_by_a_keeper(cfg):
     assert "Keeper Studio" in body and "@BugaenkoNastya" in body and "Made by a Keeper" in body
     assert "v21/keeper-studio.webp" in body and os.path.exists("radar/static/v21/keeper-studio.webp")
     assert "keeper-studio" not in c.get("/learn").get_data(as_text=True)          # only on the Create page
+
+
+def test_jons_songs_open_the_playlist_then_the_community_songs():
+    import json, os
+    pl = json.load(open("radar/static/audio/playlist.json", encoding="utf-8"))
+    assert [s["title"] for s in pl[:2]] == ["Empire of Embers", "Dragons Season"]
+    assert all(s["by"] == "Jon Wynn" and s["x"] == "jonwynnx" and os.path.exists("radar/static/" + s["src"]) for s in pl[:2])
+    assert len(pl) >= 14 and "Blinky's song" in [s["title"] for s in pl[2:]]          # the community songs still follow
