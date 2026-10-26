@@ -24,9 +24,10 @@
 
   let seen = false;
   try { seen = sessionStorage.getItem("pd:walked") === "1"; } catch (e) { /* private mode */ }
-  const motion = !reduce;
+  const motion = !reduce && !window.PD_LITE;
   for (const v of [intro, loop]) { v.muted = true; v.defaultMuted = true; v.playsInline = true; v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); }
   let stage = null;   // "intro" or "loop": the video that should be moving right now
+  let far = false;
   const playIntro = motion && !seen && cfg.intro;
 
   // sharp still: the doorway frame when the walk out is about to play, otherwise Blinky ready at the door
@@ -47,6 +48,7 @@
     loop.addEventListener("playing", () => {
       loop.classList.add("on");
       intro.classList.remove("on");
+      if (far) loop.pause();
       // the intro is done with: free its decoder
       setTimeout(() => { intro.removeAttribute("src"); intro.load(); }, 1000);
     }, { once: true });
@@ -79,8 +81,10 @@
   }
 
   // keep it moving: whatever should be playing gets a gentle nudge whenever the page is back in view
+  // down at the tools the loop rests on its frame (no decoding under the glass), back at the top it moves
   function nudge() {
     if (document.hidden || !motion) return;
+    if (far && stage === "loop") return;
     if (stage === "intro" && intro.paused && !intro.ended) play(intro);
     else if (stage === "loop" && loop.paused) play(loop);
     else if (!stage) startLoop();
@@ -95,13 +99,22 @@
   setInterval(nudge, 3000);                   // last safety net, costs nothing while it is playing
 
   // the scene dims a little as the tool cards scroll over it
-  let tick = false;
+  let tick = false, dimNow = "";
+  function onScroll() {
+    tick = false;
+    const d = Math.min(0.45, scrollY / (innerHeight * 1.6)).toFixed(2);
+    if (d !== dimNow) { dimNow = d; root.style.setProperty("--dim", d); }
+    const f = scrollY > innerHeight * 0.55;
+    if (f !== far) {
+      far = f;
+      if (far && stage === "loop") loop.pause();
+      else if (!far) nudge();
+    }
+  }
   addEventListener("scroll", () => {
     if (tick) return;
     tick = true;
-    requestAnimationFrame(() => {
-      tick = false;
-      root.style.setProperty("--dim", Math.min(0.45, scrollY / (innerHeight * 1.6)).toFixed(3));
-    });
+    requestAnimationFrame(onScroll);
   }, { passive: true });
+  onScroll();
 })();

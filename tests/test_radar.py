@@ -1617,7 +1617,7 @@ def test_speed_budget(cfg, Session):
     c = v2_client(cfg)
     # /friends raised on purpose (120k to 124k): the song picker controls and the dragon book; the picker's
     # list itself (music.js) only loads when someone opens it
-    budgets = {"/friends": (131_000, 60_000),   # raised on purpose: the X app note, its move code button and the safe copy for signed Keepers, the audit fixes (dialog focus, phone layout), then the v2.1 daily goal steps
+    budgets = {"/friends": (132_500, 60_000),   # raised on purpose: the X app note, its move code button and the safe copy for signed Keepers, the audit fixes (dialog focus, phone layout), the v2.1 daily goal steps, then the feed keeping its place (26 Oct)
                 "/": (15_000, 40_000), "/friends/keepers": (60_000, 40_000)}
     for path, (code_max, html_max) in budgets.items():
         html = c.get(path).get_data(as_text=True)
@@ -3027,3 +3027,22 @@ def test_egg_pops_up_when_goal_finished_on_another_page():
     assert "function autoHatch" in js and 'pd:hatchPop' in js
     assert 'addEventListener("pd:goaldone", () => { refreshGoal(); autoHatch(1600); })' in js
     assert "waitReady" in js and 'visibilitychange", () => { if (!document.hidden) autoHatch' in js
+
+
+def test_feed_keeps_its_place_when_a_card_leaves_or_the_page_reloads():
+    # opening a post far down the feed used to rebuild the whole list and drop people at the very bottom
+    js = open("radar/static/app.js", encoding="utf-8").read()
+    assert "trail.replaceChildren(frag)" not in js                      # no more emptying the list on every change
+    assert "function placeNow" in js and "keepPlace(place);" in js
+    assert 'history.scrollRestoration = "manual"' in js and "function restorePlace" in js and "restorePlace();" in js
+    assert 'addEventListener("pagehide", savePlace)' in js
+
+
+def test_lite_mode_and_resting_forest_keep_scrolling_smooth():
+    speed = open("radar/templates/_speed.html", encoding="utf-8").read()
+    assert "window.PD_LITE = true" in speed and 'classList.add("lite")' in speed and "deviceMemory" in speed
+    forest = open("radar/static/forest.js", encoding="utf-8").read()
+    assert "!reduce && !window.PD_LITE" in forest                          # weaker devices keep the still picture
+    assert "if (far && stage === \"loop\") loop.pause();" in forest        # the loop rests once the tools cover it
+    assert "if (far && stage === \"loop\") return;" in forest              # and nudge never restarts it down there
+    assert "!window.PD_LITE && cfg.video" in open("radar/static/scene.js", encoding="utf-8").read()

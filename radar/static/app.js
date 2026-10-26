@@ -790,7 +790,30 @@
     }));
   }
 
+  // keep the reader's place: render() notes the first cards on screen and puts them back where they were
+  const FEED_LISTS = "#pinned-trail .post, #crew-trail .post, #hot-trail .post, #trail .post";
+  function placeNow() {
+    if (scrollY < 120) return null;
+    const out = [];
+    for (const c of document.querySelectorAll(FEED_LISTS)) {
+      if (!c.dataset.id || c.classList.contains("leaving")) continue;
+      const r = c.getBoundingClientRect();
+      if (r.bottom > 90) { out.push({ id: c.dataset.id, top: r.top }); if (out.length >= 4) break; }
+    }
+    return out.length ? out : null;
+  }
+  function keepPlace(place) {
+    if (!place) return;
+    for (const a of place) {
+      const c = cards.get(a.id);
+      if (!c || !c.isConnected || c.classList.contains("leaving")) continue;
+      const d = c.getBoundingClientRect().top - a.top;
+      if (Math.abs(d) > 1) window.scrollBy({ top: d, behavior: "instant" });
+      return;
+    }
+  }
   function render() {
+    const place = placeNow();
     const trail = $("trail");
     const official = pinnedPosts.filter((p) => !p.crew), crew = pinnedPosts.filter((p) => p.crew);
     $("pinned").hidden = !official.length;
@@ -806,9 +829,23 @@
     // only add what is new when the list just grew (smooth infinite scroll), rebuild otherwise
     const have = [...trail.children].map((c) => c.dataset.id), want = list.map((p) => p.id);
     const grew = have.length <= want.length && have.every((id, k) => id === want[k]);
-    const frag = document.createDocumentFragment();
-    (grew ? list.slice(have.length) : list).forEach((p, k) => { const c = cards.get(p.id); c.style.setProperty("--i", k % BATCH); frag.append(c); });
-    if (grew) trail.append(frag); else trail.replaceChildren(frag);
+    if (grew) {
+      const frag = document.createDocumentFragment();
+      list.slice(have.length).forEach((p, k) => { const c = cards.get(p.id); c.style.setProperty("--i", k % BATCH); frag.append(c); });
+      trail.append(frag);
+    } else {
+      // move cards in place, never empty the list
+      const keep = new Set(want);
+      [...trail.children].forEach((c) => { if (!keep.has(c.dataset.id)) c.remove(); });
+      let prev = null;
+      list.forEach((p, k) => {
+        const c = cards.get(p.id), next = prev ? prev.nextSibling : trail.firstChild;
+        if (!c.isConnected) c.style.setProperty("--i", k % BATCH);
+        if (c !== next) trail.insertBefore(c, next);
+        prev = c;
+      });
+    }
+    keepPlace(place);
     $("empty").hidden = query ? list.length > 0 : list.length + hot.length + pinnedPosts.length > 0;
     $("empty-title").textContent = query ? "Nothing found" : "All caught up";
     $("empty-text").textContent = query ? "No posts match your search." : "No unopened posts here. Fresh ones land every 20 minutes.";
@@ -1086,7 +1123,36 @@
   addEventListener("hashchange", fromHash);
   document.querySelectorAll("#tab-progress, [data-pd-progress]").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); showStreak(); pgMsg("", true); openSheet("progress"); }));
 
+  // a reload while on X, or the back button: come back to the same cards, not the very bottom
+  const PLACE_KEY = "pd:place";
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  function savePlace() {
+    const pl = placeNow();
+    try { pl ? sessionStorage.setItem(PLACE_KEY, JSON.stringify({ q: location.search, at: Date.now(), shown, ids: pl })) : sessionStorage.removeItem(PLACE_KEY); } catch (e) { /* private mode */ }
+  }
+  addEventListener("pagehide", savePlace);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) savePlace(); });
+  function restorePlace() {
+    let pl = null; try { pl = JSON.parse(sessionStorage.getItem(PLACE_KEY) || "null"); } catch (e) { pl = null; }
+    const nav = ((performance.getEntriesByType && performance.getEntriesByType("navigation")[0]) || {}).type;
+    if (!pl || !Array.isArray(pl.ids) || pl.q !== location.search || location.hash || Date.now() - (pl.at || 0) > 6 * 3600e3
+      || !(nav === "reload" || nav === "back_forward")) return;
+    shown = Math.max(shown, Math.min(pl.shown | 0, 600));
+    render();
+    let moved = false;
+    ["wheel", "touchstart", "keydown"].forEach((k) => addEventListener(k, () => { moved = true; }, { once: true, passive: true }));
+    const back = () => {
+      if (moved) return;
+      for (const a of pl.ids) {
+        const c = cards.get(a.id);
+        if (c && c.isConnected) { window.scrollTo({ top: c.getBoundingClientRect().top + scrollY - a.top, behavior: "instant" }); return; }
+      }
+    };
+    back(); requestAnimationFrame(back); setTimeout(back, 400);
+  }
+
   render();
+  restorePlace();
   renderWelcome();
   pulse();
   loadDays();

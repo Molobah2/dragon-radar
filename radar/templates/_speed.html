@@ -1,5 +1,10 @@
   {# Speed and smoothness, shared by every page: a soft cross fade between pages where the browser supports it,
      and the next page fetched as soon as a finger or pointer starts towards a link, so it opens almost at once. #}
+  {# Lite mode for weaker devices (little memory or few cores, or data saver on): the background stays a still
+     picture instead of a moving video. Measured on a mid range phone, the video under the glass panels was what made
+     scrolling stutter. Everything else looks the same. #}
+  <script>(function () { try { var n = navigator, c = n.connection || {}, m = n.deviceMemory || 8, k = n.hardwareConcurrency || 8;
+    if (c.saveData || m <= 2 || k <= 2 || (m <= 4 && k <= 4)) { window.PD_LITE = true; document.documentElement.classList.add("lite"); } } catch (e) {} })();</script>
   <style>
     @view-transition { navigation: auto; }
     ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }

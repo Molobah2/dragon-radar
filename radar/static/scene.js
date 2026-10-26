@@ -61,7 +61,7 @@
   }
 
   function wantClip() {
-    return sharpOn && !reduce && cfg.video && cfg.video[current] && !document.body.classList.contains("lapse");
+    return sharpOn && !reduce && !window.PD_LITE && cfg.video && cfg.video[current] && !document.body.classList.contains("lapse");
   }
   function syncVideo() {
     if (wantClip()) {

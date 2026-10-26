@@ -1062,9 +1062,7 @@
     else if (goalDone()) $("goal-text").textContent = "Daily goal done";
   }
   if (goalBtn) goalBtn.addEventListener("click", (e) => { if (canHatch()) { e.stopImmediatePropagation(); openHatch(); } }, true);
-  // the egg pops up by itself once a day when the goal is done. v2.1 often finishes the goal on another page (the
-  // Dragon Quiz, the Keepers directory) and app.js fires pd:goaldone on the feed before this deferred file is
-  // listening, so the page also checks on load and whenever the visitor comes back to the tab.
+  // the egg pops up once a day when the goal is done, also when it was finished on another page
   function autoHatch(delay) {
     setTimeout(() => {
       if (!canHatch() || !hatchEl.hidden || document.hidden || document.querySelector(".sheet-wrap.open")) return;
