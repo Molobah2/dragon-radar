@@ -1062,7 +1062,20 @@
     else if (goalDone()) $("goal-text").textContent = "Daily goal done";
   }
   if (goalBtn) goalBtn.addEventListener("click", (e) => { if (canHatch()) { e.stopImmediatePropagation(); openHatch(); } }, true);
-  addEventListener("pd:goaldone", () => { refreshGoal(); setTimeout(() => { if (canHatch() && hatchEl.hidden) openHatch(); }, 1600); });
+  // the egg pops up by itself once a day when the goal is done. v2.1 often finishes the goal on another page (the
+  // Dragon Quiz, the Keepers directory) and app.js fires pd:goaldone on the feed before this deferred file is
+  // listening, so the page also checks on load and whenever the visitor comes back to the tab.
+  function autoHatch(delay) {
+    setTimeout(() => {
+      if (!canHatch() || !hatchEl.hidden || document.hidden || document.querySelector(".sheet-wrap.open")) return;
+      if (store.get("pd:hatchPop", "") === today()) return;
+      store.set("pd:hatchPop", today());
+      openHatch();
+    }, delay);
+  }
+  addEventListener("pd:goaldone", () => { refreshGoal(); autoHatch(1600); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) autoHatch(1200); });
+  (function waitReady(t) { if (document.body.classList.contains("ready") || t >= 20) autoHatch(1400); else setTimeout(() => waitReady(t + 1), 500); })(0);
   addEventListener("pd:goalshow", refreshGoal);
   addEventListener("pd:dexchange", () => { dex = load(); renderDex(); refreshGoal(); });
   addEventListener("storage", (e) => { if (["pd:dex", "pd:goal", "pd:dle", "radar:followed"].includes(e.key)) { dex = load(); refreshGoal(); } });

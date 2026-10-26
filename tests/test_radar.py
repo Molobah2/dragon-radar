@@ -3018,3 +3018,12 @@ def test_dragon_circle_card_is_stamped_pdtools_not_a_name():
     assert "Jon Wynn" not in card and '"pdtools.xyz"' in card
     # few words: no tagline, no second link, no small print
     assert "engage with" not in card and "pdtools.xyz/circle" not in card and "unofficial" not in card
+
+
+def test_egg_pops_up_when_goal_finished_on_another_page():
+    # v2.1 often finishes the goal on the Dragon Quiz or the Keepers page; the deferred dragons.js must still
+    # offer the egg on the feed once a day, not only on the pd:goaldone event it may have missed
+    js = (ROOT / "radar" / "static" / "dragons.js").read_text(encoding="utf-8") if "ROOT" in globals() else open("radar/static/dragons.js", encoding="utf-8").read()
+    assert "function autoHatch" in js and 'pd:hatchPop' in js
+    assert 'addEventListener("pd:goaldone", () => { refreshGoal(); autoHatch(1600); })' in js
+    assert "waitReady" in js and 'visibilitychange", () => { if (!document.hidden) autoHatch' in js
