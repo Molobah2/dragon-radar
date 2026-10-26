@@ -2172,6 +2172,11 @@ def test_dragon_circle_counts_tags_both_ways_and_leaves_the_team_out(cfg, Sessio
     assert "@Alice" in html and "Save image" in html and "x.com/intent/post" in html and "/circle/Alice.png?v=" in html
     png = c.get("/circle/Alice.png")
     assert png.status_code == 200 and png.data[:8] == b"\x89PNG\r\n\x1a\n" and png.mimetype == "image/png"
+    # the video is made on the Keeper's own device from the same circle
+    assert 'id="dc-vid"' in html and "v21/circlevideo.js" in html and 'id="dc-video-data"' in html
+    from pathlib import Path
+    js = (Path(__file__).parent.parent / "radar" / "static" / "v21" / "circlevideo.js").read_text()
+    assert "VideoEncoder" in js and "FPS = 60" in js and "1920" in js
     assert c.get("/api/circle/not a handle").status_code in (400, 404)
     assert "Draw my circle" in c.get("/circle").get_data(as_text=True)
     assert c.get("/circle?h=@Alice").headers["Location"].endswith("/circle/Alice")
@@ -3011,3 +3016,5 @@ def test_dragon_circle_card_is_stamped_pdtools_not_a_name():
     src = (Path(__file__).parent.parent / "radar" / "circle.py").read_text()
     card = src[src.index("DRAGON CIRCLE"):src.index("def layout")]
     assert "Jon Wynn" not in card and '"pdtools.xyz"' in card
+    # few words: no tagline, no second link, no small print
+    assert "engage with" not in card and "pdtools.xyz/circle" not in card and "unofficial" not in card

@@ -92,6 +92,13 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 
 /* buttons */
 .acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.acts .btn[hidden] { display: none; }
+.vm { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 16px; background: rgba(8, 4, 18, .86); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.vm[hidden] { display: none; }
+.vm-box { width: min(1100px, 100%); display: grid; gap: 14px; justify-items: center; }
+.vm-box canvas { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 20px; box-shadow: 0 30px 80px -30px #000, 0 0 0 1px rgba(255, 255, 255, .12); background: #130b29; }
+.vm-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.vm-msg { margin: 0; color: #d8cdf2; font-weight: 700; font-size: 14px; text-align: center; }
 @media (max-width: 860px) { .acts { justify-content: center; } }
 .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 50px; padding: 0 22px; border-radius: 999px; border: 1px solid var(--line);
   background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); font-weight: 900; font-size: 15px; text-decoration: none; cursor: pointer; overflow: hidden;
@@ -351,6 +358,7 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
         </div>
         <div class="acts">
           <a class="btn go" href="/circle/{{ data.handle }}.png?v={{ stamp }}" download="dragon-circle-{{ data.handle }}.png"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Save image</a>
+          <button class="btn" type="button" id="dc-vid" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5v15l13-7.5z"/></svg>Watch my circle video</button>
           <a class="btn" target="_blank" rel="noopener" href="https://x.com/intent/post?text={{ ('My Dragon Circle on pdtools 🐉 The Keepers who engage with me most in Pocket Dragons posts. Draw yours, free.') | urlencode }}&url={{ ('https://pdtools.xyz/circle/' ~ data.handle) | urlencode }}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.2-8.3L2 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z"/></svg>Post on X</a>
           <button class="btn" type="button" id="dc-copy" data-link="https://pdtools.xyz/circle/{{ data.handle }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>Copy link</button>
         </div>
@@ -441,6 +449,62 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
   </footer>
 </div>
 
+{% if data and spots %}
+<div class="vm" id="vm" hidden role="dialog" aria-modal="true" aria-label="My circle video">
+  <div class="vm-box">
+    <canvas id="vm-cv" width="1920" height="1080"></canvas>
+    <div class="vm-row">
+      <button class="btn go" type="button" id="vm-save">Save video</button>
+      <button class="btn" type="button" id="vm-x">Close</button>
+    </div>
+    <p class="vm-msg" id="vm-msg" role="status">Made on your phone in full HD, ready for X.</p>
+  </div>
+</div>
+<script type="application/json" id="dc-video-data">{{ {"handle": data.handle, "name": data.name, "count": data.people|length, "people": data.people|map(attribute="user")|list} | tojson }}</script>
+<script src="{{ asset('v21/save.js') }}"></script>
+<script src="{{ asset('v21/circlevideo.js') }}"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id), btn = $("dc-vid"); if (!btn || !window.pdCircleVideo) return;
+  const T = (t) => (window.pdT ? window.pdT(t) : t);
+  const D = JSON.parse($("dc-video-data").textContent);
+  const img = (h) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = `/api/avatar/${encodeURIComponent(h)}?s=big`; });
+  let opts = null, stop = null, muxing = null;
+  async function load() {
+    if (opts) return opts;
+    const pics = await Promise.all([D.handle, ...D.people].map(img));
+    await (document.fonts && document.fonts.load ? document.fonts.load('700 40px Fredoka') : Promise.resolve());
+    return (opts = { handle: D.handle, count: D.count, me: { img: pics[0], letter: (D.name || D.handle)[0].toUpperCase() },
+      people: D.people.map((u, i) => ({ user: u, img: pics[i + 1], letter: u[0].toUpperCase() })) });
+  }
+  function loadMuxer() {
+    if (window.Mp4Muxer) return Promise.resolve(window.Mp4Muxer);
+    return muxing || (muxing = new Promise((res) => { const sc = document.createElement("script"); sc.src = "{{ asset('v21/mp4-muxer.min.js') }}";
+      sc.onload = () => res(window.Mp4Muxer || null); sc.onerror = () => res(null); document.head.append(sc); }));
+  }
+  window.pdCircleVideo.ready().then((p) => { if (p) btn.hidden = false; });
+  function close() { $("vm").hidden = true; if (stop) stop(); stop = null; document.body.style.overflow = ""; btn.focus(); }
+  btn.addEventListener("click", async () => {
+    $("vm").hidden = false; document.body.style.overflow = "hidden"; $("vm-msg").textContent = T("Made on your phone in full HD, ready for X.");
+    stop = window.pdCircleVideo.play($("vm-cv"), await load()); $("vm-x").focus();
+  });
+  $("vm-x").addEventListener("click", close);
+  $("vm").addEventListener("click", (e) => { if (e.target === $("vm")) close(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("vm").hidden) close(); });
+  $("vm-save").addEventListener("click", async () => {
+    const b = $("vm-save"); if (b.disabled) return; b.disabled = true;
+    try {
+      const [o, muxer] = await Promise.all([load(), loadMuxer()]);
+      const blob = await window.pdCircleVideo.make({ ...o, muxer, onProgress: (k) => { $("vm-msg").textContent = T("Making your video…") + ` ${Math.round(k * 100)}%`; } });
+      const how = await window.pdSave(blob, `dragon-circle-${D.handle}.mp4`);
+      $("vm-msg").textContent = window.pdSaveToast(how, T("Video saved. Add it to your post on X.")) || T("Made on your phone in full HD, ready for X.");
+    } catch (e) { $("vm-msg").textContent = T("Could not make the video. Try again."); }
+    b.disabled = false;
+  });
+})();
+</script>
+{% endif %}
 <script src="{{ asset('i18n.js') }}"></script>
 <script>
 (() => {

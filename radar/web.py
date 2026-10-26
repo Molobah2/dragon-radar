@@ -1238,9 +1238,8 @@ def create_app(cfg: Config | None = None) -> Flask:
                                og_title=f"@{data['handle']}'s Dragon Circle on PD Tools",
                                og_desc=f"The {len(data['people'])} Keepers who engage with @{data['handle']} most in Pocket Dragons posts. Draw yours, free.")
 
-    @app.get("/circle/<handle>.png")
-    @circle_page_only
-    def circle_image(handle):
+    def circle_card(handle, kind):
+        """The Circle card picture, made once and kept for an hour (the video is made on the Keeper's own device)."""
         import io
         from concurrent.futures import ThreadPoolExecutor
         from pathlib import Path
@@ -1249,7 +1248,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         data = circle_data(handle)
         if not data.get("ok"):
             abort(404)
-        key = data["handle"].lower() + ":" + circle_stamp(data)
+        key = kind + ":" + data["handle"].lower() + ":" + circle_stamp(data)
         hit = circle_png.get(key)
         if not (hit and time.time() - hit[0] < CIRCLE_PNG_S):
             ip = client_ip(); nowt = time.time()
@@ -1268,13 +1267,20 @@ def create_app(cfg: Config | None = None) -> Flask:
                     return h.lower(), None
             with ThreadPoolExecutor(max_workers=6) as ex:
                 avatars = dict(ex.map(pic, handles))
-            png = render(data, avatars, str(Path(__file__).parent / "fonts"))
+            fonts = str(Path(__file__).parent / "fonts")
+            with render_lock:                      # one picture at a time, so the small server never runs out of memory
+                out = render(data, avatars, fonts)
             if len(circle_png) > 60:
                 circle_png.clear()
-            circle_png[key] = (time.time(), png); hit = circle_png[key]
+            circle_png[key] = (time.time(), out); hit = circle_png[key]
         r = app.response_class(hit[1], mimetype="image/png")
         r.headers["Cache-Control"] = "public, max-age=3600"
         return r
+
+    @app.get("/circle/<handle>.png")
+    @circle_page_only
+    def circle_image(handle):
+        return circle_card(handle, "png")
 
     @app.get("/api/circle/<handle>")
     @circle_page_only

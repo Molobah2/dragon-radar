@@ -137,13 +137,13 @@ def build(s, cfg, handle: str) -> dict:
 
 
 # ---------- the share picture (also the X preview card), 1200 x 675 ----------
-def render(data: dict, avatars: dict, font_dir: str) -> bytes:
-    import io
+def _scene(data: dict, avatars: dict, font_dir: str):
+    """Everything on the Circle card, ready to be put together: the night background, each Keeper's disc (with its
+    shadow) and where it sits, and the few words."""
     import math
     from PIL import Image, ImageDraw, ImageFilter, ImageFont
     W, H = 1200, 675
     f7 = lambda n: ImageFont.truetype(f"{font_dir}/fredoka-700.ttf", n)
-    f6 = lambda n: ImageFont.truetype(f"{font_dir}/fredoka-600.ttf", n)
     # background: deep plum night with a warm glow behind the circle
     bg = Image.new("RGB", (W, H), (22, 14, 44)); d = ImageDraw.Draw(bg)
     for i in range(H):
@@ -168,43 +168,62 @@ def render(data: dict, avatars: dict, font_dir: str) -> bytes:
             pd.text((size / 2, size / 2 + 2), (label or handle or "?")[:1].upper(), font=f7(int(size * .48)), fill=(255, 236, 210), anchor="mm")
         m = Image.new("L", (size * 4, size * 4), 0); ImageDraw.Draw(m).ellipse((0, 0, size * 4 - 1, size * 4 - 1), fill=255)
         tile.paste(pic, (0, 0), m.resize((size, size), Image.LANCZOS))
-        out = Image.new("RGBA", (size + 16, size + 16), (0, 0, 0, 0)); od = ImageDraw.Draw(out)
-        od.ellipse((0, 0, size + 15, size + 15), fill=ring + (255,)); out.alpha_composite(tile, (8, 8))
+        pad = 24; out = Image.new("RGBA", (size + 16 + pad * 2, size + 16 + pad * 2), (0, 0, 0, 0))
+        sm = Image.new("L", out.size, 0); ImageDraw.Draw(sm).ellipse((pad, pad + 8, pad + size + 15, pad + size + 23), fill=120)
+        out.paste((0, 0, 0, 255), (0, 0), sm.filter(ImageFilter.GaussianBlur(10)))
+        ImageDraw.Draw(out).ellipse((pad, pad, pad + size + 15, pad + size + 15), fill=ring + (255,)); out.alpha_composite(tile, (pad + 8, pad + 8))
         return out
 
-    def shadow_paste(img, x, y):
-        sh = Image.new("RGBA", bg.size, (0, 0, 0, 0)); m = Image.new("L", img.size, 0)
-        ImageDraw.Draw(m).ellipse((0, 0, img.width - 1, img.height - 1), fill=120)
-        sh.paste((0, 0, 0, 255), (int(x), int(y + 8)), m); bg.alpha_composite(sh.filter(ImageFilter.GaussianBlur(10)))
-        bg.alpha_composite(img, (int(x), int(y)))
+    def badge(rank):
+        b = Image.new("RGBA", (40, 40), (0, 0, 0, 0)); bd = ImageDraw.Draw(b)
+        bd.ellipse((3, 3, 37, 37), fill=(255, 214, 92, 255), outline=(60, 30, 80, 255), width=3)
+        bd.text((20, 21), str(rank), font=f7(22), fill=(50, 26, 60), anchor="mm"); return b
 
     ppl = data.get("people", [])
     inner, outer = ppl[:INNER], ppl[INNER:INNER + OUTER]
-    for ring_people, r, size, col, off in ((outer, 268, 64, (196, 170, 255), .26), (inner, 175, 88, (255, 196, 92), 0)):
+    items = []    # (tile, centre x, centre y, badge or None, badge offset)
+    for ring_people, r, size, col, off in ((inner, 175, 88, (255, 196, 92), 0), (outer, 268, 64, (196, 170, 255), .26)):
         n = max(1, len(ring_people))
         for i, p in enumerate(ring_people):
             ang = -math.pi / 2 + (i / n) * 2 * math.pi + off
             x, y = cx + r * math.cos(ang), cy + r * math.sin(ang)
-            t = disc(p["user"], size, col, p.get("name")); shadow_paste(t, x - t.width / 2, y - t.height / 2)
             rank = ppl.index(p) + 1
-            if rank <= 3:
-                bx, by = x + size * .34, y - size * .5
-                d.ellipse((bx - 17, by - 17, bx + 17, by + 17), fill=(255, 214, 92, 255), outline=(60, 30, 80, 255), width=3)
-                d.text((bx, by + 1), str(rank), font=f7(22), fill=(50, 26, 60), anchor="mm")
-    me = disc(data.get("handle"), 170, (255, 160, 110), data.get("name")); shadow_paste(me, cx - me.width / 2, cy - me.height / 2)
-    # words on the left
-    d.rounded_rectangle((60, 120, 312, 166), 23, fill=(255, 196, 92, 255))
-    d.text((186, 144), "DRAGON CIRCLE", font=f7(24), fill=(40, 22, 54), anchor="mm")
+            items.append((disc(p["user"], size, col, p.get("name")), x, y, badge(rank) if rank <= 3 else None, (size * .34, -size * .5)))
+    me = (disc(data.get("handle"), 170, (255, 160, 110), data.get("name")), cx, cy)
+
     hd = "@" + (data.get("handle") or "")
-    size = 64
-    while size > 34 and d.textlength(hd, font=f7(size)) > 470: size -= 2
-    d.text((60, 236), hd, font=f7(size), fill=(255, 246, 228), anchor="lm")
-    d.text((60, 300), "The Keepers who engage with", font=f6(30), fill=(226, 214, 250), anchor="lm")
-    d.text((60, 340), "me most in dragon posts", font=f6(30), fill=(226, 214, 250), anchor="lm")
-    d.text((60, 410), f"{len(ppl)} Keepers in my circle", font=f7(30), fill=(255, 214, 150), anchor="lm")
-    d.text((60, 560), "pdtools.xyz/circle", font=f7(30), fill=(255, 160, 116), anchor="lm")
-    d.text((60, 600), "free, unofficial community tool", font=f6(22), fill=(196, 182, 228), anchor="lm")
-    d.text((W - 36, H - 30), "pdtools.xyz", font=f7(26), fill=(255, 246, 228, 220), anchor="rm")
+    size = 70
+    while size > 36 and ImageDraw.Draw(bg).textlength(hd, font=f7(size)) > 470: size -= 2
+    def words(img, a=1.0, dy=0):
+        """just three things on the left, plus the pdtools stamp: what it is, whose it is, how many"""
+        if a <= 0: return
+        lay = Image.new("RGBA", img.size, (0, 0, 0, 0)); w = ImageDraw.Draw(lay); A = int(255 * a)
+        w.rounded_rectangle((60, 214 + dy, 312, 260 + dy), 23, fill=(255, 196, 92, A))
+        w.text((186, 238 + dy), "DRAGON CIRCLE", font=f7(24), fill=(40, 22, 54, A), anchor="mm")
+        w.text((60, 330 + dy), hd, font=f7(size), fill=(255, 246, 228, A), anchor="lm")
+        w.text((60, 410 + dy), f"{len(ppl)} Keepers in my circle", font=f7(32), fill=(255, 214, 150, A), anchor="lm")
+        w.text((W - 36, H - 30), "pdtools.xyz", font=f7(26), fill=(255, 246, 228, int(220 * a)), anchor="rm")
+        img.alpha_composite(lay)
+    return bg, items, me, words
+
+
+def _put(img, tile, x, y, k=1.0):
+    from PIL import Image
+    if k <= 0: return
+    if abs(k - 1) > .01:
+        w = max(1, int(tile.width * k)); tile = tile.resize((w, w), Image.BILINEAR)
+    img.alpha_composite(tile, (int(x - tile.width / 2), int(y - tile.height / 2)))
+
+
+def render(data: dict, avatars: dict, font_dir: str) -> bytes:
+    import io
+    bg, items, me, words = _scene(data, avatars, font_dir)
+    for tile, x, y, b, (bx, by) in items:
+        _put(bg, tile, x, y)
+    for tile, x, y, b, (bx, by) in items:
+        if b is not None: _put(bg, b, x + bx, y + by)
+    _put(bg, *me)
+    words(bg)
     buf = io.BytesIO(); bg.convert("RGB").save(buf, "PNG", optimize=True); return buf.getvalue()
 
 
