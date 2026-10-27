@@ -3064,3 +3064,11 @@ def test_blinkys_song_then_jons_songs_open_the_playlist():
     assert [s["title"] for s in pl[:3]] == ["Blinky's song", "Dragons Season", "Empire of Embers"]   # Blinky's song opens again (27 Oct)
     assert all(s["by"] == "Jon Wynn" and s["x"] == "jonwynnx" and os.path.exists("radar/static/" + s["src"]) for s in pl[1:3])
     assert len(pl) >= 14                                                               # the community songs still follow
+
+
+def test_welcome_lane_notices_the_return_from_x_and_shows_the_share_button():
+    # X opened as its own app window, or the back button, sends no focus or visibility event: the lane checks itself
+    html = open("radar/templates/welcome.html", encoding="utf-8").read()
+    assert 'addEventListener("pageshow", (e) => { if (e.persisted) back(); });' in html
+    assert "document.hasFocus()" in html and "setInterval(() => {" in html
+    assert "shareable.add(a.id)" in html and ".card.shareable .done" in html       # too quick to count, card still shareable

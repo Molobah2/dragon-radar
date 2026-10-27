@@ -99,7 +99,7 @@ body { background: #1d0e09; }
 .card .act .btn { flex: 1; height: 42px; font-size: 15px; padding: 0 14px; }
 .card .done { display: none; }
 .card.welcomed .hello { display: none; }
-.card.welcomed .done { display: inline-flex; }
+.card.welcomed .done, .card.shareable .done { display: inline-flex; }
 .card.welcomed::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(143, 240, 200, .45); }
 .stamp { position: absolute; right: 14px; top: 64px; transform: rotate(-8deg) scale(.6); opacity: 0; padding: 5px 10px; border-radius: 10px; border: 2px solid var(--mint);
   color: var(--mint); font: 700 13px/1 var(--disp); letter-spacing: 1px; text-transform: uppercase; transition: transform .5s var(--spring), opacity .3s; pointer-events: none; }
@@ -325,6 +325,7 @@ body { background: #1d0e09; }
   const welcomed = () => { const w = store.obj("pd:welcomed"); return w.day === today() && Array.isArray(w.ids) ? w.ids : []; };
   let show = "wait", limit = 24;
   const fresh = new Set();   // welcomed on this visit: they stay in view so the share button is there
+  const shareable = new Set();   // back from X too quickly to count: the share button still shows
   function ago(h) { return h < 1 ? "just now" : h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`; }
   function shareUrl(p) {
     const text = `Welcome to the Ancient Hatchery, @${p.user}! 🐉 Blinky and Pinky made you a card. So glad you are here.`;
@@ -335,7 +336,7 @@ body { background: #1d0e09; }
     const w = Math.min(100, Math.round((p.waited_h / 72) * 100));
     const opens = p.opens ? `<span class="chip">${p.opens === 1 ? "1 open" : p.opens + " opens"}</span>` : `<span class="chip wait"><i></i>No opens yet</span>`;
     const letter = esc((p.name || p.user)[0] || "?").toUpperCase();
-    return `<li style="--i:${Math.min(i, 14)}"><article class="card${done ? " welcomed" : ""}${p.user.toLowerCase() === focus ? " focus" : ""}" data-id="${esc(p.id)}">
+    return `<li style="--i:${Math.min(i, 14)}"><article class="card${done ? " welcomed" : ""}${!done && shareable.has(p.id) ? " shareable" : ""}${p.user.toLowerCase() === focus ? " focus" : ""}" data-id="${esc(p.id)}">
       <div class="top"><span class="ava">${letter}<img src="/api/avatar/${encodeURIComponent(p.user)}" alt="" loading="lazy" onerror="this.remove()"></span>
         <span class="who wl-who"><b>${esc(p.name)}</b><small>@${esc(p.user)}</small></span>${opens}</div>
       <p class="text wl-text">${esc(p.text || "Shared a post with art.")}</p>
@@ -429,11 +430,25 @@ body { background: #1d0e09; }
     if (!away || !away.gone) return;
     const a = away; away = null; keep();
     if (Date.now() - a.at > 6 * 3600e3) return;
-    if (Date.now() - a.gone < DWELL) { toast("Give the post a few seconds on X so your hello counts."); return; }
+    if (Date.now() - a.gone < DWELL) {
+      // too quick to count, but the welcome card is always there to share
+      fresh.add(a.id); shareable.add(a.id); render();
+      toast("Give the post a few seconds on X so your hello counts.");
+      return;
+    }
     welcome(a.id);
   }
   document.addEventListener("visibilitychange", () => (document.hidden ? left() : back()));
   addEventListener("blur", left); addEventListener("focus", back); addEventListener("pagehide", left);
+  // back with the browser's back button (page kept in memory): no focus or visibility event comes, so check here
+  addEventListener("pageshow", (e) => { if (e.persisted) back(); });
+  // and a gentle check every second for the rest (X opened as its own app window, some phones):
+  // a lost focus while a hello is pending counts as leaving, focus back counts as returning
+  setInterval(() => {
+    if (!away) return;
+    const here = document.visibilityState === "visible" && document.hasFocus();
+    if (!away.gone && !here) left(); else if (away.gone && here) back();
+  }, 1000);
   // a page the phone reloaded while the visitor was on X: settle it now, never later
   if (away && away.gone) { const a = away; away = null; keep(); if (Date.now() - a.gone >= DWELL && Date.now() - a.at < 6 * 3600e3) welcome(a.id); }
 
