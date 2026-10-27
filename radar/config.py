@@ -187,7 +187,6 @@ Config.mailbox = _mailbox
 # Community music makers, credited on the home page for everyone (HeartyBoi named them on 2026-10-13).
 # Which of their songs play on the site comes from static/audio/playlist.json. Avatars fall back to a letter.
 COMMUNITY_MUSIC = [
-    {"name": "Jon Wynn", "x": "jonwynnx", "songs": ["Empire of Embers", "Dragons Season"]},   # the default opening songs (26 Oct)
     {"name": "The Panda", "x": "ThePanda_NFT", "songs": ["Blinky's song"],
      "avatar": "https://pbs.twimg.com/profile_images/1794018791090708480/cd_1UKgj_200x200.jpg"},
     {"name": "DJ", "x": "bubblegum_dee", "songs": ["The Pocket Dragon Wakes", "Four-Leaf Clover Escape", "Dragons Rule The Den", "Incubator Seven Two Six",
@@ -201,6 +200,7 @@ COMMUNITY_MUSIC = [
      "avatar": "https://pbs.twimg.com/profile_images/2110632402162761728/my2B6t4a_200x200.jpg"},
     {"name": "Nacho", "x": "NachoAvg_", "songs": ["Pocket Full of Dragons"],
      "avatar": "https://pbs.twimg.com/profile_images/2098607625336487936/b-hopSxT_200x200.jpg"},
+    {"name": "Jon Wynn", "x": "jonwynnx", "songs": ["Dragons Season", "Empire of Embers"]},   # listed last on the home page (27 Oct)
 ]
 
 
