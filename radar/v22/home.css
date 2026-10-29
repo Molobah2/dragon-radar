@@ -17,7 +17,7 @@ body.v22 { background: #bfe8ff; background-image: none; }
 header.v22-head { position: fixed; top: 0; left: 0; right: 0; z-index: 30; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-bottom: 10px; background: linear-gradient(rgba(40, 90, 140, .28), rgba(40, 90, 140, 0)); }
 header.v22-head .logo img { height: 48px; }
-.v22-track { position: relative; z-index: 0; width: 100vw; margin-left: calc(50% - 50vw); pointer-events: none; }
+.v22-track { position: relative; z-index: 0; pointer-events: none; }   /* only its height matters; no width, so no sideways scrollbar */
 
 .v22-hint { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 8px;
   font: 800 12px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; color: #fff; text-shadow: 0 2px 10px rgba(40, 80, 130, .55); pointer-events: none; }

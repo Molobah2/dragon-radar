@@ -444,7 +444,7 @@
   const readScroll = () => { target = scrollY / VH; };
   addEventListener("scroll", readScroll, { passive: true });
   addEventListener("resize", () => { size(); readScroll(); });
-  skip.addEventListener("click", () => { const t = document.getElementById("tools"); if (t) t.scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); });
+  skip.addEventListener("click", () => { const t = document.getElementById("tools"); if (t) t.scrollIntoView({ behavior: "auto" }); });
   // the page content sits above the stage, so a touch reaches the scene only through empty space
   const onScene = (t) => t === document.body || t === document.documentElement || t.classList.contains("wrap") || !!t.closest(".v22-track,.v22-stage");
   const letterAt = (x, y) => letters.find((s) => { if (s.classList.contains("gap") || +s.style.opacity < 0.5) return false; const r = s.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; });
@@ -485,6 +485,7 @@
     requestAnimationFrame(frame);
     const time = reduce ? 0 : (now - t0) / 1000;
     clock = (now - t0) / 1000;
+    if (Math.abs(target - cur) > 1.5) cur = target;          // a big jump (skip, a link to the tools) lands at once, never replays the story
     cur += (target - cur) * (reduce ? 1 : 0.11);
     if (Math.abs(target - cur) < 0.0005) cur = target;
     tiltX += (tiltTX - tiltX) * 0.06; tiltY += (tiltTY - tiltY) * 0.06;
