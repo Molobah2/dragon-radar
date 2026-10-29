@@ -1,0 +1,22 @@
+{# v2.2 nests: each egg floats over its nest. Hover or a first tap lifts it, a crack lets the light out, and its tools
+   come out as cards orbiting the egg on a tilted ring. Swipe to spin the ring; the card you pick flips toward you. #}
+<div class="section-head" id="tools">Pick a nest</div>
+<section class="n22" id="n22" aria-label="The four parts of pdtools">
+  {% for s in nav.sections %}{% set home = s.home if s.key != 'feed' else '/friends' %}{% set tl = s.tabs|rejectattr("key", "equalto", "progress")|list %}
+  <div class="n22-nest" data-k="{{ s.key }}" style="--hue:{{ ['#ffc94d', '#ff8fb3', '#8fa8ff', '#7fe0c0'][loop.index0] }}">
+    <div class="n22-stage">
+      <i class="n22-rays" aria-hidden="true"></i>
+      <button class="n22-egg" type="button" aria-expanded="false" aria-controls="n22-ring-{{ s.key }}" aria-label="Open {{ s.name }}">
+        <img src="{{ asset('v21/nest/' ~ s.key ~ '.webp') }}" alt="" width="520" height="465" decoding="async"{% if loop.index > 2 %} loading="lazy"{% endif %}>
+        <svg class="n22-crack" viewBox="0 0 100 100" aria-hidden="true"><path d="M44 18 49 25 45 31 52 36 48 43 55 48"/></svg>
+        <i class="n22-shine" aria-hidden="true"></i>
+      </button>
+      <ul class="n22-ring" id="n22-ring-{{ s.key }}" aria-label="{{ s.name }} tools">
+        {% for t in tl %}<li class="n22-card" style="--i:{{ loop.index0 }}"><a href="{{ t.path }}">
+          {% if t.who %}<img src="{{ asset(t.who) }}" alt="" width="44" height="44" loading="lazy">{% else %}<i class="n22-dot" aria-hidden="true"></i>{% endif %}
+          <b>{{ t.name }}</b></a></li>{% endfor %}
+      </ul>
+    </div>
+    <a class="n22-name" href="{{ home }}"><b>{{ s.name }}</b><span>{{ s.line }}</span></a>
+  </div>{% endfor %}
+</section>

@@ -18,7 +18,7 @@ import hashlib
 from pathlib import Path
 from functools import wraps
 
-from flask import Flask, Response, abort, g, has_request_context, jsonify, make_response, redirect, render_template, request, session, url_for
+from flask import Flask, Response, abort, g, has_request_context, jsonify, make_response, redirect, render_template, request, send_file, session, url_for
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 
@@ -489,6 +489,38 @@ def create_app(cfg: Config | None = None) -> Flask:
             stats_cache["at"] = time.time()
         return stats_cache["data"]
 
+    def v22_on() -> bool:
+        """v2.2 is shown to everyone after launch, before that only to Jon's unlocked devices (and not while he has
+        switched it off on that device to see the site the way everyone else does)."""
+        return cfg.v22_public or (bool(g.get("circle")) and request.cookies.get("pd22off") != "1")
+
+    V22_DIR = Path(__file__).parent / "v22"
+
+    @app.get("/v22/a/<path:name>")
+    def v22_asset(name):
+        """v2.2's own files (code, styles, art), served only to devices that can see v2.2."""
+        if not v22_on() or ".." in name or name.startswith("/"):
+            abort(404)
+        path = (V22_DIR / name).resolve()
+        if not str(path).startswith(str(V22_DIR.resolve())) or not path.is_file():
+            abort(404)
+        resp = send_file(path, max_age=0)
+        resp.headers["Cache-Control"] = "public, max-age=31536000, immutable" if cfg.v22_public else "private, no-store"
+        return resp
+
+    @app.get("/lab/v22/<mode>")
+    @circle_only   # Jon's tools stay locked even after launch
+    def v22_switch(mode):
+        """Jon switches v2.2 off on this device to see the site as everyone does, and back on."""
+        if mode not in ("on", "off"):
+            abort(404)
+        resp = redirect(url_for("hub"))
+        if mode == "off":
+            resp.set_cookie("pd22off", "1", max_age=60 * 60 * 24 * 365, secure=request.is_secure, httponly=True, samesite="Lax", path="/")
+        else:
+            resp.delete_cookie("pd22off", path="/")
+        return resp
+
     @app.get("/")
     def hub():
         from .config import COMMUNITY_MUSIC
@@ -496,8 +528,14 @@ def create_app(cfg: Config | None = None) -> Flask:
         makers = [{**m, "playing": any(t in on_site for t in m["songs"]), "on_site": [t for t in m["songs"] if t in on_site]}
                   for m in COMMUNITY_MUSIC]
         from .ama import AMAS
-        return render_template("hub.html", cfg=cfg, stats=public_stats() if g.get("v2") else None, music_makers=makers,
-                               ama_count=len(AMAS), news=[n for n in NEWS if g.get("circle") or cfg.circle_public or n.get("href") != "/circle"][:3])
+        v22 = v22_on()
+        resp = make_response(render_template("hub.html", cfg=cfg, stats=public_stats() if g.get("v2") else None, music_makers=makers,
+                               ama_count=len(AMAS), news=[n for n in NEWS if g.get("circle") or cfg.circle_public or n.get("href") != "/circle"][:3],
+                               v22=v22))
+        if v22 and not cfg.v22_public:              # the private v2.2 home is never kept by a shared cache
+            resp.headers["Cache-Control"] = "private, no-store"
+            resp.headers.add("Vary", "Cookie")
+        return resp
 
     @app.get("/keepers")
     def keepers_old():

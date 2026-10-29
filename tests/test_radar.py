@@ -2288,7 +2288,7 @@ def test_signed_keepers_progress_is_kept_safe_and_merged(cfg, Session):
 def _v21_client(cfg):
     cfg.v2_public = True; cfg.preview_key = "secret-preview-phrase-123"
     app = create_app(cfg); app.config["TESTING"] = True
-    c = app.test_client(); c.get("/preview/secret-preview-phrase-123"); c.get("/lab/circle/on")
+    c = app.test_client(); c.get("/preview/secret-preview-phrase-123"); c.get("/lab/circle/on"); c.get("/lab/v22/off")
     return app, c
 
 
@@ -2870,7 +2870,7 @@ def test_four_sections_group_the_tools_with_one_dock_everywhere(cfg, Session):
     plain = app.test_client()
     for path in ("/community", "/learn", "/create"):
         assert plain.get(path).status_code == 404, path
-    c.get("/lab/circle/on")
+    c.get("/lab/circle/on"); c.get("/lab/v22/off")
     n = nav_for("/friends/keepers", True, True)
     assert [s["key"] for s in n["sections"]] == ["feed", "community", "learn", "create"]
     assert n["cur"] == "community" and n["tab"] == "keepers"
@@ -2919,7 +2919,7 @@ def test_keeper_badge_and_four_nests(cfg, Session):
     page shows the four sections as nests, each with its own egg art and the tools that rise out of it."""
     from pathlib import Path
     app, c = _v21_client(cfg)
-    c.get("/lab/circle/on")
+    c.get("/lab/circle/on"); c.get("/lab/v22/off")
     hub = c.get("/").get_data(as_text=True)
     for k in ("feed", "community", "learn", "create"):
         assert f'v21/nest/{k}.webp' in hub
@@ -3266,3 +3266,29 @@ def test_origin_lock_and_book_picture_review(cfg, Session):
     assert c.post("/api/ev", data="{}", content_type="text/plain", headers={"X-Origin-Key": "s3cret-origin-key"}).status_code != 403
     assert c.get("/friends").status_code == 200                                    # pages still load
     assert c.get("/lab/books").status_code == 404
+
+
+def test_v22_home_is_only_for_jons_devices(cfg, Session):
+    """v2.2 (the Sunrise Hatchery home, the new nests, dragons that react to a touch) shows only on Jon's unlocked
+    devices until launch. Everyone else gets today's home with no trace of it, its files answer 404, and Jon can
+    switch it off on his own device to see the site as everyone does."""
+    cfg.v2_public = True; cfg.v21_public = True
+    stranger = create_app(cfg).test_client()
+    page = stranger.get("/").get_data(as_text=True)
+    assert "v22" not in page and "PD22" not in page and "Sunrise" not in page
+    assert stranger.get("/v22/a/home.js").status_code == 404 and stranger.get("/v22/a/speed.webp").status_code == 404
+    assert stranger.get("/lab/v22/off").status_code == 404
+    app, jon = _v21_client(cfg)
+    jon.get("/lab/v22/on")
+    r = jon.get("/")
+    page = r.get_data(as_text=True)
+    assert 'class="v22' in page and "window.PD22" in page and 'id="n22"' in page and "private" in r.headers.get("Cache-Control", "")
+    js = jon.get("/v22/a/home.js")
+    assert js.status_code == 200 and "Sunrise Hatchery" in js.get_data(as_text=True) and "private" in js.headers["Cache-Control"]
+    assert jon.get("/v22/a/../web.py").status_code == 404 and jon.get("/v22/a/nothing.js").status_code == 404
+    jon.get("/lab/v22/off")
+    assert "window.PD22" not in jon.get("/").get_data(as_text=True)        # switched off on this device
+    jon.get("/lab/v22/on")
+    assert "window.PD22" in jon.get("/").get_data(as_text=True)
+    cfg.v22_public = True                                                   # launch day: everyone
+    assert "window.PD22" in create_app(cfg).test_client().get("/").get_data(as_text=True)

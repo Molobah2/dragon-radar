@@ -1,0 +1,20 @@
+{# v2.2: the Sunrise Hatchery. A fixed stage (back canvas, floating letters, front canvas) driven by the scroll track
+   below the header. Every dragon, the egg, the clouds, the butterflies and the letters answer a tap. #}
+<div class="v22-stage" id="v22-stage" aria-hidden="true">
+  <canvas id="v22-bg"></canvas>
+  <div class="v22-title" id="v22-title"><h2 id="v22-pd"></h2></div>
+  <canvas id="v22-fg"></canvas>
+</div>
+<div class="v22-hint" id="v22-hint" aria-hidden="true"><span>Scroll to hatch</span><i></i></div>
+<button class="v22-skip" id="v22-skip" type="button">Skip to the tools</button>
+{% if nav and nav.sections %}{% for s in nav.sections %}
+<section class="v22-chap" data-i="{{ loop.index0 }}" aria-hidden="true">
+  <p class="v22-eyebrow">{{ "%02d"|format(loop.index) }} · {{ s.name }}</p>
+  <h3>{{ s.name }}</h3>
+  <p class="v22-line">{{ s.line }}</p>
+</section>{% endfor %}{% endif %}
+<script>window.PD22 = {{ {
+  "blinky": asset('v21/blinky-lantern.webp'), "pinky": asset('v21/pinky-heart.webp'), "speed": "/v22/a/speed.webp?v=" ~ asset_version,
+  "nestBack": "/v22/a/nest-back.webp?v=" ~ asset_version, "nestFront": "/v22/a/nest-front.webp?v=" ~ asset_version,
+  "eggs": [asset('v21/nest/feed.webp'), asset('v21/nest/community.webp'), asset('v21/nest/learn.webp'), asset('v21/nest/create.webp')]
+} | tojson }};</script>

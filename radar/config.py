@@ -49,6 +49,9 @@ class Config:
     # v2.1 launch switch: V21_PUBLIC=1 opens the welcome lane, Creator of the week, Wrapped, Dragon Quiz, Cheers, the
     # sticker shelf and the Hatchery canvas to everyone and lets shared caches keep their cards (the Circle stays locked)
     v21_public: bool = field(default_factory=lambda: _bool("V21_PUBLIC", "0"))
+    # v2.2 (the Sunrise Hatchery home, the new nests, dragons that react): only Jon's own unlocked devices see it
+    # until launch day (V22_PUBLIC=1). Everyone else gets today's home, with no trace of v2.2.
+    v22_public: bool = field(default_factory=lambda: _bool("V22_PUBLIC", "0"))
     # Dragon Circle launch switch: CIRCLE_PUBLIC=1 opens /circle to everyone. Jon's own tools (/lab/creator,
     # /lab/dragondle) and the tester bar stay with the devices he unlocked.
     circle_public: bool = field(default_factory=lambda: _bool("CIRCLE_PUBLIC", "0"))

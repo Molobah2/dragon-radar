@@ -12,6 +12,7 @@
   <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ asset('fonts.css') }}">
 {% include "_speed.html" %}
+{% if v22 %}<link rel="stylesheet" href="/v22/a/home.css?v={{ asset_version }}">{% endif %}
   {% if cfg.scene_base %}<link rel="preconnect" href="{{ cfg.scene_base }}" crossorigin>
   <script>window.PD_FOREST = {{ {"base": cfg.scene_base, "folder": cfg.scene_folder, "ver": cfg.hub_version,
     "still": cfg.hub_scene, "intro": cfg.hub_intro, "loop": cfg.hub_loop} | tojson }};</script>{% endif %}
@@ -270,8 +271,8 @@
     .hn-list span { display: block; font-size: 13.5px; font-weight: 600; opacity: .86; line-height: 1.4; }
   </style>
 </head>
-<body>
-  {% if cfg.scene_base %}
+<body{% if v22 %} class="v22"{% endif %}>
+  {% if v22 %}{% include "_v22_stage.html" %}{% elif cfg.scene_base %}
   {% set still = cfg.scene_base ~ "/image/upload/" %}
   <div class="forest" id="forest" aria-hidden="true">
     <div class="l blur" id="f-blur" style="background-image:url('{{ still }}c_scale,w_640/e_blur:1400/f_auto/q_auto:eco/v{{ cfg.hub_version }}/{{ cfg.scene_folder }}/{{ cfg.hub_scene }}')"></div>
@@ -282,7 +283,7 @@
   </div>
   {% endif %}
   <div class="wrap">
-    <header>
+    <header{% if v22 %} class="v22-head"{% endif %}>
       <a class="logo" href="{{ url_for('hub') }}"><img src="{{ asset('brand/pdtools-logo.webp') }}" alt="PD Tools" width="168" height="56"></a>
       <div class="hdr-right">{% include "_sound.html" %}
       <label class="lang-pick" title="Language">
@@ -291,7 +292,8 @@
       </label></div>
     </header>
 
-    <section class="hero">
+    {% if v22 %}<div class="v22-track" id="v22-track" aria-hidden="true"></div>{% endif %}
+    <section class="hero{% if v22 %} v22-hero{% endif %}">
       <span class="eyebrow reveal">Unofficial · Made for Pocket Dragons Keepers</span>
       <h1 class="reveal" data-i18n-html="hubH1">Tools for<br>the <span class="pop">Keepers.</span></h1>
       <p class="lede reveal">Unofficial community tools for Pocket Dragons Keepers. Pick one and jump in.</p>
@@ -336,7 +338,8 @@
     </section>{% endif %}
     <a class="more-cue" href="#tools" aria-label="See all tools"><span>All tools</span><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 
-    {% if v21_open and nav and nav.sections %}<div class="section-head" id="tools">Pick a nest</div>
+    {% if v22 and nav and nav.sections %}{% include "_v22_nests.html" %}
+    {% elif v21_open and nav and nav.sections %}<div class="section-head" id="tools">Pick a nest</div>
     <section class="nests" id="nests" aria-label="The four parts of pdtools">
       {% for s in nav.sections %}{% set home = s.home if s.key != 'feed' else '/friends' %}{% set tl = s.tabs|rejectattr("key", "equalto", "progress")|list %}
       <div class="nst reveal" data-k="{{ s.key }}">
@@ -455,7 +458,8 @@
   <script>window.PD_SOUND = {{ {"ambience": asset('audio/forest-ambience.m4a'), "songs": site_songs(), "carryOnly": True, "picker": asset('music.js')} | tojson }};</script>
   <script src="{{ asset('i18n.js') }}"></script>
   <script src="{{ asset('sound.js') }}" defer></script>
-  {% if cfg.scene_base %}<script src="{{ asset('forest.js') }}" defer></script>{% endif %}
+  {% if v22 %}<script src="/v22/a/home.js?v={{ asset_version }}" defer></script>
+  {% elif cfg.scene_base %}<script src="{{ asset('forest.js') }}" defer></script>{% endif %}
   <script>if ("serviceWorker" in navigator && location.protocol === "https:") addEventListener("load", () => navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {}));</script>
   <script src="{{ asset('hit.js') }}" defer></script>
   {% include "_preview.html" %}
