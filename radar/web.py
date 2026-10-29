@@ -2030,6 +2030,14 @@ def create_app(cfg: Config | None = None) -> Flask:
                          "fz": day(g_in.get("fz"))},
                    "e": num(dex_in.get("e"), 1_000_000),
                    "s": {k: day(v) for k, v in s_in.items() if k in ("moon", "ember", "star") and day(v)}}
+        # swaps (v2.1): three spare commons for one not found yet, each logged once so devices merge without doubling
+        sw = []
+        for x in (dex_in.get("sw") if isinstance(dex_in.get("sw"), list) else [])[-300:]:
+            if (isinstance(x, dict) and num(x.get("t"), 10**13) and isinstance(x.get("give"), list) and len(x["give"]) == 3
+                    and all(gv in DEX_IDS for gv in x["give"]) and x.get("got") in DEX_IDS):
+                sw.append({"t": num(x["t"], 10**13), "give": list(x["give"]), "got": x["got"]})
+        if sw:
+            dex_out["sw"] = sw
         # today's daily goal count travels too, so a new device shows the same "x/20 Keeper posts today"
         goal_in = body.get("goal") if isinstance(body.get("goal"), dict) else {}
         goal_out = {"day": day(goal_in.get("day")), "n": num(goal_in.get("n"), 200)}

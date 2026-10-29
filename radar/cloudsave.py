@@ -81,6 +81,13 @@ def merge(old: dict, new: dict) -> dict:
                     secrets[k] = min(secrets.get(k, v), v)
         out["dex"] = {"have": have, "last": max(lasts) if lasts else None, "n": max(_int(da.get("n")), _int(db.get("n"))),
                       "g": _run(da.get("g") or {}, db.get("g") or {}), "e": max(_int(da.get("e")), _int(db.get("e"))), "s": secrets}
+        swaps = {}                                   # duplicate swaps: joined by their time, so none is lost or counted twice
+        for src in (da.get("sw") or [], db.get("sw") or []):
+            for x in src if isinstance(src, list) else []:
+                if isinstance(x, dict) and isinstance(x.get("t"), int) and x["t"] not in swaps:
+                    swaps[x["t"]] = x
+        if swaps:
+            out["dex"]["sw"] = [swaps[t] for t in sorted(swaps)][-300:]
     return out
 
 

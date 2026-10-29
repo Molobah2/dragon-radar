@@ -55,6 +55,7 @@
     // the relic tally: older saves start from the feed history once, after that only the daily allowance counts
     out.e = d && Number.isFinite(d.e) ? d.e | 0 : past;
     out.ed = d && d.ed && typeof d.ed === "object" ? d.ed : { day: null, n: 0 };
+    out.sw = d && Array.isArray(d.sw) ? d.sw.filter((x) => x && Array.isArray(x.give) && typeof x.got === "string") : [];
     return out;
   }
   let dex = load();
@@ -66,6 +67,20 @@
   const owned = (e) => ((dex.have[e.sp.id] || {})[TK[e.tier]] || 0) > 0;
   const found = () => ENTRIES.filter(owned).length;
   const foundIn = (tier) => ENTRIES.filter((e) => e.tier === tier && owned(e)).length;
+  // swaps: three spare common dragons for one not found yet. The spares stay counted in "have" (so merging two
+  // devices never loses or doubles a dragon); every swap is logged once and its three count as spent.
+  const SWAP = 3;
+  const swapLog = () => (Array.isArray(dex.sw) ? dex.sw : []);
+  function spentOf(id) { let n = 0; for (const x of swapLog()) for (const g of x.give || []) if (g === id) n++; return n; }
+  function countOf(e) { const h = (dex.have[e.sp.id] || {})[TK[e.tier]] || 0; return e.tier === "common" && h > 0 ? Math.max(1, h - spentOf(e.sp.id)) : h; }
+  const spareCount = () => ENTRIES.reduce((a, e) => a + (e.tier === "common" ? Math.max(0, countOf(e) - 1) : 0), 0);
+  const swapMissing = () => ENTRIES.filter((e) => e.tier === "common" && !owned(e));
+  function swapPick() {   // the three spares to give: always from the dragons with the most copies
+    const left = ENTRIES.filter((e) => e.tier === "common").map((e) => ({ e, n: countOf(e) - 1 })).filter((x) => x.n > 0);
+    const give = [];
+    while (give.length < SWAP && left.length) { left.sort((a, b) => b.n - a.n); give.push(left[0].e); if (!--left[0].n) left.shift(); }
+    return give.length === SWAP ? give : null;
+  }
 
   // a brand new Keeper's first egg needs half the usual goal (set in app.js), so the first visit ends with a dragon
   const goalNow = () => (window.pdGoalNow ? window.pdGoalNow() : GOAL);
@@ -437,7 +452,7 @@
   egg.addEventListener("click", async () => {
     if (!shown || egg.disabled) return;
     egg.disabled = true;
-    const { entry, fresh } = shown;
+    const { entry, fresh, swap } = shown;
     const imgP = stickerUrl(entry, 520);
     if (entry.tier === "secret") {   // a slower, grander reveal: the seal breaks, the film plays, then the relic
       stage.dataset.state = "wobble"; await wait(1200);
@@ -455,18 +470,18 @@
     stage.dataset.state = "wobble"; await wait(1300);
     const url = await untilReady(entry, imgP);
     stage.dataset.state = "crack"; await wait(380);
-    keep(entry);
-    try { localStorage.removeItem("pd:dexEgg"); } catch (e) {}
+    if (!swap) { keep(entry); try { localStorage.removeItem("pd:dexEgg"); } catch (e) {} }
     pic.src = url; pic.alt = `${RARITY[entry.tier]} ${entry.sp.name} dragon`;
     egg.hidden = true; pic.hidden = false;
     setStage("reveal", entry.tier);
     showName(entry, fresh ? "new" : "copy");
+    if (swap) $("hatch-sub").textContent = "Swapped for 3 spare dragons. It is now on your shelf. Show it off on X.";
     refreshGoal();
     renderDex();
   });
 
   function showName(entry, mode) {
-    const n = $("hatch-name"), have = (dex.have[entry.sp.id] || {})[TK[entry.tier]] || 1;
+    const n = $("hatch-name"), have = countOf(entry) || 1;
     n.innerHTML = "";
     const tag = document.createElement("span"); tag.className = "hatch-tag " + entry.tier + (entry.tier === "secret" ? " " + entry.sp.id : ""); tag.textContent = RARITY[entry.tier];
     const b = document.createElement("b"); b.textContent = entry.tier === "secret" ? entry.sp.name : `${entry.sp.name} dragon`;
@@ -764,7 +779,7 @@
       const grid = grids[tier]; grid.innerHTML = "";
       $(`dex-count-${tier}`).textContent = `${foundIn(tier)} of ${ENTRIES.filter((e) => e.tier === tier).length}`;
       for (const entry of ENTRIES.filter((e) => e.tier === tier)) {
-        const have = owned(entry), count = (dex.have[entry.sp.id] || {})[TK[tier]] || 0;
+        const have = owned(entry), count = countOf(entry);
         const fig = document.createElement(have ? "button" : "div");
         fig.className = `dex-card ${tier} ${have ? "have" : "missing"}`;
         if (have) { fig.type = "button"; fig.addEventListener("click", () => { closeSheet(dexEl); setTimeout(() => viewOne(entry), 260); }); }
@@ -779,7 +794,55 @@
       }
     }
     renderSecrets();
+    renderSwap();
   }
+  // ---------- swap spares ----------
+  const nameList = (es) => {
+    const by = new Map(); for (const e of es) by.set(e.sp.name, (by.get(e.sp.name) || 0) + 1);
+    const a = [...by].map(([nm, k]) => (k > 1 ? `${k} ${nm}` : nm));
+    return a.length > 1 ? `${a.slice(0, -1).join(", ")} and ${a[a.length - 1]}` : a[0];
+  };
+  let swapArm = 0;
+  function renderSwap() {
+    const box = $("dex-swap"); if (!box) return;
+    const give = swapPick(), n = spareCount();
+    box.hidden = !give || !swapMissing().length;
+    if (box.hidden) return;
+    $("dex-swap-text").textContent = `You have ${n} spare dragons. Swap ${nameList(give)} for a dragon you have not found yet.`;
+    $("dex-swap-btn").textContent = "Swap 3 spares";
+    swapArm = 0;
+  }
+  function doSwap() {
+    const give = swapPick(), missing = swapMissing();
+    if (!give || !missing.length) return null;
+    const entry = rand(missing);
+    const h = dex.have[entry.sp.id] || {}; h.c = (h.c || 0) + 1; dex.have[entry.sp.id] = h;
+    dex.sw = [...swapLog(), { t: Date.now(), give: give.map((e) => e.sp.id), got: entry.sp.id }].slice(-300);
+    save(); track("swap", entry.key);
+    return { entry, give };
+  }
+  function openSwap(r) {   // saved before the egg opens, so a reload never loses or rerolls it
+    shown = { entry: r.entry, fresh: true, swap: true };
+    paintEgg(r.entry); sticker(r.entry, 520);
+    $("hatch-title").textContent = "Your swap egg";
+    $("hatch-sub").textContent = `${nameList(r.give)} went into the nest. Tap the egg to see who hatched.`;
+    $("hatch-name").textContent = ""; $("hatch-name").hidden = true;
+    $("hatch-actions").hidden = true; pic.hidden = true; egg.hidden = false; egg.disabled = false;
+    egg.setAttribute("aria-label", "Hatch the swap egg");
+    setStage("egg", "");
+    openSheet(hatchEl);
+  }
+  if ($("dex-swap-btn")) $("dex-swap-btn").addEventListener("click", () => {
+    const b = $("dex-swap-btn");
+    if (Date.now() - swapArm > 5000) {   // asks once more first, a swap can not be undone
+      swapArm = Date.now(); b.textContent = "Tap again to swap";
+      setTimeout(() => { if (swapArm && Date.now() - swapArm >= 5000) renderSwap(); }, 5100);
+      return;
+    }
+    const r = doSwap(); renderDex();
+    if (!r) return;
+    closeSheet(dexEl); setTimeout(() => openSwap(r), 260);
+  });
   function renderSecrets() {
     const grid = $("dex-secrets"); if (!grid) return;
     grid.innerHTML = "";
@@ -923,7 +986,7 @@
     };
     const grid = (X, Y, list, cols, s, sp) => list.forEach((it, i) => slot(X + (i % cols) * (s + sp), Y + Math.floor(i / cols) * (s + sp + 18), s, it.art, it.have, it.tier, it.n, it.name));
     const items = (tier) => ENTRIES.map((e, i) => ({ e, art: arts[i] })).filter((o) => o.e.tier === tier)
-      .map((o) => ({ art: o.art, have: owned(o.e), tier, n: (dex.have[o.e.sp.id] || {})[TK[tier]] || 0, name: owned(o.e) || tier !== "legend" ? o.e.sp.name : "???" }));
+      .map((o) => ({ art: o.art, have: owned(o.e), tier, n: countOf(o.e), name: owned(o.e) || tier !== "legend" ? o.e.sp.name : "???" }));
     const cols = 4, sp = 10, s = Math.floor((pw - 44 - sp * (cols - 1)) / cols);
     const gx = (X) => X + (pw - (s * cols + sp * (cols - 1))) / 2;
     const tierCount = (t) => `${foundIn(t)} OF ${ENTRIES.filter((e) => e.tier === t).length}`;
@@ -953,7 +1016,7 @@
   // the art versions of owned dragons are part of the key: when a dragon gets new art (Pink, October 2026),
   // a Keeper's shared book page is redrawn and sent again the next time they open their book
   const artKey = () => Object.keys(dex.have).sort().map((id) => id + ":" + ["c", "r", "l"].map((t) => (D.art || {})[`${id}-${t}`] || "").join(",")).join(";");
-  const bookKey = () => JSON.stringify([dex.have, dex.s, goalStreak(), xName(), artKey()]);
+  const bookKey = () => JSON.stringify([dex.have, dex.s, swapLog().length, goalStreak(), xName(), artKey()]);
   async function makeBook() {
     const key = bookKey();
     if (bookBlob && bookStamp === key) return bookBlob;
@@ -1076,7 +1139,7 @@
   (function waitReady(t) { if (document.body.classList.contains("ready") || t >= 20) autoHatch(1400); else setTimeout(() => waitReady(t + 1), 500); })(0);
   addEventListener("pd:goalshow", refreshGoal);
   addEventListener("pd:dexchange", () => { dex = load(); renderDex(); refreshGoal(); });
-  addEventListener("storage", (e) => { if (["pd:dex", "pd:goal", "pd:dle", "radar:followed"].includes(e.key)) { dex = load(); refreshGoal(); } });
+  addEventListener("storage", (e) => { if (["pd:dex", "pd:goal", "pd:dle", "radar:followed", "radar:pending"].includes(e.key)) { dex = load(); refreshGoal(); } });
   refreshGoal();
 
   async function todayHatch() {

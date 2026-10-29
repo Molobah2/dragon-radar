@@ -1617,8 +1617,8 @@ def test_speed_budget(cfg, Session):
     c = v2_client(cfg)
     # /friends raised on purpose (120k to 124k): the song picker controls and the dragon book; the picker's
     # list itself (music.js) only loads when someone opens it
-    budgets = {"/friends": (132_500, 60_000),   # raised on purpose: the X app note, its move code button and the safe copy for signed Keepers, the audit fixes (dialog focus, phone layout), the v2.1 daily goal steps, then the feed keeping its place (26 Oct)
-                "/": (15_000, 40_000), "/friends/keepers": (60_000, 40_000)}
+    budgets = {"/friends": (133_500, 60_000),   # raised on purpose: the X app note, its move code button and the safe copy for signed Keepers, the audit fixes (dialog focus, phone layout), the v2.1 daily goal steps, the feed keeping its place (26 Oct), then swapping spare dragons (29 Oct)
+                "/": (15_000, 40_000), "/friends/keepers": (60_500, 40_000)}   # keepers raised on purpose (29 Oct): the shared stylesheet gained the dragon swap box
     for path, (code_max, html_max) in budgets.items():
         html = c.get(path).get_data(as_text=True)
         assert "fonts.googleapis" not in html and "fonts.gstatic" not in html, path
@@ -3072,3 +3072,40 @@ def test_welcome_lane_notices_the_return_from_x_and_shows_the_share_button():
     assert 'addEventListener("pageshow", (e) => { if (e.persisted) back(); });' in html
     assert "document.hasFocus()" in html and "setInterval(() => {" in html
     assert "shareable.add(a.id)" in html and ".card.shareable .done" in html       # too quick to count, card still shareable
+
+
+def test_spare_dragon_swaps_are_kept_once_across_devices(cfg, Session):
+    """Three spare commons can be swapped for one not found yet. Each swap is logged once, the two devices' logs are
+    joined (never doubled), and a swap naming an unknown dragon or the wrong number of spares is dropped."""
+    from radar.db import FriendDevice
+    cfg.v2_public = True
+    with Session() as s:
+        s.add_all([FriendDevice(vid="a" * 32, key="nacho", username="Nacho", code="x", confirmed=True),
+                   FriendDevice(vid="b" * 32, key="nacho", username="Nacho", code="y", confirmed=True)])
+        s.commit()
+    c = create_app(cfg).test_client()
+    one = {"t": 1761700000000, "give": ["speed", "speed", "acid"], "got": "ghost"}
+    two = {"t": 1761700500000, "give": ["acid", "acid", "acid"], "got": "ice"}
+    phone = {"vid": "a" * 32, "dex": {"have": {"speed": {"c": 3}, "acid": {"c": 5}, "ghost": {"c": 1}}, "n": 9, "sw": [one]}}
+    laptop = {"vid": "b" * 32, "dex": {"have": {"speed": {"c": 3}, "acid": {"c": 5}, "ice": {"c": 1}}, "n": 9,
+                                       "sw": [one, two, {"t": 5, "give": ["speed"], "got": "ice"}, {"t": 6, "give": ["x", "y", "z"], "got": "ice"}]}}
+    assert c.post("/api/book/progress", json=phone).get_json()["ok"]
+    assert c.post("/api/book/progress", json=laptop).get_json()["ok"]
+    back = c.get("/api/book/progress?vid=" + "a" * 32).get_json()["dex"]
+    assert [x["t"] for x in back["sw"]] == [one["t"], two["t"]]
+    assert set(back["have"]) == {"speed", "acid", "ghost", "ice"}
+    js = (Path(__file__).parent.parent / "radar" / "static" / "dragons.js").read_text()
+    assert "function swapPick" in js and "countOf(entry)" in js and "if (!swap) { keep(entry);" in js
+    page = create_app(cfg).test_client().get("/friends").get_data(as_text=True)
+    assert 'id="dex-swap"' in page and "Three spare dragons can be swapped" in page
+
+
+def test_unanswered_follow_tap_counts_for_the_daily_goal():
+    """X opens in its own app on a phone, so many Keepers never answer "Did you follow?": a Follow on X tap made today
+    counts for the goal's follow step (Not yet clears it). The New in pdtools names are light on the night sky menu."""
+    root = Path(__file__).parent.parent / "radar" / "static"
+    app = (root / "app.js").read_text()
+    assert 'Object.values(store.obj("radar:pending")).some(today0)' in app
+    assert '"radar:followed", "radar:pending", "pd:goal"' in app
+    assert "html.theme-dark .side-new-list a { background: rgba(255, 255, 255, .07); color: #f2f4ff; }" in (root / "style.css").read_text()
+

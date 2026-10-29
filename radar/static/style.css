@@ -947,6 +947,11 @@ button.dex-card:hover { transform: translateY(-3px); }
 .dex-sec.rare { color: #7a5bd6; } .dex-sec.legend { color: #a87412; }
 .dex-next { margin: -4px 0 4px; font-weight: 700; font-size: 14px; color: #7a4a00; }
 .dex-next:empty { display: none; }
+.dex-swap { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; padding: 10px 12px; border-radius: 16px; background: rgba(255, 201, 77, .16); }
+.dex-swap[hidden] { display: none; }
+.dex-swap p { flex: 1; min-width: 0; margin: 0; font-weight: 700; font-size: 14px; line-height: 1.35; }
+.dex-swap .btn { flex: none; }
+@media (max-width: 480px) { .dex-swap { flex-direction: column; align-items: stretch; } }
 /* the dragon book: a landscape book of pages, two open side by side on wide screens, swiped one by one on phones */
 .sheet-book { width: min(1120px, 100%); }
 .dex-book { display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain;
@@ -1354,7 +1359,7 @@ html.theme-dark .day-chip.done span { color: #86efac; }
 .side-new-list a:hover { background: rgba(29, 36, 51, .1); }
 .side-new-list img { width: 34px; height: 34px; object-fit: contain; flex: none; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .25)); }
 .side-new-list img.snl-photo { object-fit: cover; border-radius: 10px; }
-body.dark-sky .side-new-list a, html.theme-dark .side-new-list a { background: rgba(255, 255, 255, .07); }
+body.dark-sky .side-new-list a, html.theme-dark .side-new-list a { background: rgba(255, 255, 255, .07); color: #f2f4ff; }
 body.dark-sky .side-new-list a:hover, html.theme-dark .side-new-list a:hover { background: rgba(255, 255, 255, .12); }
 
 /* long words in some languages ("Últimas 24 h") must never push the pulse wider than a phone */

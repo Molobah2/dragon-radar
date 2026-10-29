@@ -472,7 +472,13 @@
     const sIn = inc.s && typeof inc.s === "object" ? inc.s : {}, sMine = mine.s && typeof mine.s === "object" ? mine.s : {};
     const sOut = { ...sMine };
     for (const [k, v] of Object.entries(sIn)) if (typeof v === "string" && !sOut[k]) sOut[k] = v;
-    store.set("pd:dex", { ...mine, have, last, n, g, e, s: sOut, log: Array.isArray(mine.log) ? mine.log : [] });
+    // duplicate swaps: joined by their time, so a swap made on either device is kept once
+    const swaps = new Map();
+    for (const x of [...(Array.isArray(mine.sw) ? mine.sw : []), ...(Array.isArray(inc.sw) ? inc.sw : [])]) {
+      if (x && Number.isFinite(x.t) && Array.isArray(x.give) && x.give.length === 3 && typeof x.got === "string" && !swaps.has(x.t)) swaps.set(x.t, { t: x.t, give: x.give.map(String), got: x.got });
+    }
+    const sw = [...swaps.values()].sort((a, b) => a.t - b.t).slice(-300);
+    store.set("pd:dex", { ...mine, have, last, n, g, e, s: sOut, sw, log: Array.isArray(mine.log) ? mine.log : [] });
     dispatchEvent(new Event("pd:dexchange"));
     return gained;
   }
@@ -512,12 +518,14 @@
     const utcDay = new Date(utc).toISOString().slice(0, 10);
     return full(n) || (utcDay !== today() && full(n - 1));    // the local day may still be on yesterday's set
   }
-  // one new Keeper followed today (the "Yes, followed" tap in the Keepers directory), or nobody left to follow
+  // one new Keeper followed today ("Yes, followed", or a "Follow on X" tap never answered: X opens in its own app
+  // and many come back without seeing "Did you follow?"; "Not yet" clears it), or nobody left to follow
   function followDone() {
     if (goal.f) return true;
-    const fol = store.obj("radar:followed");
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
-    if (Object.values(fol).some((t) => typeof t === "number" && t >= t0.getTime() && t <= Date.now() + 6e4)) return true;
+    const today0 = (t) => typeof t === "number" && t >= t0.getTime() && t <= Date.now() + 6e4;
+    if (Object.values(store.obj("radar:followed")).some(today0)) return true;
+    if (Object.values(store.obj("radar:pending")).some(today0)) return true;
     return store.get("radar:kleft", -1) === 0;
   }
   function goalParts() {
@@ -595,7 +603,7 @@
     document.addEventListener("click", (e) => { if (!steps.hidden && !steps.contains(e.target) && !$("goal").contains(e.target)) closeSteps(); });
     addEventListener("keydown", (e) => { if (e.key === "Escape") closeSteps(); });
     // finished on another page or tab (the Dragon Quiz, the Keepers directory): the goal catches up straight away
-    addEventListener("storage", (e) => { if (["pd:dle", "radar:followed", "pd:goal", "radar:kleft"].includes(e.key)) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
+    addEventListener("storage", (e) => { if (["pd:dle", "radar:followed", "radar:pending", "pd:goal", "radar:kleft"].includes(e.key)) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
   }
   function closeSteps() { if (steps && !steps.hidden) { steps.hidden = true; $("goal").setAttribute("aria-expanded", "false"); steps.parentElement.classList.remove("gs-open"); } }
