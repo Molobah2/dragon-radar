@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Dragon book pictures · {{ cfg.hub_name }}{% endblock %}
+{% block body_class %}ready static-page{% endblock %}
+{% block main %}
+<section class="panel bl">
+  <h2>Dragon book pictures</h2>
+  <p>A Keeper's first book picture only shows on their public page (pdtools.xyz/k/name) and in link previews once you approve it here. After that, their new pictures go up on their own. The dragon counts always come from their saved progress, never from what the page sends.</p>
+  <h3 class="bl-sub">Waiting ({{ waiting|length }})</h3>
+  <ol class="bl-list">
+    {% for b in waiting %}
+    <li>
+      <a href="/k/{{ b.user }}/book.jpg?v={{ b.v }}" target="_blank" rel="noopener"><img src="/k/{{ b.user }}/book.jpg?v={{ b.v }}" alt="" loading="lazy" width="1200" height="675"></a>
+      <div class="bl-info">
+        <b><a href="https://x.com/{{ b.user }}" target="_blank" rel="noopener">@{{ b.user }}</a> · {{ b.found }} of 35 · {{ b.when }}</b>
+        <form class="bl-act" method="post" action="/lab/books/review">
+          <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="key" value="{{ b.key }}">
+          <button class="bl-btn" name="action" value="approve" type="submit">Looks right, approve</button>
+          <button class="bl-btn no" name="action" value="remove" type="submit">Remove the picture</button>
+        </form>
+      </div>
+    </li>
+    {% else %}
+    <li class="bl-empty">Nothing waiting.</li>
+    {% endfor %}
+  </ol>
+  {% if trusted %}
+  <h3 class="bl-sub">Approved Keepers ({{ trusted|length }})</h3>
+  <ul class="bl-trusted">
+    {% for k in trusted %}
+    <li><a href="/k/{{ k }}" target="_blank" rel="noopener">{{ k }}</a>
+      <form method="post" action="/lab/books/review"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="key" value="{{ k }}">
+        <button class="bl-link" name="action" value="untrust" type="submit">Check their next picture again</button>
+        <button class="bl-link" name="action" value="remove" type="submit">Remove picture</button></form></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+<style>
+  .bl { padding: 26px; margin-bottom: 26px; }
+  .bl h2 { margin: 0 0 8px; font-family: var(--font-display); font-size: 30px; }
+  .bl > p { margin: 0 0 16px; color: var(--ink-soft); font-weight: 600; }
+  .bl-sub { margin: 18px 0 10px; font-family: var(--font-display); font-size: 20px; }
+  .bl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .bl-list > li { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 14px; align-items: center; padding: 14px; border-radius: 18px;
+    background: rgba(255, 255, 255, .78); color: #1f2a2a; --ink: #1f2a2a; --ink-soft: #4d5e5c; }
+  .bl-list img { width: 100%; height: auto; border-radius: 10px; display: block; background: #e7e0d2; }
+  .bl-info { display: grid; gap: 10px; min-width: 0; } .bl-info b { overflow-wrap: anywhere; } .bl-info a { color: inherit; }
+  .bl-act { display: flex; flex-wrap: wrap; gap: 8px; }
+  .bl-btn { height: 40px; padding: 0 16px; border-radius: 999px; border: 0; background: #ffbf5f; color: #3a1a06; font-weight: 800; cursor: pointer; }
+  .bl-btn.no { background: #f6d3dc; color: #6a1730; }
+  .bl-empty { font-weight: 700; color: var(--ink-soft); grid-template-columns: 1fr !important; }
+  .bl-trusted { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .bl-trusted li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-weight: 700; }
+  .bl-trusted form { display: flex; gap: 8px; }
+  .bl-link { border: 0; background: none; padding: 0; font-weight: 700; color: var(--ink-soft); text-decoration: underline; cursor: pointer; }
+  @media (max-width: 640px) { .bl-list > li { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}

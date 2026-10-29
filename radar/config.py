@@ -62,6 +62,9 @@ class Config:
     hub_name: str = field(default_factory=lambda: os.environ.get("HUB_NAME", "pdtools"))
     # Main web address; requests to any other host (like the old onrender.com address) are sent here
     canonical_host: str = field(default_factory=lambda: os.environ.get("CANONICAL_HOST", "").strip().lower())
+    # a secret Cloudflare adds to every request (a Transform Rule). Once set, a request without it came around
+    # Cloudflare: its CF-Connecting-IP is not trusted and it can not post to the API. Empty: the check is off.
+    origin_key: str = field(default_factory=lambda: os.environ.get("ORIGIN_KEY", "").strip())
     # Paid X search on/off. Off = posts come only from the free Discord share channel
     x_search: bool = field(default_factory=lambda: _bool("X_SEARCH", "1"))
     # With paid search off, still read the team's own new posts from X (a few cents a month)

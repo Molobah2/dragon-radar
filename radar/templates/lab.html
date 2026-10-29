@@ -18,12 +18,14 @@
     {% endfor %}
   </ul>
   {% if tester %}
+  <p class="lab-sub" style="font-size:14px">Cloudflare secret header: {{ "arriving" if cf_seen else "not arriving yet" }} · origin lock {{ "on" if cf_on else "off" }}</p>
   <h3 class="lab-sub">v2.1, locked to this device</h3>
   <ul class="lab-list">
     <li><a href="/circle"><b>Dragon Circle</b><span>The Keepers who engage with someone most in dragon posts.</span></a></li>
     <li><a href="/welcome"><b>Welcome lane</b><span>First ever dragon posts from new Keepers, the ones still waiting first.</span></a></li>
     <li><a href="/creator"><b>Creator of the week</b><span>The public page with Pinky and the share card.</span></a></li>
     <li><a href="/lab/creator"><b>Pick this week's creator</b><span>pdtools suggests, you approve. Nothing goes up until you pick.</span></a></li>
+    <li><a href="/lab/books"><b>Dragon book pictures{% if books_waiting %} · {{ books_waiting }} waiting{% endif %}</b><span>A Keeper's first book picture shows on their page once you approve it. After that their new pictures go up on their own.</span></a></li>
     <li><a href="/lab/art"><b>Keeper Art reviews{% if art_waiting %} · {{ art_waiting }} waiting{% endif %}</b><span>Check each artwork and its making-of video. Nothing shows in the gallery until you approve it.</span></a></li>
     <li><a href="/wrapped"><b>Hatchery Wrapped</b><span>A Keeper's month as a short story, ending in a share card.</span></a></li>
     <li><a href="/quiz"><b>Dragon Quiz</b><span>Five daily questions about lore, badges and pdtools. Never mint.</span></a></li>

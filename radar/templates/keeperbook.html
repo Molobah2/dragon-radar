@@ -7,7 +7,8 @@
   <h2>@{{ friend.username }}'s dragon book</h2>
   {% if page %}
   <p class="kb-line">{{ page.found }} of 35 dragons found{% if page.streak > 1 %} · 🔥 {{ page.streak }} day goal streak{% endif %}</p>
-  {% if img %}<img class="kb-pic" src="{{ img }}" width="1200" height="675" alt="@{{ friend.username }}'s dragon book with every dragon they have found">{% endif %}
+  {% if img %}<img class="kb-pic" src="{{ img }}" width="1200" height="675" alt="@{{ friend.username }}'s dragon book with every dragon they have found">
+  {% elif waiting %}<p class="kb-line">Their book picture shows here once it has had a quick check.</p>{% endif %}
   {% else %}
   <p class="kb-line">This Keeper has not shared a book picture yet.</p>
   {% endif %}

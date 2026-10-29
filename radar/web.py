@@ -242,12 +242,16 @@ def create_app(cfg: Config | None = None) -> Flask:
     @app.get("/lab")
     @v2_only
     def lab():
-        art_waiting = 0
-        if g.get("circle"):                          # Jon's own devices: how much Keeper Art is waiting for him
-            from .db import ArtEntry
+        art_waiting = books_waiting = 0
+        cf_seen = bool(request.headers.get("X-Origin-Key"))   # for setting up the Cloudflare secret header
+        if g.get("circle"):                          # Jon's own devices: how much is waiting for him
+            from .db import ArtEntry, BookPage
             with Session() as s:
                 art_waiting = s.scalar(select(func.count()).select_from(ArtEntry).where(ArtEntry.status == "pending")) or 0
-        return render_template("lab.html", cfg=cfg, lab_tools=LAB_TOOLS, art_waiting=art_waiting)
+                trusted = book_trusted(s)
+                books_waiting = sum(1 for k in s.scalars(select(BookPage.key).where(BookPage.image != b"")).all() if k not in trusted)
+        return render_template("lab.html", cfg=cfg, lab_tools=LAB_TOOLS, art_waiting=art_waiting, books_waiting=books_waiting,
+                               cf_seen=cf_seen, cf_on=bool(cfg.origin_key))
 
     @app.get("/lab/circle/<mode>")
     def circle_lock(mode):
@@ -457,6 +461,9 @@ def create_app(cfg: Config | None = None) -> Flask:
     def canonical():
         host = (request.host or "").split(":")[0].lower()
         p = request.path
+        g.via_cf = not cfg.origin_key or hmac.compare_digest(request.headers.get("X-Origin-Key", ""), cfg.origin_key)
+        if not g.via_cf and p.startswith("/api") and request.method == "POST":
+            abort(403)                              # came around Cloudflare: no posting, so no faked addresses
         if not cfg.canonical_host or host == cfg.canonical_host or host in ("localhost", "127.0.0.1"):
             return None
         if p.startswith("/api") and request.method == "POST":
@@ -555,7 +562,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         value a browser sends, so it cannot be faked. X-Forwarded-For is only a fallback for other hosts."""
         h = request.headers
         v = (h.get("CF-Connecting-IP") or "").strip()
-        if v:
+        if v and g.get("via_cf", True):              # only trusted when the request really came through Cloudflare
             return v[:64]
         return ((h.get("X-Forwarded-For") or request.remote_addr or "?").split(",")[0]).strip()[:64]
 
@@ -815,6 +822,27 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     page_ips: dict[str, list[float]] = {}
 
+    def book_trusted(s) -> set[str]:
+        """Keepers whose book picture Jon has checked once. Their later pictures show straight away."""
+        from .db import get_setting
+        return {h.strip() for h in get_setting(s, "book_trusted", "").split(",") if h.strip()}
+
+    def saved_counts(s, key: str) -> dict | None:
+        """What the Keeper's safe copy on the server really holds, so a page never shows more than they have."""
+        from .cloudsave import load
+        from .db import KeeperSave
+        row = s.get(KeeperSave, key)
+        if row is None:
+            return None
+        dex = load(row.data).get("dex") or {}
+        have = dex.get("have") or {}
+        rare = sum(1 for h in have.values() if (h or {}).get("r"))
+        legend = sum(1 for h in have.values() if (h or {}).get("l"))
+        common = sum(1 for h in have.values() if (h or {}).get("c"))
+        g = dex.get("g") or {}
+        return {"found": common + rare + legend, "rare": rare, "legend": legend, "relics": len(dex.get("s") or {}),
+                "streak": max(int(g.get("best") or 0), int(g.get("count") or 0))}
+
     @app.post("/api/book/page")
     @v2_only
     def api_book_page():
@@ -859,6 +887,10 @@ def create_app(cfg: Config | None = None) -> Flask:
             row.username = friend.username
             row.found, row.rare, row.legend = _count(data.get("found"), 35), _count(data.get("rare"), 15), _count(data.get("legend"), 5)
             row.relics, row.streak = _count(data.get("relics"), 3), _count(data.get("streak"), 9999)
+            real = saved_counts(s, friend.key)             # never more than the Keeper's safe copy really holds
+            if real is not None:
+                row.found, row.rare, row.legend = min(row.found, real["found"]), min(row.rare, real["rare"]), min(row.legend, real["legend"])
+                row.relics, row.streak = min(row.relics, real["relics"]), min(row.streak, real["streak"])
             row.image, row.updated_at = img, utcnow()
             s.merge(row)
             s.commit()
@@ -878,9 +910,11 @@ def create_app(cfg: Config | None = None) -> Flask:
         friend, page = _book_row(name)
         if friend is None:
             abort(404)
-        stamp = int(page.updated_at.timestamp()) if page is not None and page.image else 0
+        with Session() as s:
+            ok_pic = friend.key in book_trusted(s) or bool(g.get("circle"))
+        stamp = int(page.updated_at.timestamp()) if page is not None and page.image and ok_pic else 0
         img = f"https://pdtools.xyz/k/{friend.username}/book.jpg?v={stamp}" if stamp else None
-        return render_template("keeperbook.html", cfg=cfg, friend=friend, page=page,
+        return render_template("keeperbook.html", cfg=cfg, friend=friend, page=page, waiting=bool(page and page.image and not ok_pic),
                                img=f"/k/{friend.username}/book.jpg?v={stamp}" if stamp else None,
                                og_title=f"@{friend.username}'s dragon book on PD Tools",
                                og_desc=(f"{page.found} of 35 dragons found by cheering on fellow Pocket Dragons Keepers. "
@@ -894,6 +928,9 @@ def create_app(cfg: Config | None = None) -> Flask:
         friend, page = _book_row(name)
         if page is None or not page.image:
             abort(404)
+        with Session() as s:
+            if friend is None or (friend.key not in book_trusted(s) and not g.get("circle")):
+                abort(404)                         # a first picture shows once Jon has checked it
         r = app.response_class(page.image, mimetype="image/jpeg")
         r.headers["Cache-Control"] = "public, max-age=300"
         return r
@@ -1884,6 +1921,39 @@ def create_app(cfg: Config | None = None) -> Flask:
                     s.rollback()
                     out = {"ok": False, "why": "busy"}
         return jsonify(out), (200 if out.get("ok") else 400)
+
+    @app.get("/lab/books")
+    @circle_only   # Jon's tools stay locked even after launch
+    def books_lab():
+        from .db import BookPage
+        with Session() as s:
+            trusted = book_trusted(s)
+            rows = s.scalars(select(BookPage).where(BookPage.image != b"").order_by(BookPage.updated_at.desc()).limit(200)).all()
+            waiting = [{"user": r.username, "key": r.key, "found": r.found, "when": r.updated_at.strftime("%b %d, %H:%M UTC"),
+                        "v": int(r.updated_at.timestamp())} for r in rows if r.key not in trusted]
+        return render_template("book_lab.html", cfg=cfg, waiting=waiting, trusted=sorted(trusted), csrf=lab_csrf())
+
+    @app.post("/lab/books/review")
+    @circle_only   # Jon's tools stay locked even after launch
+    def books_review():
+        from .db import BookPage, set_setting
+        check_csrf()
+        key, action = (request.form.get("key") or "").lower()[:32], request.form.get("action", "")
+        with Session() as s:
+            trusted = book_trusted(s)
+            if action == "approve":
+                trusted.add(key)
+            elif action in ("remove", "untrust"):
+                trusted.discard(key)
+                if action == "remove":
+                    row = s.get(BookPage, key)
+                    if row:
+                        row.image = b""            # the picture goes; the Keeper can share a new one later
+            else:
+                abort(400)
+            set_setting(s, "book_trusted", ",".join(sorted(trusted)))
+            s.commit()
+        return redirect(url_for("books_lab"))
 
     @app.get("/lab/art")
     @circle_only   # Jon's tools stay locked even after launch

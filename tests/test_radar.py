@@ -1904,11 +1904,25 @@ def test_signed_keeper_gets_a_dragon_book_page(cfg, Session):
     page = c.get("/k/bookkeeper").get_data(as_text=True)
     assert "@BookKeeper&#39;s dragon book" in page or "@BookKeeper's dragon book" in page
     assert "12 of 35 dragons found" in page and "6 day goal streak" in page
+    assert "once it has had a quick check" in page and "book.jpg" not in page               # a first picture waits for Jon
+    assert c.get("/k/BookKeeper/book.jpg").status_code == 404
+    from radar.db import KeeperSave, set_setting
+    with Session() as s:
+        set_setting(s, "book_trusted", "bookkeeper")                                       # Jon approved it once
+        s.add(KeeperSave(key="bookkeeper", data=json.dumps({"dex": {"have": {"speed": {"c": 2, "r": 1}, "acid": {"c": 1}}, "g": {"count": 4, "best": 5}}})))
+        s.commit()
+    page = c.get("/k/bookkeeper").get_data(as_text=True)
     assert 'content="https://pdtools.xyz/k/BookKeeper/book.jpg?v=' in page and "?from=book#dragons" in page
     pic = c.get("/k/BookKeeper/book.jpg")
     assert pic.status_code == 200 and pic.data == jpeg and pic.mimetype == "image/jpeg"
     assert c.get("/k/nobody").status_code == 404 and c.get("/k/waiting").status_code == 404
     assert create_app(cfg).test_client().get("/k/bookkeeper").status_code == 404   # v2 only
+    c2 = v2_client(cfg)                                                            # (a fresh app: the 20 second pause)
+    r = c2.post("/api/book/page", data=json.dumps({"vid": "b" * 32, "img": img, "found": 30, "rare": 9, "legend": 3, "streak": 99}),
+                content_type="text/plain").get_json()
+    assert r["ok"]
+    page = c2.get("/k/bookkeeper").get_data(as_text=True)
+    assert "3 of 35 dragons found" in page and "5 day goal streak" in page          # never more than the saved progress holds
     from radar.book import remove
     from radar.db import BookPage
     with Session() as s:                                                      # Jon removes a name: the page goes too
@@ -3238,3 +3252,17 @@ def test_backup_code_links_a_book_only_once():
     assert "utcnow() - row.created_at <= timedelta(days=2)" in src and "row.data = _json.dumps(data)" in src
     assert '_too_many("ev:" + client_ip(), limit=240, window=3600)' in src and '_too_many("hit:" + client_ip(), limit=400, window=3600)' in src
 
+
+
+def test_origin_lock_and_book_picture_review(cfg, Session):
+    """With ORIGIN_KEY set, a request that came around Cloudflare (no secret header) can not post to the API and its
+    CF-Connecting-IP is not trusted. Off when the key is empty. Jon's book picture review stays locked."""
+    cfg.v2_public = True
+    open_c = create_app(cfg).test_client()
+    assert open_c.post("/api/ev", data="{}", content_type="text/plain").status_code != 403   # no key set: nothing changes
+    cfg.origin_key = "s3cret-origin-key"
+    c = create_app(cfg).test_client()
+    assert c.post("/api/ev", data="{}", content_type="text/plain", headers={"CF-Connecting-IP": "1.2.3.4"}).status_code == 403
+    assert c.post("/api/ev", data="{}", content_type="text/plain", headers={"X-Origin-Key": "s3cret-origin-key"}).status_code != 403
+    assert c.get("/friends").status_code == 200                                    # pages still load
+    assert c.get("/lab/books").status_code == 404
