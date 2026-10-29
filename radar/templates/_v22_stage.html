@@ -14,7 +14,15 @@
   <p class="v22-line">{{ s.line }}</p>
 </section>{% endfor %}{% endif %}
 <script>window.PD22 = {{ {
-  "blinky": asset('v21/blinky-lantern.webp'), "pinky": asset('v21/pinky-heart.webp'), "speed": "/v22/a/speed.webp?v=" ~ asset_version,
+  "poses": {
+    "blinky": {"stand": "/v22/a/blinky-stand.webp?v=" ~ asset_version, "wave": "/v22/a/blinky-wave.webp?v=" ~ asset_version, "look": "/v22/a/blinky-look.webp?v=" ~ asset_version,
+               "sit": "/v22/a/blinky-sit.webp?v=" ~ asset_version, "popcorn": "/v22/a/blinky-popcorn.webp?v=" ~ asset_version},
+    "pinky": {"stand": "/v22/a/pinky-stand.webp?v=" ~ asset_version, "wave": "/v22/a/pinky-wave.webp?v=" ~ asset_version, "look": "/v22/a/pinky-look.webp?v=" ~ asset_version,
+              "sit": "/v22/a/pinky-sit.webp?v=" ~ asset_version, "popcorn": "/v22/a/pinky-popcorn.webp?v=" ~ asset_version},
+    "speed": {"stand": "https://res.cloudinary.com/gosbi0oh/image/upload/v1793317622/dragon-radar/v22/speed-stand.webp", "wave": "https://res.cloudinary.com/gosbi0oh/image/upload/v1793317431/dragon-radar/v22/speed-wave.webp",
+              "jump": "https://res.cloudinary.com/gosbi0oh/image/upload/v1793317433/dragon-radar/v22/speed-jump.webp", "sit": "https://res.cloudinary.com/gosbi0oh/image/upload/v1793317434/dragon-radar/v22/speed-sit.webp",
+              "look": "https://res.cloudinary.com/gosbi0oh/image/upload/v1793317436/dragon-radar/v22/speed-look.webp"}
+  },
   "nestBack": "/v22/a/nest-back.webp?v=" ~ asset_version, "nestFront": "/v22/a/nest-front.webp?v=" ~ asset_version,
   "eggs": [asset('v21/nest/feed.webp'), asset('v21/nest/community.webp'), asset('v21/nest/learn.webp'), asset('v21/nest/create.webp')]
 } | tojson }};</script>
