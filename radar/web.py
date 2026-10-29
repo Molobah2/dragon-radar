@@ -242,7 +242,12 @@ def create_app(cfg: Config | None = None) -> Flask:
     @app.get("/lab")
     @v2_only
     def lab():
-        return render_template("lab.html", cfg=cfg, lab_tools=LAB_TOOLS)
+        art_waiting = 0
+        if g.get("circle"):                          # Jon's own devices: how much Keeper Art is waiting for him
+            from .db import ArtEntry
+            with Session() as s:
+                art_waiting = s.scalar(select(func.count()).select_from(ArtEntry).where(ArtEntry.status == "pending")) or 0
+        return render_template("lab.html", cfg=cfg, lab_tools=LAB_TOOLS, art_waiting=art_waiting)
 
     @app.get("/lab/circle/<mode>")
     def circle_lock(mode):
@@ -1791,7 +1796,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             data = e.image if request.args.get("s") == "f" else e.thumb
         resp = make_response(data)
         resp.headers["Content-Type"] = "image/webp"
-        resp.headers["Cache-Control"] = "public, max-age=3600" if public else "private, no-store"
+        resp.headers["Cache-Control"] = "public, max-age=300" if public else "private, no-store"   # art taken down disappears quickly
         return resp
 
     @app.get("/api/art/me")
@@ -1848,6 +1853,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         from . import art
         with Session() as s:
             q = art.queue(s, utcnow())
+            s.commit()
         return render_template("art_lab.html", cfg=cfg, q=q, csrf=lab_csrf())
 
     @app.post("/lab/art/review")

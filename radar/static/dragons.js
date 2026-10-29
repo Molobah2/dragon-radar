@@ -74,7 +74,9 @@
   function spentOf(id) { let n = 0; for (const x of swapLog()) for (const g of x.give || []) if (g === id) n++; return n; }
   function countOf(e) { const h = (dex.have[e.sp.id] || {})[TK[e.tier]] || 0; return e.tier === "common" && h > 0 ? Math.max(1, h - spentOf(e.sp.id)) : h; }
   const spareCount = () => ENTRIES.reduce((a, e) => a + (e.tier === "common" ? Math.max(0, countOf(e) - 1) : 0), 0);
-  const swapMissing = () => ENTRIES.filter((e) => e.tier === "common" && !owned(e));
+  // never the dragon already waiting in today's unopened egg
+  const eggKey = () => { const p = store.get("pd:dexEgg", null); return p && p.day === today() ? p.k : ""; };
+  const swapMissing = () => ENTRIES.filter((e) => e.tier === "common" && !owned(e) && e.key !== eggKey());
   function swapPick() {   // the three spares to give: always from the dragons with the most copies
     const left = ENTRIES.filter((e) => e.tier === "common").map((e) => ({ e, n: countOf(e) - 1 })).filter((x) => x.n > 0);
     const give = [];
@@ -107,7 +109,9 @@
     dex.g = g; save();
   }
   const canHatch = () => goalDone() && dex.last !== today();
-  const due = (tier, n) => SCHEDULE[tier].filter((d) => d <= n).length - foundIn(tier);
+  // commons got by swapping are a bonus: they never use up a new dragon the egg schedule promised
+  const hatchedIn = (tier) => foundIn(tier) - (tier === "common" ? Math.min(foundIn(tier), swapLog().length) : 0);
+  const due = (tier, n) => SCHEDULE[tier].filter((d) => d <= n).length - hatchedIn(tier);
   const rand = (list) => list[Math.floor(Math.random() * list.length)];
 
   function roll() {

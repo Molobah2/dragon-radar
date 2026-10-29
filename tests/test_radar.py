@@ -3105,8 +3105,11 @@ def test_unanswered_follow_tap_counts_for_the_daily_goal():
     counts for the goal's follow step (Not yet clears it). The New in pdtools names are light on the night sky menu."""
     root = Path(__file__).parent.parent / "radar" / "static"
     app = (root / "app.js").read_text()
-    assert 'Object.values(store.obj("radar:pending")).some(today0)' in app
-    assert '"radar:followed", "radar:pending", "pd:goal"' in app
+    assert 'today0(u in tapped ? tapped[u] : pend[u])' in app
+    keepers = (root / "keepers.js").read_text()
+    assert 'if (!tapped[u]) { tapped[u] = Date.now(); store.set("radar:tapped", tapped); }' in keepers   # one tap, one day only
+    assert "if (!still && g.f === true) { g.f = false;" in keepers                                       # Not yet takes it back
+    assert '"radar:followed", "radar:pending", "radar:tapped", "pd:goal"' in app
     assert "html.theme-dark .side-new-list a { background: rgba(255, 255, 255, .07); color: #f2f4ff; }" in (root / "style.css").read_text()
 
 
@@ -3173,4 +3176,36 @@ def test_keeper_art_checked_by_hand_then_voted_at_the_weekend(cfg, Session, monk
     assert lab.get("/lab/art").status_code == 404                                  # Jon's review page stays locked
     menu = c.get("/create").get_data(as_text=True)
     assert 'href="/art"' in menu and "Keeper Art" in menu
+
+
+def test_keeper_art_late_sunday_entry_and_swap_schedule(cfg, Session, monkeypatch):
+    """Art sent late on Sunday and checked on Monday joins the new week's wall, and its artist can not send a second
+    piece while it waits. A swap never takes the dragon in today's unopened egg, and swapped commons never use up a
+    new dragon the egg schedule promised. Taken down art leaves shared caches within minutes."""
+    import io
+    from PIL import Image
+    from radar import art
+    from radar.db import ArtEntry, FriendDevice
+    cfg.v2_public = True; cfg.v21_public = True
+    with Session() as s:
+        s.add(FriendDevice(vid="a" * 32, key="ola", username="Ola", code="x", confirmed=True)); s.commit()
+    c = create_app(cfg).test_client()
+    def send():
+        b = io.BytesIO(); Image.new("RGB", (800, 800), "red").save(b, "JPEG"); b.seek(0)
+        return c.post("/api/art/submit", data={"vid": "a" * 32, "title": "Night egg", "proof": "https://x.com/ola/status/9",
+                                               "pledge": "yes", "image": (b, "a.jpg")}, content_type="multipart/form-data").get_json()
+    sun = datetime(2026, 11, 1, 23, 30)
+    monkeypatch.setattr("radar.web.utcnow", lambda: sun)
+    first = send()
+    assert first["ok"]
+    mon = datetime(2026, 11, 2, 8, 0)
+    monkeypatch.setattr("radar.web.utcnow", lambda: mon)
+    assert send()["why"] == "already"                                              # still waiting from last week
+    with Session() as s:
+        assert art.review(s, first["id"], "approve", "", mon); s.commit()
+        assert s.get(ArtEntry, first["id"]).week.isoformat() == "2026-11-02"
+    assert "Night egg" in c.get("/art").get_data(as_text=True)
+    assert "max-age=300" in c.get(f"/art/{first['id']}.webp").headers["Cache-Control"]
+    js = (Path(__file__).parent.parent / "radar" / "static" / "dragons.js").read_text()
+    assert "&& e.key !== eggKey()" in js and "Math.min(foundIn(tier), swapLog().length)" in js
 

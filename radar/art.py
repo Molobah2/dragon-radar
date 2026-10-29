@@ -40,10 +40,10 @@ def shrink(raw: bytes) -> tuple[bytes, bytes] | None:
         im = Image.open(io.BytesIO(raw))
         if im.format not in ("JPEG", "PNG", "WEBP"):
             return None
+        if im.width < 200 or im.height < 200 or im.width * im.height > 40_000_000:   # checked before decoding, so a
+            return None                                                               # tiny file can not unpack into a huge one
         im.load()
         im = ImageOps.exif_transpose(im)
-        if im.width < 200 or im.height < 200 or im.width * im.height > 40_000_000:
-            return None
         im = im.convert("RGB")
     except Exception:            # anything Pillow can not read is not a picture
         return None
@@ -58,8 +58,10 @@ def shrink(raw: bytes) -> tuple[bytes, bytes] | None:
 
 
 def mine(s, key: str, week: date) -> ArtEntry | None:
-    """This Keeper's entry for the week that still counts (pending or approved)."""
-    return s.scalar(select(ArtEntry).where(ArtEntry.key == key, ArtEntry.week == week, ArtEntry.status != "rejected")
+    """This Keeper's entry that still counts for the week: pending or approved this week, or still waiting from last
+    week (Jon checks it on Monday and it joins this week's wall)."""
+    return s.scalar(select(ArtEntry).where(ArtEntry.key == key, ArtEntry.status != "rejected",
+                                           (ArtEntry.week == week) | ((ArtEntry.week < week) & (ArtEntry.status == "pending")))
                     .order_by(ArtEntry.id.desc()))
 
 
@@ -164,6 +166,12 @@ def review(s, entry_id: int, action: str, note: str, now: datetime) -> bool:
     if not e or action not in ("approve", "reject", "pending"):
         return False
     e.status = {"approve": "approved", "reject": "rejected", "pending": "pending"}[action]
+    if action == "approve" and e.week < week_of(now.date()):
+        week = week_of(now.date())           # sent late on a Sunday and checked on Monday: it joins this week's wall,
+        other = s.scalar(select(ArtEntry).where(ArtEntry.key == e.key, ArtEntry.week == week, ArtEntry.id != e.id,
+                                                ArtEntry.status == "approved"))
+        if other is None:                    # unless that Keeper already has art up this week
+            e.week = week
     e.note = " ".join((note or "").split())[:160] if action == "reject" else ""
     e.reviewed_at = now if action != "pending" else None
     if action != "approve":                  # votes for an artwork that is taken down go back to their owners
@@ -172,8 +180,11 @@ def review(s, entry_id: int, action: str, note: str, now: datetime) -> bool:
 
 
 def queue(s, now: datetime) -> dict:
-    """Jon's review list: everything waiting, then the last two weeks of decisions."""
+    """Jon's review list: everything waiting, then the last two weeks of decisions. Pictures of art that was not
+    approved are let go after four weeks, so the database only keeps what is on the wall."""
     since = week_of(now.date()) - timedelta(days=7)
+    for old in s.scalars(select(ArtEntry).where(ArtEntry.status == "rejected", ArtEntry.week < since - timedelta(days=21))).all():
+        s.delete(old)
     pending = s.scalars(select(ArtEntry).where(ArtEntry.status == "pending").order_by(ArtEntry.id)).all()
     done = s.scalars(select(ArtEntry).where(ArtEntry.status != "pending", ArtEntry.week >= since)
                      .order_by(ArtEntry.reviewed_at.desc())).all()

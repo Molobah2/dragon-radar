@@ -46,14 +46,30 @@
     note.textContent = "Nice run. Take a short breather before following more, X can limit accounts that follow very fast.";
   }
 
-  function follow(k) { pending[k.username.toLowerCase()] = Date.now(); savePending(); setTimeout(render, 400); }
+  // the first "Follow on X" tap for each Keeper is remembered for good, so one tap only ever counts for one day's goal
+  const tapped = store.obj("radar:tapped");
+  function follow(k) {
+    const u = k.username.toLowerCase();
+    pending[u] = Date.now(); savePending();
+    if (!tapped[u]) { tapped[u] = Date.now(); store.set("radar:tapped", tapped); }
+    setTimeout(render, 400);
+  }
   function confirmFollow(k) {
     const u = k.username.toLowerCase(); delete pending[u]; savePending();
     followed[u] = Date.now(); store.set("radar:followed", followed);
     window.meadow && window.meadow.cheer && window.meadow.cheer();
     pace(); render();
   }
-  function notYet(k) { delete pending[k.username.toLowerCase()]; savePending(); render(); }
+  function notYet(k) {
+    delete pending[k.username.toLowerCase()]; savePending();
+    // the goal's follow step goes back to not done, unless another follow today still counts
+    const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    const today0 = (t) => typeof t === "number" && t >= t0.getTime();
+    const still = Object.values(followed).some(today0) || Object.keys(pending).some((u) => today0(tapped[u]));
+    const g = store.obj("pd:goal");
+    if (!still && g.f === true) { g.f = false; store.set("pd:goal", g); }
+    render();
+  }
   // followed straight on X, outside pdtools: mark it so they stop showing up as someone to follow
   // (an old timestamp, so it never counts toward the follow pacing note)
   function already(k) { delete pending[k.username.toLowerCase()]; savePending(); followed[k.username.toLowerCase()] = 1; store.set("radar:followed", followed); render(); }

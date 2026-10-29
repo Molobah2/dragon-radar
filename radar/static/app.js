@@ -525,7 +525,9 @@
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
     const today0 = (t) => typeof t === "number" && t >= t0.getTime() && t <= Date.now() + 6e4;
     if (Object.values(store.obj("radar:followed")).some(today0)) return true;
-    if (Object.values(store.obj("radar:pending")).some(today0)) return true;
+    const tapped = store.obj("radar:tapped");     // a tap counts on the day it was first made for that Keeper, once
+    const pend = store.obj("radar:pending");        // (taps from before 30 Oct carry only their pending time)
+    if (Object.keys(pend).some((u) => today0(u in tapped ? tapped[u] : pend[u]))) return true;
     return store.get("radar:kleft", -1) === 0;
   }
   function goalParts() {
@@ -603,7 +605,7 @@
     document.addEventListener("click", (e) => { if (!steps.hidden && !steps.contains(e.target) && !$("goal").contains(e.target)) closeSteps(); });
     addEventListener("keydown", (e) => { if (e.key === "Escape") closeSteps(); });
     // finished on another page or tab (the Dragon Quiz, the Keepers directory): the goal catches up straight away
-    addEventListener("storage", (e) => { if (["pd:dle", "radar:followed", "radar:pending", "pd:goal", "radar:kleft"].includes(e.key)) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
+    addEventListener("storage", (e) => { if (["pd:dle", "radar:followed", "radar:pending", "radar:tapped", "pd:goal", "radar:kleft"].includes(e.key)) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
   }
   function closeSteps() { if (steps && !steps.hidden) { steps.hidden = true; $("goal").setAttribute("aria-expanded", "false"); steps.parentElement.classList.remove("gs-open"); } }
