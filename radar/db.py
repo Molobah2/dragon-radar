@@ -257,6 +257,33 @@ class BookPage(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class ArtEntry(Base):
+    """Keeper Art (v2.1): one hand made Pocket Dragons artwork a signed Keeper sent in for the week, with a link to a
+    video of it being made. Nothing shows until Jon approves it. The picture is kept here, already shrunk on upload."""
+    __tablename__ = "art_entries"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    week: Mapped[datetime] = mapped_column(Date, index=True)                # Monday of the week it was sent (UTC)
+    key: Mapped[str] = mapped_column(String(32), index=True)                # lower-case handle of the signed Keeper
+    username: Mapped[str] = mapped_column(String(32))
+    title: Mapped[str] = mapped_column(String(80), default="")
+    proof: Mapped[str] = mapped_column(String(300), default="")             # the making-of video link
+    image: Mapped[bytes] = mapped_column(LargeBinary, default=b"")          # webp, at most 1600 px
+    thumb: Mapped[bytes] = mapped_column(LargeBinary, default=b"")          # webp, 640 px, for the gallery
+    status: Mapped[str] = mapped_column(String(10), default="pending", index=True)   # pending, approved, rejected
+    note: Mapped[str] = mapped_column(String(160), default="")              # Jon's short reason when it is not approved
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class ArtVote(Base):
+    """One weekend vote per signed Keeper per week. Changing your mind moves the vote."""
+    __tablename__ = "art_votes"
+    week: Mapped[datetime] = mapped_column(Date, primary_key=True)
+    voter: Mapped[str] = mapped_column(String(32), primary_key=True)        # lower-case handle
+    entry_id: Mapped[int] = mapped_column(Integer, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class Setting(Base):
     __tablename__ = "settings"
     key: Mapped[str] = mapped_column(String(64), primary_key=True)

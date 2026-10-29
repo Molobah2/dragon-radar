@@ -1753,6 +1753,118 @@ def create_app(cfg: Config | None = None) -> Flask:
                     out = {"ok": False, "why": "already"}
         return jsonify(out), (200 if out.get("ok") else 400)
 
+    # ---------- v2.1: Keeper Art, hand made art checked by Jon and a weekend vote (see art.py) ----------
+    @app.get("/art")
+    @v21_only
+    def art_home():
+        from . import art
+        now = utcnow()
+        week = art.week_of(now.date())
+        with Session() as s:
+            items = art.gallery(s, week)
+            hall = art.hall(s, week)
+        last_week = (week - timedelta(days=7)).isoformat()
+        last = hall[0] if hall and hall[0]["week"] == last_week else None
+        og = {}
+        if last:
+            og = {"og_img": f"https://pdtools.xyz/art/{last['id']}.webp?s=f", "og_alt": f"{last['title']} by @{last['user']}",
+                  "og_title": f"{last['title']} by @{last['user']}, Keeper Art of the week",
+                  "og_desc": "Hand made Pocket Dragons art by Keepers. Vote for your favourite every weekend on PD Tools."}
+        return render_template("art.html", cfg=cfg, items=items, last=last, hall=[h for h in hall if h is not last],
+                               week=art.week_label(week), voting=art.voting_open(now), week_label=lambda w: art.week_label(date.fromisoformat(w)),
+                               **({"og_title": "Keeper Art · PD Tools", "og_desc": "Hand made Pocket Dragons art by Keepers. Vote for your favourite every weekend."} | og))
+
+    @app.get("/art/<int:entry_id>.webp")
+    @v21_only
+    def art_image(entry_id):
+        from .cheers import sender
+        from .db import ArtEntry
+        with Session() as s:
+            e = s.get(ArtEntry, entry_id)
+            if e is None:
+                abort(404)
+            public = e.status == "approved"
+            if not public and not g.get("circle"):
+                dev = sender(s, (request.args.get("vid") or "")[:32])
+                if not dev or dev.key != e.key:            # the artist can see their own entry while it waits
+                    abort(404)
+            data = e.image if request.args.get("s") == "f" else e.thumb
+        resp = make_response(data)
+        resp.headers["Content-Type"] = "image/webp"
+        resp.headers["Cache-Control"] = "public, max-age=3600" if public else "private, no-store"
+        return resp
+
+    @app.get("/api/art/me")
+    @v21_only
+    def api_art_me():
+        from . import art
+        from .cheers import sender
+        with Session() as s:
+            return jsonify(art.me(s, sender(s, (request.args.get("vid") or "")[:32]), utcnow()))
+
+    @app.post("/api/art/submit")
+    @v21_only
+    def api_art_submit():
+        from . import art
+        from .cheers import sender
+        if _too_many("art:" + client_ip(), limit=10, window=3600):
+            abort(429)
+        f = request.files.get("image")
+        raw = f.read(art.MAX_UPLOAD + 1) if f else b""
+        with Session() as s:
+            out = art.submit(s, sender(s, request.form.get("vid", "")[:32]), request.form.get("title", ""),
+                             request.form.get("proof", ""), raw, request.form.get("pledge") == "yes", utcnow())
+            if out.get("ok"):
+                s.commit()
+        return jsonify(out), (200 if out.get("ok") else 400)
+
+    @app.post("/api/art/vote")
+    @v21_only
+    def api_art_vote():
+        from . import art
+        from .cheers import sender
+        try:
+            body = _body(300)
+            vid, entry = str(body.get("vid", ""))[:32], body.get("entry")
+        except (ValueError, TypeError, AttributeError):
+            abort(400)
+        if not isinstance(entry, int) or isinstance(entry, bool):
+            abort(400)
+        if _too_many("artvote:" + client_ip(), limit=60, window=3600):
+            abort(429)
+        with Session() as s:
+            out = art.vote(s, sender(s, vid), entry, utcnow())
+            if out.get("ok"):
+                try:
+                    s.commit()
+                except IntegrityError:             # two taps at once
+                    s.rollback()
+                    out = {"ok": False, "why": "busy"}
+        return jsonify(out), (200 if out.get("ok") else 400)
+
+    @app.get("/lab/art")
+    @circle_only   # Jon's tools stay locked even after launch
+    def art_lab():
+        from . import art
+        with Session() as s:
+            q = art.queue(s, utcnow())
+        return render_template("art_lab.html", cfg=cfg, q=q, csrf=lab_csrf())
+
+    @app.post("/lab/art/review")
+    @circle_only   # Jon's tools stay locked even after launch
+    def art_review():
+        from . import art
+        check_csrf()
+        try:
+            entry_id = int(request.form.get("id", "0"))
+        except ValueError:
+            abort(400)
+        with Session() as s:
+            if not art.review(s, entry_id, request.form.get("action", ""), request.form.get("note", ""), utcnow()):
+                abort(400)
+            s.commit()
+        return redirect(url_for("art_lab"))
+
     def cheers_person(handle):
         from .cheers import known_author, week_for, week_of
         with Session() as s:

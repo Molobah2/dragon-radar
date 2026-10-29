@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Keeper Art · {{ cfg.hub_name or "PD Tools" }}</title>
+  <meta name="description" content="Hand made Pocket Dragons art by Keepers. Every artwork is checked by hand, and Keepers vote for their favourite every weekend. Free, unofficial community tool.">
+  <meta name="theme-color" content="#0f1d1f">
+  {% include "_icons.html" %}
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ asset('fonts.css') }}">
+  <link rel="stylesheet" href="{{ asset('v21/v21.css') }}">
+{% include "_speed.html" %}
+<style>
+/* ===== Keeper Art: a lantern lit studio, the art hangs in brass frames on a deep teal wall ===== */
+body { background: #0f1d1f; }
+.ka-world { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+.ka-world img { position: absolute; inset: -3%; width: 106%; height: 106%; object-fit: cover; animation: drift 50s ease-in-out infinite alternate; }
+@keyframes drift { from { transform: scale(1.02); } to { transform: scale(1.07) translate(-1%, -1%); } }
+.ka-world::after { content: ""; position: absolute; inset: 0;
+  background: radial-gradient(120% 80% at 50% 22%, rgba(15, 29, 31, .08), rgba(15, 29, 31, .7) 62%, #0f1d1f); }
+.ka-world canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ka-app { position: relative; z-index: 2; min-height: 100vh; min-height: 100svh; }
+.v-bar { position: relative; }
+.ka-main { width: min(1120px, 100%); margin: 0 auto; padding: 8px clamp(16px, 4vw, 34px) 30px; display: grid; gap: 22px; }
+
+.ka-head { display: grid; justify-items: center; text-align: center; gap: 10px; padding: clamp(10px, 5vh, 50px) 0 4px; }
+.kick { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(10, 30, 32, .55); border: 1px solid rgba(255, 220, 170, .32);
+  font: 800 12px/1 var(--body); letter-spacing: 2.4px; text-transform: uppercase; color: var(--gold); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.ka-head h1 { margin: 0; font: 700 clamp(38px, 6.6vw, 70px)/1.02 var(--disp); text-shadow: 0 4px 30px rgba(0,0,0,.7); text-wrap: balance; }
+.ka-head h1 span { color: #ffd59a; }
+.ka-head p { margin: 0; max-width: 34em; color: var(--soft); text-shadow: 0 2px 12px rgba(0,0,0,.8); }
+.phase { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 999px; font-weight: 800; font-size: 14px;
+  background: rgba(143, 240, 200, .14); border: 1px solid rgba(143, 240, 200, .45); color: var(--mint); }
+.phase.wait { background: rgba(255, 205, 110, .12); border-color: rgba(255, 205, 110, .4); color: var(--gold); }
+.phase i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+.panel { position: relative; padding: clamp(18px, 3.4vw, 28px); border-radius: 26px; background: linear-gradient(180deg, rgba(16, 40, 42, .78), rgba(10, 26, 28, .88));
+  border: 1px solid rgba(255, 220, 170, .16); box-shadow: 0 30px 60px -30px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.05); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.panel h2 { margin: 0 0 4px; font: 700 clamp(22px, 2.6vw, 28px)/1.15 var(--disp); }
+.panel > p.sub { margin: 0 0 16px; color: var(--mute); font-size: 14px; }
+
+/* a brass frame around each artwork */
+.frame { position: relative; display: block; padding: 9px; border-radius: 8px;
+  background: linear-gradient(145deg, #f3d38a, #a8742a 42%, #e9c070 66%, #7a5018); box-shadow: 0 18px 30px -16px #000, inset 0 0 0 1px rgba(255,255,255,.25); }
+.frame .mat { display: block; padding: 7px; background: #f2ead9; border-radius: 3px; box-shadow: inset 0 0 10px rgba(80, 50, 10, .35); }
+.frame img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 2px; background: #e8dcc4; }
+
+.win { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: clamp(18px, 4vw, 40px); align-items: center; }
+.win .frame { transform: rotate(-1.2deg); }
+.win .frame img { aspect-ratio: auto; max-height: 460px; object-fit: contain; }
+.ribbon { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; font: 800 12px/1 var(--body); letter-spacing: 2px; text-transform: uppercase;
+  color: #3a1a06; background: linear-gradient(180deg, #ffe08f, #ffb85c); }
+.win h3 { margin: 12px 0 4px; font: 700 clamp(28px, 4vw, 44px)/1.05 var(--disp); overflow-wrap: anywhere; }
+.by { display: inline-flex; align-items: center; gap: 8px; font: 700 17px/1.2 var(--disp); color: var(--gold); text-decoration: none; }
+.by .ava { width: 30px; height: 30px; font-size: 13px; }
+.win .votes { margin: 8px 0 0; color: var(--soft); }
+.acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+@media (max-width: 720px) { .win { grid-template-columns: 1fr; } .win .frame { max-width: 360px; margin: 0 auto; } }
+
+.wall { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 24px 20px; }
+.wall li { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.wall li:nth-child(3n+1) .frame { transform: rotate(-.8deg); } .wall li:nth-child(3n+2) .frame { transform: rotate(.6deg); }
+.wall a.frame { transition: transform .35s var(--spring); } .wall a.frame:hover { transform: translateY(-4px) rotate(0); }
+.wall b { font: 700 17px/1.2 var(--disp); overflow-wrap: anywhere; }
+.wall .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 13.5px; }
+.wall .meta a { color: var(--gold); font-weight: 800; text-decoration: none; }
+.wall .meta a:hover { text-decoration: underline; }
+.vote { height: 42px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(255, 220, 170, .3); background: rgba(255, 255, 255, .06); color: var(--ink);
+  font: 700 15px/1 var(--disp); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.vote:hover { border-color: var(--gold); }
+.vote[aria-pressed="true"] { background: linear-gradient(180deg, #ffe08f, #ffb85c); color: #3a1a06; border-color: transparent; }
+.vote:disabled { opacity: .5; cursor: not-allowed; }
+.vote:focus-visible, .ka-form input:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.empty { margin: 0; color: var(--mute); font-weight: 700; }
+@media (max-width: 520px) { .wall { grid-template-columns: 1fr 1fr; gap: 18px 12px; } .wall b { font-size: 15px; } .wall .meta { font-size: 12.5px; } }
+
+.ka-form { display: grid; gap: 14px; }
+.ka-form label > span { display: block; margin-bottom: 6px; font: 800 12px/1 var(--body); letter-spacing: 1.6px; text-transform: uppercase; color: var(--gold); }
+.ka-form input[type=text], .ka-form input[type=url] { width: 100%; height: 50px; padding: 0 14px; border-radius: 14px; border: 1px solid rgba(255, 220, 170, .25);
+  background: rgba(255, 244, 230, .06); font-size: 16px; font-weight: 700; color: var(--ink); }
+.ka-form small { display: block; margin-top: 6px; color: var(--mute); font-size: 13px; }
+.pick { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 14px; align-items: center; padding: 12px; border-radius: 16px; border: 1px dashed rgba(255, 220, 170, .35); cursor: pointer; }
+.pick .prev { width: 96px; height: 96px; border-radius: 10px; background: rgba(255,255,255,.06) center/cover no-repeat; display: grid; place-items: center; color: var(--mute); font-size: 30px; }
+.pick input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.pick:focus-within { outline: 3px solid var(--gold); outline-offset: 2px; }
+.pledge { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: start; font-weight: 700; font-size: 14.5px; }
+.pledge input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: #ffb85c; }
+.msg { min-height: 1.4em; margin: 0; font-weight: 800; color: var(--rose); }
+.msg.ok { color: var(--mint); }
+.status { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 14px; align-items: center; }
+.status img { width: 96px; height: 96px; border-radius: 10px; object-fit: cover; background: rgba(255,255,255,.06); }
+.status b { display: block; font: 700 18px/1.2 var(--disp); }
+.tag { display: inline-flex; margin-top: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 800; background: rgba(255, 205, 110, .16); color: var(--gold); }
+.tag.ok { background: rgba(143, 240, 200, .14); color: var(--mint); }
+.tag.no { background: rgba(255, 134, 180, .14); color: var(--rose); }
+.gate { display: grid; justify-items: center; text-align: center; gap: 10px; }
+.gate img { width: 110px; }
+
+.hall { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 18px; }
+.hall li { width: 150px; display: grid; gap: 6px; }
+.hall .frame { padding: 6px; } .hall .frame .mat { padding: 4px; }
+.hall b { font: 700 14px/1.2 var(--disp); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hall small { color: var(--mute); font-weight: 800; font-size: 12px; }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px; }
+.how div { padding: 14px 16px; border-radius: 18px; background: rgba(255,255,255,.04); border: 1px solid rgba(255, 220, 170, .12); }
+.how b { display: block; font: 700 16px/1.2 var(--disp); color: var(--gold); margin-bottom: 4px; }
+.how p { margin: 0; color: var(--soft); font-size: 14px; }
+
+.zoom { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(5, 12, 13, .9); cursor: zoom-out; }
+.zoom[hidden] { display: none; }
+.zoom img { max-width: 100%; max-height: 86vh; border-radius: 6px; box-shadow: 0 30px 60px -20px #000; }
+.zoom p { margin: 12px 0 0; text-align: center; font-weight: 800; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (prefers-reduced-motion: reduce) { .ka-world img, .phase i { animation: none; } }
+</style>
+</head>
+<body>
+<div class="ka-world" aria-hidden="true">
+  {% if cfg.scene_base %}<img alt="" src="{{ cfg.scene_base }}/image/upload/c_scale,w_1280/f_auto/q_auto/{{ cfg.scene_folder }}/v21/art-studio-bg"
+    srcset="{{ cfg.scene_base }}/image/upload/c_scale,w_960/f_auto/q_auto/{{ cfg.scene_folder }}/v21/art-studio-bg 960w, {{ cfg.scene_base }}/image/upload/c_scale,w_1920/f_auto/q_auto/{{ cfg.scene_folder }}/v21/art-studio-bg 1920w" sizes="100vw" fetchpriority="high">{% endif %}
+  <canvas id="motes"></canvas>
+</div>
+
+<div class="ka-app">
+  <header class="v-bar">
+    <a class="v-brand" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="38" height="38"><span>PD Tools<small>Keeper Art</small></span></a>
+    <div class="v-tools">
+      <a class="pill" href="/create"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span class="wide">Create</span></a>
+      <label class="pill" title="Language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg><select id="lang-select" aria-label="Language"></select></label>
+    </div>
+  </header>
+
+  <main class="ka-main">
+    <div class="ka-head">
+      <span class="kick">Keeper Art · {{ week }}</span>
+      <h1>Made by hand, <span>by Keepers</span></h1>
+      <p>Pocket Dragons art drawn, painted or sculpted by fellow Keepers. Every piece comes with a video of it being made, and Jon checks each one before it goes up. No AI art.</p>
+      {% if voting %}<span class="phase"><i></i>Voting is open until Sunday night (UTC)</span>
+      {% else %}<span class="phase wait"><i></i>Send in your art. Voting opens on Friday</span>{% endif %}
+    </div>
+
+    {% if last %}
+    <section class="panel">
+      <div class="win">
+        <a class="frame" href="/art/{{ last.id }}.webp?s=f" data-zoom data-title="{{ last.title }} by @{{ last.user }}"><span class="mat"><img src="/art/{{ last.id }}.webp" alt="{{ last.title }} by @{{ last.user }}" loading="lazy"></span></a>
+        <div>
+          <span class="ribbon">Keeper Art of last week</span>
+          <h3>{{ last.title }}</h3>
+          <a class="by" href="https://x.com/{{ last.user }}" target="_blank" rel="noopener"><span class="ava">{{ last.user[:1]|upper }}<img src="/api/avatar/{{ last.user }}" alt="" loading="lazy" onerror="this.remove()"></span>@{{ last.user }}</a>
+          <p class="votes">{{ last.votes }} {{ "Keeper voted" if last.votes == 1 else "Keepers voted" }} for it.</p>
+          <div class="acts">
+            <a class="btn go" href="{{ last.proof }}" target="_blank" rel="noopener nofollow">Watch it being made</a>
+            <a class="btn ghost" target="_blank" rel="noopener" href="https://x.com/intent/post?text={{ ('Congratulations @' ~ last.user ~ ', Keeper Art of the week on pdtools! 🎨🐉')|urlencode }}&url={{ 'https://pdtools.xyz/art'|urlencode }}">Share</a>
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="panel">
+      <h2>This week's wall</h2>
+      <p class="sub">{% if voting %}Pick your favourite. One vote each, and you can change it until Sunday. Votes are counted on Monday.{% else %}The art Jon has approved so far this week. Signed Keepers vote from Friday to Sunday.{% endif %}</p>
+      {% if items %}
+      <ul class="wall" id="wall">
+        {% for a in items %}
+        <li>
+          <a class="frame" href="/art/{{ a.id }}.webp?s=f" data-zoom data-title="{{ a.title }} by @{{ a.user }}"><span class="mat"><img src="/art/{{ a.id }}.webp" alt="{{ a.title }} by @{{ a.user }}" loading="lazy" width="640" height="640"></span></a>
+          <b>{{ a.title }}</b>
+          <span class="meta"><a href="https://x.com/{{ a.user }}" target="_blank" rel="noopener">@{{ a.user }}</a><a href="{{ a.proof }}" target="_blank" rel="noopener nofollow">Making-of video</a></span>
+          {% if voting %}<button class="vote" type="button" data-vote="{{ a.id }}" data-user="{{ a.user|lower }}" aria-pressed="false">Vote</button>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="empty">No art on the wall yet this week. Be the first to send yours in.</p>
+      {% endif %}
+      <p class="msg" id="vote-msg" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel" id="send">
+      <h2>Send in your art</h2>
+      <p class="sub">One artwork per Keeper per week. It shows on the wall once Jon has checked it.</p>
+      <div id="send-load"><p class="empty">Checking your Keeper name…</p></div>
+      <div class="gate" id="gate" hidden>
+        <img src="{{ asset('v21/dle-pinky-quill.webp') }}" alt="" width="110" height="146" loading="lazy">
+        <h3 style="margin:0;font:700 20px/1.2 var(--disp)">Keeper Art is for Keepers in the Book of Friends</h3>
+        <p style="margin:0;color:var(--soft);max-width:30em">Every artwork and every vote carries a real X name. Sign Blinky's Book of Friends once, then come back here to send art and vote.</p>
+        <a class="btn go" href="/friends#book">Sign the Book of Friends</a>
+      </div>
+      <div class="status" id="mine" hidden><img id="mine-img" alt=""><div><b id="mine-title"></b><span class="tag" id="mine-tag"></span><p class="empty" id="mine-note" style="margin-top:6px"></p></div></div>
+      <form class="ka-form" id="form" hidden novalidate>
+        <label><span>Title</span><input type="text" id="f-title" name="title" maxlength="60" placeholder="What did you make?" required autocomplete="off"></label>
+        <label><span>Making-of video link</span><input type="url" id="f-proof" name="proof" maxlength="290" placeholder="https://" required inputmode="url" autocomplete="off">
+          <small>A video of you making it: an X post, YouTube, TikTok, Instagram or a Google Drive link. A short timelapse is perfect. The link is shown next to your art.</small></label>
+        <label class="pick" for="f-image"><span class="prev" id="f-prev" aria-hidden="true">+</span><span><b style="display:block;font:700 16px/1.2 var(--disp)" id="f-pick-t">Pick your picture</b><small>A photo or scan of your art (JPG, PNG or WebP). It is made smaller on your phone before it is sent.</small></span>
+          <input type="file" id="f-image" accept="image/jpeg,image/png,image/webp"></label>
+        <label class="pledge"><input type="checkbox" id="f-pledge"><span>I made this myself, by hand. No AI was used for any part of it.</span></label>
+        <div class="acts" style="margin:0"><button class="btn go" type="submit" id="f-send">Send for checking</button></div>
+        <p class="msg" id="f-msg" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    {% if hall %}
+    <section class="panel">
+      <h2>Wall of winners</h2>
+      <p class="sub">Keeper Art of the week, chosen by Keepers' votes.</p>
+      <ul class="hall">
+        {% for h in hall %}
+        <li><a class="frame" href="/art/{{ h.id }}.webp?s=f" data-zoom data-title="{{ h.title }} by @{{ h.user }}"><span class="mat"><img src="/art/{{ h.id }}.webp" alt="{{ h.title }} by @{{ h.user }}" loading="lazy"></span></a><b>{{ h.title }}</b><small>@{{ h.user }} · {{ week_label(h.week) }}</small></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    <section class="panel">
+      <h2>How Keeper Art works</h2>
+      <div class="how">
+        <div><b>Monday to Sunday</b><p>Signed Keepers send in one hand made artwork each, with a link to a video of it being made.</p></div>
+        <div><b>Checked by hand</b><p>Jon watches the video and looks at the art. Only real, hand made Pocket Dragons art goes on the wall.</p></div>
+        <div><b>Friday to Sunday</b><p>Every signed Keeper gets one vote for their favourite. You can not vote for your own art.</p></div>
+        <div><b>Monday</b><p>The art with the most votes becomes Keeper Art of the week and joins the wall of winners.</p></div>
+      </div>
+    </section>
+  </main>
+
+  {% include "_v21_foot.html" %}
+</div>
+
+<div class="zoom" id="zoom" hidden role="dialog" aria-modal="true" aria-label="Artwork"><div><img id="zoom-img" alt=""><p id="zoom-t"></p></div></div>
+
+<script src="{{ asset('i18n.js') }}"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function vid() {
+    let v = ""; try { v = localStorage.getItem("pd:vid") || ""; } catch (e) { /* private */ }
+    if (!/^[a-f0-9]{32}$/.test(v)) { const b = new Uint8Array(16); crypto.getRandomValues(b); v = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("pd:vid", v); } catch (e) { /* fine */ } }
+    return v;
+  }
+
+  /* warm dust drifting through the lantern light */
+  const cv = $("motes"), cx = cv.getContext("2d");
+  let W = 0, H = 0, motes = [];
+  function size() { const d = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0);
+    motes = Array.from({ length: W < 640 ? 26 : 50 }, () => ({ x: Math.random() * W, y: Math.random() * H, v: .1 + Math.random() * .3, r: .5 + Math.random() * 1.6, p: Math.random() * 6.3 })); }
+  let last = 0;
+  function frame(t) {
+    if (!document.hidden && t - last > 30) { last = t; cx.clearRect(0, 0, W, H);
+      for (const m of motes) { m.y -= m.v; m.x += Math.sin(m.p + t / 1800) * .25; if (m.y < -6) { m.y = H + 6; m.x = Math.random() * W; }
+        cx.globalAlpha = .25 + .35 * Math.sin(m.p + t / 700) ** 2; cx.fillStyle = "#ffd9a0"; cx.beginPath(); cx.arc(m.x, m.y, m.r, 0, 6.283); cx.fill(); } }
+    requestAnimationFrame(frame);
+  }
+  size(); addEventListener("resize", size, { passive: true }); if (!calm) requestAnimationFrame(frame);
+
+  /* look closer */
+  const zoom = $("zoom");
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("[data-zoom]"); if (!a) return;
+    e.preventDefault(); $("zoom-img").src = a.getAttribute("href"); $("zoom-img").alt = a.dataset.title; $("zoom-t").textContent = a.dataset.title; zoom.hidden = false;
+  });
+  zoom.addEventListener("click", () => { zoom.hidden = true; });
+  addEventListener("keydown", (e) => { if (e.key === "Escape") zoom.hidden = true; });
+
+  /* who is here: signed or not, their entry and their vote */
+  let me = null;
+  const say = (el, text, ok) => { el.textContent = text; el.classList.toggle("ok", !!ok); };
+  const WHY = { unsigned: "Sign the Book of Friends first.", closed: "Voting is closed right now. It opens on Friday.", own: "That one is yours. Vote for another Keeper's art.",
+    missing: "That artwork is not on the wall any more.", busy: "Try that again in a moment.", pledge: "Tick the box to say you made it yourself, with no AI.",
+    title: "Give your art a title.", proof: "Add a link to a video of you making it (it starts with https://).", image: "Pick a photo of your art (JPG, PNG or WebP).",
+    already: "You already sent art this week. You can send another next week." };
+  function paintVotes() {
+    document.querySelectorAll("[data-vote]").forEach((b) => {
+      const mineArt = me && me.signed && b.dataset.user === (me.user || "").toLowerCase();
+      const on = me && String(me.voted) === b.dataset.vote;
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.textContent = mineArt ? "Your art" : on ? "Your vote" : "Vote";
+      b.disabled = !!mineArt;
+    });
+  }
+  function fill(j) {
+    me = j; $("send-load").hidden = true;
+    paintVotes();
+    if (!j.signed) { $("gate").hidden = false; return; }
+    const e = j.entry;
+    if (e) {
+      $("mine").hidden = false; $("mine-title").textContent = e.title;
+      $("mine-img").src = `/art/${e.id}.webp?vid=${vid()}`;
+      const tag = $("mine-tag");
+      tag.className = "tag" + (e.status === "approved" ? " ok" : e.status === "rejected" ? " no" : "");
+      tag.textContent = e.status === "approved" ? "On the wall" : e.status === "rejected" ? "Not approved" : "Waiting for Jon to check it";
+      $("mine-note").textContent = e.status === "rejected" ? (e.note ? `${e.note} You can send a different piece this week.` : "You can send a different piece this week.") : "";
+    }
+    $("form").hidden = !!(e && e.status !== "rejected");
+  }
+  function load() { fetch(`/api/art/me?vid=${vid()}`).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.ok) fill(j); else $("send-load").innerHTML = '<p class="msg">Could not load right now. Refresh to try again.</p>'; }).catch(() => {}); }
+  load();
+
+  document.querySelectorAll("[data-vote]").forEach((b) => b.addEventListener("click", async () => {
+    if (!me || !me.signed) { say($("vote-msg"), WHY.unsigned); $("send").scrollIntoView({ behavior: calm ? "auto" : "smooth" }); return; }
+    b.disabled = true;
+    try {
+      const r = await fetch("/api/art/vote", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: vid(), entry: +b.dataset.vote }) });
+      const j = await r.json();
+      if (j.ok) { me.voted = j.voted; say($("vote-msg"), "Vote saved. Thank you for supporting a fellow Keeper.", true); }
+      else say($("vote-msg"), WHY[j.why] || WHY.busy);
+    } catch (e) { say($("vote-msg"), WHY.busy); }
+    paintVotes();
+  }));
+
+  /* the picture is made smaller on this device first: at most 1600 px, so a phone photo sends quickly */
+  let blob = null;
+  $("f-image").addEventListener("change", async () => {
+    blob = null; const f = $("f-image").files[0]; if (!f) return;
+    $("f-pick-t").textContent = "Getting it ready…";
+    try {
+      const bmp = await createImageBitmap(f);
+      const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement("canvas"); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+      c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+      blob = await new Promise((res) => c.toBlob(res, "image/jpeg", 0.9));
+      $("f-prev").style.backgroundImage = `url(${c.toDataURL("image/jpeg", 0.6)})`; $("f-prev").textContent = "";
+      $("f-pick-t").textContent = f.name.length > 40 ? f.name.slice(0, 37) + "…" : f.name;
+    } catch (e) { $("f-pick-t").textContent = "That picture could not be opened. Try another one."; }
+  });
+  $("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = $("f-msg"), title = $("f-title").value.trim(), proof = $("f-proof").value.trim();
+    if (!title) return say(msg, WHY.title);
+    if (!/^https:\/\/\S{6,}$/.test(proof)) return say(msg, WHY.proof);
+    if (!blob) return say(msg, WHY.image);
+    if (!$("f-pledge").checked) return say(msg, WHY.pledge);
+    const fd = new FormData(); fd.append("vid", vid()); fd.append("title", title); fd.append("proof", proof); fd.append("pledge", "yes"); fd.append("image", blob, "art.jpg");
+    $("f-send").disabled = true; say(msg, "Sending…", true);
+    try {
+      const r = await fetch("/api/art/submit", { method: "POST", body: fd });
+      const j = r.status === 413 ? { why: "image" } : await r.json();
+      if (j.ok) { say(msg, "Sent. Jon will check it soon, then it goes on the wall.", true); $("form").reset(); blob = null; load(); }
+      else say(msg, WHY[j.why] || WHY.busy);
+    } catch (err) { say(msg, WHY.busy); }
+    $("f-send").disabled = false;
+  });
+})();
+</script>
+<script src="{{ asset('hit.js') }}" defer></script>
+</body>
+</html>

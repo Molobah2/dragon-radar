@@ -2941,11 +2941,11 @@ def test_dragon_circle_sits_with_the_other_new_tools(cfg, Session):
     cfg.v2_public = True
     cfg.v21_public = True
     page = create_app(cfg).test_client().get("/friends").get_data(as_text=True)
-    assert 'href="/circle"><img' not in page and "9 new" not in page and "8 new" in page
+    assert 'href="/circle"><img' not in page and "10 new" not in page and "9 new" in page
     cfg.circle_public = True
     page = create_app(cfg).test_client().get("/friends").get_data(as_text=True)
     menu = page.split('id="side-new-list"')[1].split("</div>")[0]
-    assert "9 new" in page and menu.index('href="/cheers"') < menu.index('href="/circle"') < menu.index('href="/quiz"')
+    assert "10 new" in page and menu.index('href="/cheers"') < menu.index('href="/circle"') < menu.index('href="/quiz"')
     assert 'href="/wallpaper"' in menu and "My Dragon Circle</span>" not in page
 
 
@@ -3108,4 +3108,69 @@ def test_unanswered_follow_tap_counts_for_the_daily_goal():
     assert 'Object.values(store.obj("radar:pending")).some(today0)' in app
     assert '"radar:followed", "radar:pending", "pd:goal"' in app
     assert "html.theme-dark .side-new-list a { background: rgba(255, 255, 255, .07); color: #f2f4ff; }" in (root / "style.css").read_text()
+
+
+def test_keeper_art_checked_by_hand_then_voted_at_the_weekend(cfg, Session, monkeypatch):
+    """Keeper Art: only signed Keepers send art (one a week, with a making-of video link and the no AI pledge), nothing
+    shows until Jon approves it, signed Keepers vote Friday to Sunday (one vote, not their own, changeable), and on
+    Monday the most voted artwork is last week's winner. Locked like the rest of v2.1 until launch."""
+    import io
+    from PIL import Image
+    from radar.db import FriendDevice
+    cfg.v2_public = True
+    with Session() as s:
+        s.add_all([FriendDevice(vid="a" * 32, key="ola", username="Ola", code="x", confirmed=True),
+                   FriendDevice(vid="b" * 32, key="nacho", username="Nacho", code="y", confirmed=True),
+                   FriendDevice(vid="c" * 32, key="mia", username="Mia", code="z", confirmed=True)])
+        s.commit()
+    locked = create_app(cfg).test_client()
+    assert locked.get("/art").status_code == 404 and locked.post("/api/art/vote", data="{}").status_code == 404
+    cfg.v21_public = True
+    app = create_app(cfg)
+    c = app.test_client()
+    wed = datetime(2026, 10, 28, 12, 0)                          # a Wednesday
+    monkeypatch.setattr("radar.web.utcnow", lambda: wed)
+
+    def pic(color):
+        b = io.BytesIO(); Image.new("RGB", (900, 700), color).save(b, "JPEG"); b.seek(0); return b
+    def send(v, title="Blinky in ink", proof="https://x.com/ola/status/123", pledge="yes", color="red"):
+        return c.post("/api/art/submit", data={"vid": v, "title": title, "proof": proof, "pledge": pledge, "image": (pic(color), "a.jpg")},
+                      content_type="multipart/form-data")
+    assert send("z" * 32).get_json()["why"] == "unsigned"
+    assert send("a" * 32, pledge="no").get_json()["why"] == "pledge"
+    assert send("a" * 32, proof="http://nope").get_json()["why"] == "proof"
+    bad = c.post("/api/art/submit", data={"vid": "a" * 32, "title": "x", "proof": "https://x.com/a/status/1", "pledge": "yes",
+                                          "image": (io.BytesIO(b"not a picture"), "a.jpg")}, content_type="multipart/form-data")
+    assert bad.get_json()["why"] == "image"
+    ola = send("a" * 32).get_json()
+    assert ola["ok"] and send("a" * 32).get_json()["why"] == "already"
+    nacho = send("b" * 32, title="Pinky in clay", color="blue").get_json()
+    assert c.get(f"/art/{ola['id']}.webp").status_code == 404                    # waiting: hidden from everyone
+    assert c.get(f"/art/{ola['id']}.webp?vid=" + "a" * 32).status_code == 200     # but the artist sees their own
+    assert "Blinky in ink" not in c.get("/art").get_data(as_text=True)
+    assert c.get("/api/art/me?vid=" + "a" * 32).get_json()["entry"]["status"] == "pending"
+    from radar import art
+    with Session() as s:
+        art.review(s, ola["id"], "approve", "", wed); art.review(s, nacho["id"], "approve", "", wed + timedelta(minutes=1)); s.commit()
+    page = c.get("/art").get_data(as_text=True)
+    assert "Blinky in ink" in page and "Pinky in clay" in page and 'data-vote=' not in page
+    img = c.get(f"/art/{ola['id']}.webp")
+    assert img.status_code == 200 and img.content_type == "image/webp" and Image.open(io.BytesIO(img.data)).size[0] <= 640
+    vote = lambda v, e: c.post("/api/art/vote", data=json.dumps({"vid": v, "entry": e}), content_type="text/plain").get_json()
+    assert vote("c" * 32, ola["id"])["why"] == "closed"                            # not before Friday
+    sat = datetime(2026, 10, 31, 15, 0)
+    monkeypatch.setattr("radar.web.utcnow", lambda: sat)
+    assert 'data-vote=' in c.get("/art").get_data(as_text=True)
+    assert vote("a" * 32, ola["id"])["why"] == "own"
+    assert vote("z" * 32, ola["id"])["why"] == "unsigned"
+    assert vote("c" * 32, nacho["id"])["ok"] and vote("c" * 32, ola["id"])["ok"]   # changed her mind: still one vote
+    assert vote("b" * 32, ola["id"])["ok"] and vote("a" * 32, nacho["id"])["ok"]
+    assert c.get("/api/art/me?vid=" + "c" * 32).get_json()["voted"] == ola["id"]
+    monkeypatch.setattr("radar.web.utcnow", lambda: datetime(2026, 11, 2, 9, 0))   # Monday
+    page = c.get("/art").get_data(as_text=True)
+    assert "Keeper Art of last week" in page and "Blinky in ink" in page and "2 Keepers voted" in page
+    lab = app.test_client()
+    assert lab.get("/lab/art").status_code == 404                                  # Jon's review page stays locked
+    menu = c.get("/create").get_data(as_text=True)
+    assert 'href="/art"' in menu and "Keeper Art" in menu
 

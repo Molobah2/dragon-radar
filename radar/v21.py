@@ -395,6 +395,7 @@ TOOLS = [   # grouped like the sections: Community, then Learn, then Create
     ("/canvas", "Hatchery canvas", "Decorate a sky island and save it as a card.", "v21/canvas-a-s.jpg", "v21/stickers/st-b-gm.webp"),
     ("/wrapped", "Hatchery Wrapped", "Your month in the hatchery as a story and a video.", "v21/wrapped-b-s.jpg", "v21/blinky-scope.webp"),
     ("/wallpaper", "My Hatchery wallpaper", "Your hatched dragons in a phone wallpaper made for your screen.", "v21/wall/glow-m.jpg", "v21/wall/glow-t.jpg"),
+    ("/art", "Keeper Art", "Hand made dragon art by Keepers. Vote for your favourite every weekend.", "", "v21/dle-pinky-quill.webp"),
 ]
 
 
@@ -424,6 +425,7 @@ SECTIONS = [
         ("canvas", "Hatchery canvas", "/canvas", "v21", "Decorate a sky island and save it as a card.", "v21/canvas-a-s.jpg", "v21/stickers/st-b-gm.webp"),
         ("wrapped", "Hatchery Wrapped", "/wrapped", "v21", "Your month in the hatchery as a story and a video.", "v21/wrapped-b-s.jpg", "v21/blinky-scope.webp"),
         ("wallpaper", "My Hatchery wallpaper", "/wallpaper", "v21", "Your hatched dragons in a phone wallpaper made for your screen.", "v21/wall/glow-m.jpg", ""),
+        ("art", "Keeper Art", "/art", "v21", "Hand made dragon art by Keepers. Vote for your favourite every weekend.", "cloud:v21/art-studio-bg", "v21/dle-pinky-quill.webp"),
     ]),
 ]
 

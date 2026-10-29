@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Keeper Art reviews · {{ cfg.hub_name }}{% endblock %}
+{% block body_class %}ready static-page{% endblock %}
+{% block main %}
+<section class="panel al">
+  <h2>Keeper Art reviews</h2>
+  <p>Watch the making-of video, look at the art, then approve or say no. Nothing shows on <a href="/art">the wall</a> until you approve it. A short reason is shown only to the artist.</p>
+  <h3 class="al-sub">Waiting ({{ q.pending|length }})</h3>
+  <ol class="al-list">
+    {% for a in q.pending %}
+    <li>
+      <a class="al-pic" href="/art/{{ a.id }}.webp?s=f" target="_blank" rel="noopener"><img src="/art/{{ a.id }}.webp" alt="" loading="lazy"></a>
+      <div class="al-info">
+        <b>{{ a.title }}</b>
+        <span><a href="https://x.com/{{ a.user }}" target="_blank" rel="noopener">@{{ a.user }}</a> · sent {{ a.sent }} · {{ a.week }}</span>
+        <a class="al-btn ghost" href="{{ a.proof }}" target="_blank" rel="noopener nofollow">Watch the making-of video</a>
+        <form class="al-act" method="post" action="/lab/art/review">
+          <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ a.id }}">
+          <button class="al-btn" name="action" value="approve" type="submit">Approve</button>
+          <input type="text" name="note" maxlength="160" placeholder="Reason, if you say no (only the artist sees it)">
+          <button class="al-btn no" name="action" value="reject" type="submit">Say no</button>
+        </form>
+      </div>
+    </li>
+    {% else %}
+    <li class="al-empty">Nothing waiting.</li>
+    {% endfor %}
+  </ol>
+  {% if q.done %}
+  <h3 class="al-sub">Decided, last two weeks</h3>
+  <ol class="al-list">
+    {% for a in q.done %}
+    <li>
+      <a class="al-pic" href="/art/{{ a.id }}.webp?s=f" target="_blank" rel="noopener"><img src="/art/{{ a.id }}.webp" alt="" loading="lazy"></a>
+      <div class="al-info">
+        <b>{{ a.title }} <small class="al-tag {{ a.status }}">{{ "approved" if a.status == "approved" else "not approved" }}</small></b>
+        <span>@{{ a.user }} · {{ a.week }}{% if a.note %} · “{{ a.note }}”{% endif %}</span>
+        <form class="al-act" method="post" action="/lab/art/review">
+          <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ a.id }}">
+          {% if a.status == "approved" %}<button class="al-btn no" name="action" value="reject" type="submit">Take it down</button>
+          {% else %}<button class="al-btn" name="action" value="approve" type="submit">Approve after all</button>{% endif %}
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+</section>
+<style>
+  .al { padding: 26px; margin-bottom: 26px; }
+  .al h2 { margin: 0 0 8px; font-family: var(--font-display); font-size: 30px; }
+  .al > p { margin: 0 0 16px; color: var(--ink-soft); font-weight: 600; }
+  .al-sub { margin: 18px 0 10px; font-family: var(--font-display); font-size: 20px; }
+  .al-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .al-list > li { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; padding: 14px; border-radius: 18px; background: rgba(255, 255, 255, .78); color: #1f2a2a; --ink: #1f2a2a; --ink-soft: #4d5e5c; }
+  .al-pic img { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; background: #e7e0d2; display: block; }
+  .al-info { display: grid; gap: 8px; align-content: start; min-width: 0; }
+  .al-info b { font-size: 17px; overflow-wrap: anywhere; } .al-info span { font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
+  .al-act { display: flex; flex-wrap: wrap; gap: 8px; }
+  .al-act input[type=text] { flex: 1; min-width: 180px; height: 40px; padding: 0 12px; border-radius: 12px; border: 1px solid rgba(0,0,0,.15); background: #fff; }
+  .al-btn { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 16px; border-radius: 999px; border: 0; background: #ffbf5f; color: #3a1a06; font-weight: 800; text-decoration: none; cursor: pointer; justify-self: start; }
+  .al-btn.ghost { background: transparent; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
+  .al-btn.no { background: #f6d3dc; color: #6a1730; }
+  .al-tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #dff3ea; color: #145a3e; } .al-tag.rejected { background: #f6d3dc; color: #6a1730; }
+  .al-empty { font-weight: 700; color: var(--ink-soft); grid-template-columns: 1fr !important; }
+  @media (max-width: 560px) { .al-list > li { grid-template-columns: 1fr; } .al-pic img { width: 100%; height: auto; max-height: 260px; } }
+</style>
+{% endblock %}
