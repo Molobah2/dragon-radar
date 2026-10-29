@@ -379,7 +379,11 @@ body { background: #1d0e09; }
   // five looks, the last one picked is remembered on this device
   const LOOKS = ["dusk", "gate", "map", "feast", "sky"];
   let look = "dusk"; try { const v = localStorage.getItem("pd:welcome:look"); if (LOOKS.includes(v)) look = v; } catch (e) { /* fine */ }
-  const kcUrl = () => `/welcome/${encodeURIComponent(kp.user)}/card.jpg?style=${look}${myVid() ? "&vid=" + myVid() : ""}`;
+  // "welcomed by" comes from a server signature for your name, so your browser id never sits in the picture link
+  let byQ = "";
+  if (myVid()) fetch("/api/welcome/me", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: myVid() }) })
+    .then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.by) { byQ = `&by=${encodeURIComponent(j.by)}&sig=${j.sig}`; if (kp && !$("kc").hidden) kcShow(); } }).catch(() => {});
+  const kcUrl = () => `/welcome/${encodeURIComponent(kp.user)}/card.jpg?style=${look}${byQ}`;
   function kcShow(retry = 0) {
     document.querySelectorAll("[data-look]").forEach((b) => b.setAttribute("aria-checked", b.dataset.look === look ? "true" : "false"));
     const im = $("kc-img"), want = kcUrl(); im.classList.add("loading"); $("kc-spin").hidden = false; $("kc-spin").textContent = T("Painting the card…");

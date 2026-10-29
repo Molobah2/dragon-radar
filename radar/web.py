@@ -591,6 +591,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         except ValueError:
             return {"counted": False}, 400
         vid, path = str(data.get("vid", ""))[:32], str(data.get("path", ""))[:60]
+        if _too_many("hit:" + client_ip(), limit=400, window=3600):  # far above any real visit, stops made up ids
+            return {"counted": False}
         now_ts = time.time()
         if now_ts - last_hit.get(vid + path, 0) < 3:
             return {"counted": False}
@@ -922,6 +924,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         vid = str(data.get("vid", ""))[:32]
         kind = str(data.get("kind", ""))[:12]
         if kind in ("open", "popen"):               # opens only count through /api/open (with its daily cap)
+            return {"counted": False}
+        if _too_many("ev:" + client_ip(), limit=240, window=3600):   # new browser ids are free, connections are not
             return {"counted": False}
         now_ts = time.time()
         recent = [t for t in ev_seen.get(vid, []) if now_ts - t < 3600]
@@ -1441,18 +1445,31 @@ def create_app(cfg: Config | None = None) -> Flask:
             abort(404)
         user = person["user"]
         by = None
-        vid = (request.args.get("vid") or "")[:32]
-        if vid:
-            with Session() as s:
-                dev = sender(s, vid)
-                if dev and dev.key != user.lower():
-                    by = dev.username
+        want, sig = (request.args.get("by") or "")[:15], (request.args.get("sig") or "")[:16]
+        if want and hmac.compare_digest(sig, by_sig(want)) and want.lower() != user.lower():
+            by = want                                   # signed by the server for this signed Keeper (see /api/welcome/me)
         from .welcome_cards import STYLES
         style = request.args.get("style", "dusk")
         if style not in STYLES:
             abort(404)
         key = f"wk3:{style}:{user.lower()}:{(by or '').lower()}"
         return card_png(key, lambda: card(avatar_image(user), user, person.get("name") or user, _joined(person), by=by, style=style))
+
+    def by_sig(handle: str) -> str:
+        return hmac.new(app.config["SECRET_KEY"].encode(), ("by:" + handle.lower()).encode(), hashlib.sha256).hexdigest()[:16]
+
+    @app.post("/api/welcome/me")
+    @v21_only
+    def api_welcome_me():
+        """The signed Keeper behind this browser, with a signature for the welcome card link (never the browser id)."""
+        from .cheers import sender
+        try:
+            vid = str(_body(200).get("vid", ""))[:32]
+        except (ValueError, AttributeError):
+            abort(400)
+        with Session() as s:
+            dev = sender(s, vid)
+            return jsonify({"ok": True, "by": dev.username, "sig": by_sig(dev.username)} if dev else {"ok": True})
 
     @app.get("/api/welcome")
     @v21_only
@@ -1790,13 +1807,34 @@ def create_app(cfg: Config | None = None) -> Flask:
                 abort(404)
             public = e.status == "approved"
             if not public and not g.get("circle"):
-                dev = sender(s, (request.args.get("vid") or "")[:32])
-                if not dev or dev.key != e.key:            # the artist can see their own entry while it waits
-                    abort(404)
+                abort(404)                                 # the artist sees their own waiting entry through /api/art/mine
             data = e.image if request.args.get("s") == "f" else e.thumb
         resp = make_response(data)
         resp.headers["Content-Type"] = "image/webp"
         resp.headers["Cache-Control"] = "public, max-age=300" if public else "private, no-store"   # art taken down disappears quickly
+        return resp
+
+    @app.post("/api/art/mine")
+    @v21_only
+    def api_art_mine():
+        """The artist's own entry picture while it waits, asked for in the body so the browser id never sits in a link."""
+        from .cheers import sender
+        from .db import ArtEntry
+        try:
+            body = _body(200)
+            vid, entry_id = str(body.get("vid", ""))[:32], body.get("id")
+        except (ValueError, TypeError, AttributeError):
+            abort(400)
+        if not isinstance(entry_id, int) or isinstance(entry_id, bool):
+            abort(400)
+        with Session() as s:
+            dev, e = sender(s, vid), s.get(ArtEntry, entry_id)
+            if not dev or not e or e.key != dev.key:
+                abort(404)
+            data = e.thumb
+        resp = make_response(data)
+        resp.headers["Content-Type"] = "image/webp"
+        resp.headers["Cache-Control"] = "private, no-store"
         return resp
 
     @app.get("/api/art/me")
@@ -1851,10 +1889,28 @@ def create_app(cfg: Config | None = None) -> Flask:
     @circle_only   # Jon's tools stay locked even after launch
     def art_lab():
         from . import art
+        now = utcnow()
+        week = art.week_of(now.date())
         with Session() as s:
-            q = art.queue(s, utcnow())
+            q = art.queue(s, now)
             s.commit()
-        return render_template("art_lab.html", cfg=cfg, q=q, csrf=lab_csrf())
+            items = art.gallery(s, week)
+            tally, who = art.tally(s, week), art.voters(s, week)
+        for it in items:
+            it["votes"], it["voters"] = tally.get(it["id"], 0), who.get(it["id"], [])
+        return render_template("art_lab.html", cfg=cfg, q=q, csrf=lab_csrf(), wall=items, checked=session.pop("art_checked", None))
+
+    @app.post("/lab/art/check")
+    @circle_only   # Jon's tools stay locked even after launch
+    def art_check_voters():
+        from . import art
+        from .oembed import fetch
+        check_csrf()
+        with Session() as s:
+            out = art.check_voters(s, art.week_of(utcnow().date()), fetch)
+            s.commit()
+        session["art_checked"] = out
+        return redirect(url_for("art_lab"))
 
     @app.post("/lab/art/review")
     @circle_only   # Jon's tools stay locked even after launch
@@ -2214,9 +2270,13 @@ def create_app(cfg: Config | None = None) -> Flask:
             data = _json.loads(row.data)
             book_vid = data.pop("book_vid", "")
             linked = False
-            if book_vid and g.get("v2"):
+            # the book name travels once, within two days of making the code: a code someone else sees later in a
+            # screenshot still restores progress, but can never add their browser to your book
+            if book_vid and g.get("v2") and utcnow() - row.created_at <= timedelta(days=2):
                 from .book import link_device
                 linked = link_device(s, book_vid, request.args.get("vid", "")[:32])
+                if linked:
+                    row.data = _json.dumps(data)
                 s.commit()
             return jsonify({"ok": True, **data, "book": linked})
 

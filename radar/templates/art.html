@@ -194,7 +194,7 @@ body { background: #0f1d1f; }
       <form class="ka-form" id="form" hidden novalidate>
         <label><span>Title</span><input type="text" id="f-title" name="title" maxlength="60" placeholder="What did you make?" required autocomplete="off"></label>
         <label><span>Making-of video link</span><input type="url" id="f-proof" name="proof" maxlength="290" placeholder="https://" required inputmode="url" autocomplete="off">
-          <small>A video of you making it: an X post, YouTube, TikTok, Instagram or a Google Drive link. A short timelapse is perfect. The link is shown next to your art.</small></label>
+          <small>A video of you making it, on X, YouTube, TikTok, Instagram or Google Drive (other sites and short links are not accepted). A short timelapse is perfect. The link is shown next to your art.</small></label>
         <label class="pick" for="f-image"><span class="prev" id="f-prev" aria-hidden="true">+</span><span><b style="display:block;font:700 16px/1.2 var(--disp)" id="f-pick-t">Pick your picture</b><small>A photo or scan of your art (JPG, PNG or WebP). It is made smaller on your phone before it is sent.</small></span>
           <input type="file" id="f-image" accept="image/jpeg,image/png,image/webp"></label>
         <label class="pledge"><input type="checkbox" id="f-pledge"><span>I made this myself, by hand. No AI was used for any part of it.</span></label>
@@ -271,8 +271,9 @@ body { background: #0f1d1f; }
   const say = (el, text, ok) => { el.textContent = text; el.classList.toggle("ok", !!ok); };
   const WHY = { unsigned: "Sign the Book of Friends first.", closed: "Voting is closed right now. It opens on Friday.", own: "That one is yours. Vote for another Keeper's art.",
     missing: "That artwork is not on the wall any more.", busy: "Try that again in a moment.", pledge: "Tick the box to say you made it yourself, with no AI.",
-    title: "Give your art a title.", proof: "Add a link to a video of you making it (it starts with https://).", image: "Pick a photo of your art (JPG, PNG or WebP).",
-    already: "You already sent art this week. You can send another next week." };
+    title: "Give your art a title.", proof: "Add a link to the video of you making it, on X, YouTube, TikTok, Instagram or Google Drive.", image: "Pick a photo of your art (JPG, PNG or WebP).",
+    already: "You already sent art this week. You can send another next week.",
+    new: "Votes come from Keepers who signed the book before this week started. You can vote from next week." };
   function paintVotes() {
     document.querySelectorAll("[data-vote]").forEach((b) => {
       const mineArt = me && me.signed && b.dataset.user === (me.user || "").toLowerCase();
@@ -289,7 +290,8 @@ body { background: #0f1d1f; }
     const e = j.entry;
     if (e) {
       $("mine").hidden = false; $("mine-title").textContent = e.title;
-      $("mine-img").src = `/art/${e.id}.webp?vid=${vid()}`;
+      fetch("/api/art/mine", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: vid(), id: e.id }) })   // never a link with your id in it
+        .then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) $("mine-img").src = URL.createObjectURL(b); }).catch(() => {});
       const tag = $("mine-tag");
       tag.className = "tag" + (e.status === "approved" ? " ok" : e.status === "rejected" ? " no" : "");
       tag.textContent = e.status === "approved" ? "On the wall" : e.status === "rejected" ? "Not approved" : "Waiting for Jon to check it";

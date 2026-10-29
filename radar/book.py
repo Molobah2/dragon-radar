@@ -64,6 +64,11 @@ def remove(s, key: str, block: bool = False) -> None:
     f = s.get(Friend, key)
     if f:
         s.delete(f)
+    from .db import ArtEntry, ArtVote                             # their Keeper Art comes down and their votes stop counting
+    s.execute(delete(ArtVote).where(ArtVote.voter == key))
+    for e in s.scalars(select(ArtEntry).where(ArtEntry.key == key, ArtEntry.status != "rejected")).all():
+        s.execute(delete(ArtVote).where(ArtVote.entry_id == e.id))
+        e.status, e.note = "rejected", "Removed from the Book of Friends."
     if block:
         set_setting(s, "book_blocked", ",".join(sorted(blocked(s) | {key})))
 
@@ -71,7 +76,7 @@ def remove(s, key: str, block: bool = False) -> None:
 def link_device(s, from_vid: str, to_vid: str) -> bool:
     """A backup code carries the book name to another phone or computer (the code itself is the proof)."""
     src = s.get(FriendDevice, from_vid) if VID.match(from_vid or "") else None
-    if not src or not src.confirmed or not VID.match(to_vid or "") or from_vid == to_vid:
+    if not src or not src.confirmed or not VID.match(to_vid or "") or from_vid == to_vid or src.key in blocked(s):
         return False
     dev = s.get(FriendDevice, to_vid)
     if (dev is None or dev.key != src.key) and (s.scalar(select(func.count()).select_from(FriendDevice).where(
@@ -120,6 +125,8 @@ def check(s, vid: str, link: str, lookup) -> dict:
         return {"ok": False, "why": "nosign"}
     if dev.confirmed:
         return {"ok": True, "status": "confirmed", "handle": dev.username}
+    if dev.key in blocked(s):                          # blocked after this browser started signing
+        return {"ok": False, "why": "blocked"}
     m = LINK.search(link or "")
     if not m:
         return {"ok": False, "why": "link"}

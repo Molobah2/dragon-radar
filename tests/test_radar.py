@@ -1311,7 +1311,7 @@ def test_reports_hide_a_post_only_when_returning_visitors_agree(cfg, Session):
         s.add(Post(id="51", author_id="k", author_username="goodkeeper", text="gm", created_at=utcnow()))
         s.add(Keeper(key="goodkeeper", username="goodkeeper", verified=True))
         for ch in "abcde":
-            s.add(Visitor(vid=ch * 32, days=3 if ch in "abcd" else 1))
+            s.add(Visitor(vid=ch * 32, days=3 if ch in "abcd" else 1, first_seen=utcnow() - timedelta(days=10)))
         s.commit()
     c = app.test_client()
     rep = lambda pid, vid, why="spam": c.post("/api/report", data=json.dumps({"post": pid, "vid": vid, "reason": why}),
@@ -3124,7 +3124,12 @@ def test_keeper_art_checked_by_hand_then_voted_at_the_weekend(cfg, Session, monk
     with Session() as s:
         s.add_all([FriendDevice(vid="a" * 32, key="ola", username="Ola", code="x", confirmed=True),
                    FriendDevice(vid="b" * 32, key="nacho", username="Nacho", code="y", confirmed=True),
-                   FriendDevice(vid="c" * 32, key="mia", username="Mia", code="z", confirmed=True)])
+                   FriendDevice(vid="c" * 32, key="mia", username="Mia", code="z", confirmed=True),
+                   FriendDevice(vid="d" * 32, key="newbie", username="Newbie", code="w", confirmed=True)])
+        from radar.db import Friend
+        for k, u, pp in (("ola", "Ola", "1"), ("nacho", "Nacho", "3"), ("mia", "Mia", "4")):
+            s.add(Friend(key=k, username=u, proof_post=pp, confirmed_at=datetime(2026, 10, 1)))
+        s.add(Friend(key="newbie", username="Newbie", proof_post="2", confirmed_at=datetime(2026, 10, 27)))   # signed this week
         s.commit()
     locked = create_app(cfg).test_client()
     assert locked.get("/art").status_code == 404 and locked.post("/api/art/vote", data="{}").status_code == 404
@@ -3142,6 +3147,8 @@ def test_keeper_art_checked_by_hand_then_voted_at_the_weekend(cfg, Session, monk
     assert send("z" * 32).get_json()["why"] == "unsigned"
     assert send("a" * 32, pledge="no").get_json()["why"] == "pledge"
     assert send("a" * 32, proof="http://nope").get_json()["why"] == "proof"
+    assert send("a" * 32, proof="https://bit.ly/abc123").get_json()["why"] == "proof"            # video sites only
+    assert send("a" * 32, proof="https://x.com.evil.example/a").get_json()["why"] == "proof"
     bad = c.post("/api/art/submit", data={"vid": "a" * 32, "title": "x", "proof": "https://x.com/a/status/1", "pledge": "yes",
                                           "image": (io.BytesIO(b"not a picture"), "a.jpg")}, content_type="multipart/form-data")
     assert bad.get_json()["why"] == "image"
@@ -3149,7 +3156,9 @@ def test_keeper_art_checked_by_hand_then_voted_at_the_weekend(cfg, Session, monk
     assert ola["ok"] and send("a" * 32).get_json()["why"] == "already"
     nacho = send("b" * 32, title="Pinky in clay", color="blue").get_json()
     assert c.get(f"/art/{ola['id']}.webp").status_code == 404                    # waiting: hidden from everyone
-    assert c.get(f"/art/{ola['id']}.webp?vid=" + "a" * 32).status_code == 200     # but the artist sees their own
+    assert c.get(f"/art/{ola['id']}.webp?vid=" + "a" * 32).status_code == 404     # never through a link with an id in it
+    mine = lambda v: c.post("/api/art/mine", data=json.dumps({"vid": v, "id": ola["id"]}), content_type="text/plain")
+    assert mine("a" * 32).status_code == 200 and mine("b" * 32).status_code == 404   # only the artist sees it waiting
     assert "Blinky in ink" not in c.get("/art").get_data(as_text=True)
     assert c.get("/api/art/me?vid=" + "a" * 32).get_json()["entry"]["status"] == "pending"
     from radar import art
@@ -3166,6 +3175,7 @@ def test_keeper_art_checked_by_hand_then_voted_at_the_weekend(cfg, Session, monk
     assert 'data-vote=' in c.get("/art").get_data(as_text=True)
     assert vote("a" * 32, ola["id"])["why"] == "own"
     assert vote("z" * 32, ola["id"])["why"] == "unsigned"
+    assert vote("d" * 32, ola["id"])["why"] == "new"                                # signed this week: votes from next week
     assert vote("c" * 32, nacho["id"])["ok"] and vote("c" * 32, ola["id"])["ok"]   # changed her mind: still one vote
     assert vote("b" * 32, ola["id"])["ok"] and vote("a" * 32, nacho["id"])["ok"]
     assert c.get("/api/art/me?vid=" + "c" * 32).get_json()["voted"] == ola["id"]
@@ -3174,6 +3184,15 @@ def test_keeper_art_checked_by_hand_then_voted_at_the_weekend(cfg, Session, monk
     assert "Keeper Art of last week" in page and "Blinky in ink" in page and "2 Keepers voted" in page
     lab = app.test_client()
     assert lab.get("/lab/art").status_code == 404                                  # Jon's review page stays locked
+    from radar import book
+    with Session() as s:                                                           # renamed account caught by the check
+        now_named = {"1": "Ola", "3": "Nacho", "4": "MiaTwo"}                       # Mia's account was renamed
+        out = art.check_voters(s, datetime(2026, 10, 26).date(), lambda pid: {"username": now_named[pid]})
+        assert out["kept"] == 2 and out["dropped"] == ["Mia"] and out["busy"] == 0
+        book.remove(s, "ola"); s.commit()                                          # a removed Keeper's art and votes go too
+        from radar.db import ArtEntry, ArtVote
+        assert s.get(ArtEntry, ola["id"]).status == "rejected"
+        assert not s.scalars(select(ArtVote).where(ArtVote.voter == "ola")).all()
     menu = c.get("/create").get_data(as_text=True)
     assert 'href="/art"' in menu and "Keeper Art" in menu
 
@@ -3208,4 +3227,14 @@ def test_keeper_art_late_sunday_entry_and_swap_schedule(cfg, Session, monkeypatc
     assert "max-age=300" in c.get(f"/art/{first['id']}.webp").headers["Cache-Control"]
     js = (Path(__file__).parent.parent / "radar" / "static" / "dragons.js").read_text()
     assert "&& e.key !== eggKey()" in js and "Math.min(foundIn(tier), swapLog().length)" in js
+
+
+def test_backup_code_links_a_book_only_once():
+    """A progress backup code carries the book name to one new device, once, within two days. Seen again later (a
+    screenshot, a paste), it still restores progress but never adds a stranger's browser to the book."""
+    import inspect
+    from radar import web
+    src = inspect.getsource(web)
+    assert "utcnow() - row.created_at <= timedelta(days=2)" in src and "row.data = _json.dumps(data)" in src
+    assert '_too_many("ev:" + client_ip(), limit=240, window=3600)' in src and '_too_many("hit:" + client_ip(), limit=400, window=3600)' in src
 

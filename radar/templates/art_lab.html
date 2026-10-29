@@ -26,6 +26,20 @@
     <li class="al-empty">Nothing waiting.</li>
     {% endfor %}
   </ol>
+  <h3 class="al-sub">This week's votes</h3>
+  {% if checked %}<p class="al-note">Checked: {{ checked.kept }} votes kept{% if checked.dropped %}, {{ checked.dropped|length }} dropped ({{ checked.dropped|join(", ") }}){% endif %}{% if checked.busy %}, {{ checked.busy }} could not be checked right now, try again{% endif %}.</p>{% endif %}
+  {% if wall %}
+  <ol class="al-list">
+    {% for a in wall %}
+    <li><a class="al-pic" href="/art/{{ a.id }}.webp?s=f" target="_blank" rel="noopener"><img src="/art/{{ a.id }}.webp" alt="" loading="lazy"></a>
+      <div class="al-info"><b>{{ a.title }} · {{ a.votes }} {{ "vote" if a.votes == 1 else "votes" }}</b><span>@{{ a.user }}</span>
+      {% if a.voters %}<span>From: {% for v in a.voters %}<a href="https://x.com/{{ v }}" target="_blank" rel="noopener">@{{ v }}</a>{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div></li>
+    {% endfor %}
+  </ol>
+  <form method="post" action="/lab/art/check" class="al-act" style="margin-top:10px"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="al-btn" type="submit">Check every voter's proof post</button>
+    <span class="al-note">Do this on Sunday night. A voter whose proof post was deleted, or whose account was renamed into another name, loses their vote.</span></form>
+  {% else %}<p class="al-note">Nothing on the wall yet this week.</p>{% endif %}
   {% if q.done %}
   <h3 class="al-sub">Decided, last two weeks</h3>
   <ol class="al-list">
@@ -62,6 +76,7 @@
   .al-btn.ghost { background: transparent; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
   .al-btn.no { background: #f6d3dc; color: #6a1730; }
   .al-tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #dff3ea; color: #145a3e; } .al-tag.rejected { background: #f6d3dc; color: #6a1730; }
+  .al-note { margin: 0; font-size: 13.5px; font-weight: 700; color: var(--ink-soft); }
   .al-empty { font-weight: 700; color: var(--ink-soft); grid-template-columns: 1fr !important; }
   @media (max-width: 560px) { .al-list > li { grid-template-columns: 1fr; } .al-pic img { width: 100%; height: auto; max-height: 260px; } }
 </style>

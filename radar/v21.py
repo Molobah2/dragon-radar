@@ -238,6 +238,7 @@ def creator_stats(s, cfg, now: datetime, days: int = CREATOR_DAYS) -> list[dict]
         me = people.setdefault(k, {"user": user, "name": (p.author_name or user)[:60], "posts": 0, "opens": 0, "art": 0,
                                    "engagers": set(), "top": []})
         me["posts"] += 1; me["opens"] += int(p.opens or 0); me["art"] += 1 if p.has_media else 0
+        me["fair"] = me.get("fair", 0) + min(int(p.opens or 0), 40)   # one post's opens count up to 40, so pumped numbers can not carry the score
         me["top"].append({"id": p.id, "text": (p.text or "")[:200], "opens": int(p.opens or 0), "media": bool(p.has_media)})
         by_post[p.id] = k
     if by_post:
@@ -256,7 +257,7 @@ def creator_stats(s, cfg, now: datetime, days: int = CREATOR_DAYS) -> list[dict]
         me["top"] = sorted(me["top"], key=lambda x: (-x["opens"], not x["media"]))[:3]
         # a reply or quote from another Keeper counts most; pictures (any image, screenshots too) and posting a lot
         # only help a little and stop at seven
-        me["score"] = me["opens"] + 4 * eng + min(me["art"], 7) + 2 * min(me["posts"], 7)
+        me["score"] = me.pop("fair", 0) + 4 * eng + min(me["art"], 7) + 2 * min(me["posts"], 7)
         out.append(me)
     out.sort(key=lambda x: (-x["score"], x["user"].lower()))
     return out

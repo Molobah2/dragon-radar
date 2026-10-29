@@ -18,6 +18,19 @@ from .db import ArtEntry, ArtVote, utcnow
 MAX_UPLOAD = 1_800_000           # the page shrinks the picture before sending, so a real upload is far below this
 TITLE_MAX = 60
 PROOF = re.compile(r"^https://[^\s<>\"']{6,290}$")
+# the making-of video has to live on a video site, so a link can not be swapped for something else after approval
+PROOF_HOSTS = ("x.com", "twitter.com", "youtube.com", "youtu.be", "tiktok.com", "instagram.com", "drive.google.com")
+
+
+def proof_ok(url: str) -> bool:
+    from urllib.parse import urlsplit
+    if not PROOF.match(url or ""):
+        return False
+    try:
+        host = (urlsplit(url).hostname or "").lower()
+    except ValueError:
+        return False
+    return any(host == h or host.endswith("." + h) for h in PROOF_HOSTS)
 VOTE_DAYS = (4, 5, 6)            # Friday, Saturday, Sunday
 
 
@@ -40,7 +53,7 @@ def shrink(raw: bytes) -> tuple[bytes, bytes] | None:
         im = Image.open(io.BytesIO(raw))
         if im.format not in ("JPEG", "PNG", "WEBP"):
             return None
-        if im.width < 200 or im.height < 200 or im.width * im.height > 40_000_000:   # checked before decoding, so a
+        if im.width < 200 or im.height < 200 or im.width * im.height > 12_000_000:   # checked before decoding, so a
             return None                                                               # tiny file can not unpack into a huge one
         im.load()
         im = ImageOps.exif_transpose(im)
@@ -74,7 +87,7 @@ def submit(s, dev, title: str, proof: str, raw: bytes, pledge: bool, now: dateti
         return {"ok": False, "why": "pledge"}
     if not title:
         return {"ok": False, "why": "title"}
-    if not PROOF.match(proof):
+    if not proof_ok(proof):
         return {"ok": False, "why": "proof"}
     if not raw or len(raw) > MAX_UPLOAD:
         return {"ok": False, "why": "image"}
@@ -137,12 +150,51 @@ def vote(s, dev, entry_id: int, now: datetime) -> dict:
         return {"ok": False, "why": "missing"}
     if e.key == dev.key:
         return {"ok": False, "why": "own"}
+    if not can_vote(s, dev.key, week):
+        return {"ok": False, "why": "new"}
     v = s.get(ArtVote, (week, dev.key))
     if v:
         v.entry_id, v.created_at = e.id, now
     else:
         s.add(ArtVote(week=week, voter=dev.key, entry_id=e.id, created_at=now))
     return {"ok": True, "voted": e.id}
+
+
+def can_vote(s, key: str, week: date) -> bool:
+    """Votes come from Keepers who signed the book before the week started, so a fresh name (a new account, or the
+    same account renamed) can not join the vote it was made for."""
+    from .db import Friend
+    f = s.get(Friend, key)
+    return bool(f and f.confirmed_at and f.confirmed_at < datetime.combine(week, datetime.min.time()))
+
+
+def voters(s, week: date) -> dict[int, list[str]]:
+    """For Jon: who voted for what this week."""
+    from .db import Friend
+    out: dict[int, list[str]] = {}
+    for v in s.scalars(select(ArtVote).where(ArtVote.week == week)).all():
+        f = s.get(Friend, v.voter)
+        out.setdefault(v.entry_id, []).append(f.username if f else v.voter)
+    return out
+
+
+def check_voters(s, week: date, lookup) -> dict:
+    """Jon's check before Monday: every voter's proof post must still be theirs. A renamed account (its old proof post
+    now shows a new name) or a deleted proof post loses its vote. `lookup` is oembed.fetch."""
+    from .db import Friend
+    dropped, kept, busy = [], 0, 0
+    for v in s.scalars(select(ArtVote).where(ArtVote.week == week)).all():
+        f = s.get(Friend, v.voter)
+        info = lookup(f.proof_post) if f and f.proof_post else {}
+        if info is None:
+            busy += 1
+            continue
+        if not info or (info.get("username") or "").lower() != v.voter:
+            dropped.append(f.username if f else v.voter)
+            s.delete(v)
+        else:
+            kept += 1
+    return {"kept": kept, "dropped": dropped, "busy": busy}
 
 
 def me(s, dev, now: datetime) -> dict:
@@ -153,7 +205,8 @@ def me(s, dev, now: datetime) -> dict:
     last = None if e else s.scalar(select(ArtEntry).where(ArtEntry.key == dev.key, ArtEntry.week == week,
                                                           ArtEntry.status == "rejected").order_by(ArtEntry.id.desc()))
     v = s.get(ArtVote, (week, dev.key))
-    out = {"ok": True, "signed": True, "user": dev.username, "voted": v.entry_id if v else None}
+    out = {"ok": True, "signed": True, "user": dev.username, "voted": v.entry_id if v else None,
+           "can_vote": can_vote(s, dev.key, week)}
     if e:
         out["entry"] = {"id": e.id, "title": e.title, "status": e.status}
     elif last:

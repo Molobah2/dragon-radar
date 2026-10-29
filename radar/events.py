@@ -116,6 +116,7 @@ def protected(s, post: Post) -> bool:
 
 
 TRUSTED_DAYS = 3        # a reporter must have visited on this many different days
+TRUSTED_AGE = 7         # and first came at least this many days ago, so fresh browsers made for reporting do not count
 
 
 def add_report(s, post_id: str, vid: str, reason: str, today: date, conn: str = "") -> str:
@@ -145,7 +146,8 @@ def add_report(s, post_id: str, vid: str, reason: str, today: date, conn: str = 
         trusted = s.execute(select(func.count(func.distinct(Report.vid)), func.count(func.distinct(ReportConn.conn)))
                             .select_from(Report).join(Visitor, Visitor.vid == Report.vid)
                             .outerjoin(ReportConn, (ReportConn.post_id == Report.post_id) & (ReportConn.vid == Report.vid))
-                            .where(Report.post_id == post_id, Visitor.days >= TRUSTED_DAYS)).one()
+                            .where(Report.post_id == post_id, Visitor.days >= TRUSTED_DAYS,
+                                   Visitor.first_seen <= utcnow() - timedelta(days=TRUSTED_AGE))).one()
         if trusted[0] >= AUTO_HIDE_AT and trusted[1] >= AUTO_HIDE_AT:
             post.hidden, st.status, st.updated_at = True, "auto", utcnow()
     return "ok"
