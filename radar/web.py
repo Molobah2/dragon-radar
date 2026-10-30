@@ -619,6 +619,8 @@ def create_app(cfg: Config | None = None) -> Flask:
             data = json.loads(request.get_data(as_text=True)[:limit] or "{}", parse_constant=_no_const)
         except ValueError:
             raise
+        except RecursionError:                     # thousands of nested brackets
+            raise ValueError("too deep")
         return data if isinstance(data, dict) else {}
 
     # Visitor counter: one beacon per page view from the browser (bots that do not run scripts never send it).
@@ -842,7 +844,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     def _count(v, top: int) -> int:
         try:
             n = int(v)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             return 0
         return max(0, min(top, n))
 
@@ -967,10 +969,12 @@ def create_app(cfg: Config | None = None) -> Flask:
         if page is None or not page.image:
             abort(404)
         with Session() as s:
-            if friend is None or (friend.key not in book_trusted(s) and not g.get("circle")):
+            checked = friend is not None and friend.key in book_trusted(s)
+            if friend is None or (not checked and not g.get("circle")):
                 abort(404)                         # a first picture shows once Jon has checked it
+            public = checked and cfg.v2_public
         r = app.response_class(page.image, mimetype="image/jpeg")
-        r.headers["Cache-Control"] = "public, max-age=300"
+        r.headers["Cache-Control"] = "public, max-age=300" if public else "private, no-store"   # unchecked pictures stay out of shared caches
         return r
 
     # ---------- Discord daily drop (off until DROP_CHANNEL_ID is set on Render) ----------
@@ -1038,10 +1042,14 @@ def create_app(cfg: Config | None = None) -> Flask:
             report_ips.clear()
         report_ips[ip] = recent + [now_ts]
         with Session() as s:
-            res = add_report(s, str(data.get("post", ""))[:32], str(data.get("vid", ""))[:32],
-                             str(data.get("reason", ""))[:12], datetime.now(tz).date(),
-                             conn=conn_hash())
-            s.commit()
+            try:
+                res = add_report(s, str(data.get("post", ""))[:32], str(data.get("vid", ""))[:32],
+                                 str(data.get("reason", ""))[:12], datetime.now(tz).date(),
+                                 conn=conn_hash())
+                s.commit()
+            except IntegrityError:                 # the same report sent twice at the same moment
+                s.rollback()
+                res = "dup"
         if res == "ok":
             g.feed_changed = True
         return {"ok": res in ("ok", "dup"), "why": res}
@@ -1358,7 +1366,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                 circle_png.clear()
             circle_png[key] = (time.time(), out); hit = circle_png[key]
         r = app.response_class(hit[1], mimetype="image/png")
-        r.headers["Cache-Control"] = "public, max-age=3600"
+        r.headers["Cache-Control"] = "public, max-age=3600" if cfg.circle_public else "private, no-store"
         return r
 
     @app.get("/circle/<handle>.png")
@@ -1876,6 +1884,8 @@ def create_app(cfg: Config | None = None) -> Flask:
     def art_image(entry_id):
         from .cheers import sender
         from .db import ArtEntry
+        if not 0 < entry_id < 2**31:
+            abort(404)
         with Session() as s:
             e = s.get(ArtEntry, entry_id)
             if e is None:
@@ -1900,7 +1910,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             vid, entry_id = str(body.get("vid", ""))[:32], body.get("id")
         except (ValueError, TypeError, AttributeError):
             abort(400)
-        if not isinstance(entry_id, int) or isinstance(entry_id, bool):
+        if not isinstance(entry_id, int) or isinstance(entry_id, bool) or not 0 < entry_id < 2**31:
             abort(400)
         with Session() as s:
             dev, e = sender(s, vid), s.get(ArtEntry, entry_id)
@@ -1920,6 +1930,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         with Session() as s:
             return jsonify(art.me(s, sender(s, (request.args.get("vid") or "")[:32]), utcnow()))
 
+    art_lock, art_inflight = threading.Lock(), set()   # Keepers whose art is being sent right now
+
     @app.post("/api/art/submit")
     @v21_only
     def api_art_submit():
@@ -1930,10 +1942,22 @@ def create_app(cfg: Config | None = None) -> Flask:
         f = request.files.get("image")
         raw = f.read(art.MAX_UPLOAD + 1) if f else b""
         with Session() as s:
-            out = art.submit(s, sender(s, request.form.get("vid", "")[:32]), request.form.get("title", ""),
-                             request.form.get("proof", ""), raw, request.form.get("pledge") == "yes", utcnow())
-            if out.get("ok"):
-                s.commit()
+            dev = sender(s, request.form.get("vid", "")[:32])
+            lock_key = dev.key if dev else None
+            with art_lock:                         # two sends at once from one Keeper: the second waits its turn
+                if lock_key in art_inflight:
+                    return jsonify({"ok": False, "why": "already"}), 400
+                if lock_key:
+                    art_inflight.add(lock_key)
+            try:
+                out = art.submit(s, dev, request.form.get("title", ""),
+                                 request.form.get("proof", ""), raw, request.form.get("pledge") == "yes", utcnow())
+                if out.get("ok"):
+                    s.commit()
+            finally:
+                if lock_key:
+                    with art_lock:
+                        art_inflight.discard(lock_key)
         return jsonify(out), (200 if out.get("ok") else 400)
 
     @app.post("/api/art/vote")
@@ -1946,7 +1970,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             vid, entry = str(body.get("vid", ""))[:32], body.get("entry")
         except (ValueError, TypeError, AttributeError):
             abort(400)
-        if not isinstance(entry, int) or isinstance(entry, bool):
+        if not isinstance(entry, int) or isinstance(entry, bool) or not 0 < entry < 2**31:
             abort(400)
         if _too_many("artvote:" + client_ip(), limit=60, window=3600):
             abort(429)
@@ -2429,7 +2453,16 @@ def create_app(cfg: Config | None = None) -> Flask:
                 s.add(KeeperSave(key=key, data=raw, updated_at=utcnow()))
             else:
                 row.data, row.updated_at = raw, utcnow()
-            s.commit()
+            try:
+                s.commit()
+            except IntegrityError:                 # two devices saved for the first time at once: merge into the row the other one made
+                s.rollback()
+                row = s.get(KeeperSave, key)
+                if row is None:
+                    return jsonify({"ok": False}), 409
+                merged = merge(load(row.data), incoming)
+                row.data, row.updated_at = json.dumps(merged, separators=(",", ":")), utcnow()
+                s.commit()
         return jsonify({"ok": True})
 
     @app.get("/api/book/progress")

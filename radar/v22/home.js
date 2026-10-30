@@ -376,7 +376,17 @@
       FX.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - power * 0.6, t0: clock, life: 0.7 + Math.random() * 0.7, kind, col: Array.isArray(col) ? col[i % col.length] : col, s: 4 + Math.random() * 6, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 10 });
     }
   }
+  const TAPS = {};
   function react(id, x, y, h) {
+    if (ACT[id].clip) return;
+    TAPS[id] = (TAPS[id] || 0) + 1;
+    if (TAPS[id] % 2 === 1 && playClip(id, "react")) {
+      const [c1, c2] = DRAGON[id];
+      if (id === "blinky") burst(x, y - h * 0.6, "star", [c1, c2, "255,255,255"], 14, h * 1.3);
+      if (id === "pinky") burst(x, y - h * 0.7, "heart", [c1, c2, "255,255,255"], 10, h * 1.1);
+      if (id === "speed") burst(x, y - h * 0.5, "conf", [c1, c2, "255,201,77", "255,143,179", "120,200,255"], 20, h * 1.6);
+      return;
+    }
     const kind = MOVES[id][moveIdx[id]++ % 3];
     RX[id] = { kind, t0: clock };
     const POSE_FOR = { jump: ["wave", 1.4], spin: ["stand", 1.1], wiggle: ["popcorn", 2.6], flutter: ["wave", 1.6], twirl: ["look", 1.3], wink: ["sit", 2.2], zip: ["jump", 1.5], button: ["wave", 1.4], skid: ["look", 1.4] };
@@ -441,14 +451,35 @@
     if (a.pose !== pose) { a.prev = a.pose; a.pose = pose; a.t = clock; }
     a.until = clock + hold;
   }
+  // ---------- real motion: short clips of each dragon, cut out frame by frame into one sheet ----------
+  const CLIP = {};
+  for (const [id, set] of Object.entries(A.clips || {})) { CLIP[id] = {}; for (const [k, c] of Object.entries(set)) CLIP[id][k] = { c, im: null }; }
+  const clipReady = (id, k) => { const e = CLIP[id] && CLIP[id][k]; if (!e || lite) return false; if (!e.im) e.im = img(e.c.src); return ready(e.im); };
+  for (const id in CLIP) if (CLIP[id].hatch) clipReady(id, "hatch");
+  setTimeout(() => { for (const id in CLIP) for (const k in CLIP[id]) clipReady(id, k); }, 2500);
+  // a hatch clip held on one frame chosen by the scroll (t from 0 to 1), so scrolling back plays it backwards
+  const scrubbing = (id) => !!(CLIP[id] && CLIP[id].hatch) && clipReady(id, "hatch");
+  function playClip(id, k) {
+    const a = ACT[id];
+    if (a.clip || !clipReady(id, k)) return false;
+    const c = CLIP[id][k].c;
+    a.clip = { k, t0: clock }; a.until = clock + c.n / c.fps + 0.2; a.face = 1;
+    return true;
+  }
+  // one frame of a clip, in the dragon's own frame (feet at 0,0); hb is the dragon's full standing height
+  function clipDraw(ctx, e, f, hb) {
+    const c = e.c, k = hb * (c.s || 1) / c.refH, col = f % c.cols, row = Math.floor(f / c.cols);
+    ctx.drawImage(e.im, col * c.cw, row * c.ch, c.cw, c.ch, -c.refCx * k, -c.refBottom * k, c.cw * k, c.ch * k);
+  }
   let lastMove = -9;
   function tickActors() {
     for (const id of Object.keys(ACT)) {
       const a = ACT[id];
-      if (clock - a.seen > 0.5) continue;                         // only the dragons on screen
+      if (clock - a.seen > 0.5 || a.clip) continue;               // only the dragons on screen, and not mid clip
       const near = clock - lastMove < 1.6 && Math.abs(pX - a.x) < W * 0.32 && Math.abs(pY - (a.y - 60)) < H * 0.4;
       if (near && !RX[id] && a.until - clock < 0.6) { a.face = pX < a.x ? -1 : 1; if (has(id, "look")) setPose(id, "look", 1.2); continue; }
       if (clock > a.until && !RX[id]) {
+        if (a.step % 4 === 3 && playClip(id, "idle")) { a.step++; continue; }   // now and then, a real little moment
         let tries = 0, next;
         do { next = IDLE[id][a.step++ % IDLE[id].length]; } while (!has(id, next[0]) && ++tries < 8);
         setPose(id, next[0], next[1] * (0.8 + Math.random() * 0.4));
@@ -465,9 +496,15 @@
   const FIT = { blinky: KIT, pinky: KIT, speed: { stand: 1, wave: 1, look: 1, sit: 0.923, jump: 1.148 } };
   const fit = (who, pose) => FIT[who][pose] || 1;
   function sprite(ctx, im, x, y, h, o = {}) {
-    let prev = null, mix = 1, pop = 0, who = null, hp = h;
+    let prev = null, mix = 1, pop = 0, who = null, hp = h, hb = h, clipE = null, cf = 0, clipIn = 1, endE = null, endF = 0, endMix = 1;
     if (typeof im === "string") {                                // a living dragon: its pose right now
       who = im; const a = ACT[who];
+      if (!o.pose && a.clip) {
+        const e = CLIP[who][a.clip.k], el = clock - a.clip.t0; cf = Math.floor(el * e.c.fps);
+        if (cf >= e.c.n) { a.clipEnd = { e, f: e.c.n - 1, t: clock }; a.clip = null; setPose(who, "stand", 2.2); a.prev = null; a.t = clock - 1; }
+        else { clipE = e; clipIn = Math.min(1, el / 0.2); }
+      }
+      if (!o.pose && !clipE && a.clipEnd && clock - a.clipEnd.t < 0.22) { endE = a.clipEnd.e; endF = a.clipEnd.f; endMix = (clock - a.clipEnd.t) / 0.22; }
       const pose = o.pose && has(who, o.pose) ? o.pose : a.pose;
       const use = has(who, pose) ? pose : "stand";
       im = PIM[who][use]; hp = h; h *= fit(who, use);
@@ -479,6 +516,8 @@
         if (pose === "look" && a.face < 0) o = { ...o, flip: !o.flip };
       }
     }
+    let scrubE = null, scrubF = 0;
+    if (who && o.scrub && clipReady(who, o.scrub.k)) { scrubE = CLIP[who][o.scrub.k]; scrubF = Math.round(clamp(o.scrub.t) * (scrubE.c.n - 1)); }
     if (!ready(im) || h <= 1) return;
     const w = h * im.naturalWidth / im.naturalHeight;
     let rot = o.rot || 0, sx = o.sx || 1, sy = o.sy || 1;
@@ -492,9 +531,17 @@
     ctx.scale((o.flip ? -1 : 1) * sx, sy);
     const alpha = o.alpha == null ? 1 : o.alpha;
     if (o.shadow) { ctx.globalAlpha = alpha * 0.25; ctx.fillStyle = "#2a5a30"; ctx.beginPath(); ctx.ellipse(0, 0, w * 0.32, h * 0.04, 0, 0, 7); ctx.fill(); }
-    if (prev && ready(prev)) { const pw = hp * prev.naturalWidth / prev.naturalHeight; ctx.globalAlpha = alpha * (1 - mix); ctx.drawImage(prev, -pw / 2, -hp, pw, hp); }
-    ctx.globalAlpha = alpha * (prev ? mix : 1);
-    ctx.drawImage(im, -w / 2, -h, w, h); ctx.restore();
+    if (scrubE) { ctx.globalAlpha = alpha; clipDraw(ctx, scrubE, scrubF, hb); }
+    else if (clipE) {                                          // a real clip frame, faded in over the pose it starts from
+      if (clipIn < 1) { ctx.globalAlpha = alpha * (1 - clipIn); ctx.drawImage(im, -w / 2, -h, w, h); }
+      ctx.globalAlpha = alpha * clipIn; clipDraw(ctx, clipE, cf, hb);
+    } else {
+      if (prev && ready(prev)) { const pw = hp * prev.naturalWidth / prev.naturalHeight; ctx.globalAlpha = alpha * (1 - mix); ctx.drawImage(prev, -pw / 2, -hp, pw, hp); }
+      ctx.globalAlpha = alpha * (prev ? mix : 1) * endMix;
+      ctx.drawImage(im, -w / 2, -h, w, h);
+      if (endE) { ctx.globalAlpha = alpha * (1 - endMix); clipDraw(ctx, endE, endF, hb); }
+    }
+    ctx.restore();
     if (o.id && alpha > 0.4) HIT.push({ id: o.id, x0: x - w * 0.4, x1: x + w * 0.4, y0: y - h, y1: y, x, y, h });
   }
   function quad(a, b, c, t) { const u = 1 - t; return [u * u * a[0] + 2 * u * t * b[0] + t * t * c[0], u * u * a[1] + 2 * u * t * b[1] + t * t * c[1]]; }
@@ -628,7 +675,17 @@
     } else bx.drawImage(L.ground, cx - W * gz / 2 - tiltX * 20, gY, W * gz, H * 0.5 * gz);
 
     // ===== title =====
-    const titleTop = Math.max(84, base - EH - Math.max(54, Math.min(W * 0.15, 200)) * 1.05 - (W < 700 ? H * 0.05 : 0));
+    // on short wide screens the letters would sit on the Hatchery banners: lift them, then shrink them just enough to clear
+    const ma = art("mid"), mR = ma ? ma.naturalHeight / ma.naturalWidth : 1358 / 3200;
+    const bannerTop = H * 0.728 - (0.887 - 0.338) * Math.max(W * 0.78, H * 0.55) * mR - 10;   // the mid layer and banner maths at rest
+    let tf = Math.max(54, Math.min(W * 0.15, 200));
+    let titleTop = Math.max(84, base - EH - tf * 1.05 - (W < 700 ? H * 0.05 : 0));
+    if (W >= 700 && titleTop + tf * 0.9 > bannerTop) {
+      titleTop = Math.max(84, bannerTop - tf * 0.9);
+      if (titleTop + tf * 0.9 > bannerTop) tf = Math.max(54, (bannerTop - titleTop) / 0.9);
+    }
+    const tfs = tf < Math.max(54, Math.min(W * 0.15, 200)) - 0.5 ? Math.round(tf) + "px" : "";
+    if (pd.style.fontSize !== tfs) pd.style.fontSize = tfs;
     pd.style.transform = `translate3d(${-tiltX * 8}px,${titleTop - gl * H * 0.2 - tiltY * 5}px,0)`;
     const out = ease(seg(p, 0.2, 0.42));
     const titleT = (now - t0) / 1000;
@@ -766,6 +823,7 @@
   }
 
   // when each dragon comes out of its egg (share of the hero scroll)
+  const BLINKY_HOP = [0.33, 0.57], handed = {};
   const OUT = { speed: [0.29, 0.40], pinky: [0.49, 0.64], blinky: [0.67, 0.82] }, INSIDE = { speed: 0.12, pinky: 0.25, blinky: 0.3 };
   const eggOf = (id) => EGGS.find((E) => E.spec.id === id);
   // a dragon climbing out of its own egg. Inside the egg's frame (origin at the egg's bottom) while still in the shell,
@@ -777,6 +835,11 @@
     const spot = eggSpot(E), ox = inside ? spot.x : 0, oy = inside ? spot.y : 0;   // inside: draw relative to the egg
     const start = [spot.x, spot.y - E.ry + E.v0 * E.ry + E.ry * 0.45];
     const at = (x, y) => [x - ox, y - oy];
+    // once out, the living dragon takes over: the clip's last frame fades into it, as after a tap clip
+    if (id !== "speed" && !inside) {
+      if (prog >= 1 && !handed[id] && scrubbing(id)) { const e = CLIP[id].hatch; ACT[id].clipEnd = { e, f: e.c.n - 1, t: clock }; }
+      handed[id] = prog >= 1;
+    }
     if (id === "speed") {
       if (prog >= 1) return;
       const a = easeIn(prog) * 0.6 + prog * 0.4, end = [W * 1.25, H * 0.08], ctrl = [start[0] + EH * 0.3, start[1] - EH * 2.2];
@@ -784,9 +847,21 @@
       for (let gI = 6; gI >= 0; gI--) {
         const aa = Math.max(0, a - gI * 0.045), pt = quad(start, ctrl, end, aa), nx = quad(start, ctrl, end, Math.min(1, aa + 0.02));
         const rot = Math.atan2(nx[1] - pt[1], nx[0] - pt[0]) * 0.35 + 0.3, [px, py] = at(pt[0], pt[1]);
-        if (gI > 0) { ctx.save(); ctx.globalCompositeOperation = "lighter"; dot(ctx, gI % 2 ? L.tint.sun : L.tint.lilac, px, py - h * 0.5, h * 0.35, 0.22 * (1 - gI / 7)); ctx.restore(); sprite(ctx, "speed", px, py, h, { rot, alpha: 0.14 * (1 - gI / 7), pose: "jump" }); }
-        else sprite(ctx, "speed", px, py, h, { rot, pose: "jump" });
+        const sc = scrubbing("speed") ? { k: "hatch", t: clamp(aa / 0.5) } : null;   // real launch, then the held dash
+        const r2 = sc ? rot * 0.6 - 0.12 : rot;                                         // the dash pose already leans into the flight
+        if (gI > 0) { ctx.save(); ctx.globalCompositeOperation = "lighter"; dot(ctx, gI % 2 ? L.tint.sun : L.tint.lilac, px, py - h * 0.5, h * 0.35, 0.22 * (1 - gI / 7)); ctx.restore(); sprite(ctx, "speed", px, py, h, { rot: r2, alpha: 0.14 * (1 - gI / 7), pose: "jump", scrub: sc }); }
+        else sprite(ctx, "speed", px, py, h, { rot: r2, pose: "jump", scrub: sc });
       }
+      return;
+    }
+    if (id === "pinky" && scrubbing("pinky") && prog < 1) {
+      const rim = spot.y - E.ry + E.v0 * E.ry + E.ry * 0.12;              // sitting in the open shell
+      const up = easeOut(seg(prog, 0, 0.3)), fly = seg(prog, 0.4, 1);
+      const tx = Math.max(cx - EH * 1.25, hFull * 0.45 + 14), ty = base - EH * 0.8, b = backOut(fly);
+      const px0 = lerp(start[0], tx, b), py0 = lerp(lerp(start[1], rim, up), ty, b) + Math.sin(clock * 3.2) * EH * 0.02 * fly;
+      const [px, py] = at(px0, py0);
+      const t = prog < 0.4 ? lerp(0, 0.58, prog / 0.4) : lerp(0.58, 1, fly);
+      sprite(ctx, "pinky", px, py, hFull, { scrub: { k: "hatch", t }, pose: "wave" });
       return;
     }
     if (id === "pinky") {
@@ -797,12 +872,21 @@
       return;
     }
     // Blinky hops out of the middle egg and lands in front of the nest
+    if (scrubbing("blinky") && prog < 1) {
+      const B = BLINKY_HOP, landX = Math.min(cx + EH * 1.15, W - hFull * 0.42 - 14), landY = base + EH * 0.22;
+      const rim = spot.y - E.ry + E.v0 * E.ry + E.ry * 0.1, up = easeOut(seg(prog, 0, 0.25)), air = seg(prog, 0.3, 0.72);
+      const x0 = lerp(start[0], landX, ease(air)), y0 = lerp(lerp(start[1], rim, up), landY, air) - Math.sin(air * Math.PI) * EH * 0.75;
+      const [px, py] = at(x0, y0);
+      const t = prog < 0.3 ? lerp(0, B[0], prog / 0.3) : prog < 0.72 ? lerp(B[0], B[1], air) : lerp(B[1], 1, seg(prog, 0.72, 1));
+      sprite(ctx, "blinky", px, py, hFull * (0.6 + 0.4 * easeOut(seg(prog, 0, 0.72))), { scrub: { k: "hatch", t }, shadow: air >= 1, pose: "stand" });
+    } else {
     const landX = Math.min(cx + EH * 1.15, W - hFull * 0.42 - 14), landY = base + EH * 0.22, air = clamp(prog / 0.85);
     let sx = 1, sy = 1;
     if (prog > 0.85) { const q = (prog - 0.85) / 0.15; sy = 1 - 0.16 * Math.sin(q * Math.PI); sx = 1 + 0.1 * Math.sin(q * Math.PI); }
     if (prog >= 1) sy = 1 + 0.015 * Math.sin(clock * 2.2);
     const [px, py] = at(lerp(start[0], landX, ease(air)), lerp(start[1], landY, air) - Math.sin(air * Math.PI) * EH * 0.75);
     sprite(ctx, "blinky", px, py, hFull * (0.4 + 0.6 * easeOut(Math.min(1, prog))), { sx, sy, shadow: prog > 0.85, rot: (1 - air) * -0.2 * (prog < 0.85 ? 1 : 0), id: !inside && prog >= 1 ? "blinky" : undefined, pose: prog < 1 ? "stand" : undefined });
+    }
     // Speed comes back to stand by the nest once everyone is out
     if (!inside) {
       const back = seg(pp, 0.86, 0.96);
@@ -859,9 +943,9 @@
     if (i === 3) {
       const d3 = dh * 0.85;                                      // all three together around the last egg, one size
       sprite(ctx, "blinky", kx(x - w * 0.5, d3), y + h * 0.04, d3 * (1 + 0.012 * Math.sin(clock * 2.2)), { alpha: alpha * enter, shadow: true, id: "blinky" });
-      sprite(ctx, "pinky", kx(x + w * 0.55, d3), y - h * 0.3 + Math.sin(clock * 6) * h * 0.03, d3, { alpha: alpha * enter, sy: 1 + 0.04 * Math.sin(clock * 12), id: "pinky" });
+      sprite(ctx, "pinky", kx(x + w * 0.55, d3), y - h * (narrow ? 0.6 : 0.3) + Math.sin(clock * 6) * h * 0.03, d3, { alpha: alpha * enter, sy: 1 + 0.04 * Math.sin(clock * 12), id: "pinky" });
       const hop = Math.abs(Math.sin(clock * 3.2));
-      sprite(ctx, "speed", kx(x + w * 0.18, d3), y + h * 0.06 - hop * h * 0.12, d3, { alpha: alpha * enter, sy: 1 - (1 - hop) * 0.08, id: "speed" });
+      sprite(ctx, "speed", kx(x + w * (narrow ? 0.32 : 0.18), d3), y + h * (narrow ? 0.12 : 0.06) - hop * h * 0.12, d3, { alpha: alpha * enter, sy: 1 - (1 - hop) * 0.08, id: "speed" });
     }
   }
   function ending(ctx, en) {
@@ -902,10 +986,15 @@
     const egg = nest.querySelector(".n22-egg"), cards = [...nest.querySelectorAll(".n22-card")], stg = nest.querySelector(".n22-stage");
     const home = nest.querySelector(".n22-name").getAttribute("href");
     let open = false, ang = 0, vel = 0.35, dragX = null, lastT = 0, raf = 0, hovering = false;
+    const links = cards.map((c) => c.querySelector("a"));
     function place() {
-      const R = stg.clientWidth * 0.66, ryy = stg.clientWidth * 0.26, n = cards.length;
+      // keep every card inside the screen: a narrower ring if it is wider than the screen, then slide it toward the middle
+      const r = stg.getBoundingClientRect(), mid = r.left + r.width / 2, vw = document.documentElement.clientWidth;
+      const hc = Math.max(0, ...links.map((a) => a.offsetWidth)) / 2 + 8, n = cards.length;
+      const R = Math.max(0, Math.min(stg.clientWidth * 0.66, vw / 2 - hc)), ryy = stg.clientWidth * 0.26;
+      const shift = clamp(0, hc - (mid - R), vw - hc - (mid + R));
       cards.forEach((c, i) => {
-        const a = ang + (i / n) * Math.PI * 2, z = Math.cos(a), x = Math.sin(a) * R, y = z * ryy + stg.clientWidth * 0.04;
+        const a = ang + (i / n) * Math.PI * 2, z = Math.cos(a), x = Math.sin(a) * R + shift, y = z * ryy + stg.clientWidth * 0.04;
         const s = 0.74 + 0.26 * (z + 1) / 2;
         c.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) scale(${s.toFixed(3)})`;
         c.style.zIndex = z > -0.05 ? 3 : 1;
@@ -922,6 +1011,7 @@
     function setOpen(o) {
       if (open === o) return;
       open = o; nest.classList.toggle("open", o); egg.setAttribute("aria-expanded", o ? "true" : "false");
+      nest.parentNode.classList.toggle("has-open", !!nest.parentNode.querySelector(".n22-nest.open"));
       if (o) { lastT = 0; if (!raf) raf = requestAnimationFrame(tick); egg.classList.remove("knock"); void egg.offsetWidth; egg.classList.add("knock"); }
     }
     egg.addEventListener("animationend", () => egg.classList.remove("knock"));
@@ -932,7 +1022,7 @@
       egg.classList.remove("knock"); void egg.offsetWidth; egg.classList.add("knock");
       setTimeout(() => { location.href = home; }, 260);
     });
-    egg.addEventListener("focus", () => setOpen(true));
+    egg.addEventListener("focus", () => { if (egg.matches(":focus-visible")) setOpen(true); });   // keyboard only: a tap focuses first and must not count as the first tap
     cards.forEach((c) => {
       const a = c.querySelector("a");
       c.addEventListener("pointerenter", () => { hovering = true; });

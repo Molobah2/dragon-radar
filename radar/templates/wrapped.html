@@ -382,7 +382,7 @@ body { background: #120c26; overflow-x: hidden; }
   if (months.length > 1) {
     const box = $("months"); box.hidden = false;
     months.slice(-3).forEach((k) => { const b = document.createElement("button"); b.type = "button"; b.dataset.m = k;
-      b.textContent = new Date(k + "-01T12:00:00Z").toLocaleString(undefined, { month: "long" });
+      b.textContent = new Date(k + "-01T12:00:00Z").toLocaleString((document.documentElement.lang || undefined), { month: "long" });
       b.addEventListener("click", () => { box.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false")); load(k); }); box.append(b); });
     box.lastChild.setAttribute("aria-pressed", "true");
   }

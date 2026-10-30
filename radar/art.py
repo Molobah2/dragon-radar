@@ -24,11 +24,14 @@ PROOF_HOSTS = ("x.com", "twitter.com", "youtube.com", "youtu.be", "tiktok.com", 
 
 def proof_ok(url: str) -> bool:
     from urllib.parse import urlsplit
-    if not PROOF.match(url or ""):
+    if not PROOF.match(url or "") or "\\" in url:
         return False
     try:
-        host = (urlsplit(url).hostname or "").lower()
+        parts = urlsplit(url)
+        host = (parts.hostname or "").lower()
     except ValueError:
+        return False
+    if parts.username is not None or parts.password is not None:   # https://evil.example@x.com style links
         return False
     return any(host == h or host.endswith("." + h) for h in PROOF_HOSTS)
 VOTE_DAYS = (4, 5, 6)            # Friday, Saturday, Sunday

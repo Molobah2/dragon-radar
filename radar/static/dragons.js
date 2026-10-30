@@ -804,6 +804,8 @@
   const nameList = (es) => {
     const by = new Map(); for (const e of es) by.set(e.sp.name, (by.get(e.sp.name) || 0) + 1);
     const a = [...by].map(([nm, k]) => (k > 1 ? `${k} ${nm}` : nm));
+    const lang = document.documentElement.lang || "en";   // other languages join the names with their own "and"
+    try { if (a.length > 1 && lang !== "en" && window.Intl && Intl.ListFormat) return new Intl.ListFormat(lang, { type: "conjunction" }).format(a); } catch (e) { /* old browser */ }
     return a.length > 1 ? `${a.slice(0, -1).join(", ")} and ${a[a.length - 1]}` : a[0];
   };
   let swapArm = 0;

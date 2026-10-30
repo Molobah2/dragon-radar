@@ -95,8 +95,8 @@
     const start = end - n * slot, counts = new Array(n).fill(0);
     for (const t of times) { const i = Math.floor((t - start) / slot); if (i >= 0 && i < n) counts[i]++; }
     const max = Math.max(1, ...counts), peak = counts.indexOf(Math.max(...counts));
-    const label = (ms) => daily ? new Date(ms).toLocaleDateString(undefined, { weekday: "short" })
-      : new Date(ms).toLocaleTimeString(undefined, { hour: "numeric" });
+    const label = (ms) => daily ? new Date(ms).toLocaleDateString((document.documentElement.lang || undefined), { weekday: "short" })
+      : new Date(ms).toLocaleTimeString((document.documentElement.lang || undefined), { hour: "numeric" });
     $("p-bars").replaceChildren(...counts.map((c, i) => {
       const bar = el("i", { class: c ? (i === peak ? "peak" : "") : "zero", title: `${label(start + i * slot)}: ${c} post${c === 1 ? "" : "s"}` });
       bar.style.height = `${Math.max(4, Math.round((c / max) * 70))}px`;
@@ -747,7 +747,7 @@
       el("a", { class: "text", href: url, target: "_blank", rel: "noopener", onclick: () => markOpened(p.id, card) },
         text || "(no text)"),
       el("div", { class: "meta" }, ...chips, el("span", { class: "reach" + (p.opens ? "" : " none"), title: p.opens ? `${p.opens} Keeper${p.opens === 1 ? "" : "s"} opened this post` : "Nobody has opened this yet. Be the first!" },
-        p.opens ? `${p.opens} Keeper${p.opens === 1 ? "" : "s"}` : "Needs love"), el("time", { datetime: p.t, title: new Date(p.t).toLocaleString() }, ago(p.t))),
+        p.opens ? `${p.opens} Keeper${p.opens === 1 ? "" : "s"}` : "Needs love"), el("time", { datetime: p.t, title: new Date(p.t).toLocaleString((document.documentElement.lang || undefined)) }, ago(p.t))),
       el("div", { class: "foot" }));
     card.style.setProperty("--i", i % BATCH);
     // play the entrance once; moving the card later (filters, load more) must not replay it
@@ -1025,7 +1025,7 @@
     const gap = dayList ? dayGap(iso, dayList.today) : 9;
     if (gap === 0) return "Today";
     if (gap === 1) return "Yesterday";
-    return new Date(`${iso}T12:00:00Z`).toLocaleDateString(undefined, { weekday: "short", timeZone: "UTC" });
+    return new Date(`${iso}T12:00:00Z`).toLocaleDateString((document.documentElement.lang || undefined), { weekday: "short", timeZone: "UTC" });
   };
   const leftIn = (d) => d.ids.filter((id) => !opened[id] && !unavailable.has(id));
   function pickedDay() {
@@ -1052,7 +1052,7 @@
     box.hidden = !rows.some((d) => d.ids.length);
     $("days-row").replaceChildren(...rows.map((d) => {
       const state = !d.ids.length ? "none" : d.left ? "left" : "done", on = d.day === pick;
-      const long = new Date(`${d.day}T12:00:00Z`).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
+      const long = new Date(`${d.day}T12:00:00Z`).toLocaleDateString((document.documentElement.lang || undefined), { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
       return el("button", { class: `day-chip ${state}${on ? " on" : ""}`, type: "button", "aria-pressed": String(on), title: long,
         onclick: () => openDay(d.day) },
         el("b", {}, dayName(d.day)), el("span", {}, state === "none" ? "no posts" : d.left ? `${d.left} left` : "all done ✓"));

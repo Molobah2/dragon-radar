@@ -1628,7 +1628,7 @@ def test_speed_budget(cfg, Session):
         assert size < code_max, f"{path}: scripts and styles {size} bytes"
     assert len(c.get("/static/i18n.js").get_data()) < 4000
     for lang in ("es", "ru", "zh"):
-        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 47_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker, then the help page, then the v2.1 welcome lane and Creator of the week, then Wrapped and Dragondle, then Cheers, the sticker shelf and the Hatchery canvas, then the v2.1 daily goal and the Dragondle card looks, then the four sections and the dock, then the nests, the Keeper badge and the wallpaper
+        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 56_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker, then the help page, then the v2.1 welcome lane and Creator of the week, then Wrapped and Dragondle, then Cheers, the sticker shelf and the Hatchery canvas, then the v2.1 daily goal and the Dragondle card looks, then the four sections and the dock, then the nests, the Keeper badge and the wallpaper, then Keeper Art, the AMA Library summaries and the dates in every language (30 Oct)
     page = c.get("/friends").get_data(as_text=True)
     assert "e_background_removal" not in page            # icons are small stored files, not cut out per view
 
@@ -2460,7 +2460,7 @@ def test_dragondle_bank_never_mentions_mint_and_days_are_stable():
 
 
 def test_dragondle_scores_count_once_a_day(cfg, Session):
-    from radar.dragondle import number
+    from radar.dragondle import max_score, number
     app, c = _v21_client(cfg)
     n = number(utcnow().date())
     r = c.post("/api/dragondle", data=json.dumps({"vid": "a" * 32, "score": 4, "n": n}), content_type="text/plain").get_json()
@@ -2468,7 +2468,7 @@ def test_dragondle_scores_count_once_a_day(cfg, Session):
     c.post("/api/dragondle", data=json.dumps({"vid": "a" * 32, "score": 5, "n": n}), content_type="text/plain")     # a replay never changes it
     r = c.post("/api/dragondle", data=json.dumps({"vid": "b" * 32, "score": 2, "n": n}), content_type="text/plain").get_json()
     assert r["total"] == 2 and r["dist"][4] == 1 and r["dist"][5] == 0 and r["beat"] == 0
-    assert c.post("/api/dragondle", data=json.dumps({"vid": "c" * 32, "score": 9, "n": n}), content_type="text/plain").status_code == 400
+    assert c.post("/api/dragondle", data=json.dumps({"vid": "c" * 32, "score": max_score(n) + 1, "n": n}), content_type="text/plain").status_code == 400
     assert c.post("/api/dragondle", data=json.dumps({"vid": "c" * 32, "score": 3, "n": n + 1}), content_type="text/plain").status_code == 400
 
 
@@ -3292,3 +3292,21 @@ def test_v22_home_is_only_for_jons_devices(cfg, Session):
     assert "window.PD22" in jon.get("/").get_data(as_text=True)
     cfg.v22_public = True                                                   # launch day: everyone
     assert "window.PD22" in create_app(cfg).test_client().get("/").get_data(as_text=True)
+
+
+def test_odd_input_never_crashes_and_locked_pictures_stay_private(cfg, Session):
+    """Found in the Oct 30 audit: deep JSON, huge ids and 1e999 answered 500; a link with a backslash or a user@ part
+    passed the video site check; locked Dragon Circle and unchecked book pictures were marked for shared caches."""
+    from radar.art import proof_ok
+    app, c = _v21_client(cfg)
+    deep = "[" * 100_000
+    for path in ("/api/book/progress", "/api/book/page", "/api/backup"):
+        assert c.post(path, data=deep, content_type="text/plain").status_code < 500, path
+    big = 10 ** 30
+    assert c.get(f"/art/{big}.webp").status_code == 404
+    for path, body in (("/api/art/vote", {"vid": "a" * 32, "entry": big}), ("/api/art/mine", {"vid": "a" * 32, "id": big})):
+        assert c.post(path, data=json.dumps(body), content_type="text/plain").status_code == 400, path
+    assert not proof_ok("https://evil.example\\@x.com/a")
+    assert not proof_ok("https://evil.example@x.com/a")
+    assert not proof_ok("https://user:pw@youtube.com/watch?v=1")
+    assert proof_ok("https://x.com/someone/status/1") and proof_ok("https://www.youtube.com/watch?v=abc123")
