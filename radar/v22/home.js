@@ -36,7 +36,7 @@
   const kit = (k) => KITI[k] && ready(KITI[k]) ? KITI[k] : null;
   // real 3D renders for everything that used to be drawn in code. Until one arrives, its code version stands in.
   const F3 = A.fx3d || {}, F3I = {};
-  for (const k of ["clouds", "bfly", "conf", "rainbow", "rays", "spark", "dust", "moss"]) if (F3[k]) F3I[k] = img(F3[k].src);
+  for (const k of ["clouds", "bfly", "conf", "rainbow", "rays", "spark", "dust", "moss", "bfly2", "petals"]) if (F3[k]) F3I[k] = img(F3[k].src);
   const f3 = (k) => F3I[k] && ready(F3I[k]) ? F3I[k] : null;
   const EGI = {}; for (const [id, m] of Object.entries(F3.eggs || {})) EGI[id] = img(m.src);
   // one piece of a sheet of renders, centred on x, y and w wide; sx squeezes it (a wing beat, a tumbling flake)
@@ -271,7 +271,8 @@
     return { spec, rx, ry, tex, vein, cw, ch, zz, branches, shards: meta, v0 };
   }
   // where an egg sits on screen (its bottom centre, before the camera moves)
-  const eggSpot = (E) => ({ x: layout.cx + E.spec.dx * layout.EH, y: layout.base - E.spec.lift * layout.EH });
+  // where an egg sits: settled down into the moss, not standing on top of it (PD22.eggSink tunes how deep)
+  const eggSpot = (E) => ({ x: layout.cx + E.spec.dx * layout.EH, y: layout.base - E.spec.lift * layout.EH + (A.eggSink ?? 0.1) * layout.EH * (f3("moss") ? 1 : 0) });
   function lerpPt(zz, f) { const i = Math.floor(clamp(f, 0, zz.length - 1)); const j = Math.min(zz.length - 1, i + 1); const t = f - i; return [lerp(zz[i][0], zz[j][0], t), lerp(zz[i][1], zz[j][1], t)]; }
   function crackPath(ctx, E, g) {
     const zz = E.zz, mid = (zz.length - 1) / 2, reach = g * mid;
@@ -395,7 +396,9 @@
     if (s < 14 && SPK.has(spr)) { spr = SPK.get(spr); s *= 1.7; }      // a small light: the rendered twinkle; big ones stay soft halos
     ctx.globalAlpha = a; ctx.drawImage(spr, x - s, y - s, s * 2, s * 2);
   }
+  const PETALS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15];
   function petal(ctx, x, y, s, rot, col, a) {
+    if (F3.petals && piece(ctx, "petals", PETALS[(Math.round(s * 13) + col.length) % PETALS.length], x, y, s * 2.4, rot, a, Math.max(0.25, Math.abs(Math.cos(rot * 1.3))))) return;
     if (F3.conf && piece(ctx, "conf", confFor("disc", col), x, y, s * 2.1, rot, a, Math.max(0.2, Math.abs(Math.cos(rot * 1.3))))) return;
     ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = a; ctx.fillStyle = `rgb(${col})`;
     ctx.beginPath(); ctx.ellipse(0, 0, s, s * 0.55, 0, 0, 7); ctx.fill(); ctx.restore();
@@ -424,7 +427,15 @@
     ctx.restore();
   }
   const BFLY = { "255,143,179": 1, "130,200,255": 2, "185,168,255": 3, "255,150,60": 4 };
+  const BFLY2 = { "255,143,179": 0, "255,150,60": 1, "130,200,255": 2, "185,168,255": 3 };
   function butterfly(ctx, x, y, s, col, t, ang) {
+    const b2 = f3("bfly2");
+    if (b2) {                           // a real 3D butterfly; its wings beat about its body
+      const i = BFLY2[col[0]] ?? 1, r = F3.bfly2.r[i], bp = F3.bfly2.body[i], w = s * 3.2, h = w * r[3] / r[2];
+      const beat = 0.45 + 0.55 * Math.abs(Math.cos(t * 9));
+      ctx.save(); ctx.translate(x, y); ctx.rotate(ang * 0.5); ctx.scale(1, beat);
+      ctx.drawImage(b2, r[0], r[1], r[2], r[3], -bp[0] * w, -bp[1] * h, w, h); ctx.restore(); return;
+    }
     if (F3.bfly && piece(ctx, "bfly", BFLY[col[0]] ?? 0, x, y, s * 2.7, ang, ctx.globalAlpha, 0.18 + 0.82 * Math.abs(Math.cos(t * 9)))) return;
     const flap = Math.abs(Math.sin(t * 14)) * 0.8 + 0.2;
     ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
@@ -833,7 +844,15 @@
       if (ready(IM.nb)) fx.drawImage(IM.nb, nx, ny, nw, nh);
       // a soft bed of moss and straw inside the nest, where the eggs sit: a real 3D render (the drawn bed only until it loads)
       const moss = f3("moss");
-      if (moss) { const mw = 270 * nk * nsx * 1.04, mh = mw * 0.31; fx.drawImage(moss, cx - mw / 2, ny + 262 * nk - mh * 0.5, mw, mh); }
+      const MW = 270 * nk * nsx * 1.04, MH = MW * 0.31, MX = cx - MW / 2, MY = ny + 262 * nk - MH * 0.5;
+      if (moss) {
+        fx.drawImage(moss, MX, MY, MW, MH);
+        for (const E of EGGS) {           // a soft shadow where each egg presses into the moss
+          const { x, y } = eggSpot(E), r2 = E.ry * 0.95, g2 = fx.createRadialGradient(x, y, 0, x, y, r2);
+          g2.addColorStop(0, "rgba(30,45,10,.45)"); g2.addColorStop(1, "rgba(30,45,10,0)");
+          fx.save(); fx.translate(x, y); fx.scale(1, 0.32); fx.translate(-x, -y); fx.fillStyle = g2; fx.beginPath(); fx.arc(x, y, r2, 0, 7); fx.fill(); fx.restore();
+        }
+      }
       else {
         fx.save(); fx.beginPath(); fx.ellipse(cx, ny + 262 * nk, 132 * nk * nsx, 52 * nk, 0, 0, 7); fx.clip();
         const moss = fx.createRadialGradient(cx, ny + 250 * nk, 0, cx, ny + 262 * nk, 140 * nk * nsx);
@@ -848,6 +867,15 @@
         const id = E.spec.id;
         const info = drawEgg(fx, E, p, sceneAlpha, () => emergeDragon(fx, id, true));
         if (!info.opened && sceneAlpha > 0.5 && gl <= 0) HIT.push({ id: "egg:" + id, x0: info.x - E.rx, x1: info.x + E.rx, y0: info.top, y1: info.y, x: info.x, y: info.y, h: 2 * E.ry });
+      }
+      if (moss) {                         // the front of the moss bed comes up softly around the eggs' feet
+        const lo = A.mossLip ?? 0.46, key = Math.round(MW) + ":" + lo;
+        if (!L.lip || L.lip.key !== key) {
+          const c = mk(MW, MH), g = c.getContext("2d"); g.drawImage(moss, 0, 0, MW, MH);
+          const gr = g.createLinearGradient(0, 0, 0, MH); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(lo, "rgba(0,0,0,0)"); gr.addColorStop(Math.min(1, lo + 0.18), "#000"); gr.addColorStop(1, "#000");
+          g.globalCompositeOperation = "destination-in"; g.fillStyle = gr; g.fillRect(0, 0, MW, MH); c.key = key; L.lip = c;
+        }
+        fx.drawImage(L.lip, MX, MY, MW, MH);
       }
       if (ready(IM.nf)) fx.drawImage(IM.nf, nx, ny, nw, nh);
       // each egg's burst, in its dragon's colours and tied to the scroll so it rewinds
