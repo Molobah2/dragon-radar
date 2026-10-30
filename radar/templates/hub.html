@@ -456,7 +456,7 @@
       <a class="by-link" href="https://x.com/{{ cfg.author_x }}" target="_blank" rel="noopener"><strong>Built by Jon Wynn</strong> <span class="by-x">@{{ cfg.author_x }} on X</span></a>
     </footer>
   </div>
-  <script>window.PD_SOUND = {{ {"ambience": asset('audio/forest-ambience.m4a'), "songs": site_songs(), "carryOnly": True, "picker": asset('music.js')} | tojson }};</script>
+  <script>window.PD_SOUND = {{ {"ambience": ("https://res.cloudinary.com/gosbi0oh/video/upload/v1793392139/dragon-radar/v22/hatchery-bed.m4a" if v22 else asset('audio/forest-ambience.m4a')), "songs": site_songs(), "carryOnly": True, "picker": asset('music.js')} | tojson }};</script>
   <script src="{{ asset('i18n.js') }}"></script>
   <script src="{{ asset('sound.js') }}" defer></script>
   {% if v22 %}<script src="/v22/a/home.js?v={{ asset_version }}" defer></script>

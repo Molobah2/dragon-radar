@@ -125,7 +125,7 @@
     <span class="mailbox-tip">Suggestions</span>
   </a>
   {% endif %}
-  <script>window.PD_SOUND = {{ {"ambience": asset('audio/meadow-ambience.m4a'),
+  <script>window.PD_SOUND = {{ {"ambience": ("https://res.cloudinary.com/gosbi0oh/video/upload/v1793392139/dragon-radar/v22/hatchery-bed.m4a" if v22_live else asset('audio/meadow-ambience.m4a')),
     "songs": site_songs(), "waitReady": True, "picker": asset('music.js')} | tojson }};</script>
   <script src="{{ asset('i18n.js') }}"></script>
   <script src="{{ asset('sound.js') }}" defer></script>
