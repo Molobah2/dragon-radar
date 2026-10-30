@@ -14,6 +14,10 @@
   const PIM = {};
   for (const [id, set] of Object.entries(A.poses)) { PIM[id] = {}; for (const [k, src] of Object.entries(set)) PIM[id][k] = img(src); }
   const ready = (i) => i.complete && i.naturalWidth > 0;
+  // the painted scene (sky, far hills, the trees and meadow, the flowering bushes). Until a picture arrives, the scene
+  // drawn in code stands in for it, so the page is never empty.
+  const SC = {}; for (const [k, src] of Object.entries(A.scene || {})) SC[k] = img(src);
+  const art = (k) => SC[k] && ready(SC[k]) ? SC[k] : null;
   const bg = document.getElementById("v22-bg"), fg = document.getElementById("v22-fg");
   const bx = bg.getContext("2d"), fx = fg.getContext("2d");
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -439,18 +443,24 @@
   }
 
   // ---------- dragons ----------
+  // Every pose drawn at the dragon's true size. h is a dragon's full standing height (the same for all three: one
+  // creature, three builds). The kit renders share one camera, so their original heights set Blinky's and Pinky's
+  // poses (standing is a crouch, 0.85 of upright); Speed's poses were matched by the width of his face mask.
+  const KIT = { stand: 0.849, wave: 1, look: 0.825, sit: 0.788, popcorn: 0.786 };
+  const FIT = { blinky: KIT, pinky: KIT, speed: { stand: 1, wave: 1, look: 1, sit: 0.923, jump: 1.148 } };
+  const fit = (who, pose) => FIT[who][pose] || 1;
   function sprite(ctx, im, x, y, h, o = {}) {
-    let prev = null, mix = 1, pop = 0, who = null;
+    let prev = null, mix = 1, pop = 0, who = null, hp = h;
     if (typeof im === "string") {                                // a living dragon: its pose right now
       who = im; const a = ACT[who];
       const pose = o.pose && has(who, o.pose) ? o.pose : a.pose;
-      im = has(who, pose) ? PIM[who][pose] : PIM[who].stand;
+      const use = has(who, pose) ? pose : "stand";
+      im = PIM[who][use]; hp = h; h *= fit(who, use);
       if (!o.pose) {
         a.seen = clock; a.x = x; a.y = y;
         const e = clock - a.t;
-        if (a.prev && e < 0.22 && has(who, a.prev)) { prev = PIM[who][a.prev]; mix = e / 0.22; }
+        if (a.prev && e < 0.22 && has(who, a.prev)) { prev = PIM[who][a.prev]; hp *= fit(who, a.prev); mix = e / 0.22; }
         if (e < 0.3) pop = Math.sin((e / 0.3) * Math.PI);
-        if (pose === "sit" || pose === "popcorn") h *= 0.9;        // sitting is a little lower
         if (pose === "look" && a.face < 0) o = { ...o, flip: !o.flip };
       }
     }
@@ -467,7 +477,7 @@
     ctx.scale((o.flip ? -1 : 1) * sx, sy);
     const alpha = o.alpha == null ? 1 : o.alpha;
     if (o.shadow) { ctx.globalAlpha = alpha * 0.25; ctx.fillStyle = "#2a5a30"; ctx.beginPath(); ctx.ellipse(0, 0, w * 0.32, h * 0.04, 0, 0, 7); ctx.fill(); }
-    if (prev && ready(prev)) { const pw = h * prev.naturalWidth / prev.naturalHeight; ctx.globalAlpha = alpha * (1 - mix); ctx.drawImage(prev, -pw / 2, -h, pw, h); }
+    if (prev && ready(prev)) { const pw = hp * prev.naturalWidth / prev.naturalHeight; ctx.globalAlpha = alpha * (1 - mix); ctx.drawImage(prev, -pw / 2, -hp, pw, hp); }
     ctx.globalAlpha = alpha * (prev ? mix : 1);
     ctx.drawImage(im, -w / 2, -h, w, h); ctx.restore();
     if (o.id && alpha > 0.4) HIT.push({ id: o.id, x0: x - w * 0.4, x1: x + w * 0.4, y0: y - h, y1: y, x, y, h });
@@ -553,21 +563,38 @@
 
     // ===== back: sky, clouds, hills, ground =====
     bx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    bx.drawImage(L.sky, -tiltX * 6, -tiltY * 4, W + 12, H + 8);
+    const skyArt = art("sky");
+    if (skyArt) {                                              // cover the screen, keeping the top of the sky
+      const sw = W + 12, sh = H + 8, k2 = Math.max(sw / skyArt.naturalWidth, sh / skyArt.naturalHeight);
+      const dw = skyArt.naturalWidth * k2, dh2 = skyArt.naturalHeight * k2;
+      bx.drawImage(skyArt, (sw - dw) / 2 - tiltX * 6, (sh - dh2) * 0.35 - tiltY * 4, dw, dh2);
+    } else bx.drawImage(L.sky, -tiltX * 6, -tiltY * 4, W + 12, H + 8);
     P.clouds.forEach((c, i) => {
       const x = (((c.x + time * c.sp) % 1.3) - 0.15) * W - tiltX * 10, y = c.y * H - gl * H * 0.08 - tiltY * 6, w = c.w * W;
       cloud(bx, x, y, w, c.puff > -9 ? clock - c.puff : 0, c.seed);
       if (c.puff > -9 && clock - c.puff > 2.4) c.puff = -9;
       HIT.push({ id: "cloud" + i, x0: x - w * 0.5, x1: x + w * 0.5, y0: y - w * 0.2, y1: y + w * 0.15, x, y, h: w * 0.3 });
     });
-    const layer = (im, depth) => {
+    const layer = (im, depth, paint) => {
       const z = 1 + gl * depth, w = W * 1.5 * z, h = H * 1.2 * z;
-      bx.drawImage(im, cx - w / 2 - tiltX * 14 * depth, H * 0.62 - h * 0.6 + gl * H * 0.1 * depth - tiltY * 8 * depth, w, h);
+      const x0 = cx - w / 2 - tiltX * 14 * depth, y0 = H * 0.62 - h * 0.6 + gl * H * 0.1 * depth - tiltY * 8 * depth;
+      const a = paint && art(paint.k);
+      if (!a) { bx.drawImage(im, x0, y0, w, h); return; }
+      // the painting sits in the same frame the coded layer used (1.5 screens wide, 1.2 high), its line on the old line
+      const PW = W * 1.5, PH = H * 1.2, s2 = w / PW, aw = paint.fit(PW), ah = aw * a.naturalHeight / a.naturalWidth;
+      const ax = (PW - aw) / 2, ay = paint.lineY * PH - paint.lineAt * ah, bot = ay + ah;
+      bx.drawImage(a, x0 + ax * s2, y0 + ay * s2, aw * s2, ah * s2);
+      if (bot < PH) { bx.fillStyle = paint.fill; bx.fillRect(x0, y0 + bot * s2 - 1, w, (PH - bot) * s2 + 2); }
     };
-    layer(L.far, 0.35);
-    layer(L.mid, 1.1);
+    layer(L.far, 0.35, { k: "far", lineY: 0.56, lineAt: 0.37, fill: "rgb(125,167,135)", fit: (PW) => Math.max(PW, H * 1.1) });
+    layer(L.mid, 1.1, { k: "mid", lineY: 0.69, lineAt: 0.88, fill: "rgb(104,158,62)", fit: () => Math.max(W * 1.02, H * 0.62) });
     const gz = 1 + gl * 2.2;
-    bx.drawImage(L.ground, cx - W * gz / 2 - tiltX * 20, base - H * 0.06 * gz + gl * H * 0.6, W * gz, H * 0.5 * gz);
+    const gA = art("ground"), gY = base - H * 0.06 * gz + gl * H * 0.6;
+    if (gA) {                                                  // the painted hilltop: its brow just above the nest's foot
+      const aw = Math.max(W, H * 0.97) * gz, ah = aw * gA.naturalHeight / gA.naturalWidth, ay = gY + H * 0.04 * gz - 0.264 * ah;
+      bx.drawImage(gA, cx - aw / 2 - tiltX * 20, ay, aw, ah);
+      if (ay + ah < H) { bx.fillStyle = "rgb(40,63,19)"; bx.fillRect(0, ay + ah - 1, W, H - ay - ah + 2); }
+    } else bx.drawImage(L.ground, cx - W * gz / 2 - tiltX * 20, gY, W * gz, H * 0.5 * gz);
 
     // ===== title =====
     const titleTop = Math.max(84, base - EH - Math.max(54, Math.min(W * 0.15, 200)) * 1.05 - (W < 700 ? H * 0.05 : 0));
@@ -687,7 +714,12 @@
     fx.globalCompositeOperation = "source-over"; fx.globalAlpha = 1;
     const fz = 1 + gl * 1.6;
     fx.globalAlpha = 1 - seg(gl, 0.6, 1) * 0.5;
-    fx.drawImage(L.front, cx - W * fz / 2 - tiltX * 26, H - H * fz + gl * H * 0.25 - tiltY * 10, W * fz, H * fz);
+    const fr = art("front"), fX = cx - W * fz / 2 - tiltX * 26, fY = H - H * fz + gl * H * 0.25 - tiltY * 10;
+    if (fr) {                                                  // the painting's two halves, each held in its own corner
+      const bh = Math.min(H * 0.5, W * 0.45) * fz, bw = bh * (fr.naturalWidth / 2) / fr.naturalHeight, hw = fr.naturalWidth / 2;
+      fx.drawImage(fr, 0, 0, hw, fr.naturalHeight, fX, fY + H * fz - bh, bw, bh);
+      fx.drawImage(fr, hw, 0, hw, fr.naturalHeight, fX + W * fz - bw, fY + H * fz - bh, bw, bh);
+    } else fx.drawImage(L.front, fX, fY, W * fz, H * fz);
     fx.globalAlpha = 1;
     for (const lf of P.petals) {
       const x = ((lf.x - time * lf.sp * 0.5) % 1 + 1) % 1, y = ((lf.y + time * lf.sp) % 1);
@@ -725,7 +757,7 @@
       return;
     }
     if (id === "pinky") {
-      const a = backOut(Math.min(1, prog)), tx = Math.max(cx - EH * 1.25, hFull * 0.45 + 14), ty = base - EH * 0.62;
+      const a = backOut(Math.min(1, prog)), tx = Math.max(cx - EH * 1.25, hFull * 0.45 + 14), ty = base - EH * 0.8;
       const [px, py] = at(lerp(start[0], tx, a), lerp(start[1], ty, a) + Math.sin(clock * 6.5) * EH * 0.035 * clamp(prog * 3));
       const flap = 1 + 0.05 * Math.sin(clock * 13);
       sprite(ctx, "pinky", px, py, hFull * (0.35 + 0.65 * easeOut(Math.min(1, prog))), { sx: 1 / Math.sqrt(flap), sy: flap, rot: Math.sin(clock * 3) * 0.06, id: !inside && prog >= 1 ? "pinky" : undefined, pose: prog < 1 ? "wave" : undefined });
@@ -743,13 +775,13 @@
       const back = seg(pp, 0.86, 0.96);
       if (back > 0) {
         const x = lerp(-W * 0.2, Math.max(cx - EH * 1.55, hFull * 0.4 + 10), easeOut(back)), y = base + EH * 0.26;
-        sprite(ctx, "speed", x, y, hFull * 0.85, { shadow: back >= 1, rot: (1 - back) * 0.3, id: back >= 1 ? "speed" : undefined, pose: back < 1 ? "jump" : undefined });
+        sprite(ctx, "speed", x, y, hFull, { shadow: back >= 1, rot: (1 - back) * 0.3, id: back >= 1 ? "speed" : undefined, pose: back < 1 ? "jump" : undefined });
       }
     }
   }
   function glideDragons(ctx, gl) {
     const { EH, cx, base } = layout, hFull = EH * 0.82, z = 1 + gl * 2.4, a = 1 - seg(gl, 0.65, 1);
-    sprite(ctx, "pinky", lerp(Math.max(cx - EH * 1.25, hFull * 0.45 + 14), -W * 0.2, ease(gl)), lerp(base - EH * 0.62, H * 0.2, gl) + Math.sin(clock * 6.5) * 6, hFull * z, { alpha: a, pose: "wave" });
+    sprite(ctx, "pinky", lerp(Math.max(cx - EH * 1.25, hFull * 0.45 + 14), -W * 0.2, ease(gl)), lerp(base - EH * 0.8, H * 0.2, gl) + Math.sin(clock * 6.5) * 6, hFull * z, { alpha: a, pose: "wave" });
     sprite(ctx, "blinky", lerp(Math.min(cx + EH * 1.15, W - hFull * 0.42 - 14), W * 1.25, easeIn(gl)), lerp(base + EH * 0.22, H * 1.3, easeIn(gl)), hFull * z, { alpha: a, pose: "wave" });
     const s = seg(gl, 0.2, 0.8);
     if (s > 0 && s < 1) {
@@ -757,7 +789,7 @@
       ctx.save(); ctx.globalCompositeOperation = "lighter";
       for (let i = 1; i < 10; i++) dot(ctx, i % 2 ? L.tint.sun : L.tint.lilac, x - i * W * 0.035, y - hFull * 0.45, hFull * 0.28, 0.25 * (1 - i / 10));
       ctx.restore();
-      sprite(ctx, "speed", x, y, hFull * 0.9, { rot: 0.35, pose: "jump" });
+      sprite(ctx, "speed", x, y, hFull, { rot: 0.35, pose: "jump" });
     }
   }
   const CH_TINT = ["gold", "rose", "blue", "mint"];
@@ -784,17 +816,19 @@
     if (i === 0) sprite(ctx, "blinky", kx(x - w * side, dh) + (1 - enter) * -W * 0.3, y + h * 0.04 + (1 - enter) * 20, dh * (1 + 0.012 * Math.sin(clock * 2.2)), { alpha, shadow: true, id: "blinky" });
     if (i === 1) sprite(ctx, "pinky", kx(x + w * side * 0.9, dh) + (1 - enter) * W * 0.3, y - h * 0.32 + Math.sin(clock * 6) * h * 0.03, dh, { alpha, sy: 1 + 0.04 * Math.sin(clock * 12), rot: Math.sin(clock * 3) * 0.08, id: "pinky" });
     if (i === 2) {
-      const ang = clock * 2.4 + c * 8, rr = Math.min(w * 0.62, W * 0.42 - dh * 0.25), sx = x + Math.cos(ang) * rr, sy = y - h * 0.45 + Math.sin(ang) * h * 0.18, front = Math.sin(ang) > 0;
+      const ang = clock * 2.4 + c * 8, rr = Math.min(w * 0.62, W * 0.42 - dh * 0.25), sx = x + Math.cos(ang) * rr, sy = y - h * 0.45 + Math.sin(ang) * h * 0.18;
+      const near = 0.5 + 0.5 * Math.sin(ang);                    // 1 in front of the egg, 0 behind it: size and fade follow smoothly
       ctx.save(); ctx.globalCompositeOperation = "lighter";
       for (let k2 = 1; k2 < 8; k2++) { const a2 = ang - k2 * 0.12; dot(ctx, k2 % 2 ? L.tint.sun : L.tint.lilac, x + Math.cos(a2) * rr, y - h * 0.45 + Math.sin(a2) * h * 0.18 - dh * 0.35, dh * 0.22, 0.25 * (1 - k2 / 8) * alpha * enter); }
       ctx.restore();
-      sprite(ctx, "speed", sx, sy + dh * 0.2, dh * (front ? 0.8 : 0.55) * enter, { alpha: alpha * (front ? 1 : 0.7), flip: Math.cos(ang) > 0, rot: Math.cos(ang) * 0.3, id: "speed" });
+      sprite(ctx, "speed", sx, sy + dh * 0.2, dh * (0.72 + 0.28 * near) * enter, { alpha: alpha * (0.7 + 0.3 * near), flip: Math.cos(ang) > 0, rot: Math.cos(ang) * 0.3, id: "speed" });
     }
     if (i === 3) {
-      sprite(ctx, "blinky", kx(x - w * 0.5, dh), y + h * 0.04, dh * 0.85 * (1 + 0.012 * Math.sin(clock * 2.2)), { alpha: alpha * enter, shadow: true, id: "blinky" });
-      sprite(ctx, "pinky", kx(x + w * 0.55, dh), y - h * 0.3 + Math.sin(clock * 6) * h * 0.03, dh * 0.75, { alpha: alpha * enter, sy: 1 + 0.04 * Math.sin(clock * 12), id: "pinky" });
+      const d3 = dh * 0.85;                                      // all three together around the last egg, one size
+      sprite(ctx, "blinky", kx(x - w * 0.5, d3), y + h * 0.04, d3 * (1 + 0.012 * Math.sin(clock * 2.2)), { alpha: alpha * enter, shadow: true, id: "blinky" });
+      sprite(ctx, "pinky", kx(x + w * 0.55, d3), y - h * 0.3 + Math.sin(clock * 6) * h * 0.03, d3, { alpha: alpha * enter, sy: 1 + 0.04 * Math.sin(clock * 12), id: "pinky" });
       const hop = Math.abs(Math.sin(clock * 3.2));
-      sprite(ctx, "speed", kx(x + w * 0.18, dh), y + h * 0.06 - hop * h * 0.12, dh * 0.7, { alpha: alpha * enter, sy: 1 - (1 - hop) * 0.08, id: "speed" });
+      sprite(ctx, "speed", kx(x + w * 0.18, d3), y + h * 0.06 - hop * h * 0.12, d3, { alpha: alpha * enter, sy: 1 - (1 - hop) * 0.08, id: "speed" });
     }
   }
   function ending(ctx, en) {
@@ -803,9 +837,16 @@
     const a = ease(en) * (1 - leave * 0.85);
     // a sunny hilltop with a rainbow behind
     ctx.save(); ctx.globalAlpha = ease(en);
-    const hill = ctx.createLinearGradient(0, fy - H * 0.1, 0, H);
-    hill.addColorStop(0, "#9edc76"); hill.addColorStop(1, "#4fa24c");
-    ctx.fillStyle = hill; ctx.beginPath(); ctx.ellipse(cx, H * 1.05, W * 0.9, H * 0.3, 0, Math.PI, 2 * Math.PI); ctx.fill();
+    const gA = art("ground");
+    if (gA) {                                                  // the same painted hilltop, its brow just above where they stand
+      const aw = Math.max(W * 1.1, H), ah = aw * gA.naturalHeight / gA.naturalWidth, ay = H * 0.755 - 0.264 * ah;
+      ctx.drawImage(gA, cx - aw / 2, ay, aw, ah);
+      if (ay + ah < H) { ctx.fillStyle = "rgb(40,63,19)"; ctx.fillRect(0, ay + ah - 1, W, H - ay - ah + 2); }
+    } else {
+      const hill = ctx.createLinearGradient(0, fy - H * 0.1, 0, H);
+      hill.addColorStop(0, "#9edc76"); hill.addColorStop(1, "#4fa24c");
+      ctx.fillStyle = hill; ctx.beginPath(); ctx.ellipse(cx, H * 1.05, W * 0.9, H * 0.3, 0, Math.PI, 2 * Math.PI); ctx.fill();
+    }
     const R = Math.min(W * 0.55, H * 0.7) * (0.6 + 0.4 * easeOut(en));
     ["255,120,120", "255,180,90", "255,225,110", "140,220,140", "120,180,255", "180,150,255"].forEach((col, i) => {
       ctx.strokeStyle = `rgba(${col},${0.55 * ease(en)})`; ctx.lineWidth = R * 0.045; ctx.beginPath(); ctx.arc(cx, fy + R * 0.15, R - i * R * 0.045, Math.PI, 2 * Math.PI); ctx.stroke();
@@ -814,9 +855,9 @@
     const dh = Math.min(EH * 0.95, H * 0.3, W * (W < 700 ? 0.3 : 1)), narrowE = W < 700;
     const spread = Math.min(W * (narrowE ? 0.33 : 0.3), dh * 1.4), inX = 1 - easeOut(seg(en, 0.2, 0.8));
     sprite(ctx, "blinky", cx - spread - inX * W * 0.4, fy + dh * 0.08, dh * (1 + 0.012 * Math.sin(clock * 2.2)), { alpha: a, shadow: true, id: "blinky" });
-    sprite(ctx, "pinky", cx + spread * (narrowE ? 0.45 : 1) + inX * W * 0.4, fy - dh * (narrowE ? 0.95 : 0.25) + Math.sin(clock * 6) * dh * 0.04, dh * 0.92, { alpha: a, flip: true, sy: 1 + 0.04 * Math.sin(clock * 12), id: "pinky" });
+    sprite(ctx, "pinky", cx + spread * (narrowE ? 0.45 : 1) + inX * W * 0.4, fy - dh * (narrowE ? 0.95 : 0.25) + Math.sin(clock * 6) * dh * 0.04, dh, { alpha: a, flip: true, sy: 1 + 0.04 * Math.sin(clock * 12), id: "pinky" });
     const hop = Math.abs(Math.sin(clock * 2.6));
-    sprite(ctx, "speed", cx + (narrowE ? spread : 0) * 1, fy + dh * 0.12 - hop * dh * 0.08 - inX * H * 0.5, dh * 0.78, { alpha: a, sy: 1 - (1 - hop) * 0.07, id: "speed" });
+    sprite(ctx, "speed", cx + (narrowE ? spread : 0) * 1, fy + dh * 0.12 - hop * dh * 0.08 - inX * H * 0.5, dh, { alpha: a, sy: 1 - (1 - hop) * 0.07, id: "speed" });
   }
 
   size(); readScroll(); cur = target;
