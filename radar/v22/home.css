@@ -73,9 +73,10 @@ body.v22 .v22-hero { min-height: 0; padding-top: 30px; }
 @keyframes n22shine { 0%, 72%, 100% { opacity: 0; transform: scale(0) rotate(0); } 82% { opacity: 1; transform: scale(1) rotate(45deg); } 92% { opacity: 0; transform: scale(.3) rotate(90deg); } }
 .n22-egg img.n22-crack { position: absolute; left: 50%; top: 16%; width: auto; height: 34%; transform: translateX(-50%); object-fit: fill; pointer-events: none;
   opacity: 0; filter: drop-shadow(0 0 6px rgba(255, 196, 90, .75)); clip-path: inset(0 0 100% 0); transition: opacity .3s, clip-path .6s ease .1s; }   /* the light breaks through from the top down */
-.n22-rays { position: absolute; inset: -14%; opacity: 0; transition: opacity .5s; pointer-events: none;
-  background: url("https://res.cloudinary.com/gosbi0oh/image/upload/v1793385596/dragon-radar/v22/fx-rays.webp") center / contain no-repeat;
-  animation: n22spin 18s linear infinite; }   /* the same rendered morning light that bursts from the hatching eggs */
+.n22-rays { position: absolute; inset: -6%; border-radius: 50%; overflow: hidden; opacity: 0; transition: opacity .5s; pointer-events: none; }
+.n22-rays::before { content: ""; position: absolute; inset: 0; animation: n22spin 18s linear infinite;
+  background: url("https://res.cloudinary.com/gosbi0oh/image/upload/v1793385596/dragon-radar/v22/fx-rays.webp") center / contain no-repeat; }
+/* the light turns inside a still round window, so it never pushes the page wider than the screen */
 @keyframes n22spin { to { transform: rotate(1turn); } }
 .n22-nest.open .n22-egg { animation-play-state: paused; transform: translateY(-14px) scale(1.06); }
 .n22-nest.open .n22-egg img.n22-crack { opacity: 1; clip-path: inset(0); }
@@ -98,8 +99,7 @@ body.v22 .v22-hero { min-height: 0; padding-top: 30px; }
   box-shadow: 0 10px 22px -12px rgba(30, 60, 110, .6); }
 .n22-name span { font-weight: 700; font-size: 13.5px; line-height: 1.35; max-width: 26ch; text-shadow: 0 2px 10px rgba(20, 40, 80, .6); }
 @media (max-width: 760px) { .n22-card a { font-size: 12px; padding: 6px 11px 6px 6px; } .n22-card img, .n22-dot { width: 24px; height: 24px; } .n22-name b { font-size: 19px; } }
-@media (prefers-reduced-motion: reduce) { .n22-egg, .n22-shine::after, .n22-rays, .v22-hint i { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .n22-egg, .n22-shine::after, .n22-rays::before, .v22-hint i { animation: none; } }
 body.v22 #tools { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 96px); }   /* "Pick a nest" stays clear of the fixed header after a jump */
 /* the nests' spinning rays reach past the screen edge on phones: never let the page scroll sideways */
 html:has(body.v22) { overflow-x: clip; }
-.n22 { overflow-x: clip; overflow-clip-margin: 16px; }   /* and at the source, for browsers where the page rule is not enough */
