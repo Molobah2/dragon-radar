@@ -17,7 +17,22 @@
   // the painted scene (sky, far hills, the trees and meadow, the flowering bushes). Until a picture arrives, the scene
   // drawn in code stands in for it, so the page is never empty.
   const SC = {}; for (const [k, src] of Object.entries(A.scene || {})) SC[k] = img(src);
-  const art = (k) => SC[k] && ready(SC[k]) ? SC[k] : null;
+  const soft = {};
+  const art = (k) => {
+    const a = SC[k] && ready(SC[k]) ? SC[k] : null;
+    if (!a || k !== "mid") return a;
+    if (!soft.mid) {                                           // once: the Hatchery painting with its two ends faded out
+      const c = mk(a.naturalWidth, a.naturalHeight), g = c.getContext("2d");
+      g.drawImage(a, 0, 0); g.globalCompositeOperation = "destination-in";
+      const gr = g.createLinearGradient(0, 0, c.width, 0);
+      gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(0.035, "#000"); gr.addColorStop(0.965, "#000"); gr.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = gr; g.fillRect(0, 0, c.width, c.height); soft.mid = c; soft.mid.naturalWidth = c.width; soft.mid.naturalHeight = c.height;
+    }
+    return soft.mid;
+  };
+  // real Creator Kit pieces, placed exactly as the team made them: the Hatchery banners, the lit braziers, the stone dais
+  const KITI = {}; for (const [k, src] of Object.entries(A.kit || {})) KITI[k] = img(src);
+  const kit = (k) => KITI[k] && ready(KITI[k]) ? KITI[k] : null;
   const bg = document.getElementById("v22-bg"), fg = document.getElementById("v22-fg");
   const bx = bg.getContext("2d"), fx = fg.getContext("2d");
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -585,15 +600,31 @@
       const ax = (PW - aw) / 2, ay = paint.lineY * PH - paint.lineAt * ah, bot = ay + ah;
       bx.drawImage(a, x0 + ax * s2, y0 + ay * s2, aw * s2, ah * s2);
       if (bot < PH) { bx.fillStyle = paint.fill; bx.fillRect(x0, y0 + bot * s2 - 1, w, (PH - bot) * s2 + 2); }
+      if (paint.after) paint.after(x0 + ax * s2, y0 + ay * s2, aw * s2, ah * s2);
     };
-    layer(L.far, 0.35, { k: "far", lineY: 0.56, lineAt: 0.37, fill: "rgb(125,167,135)", fit: (PW) => Math.max(PW, H * 1.1) });
-    layer(L.mid, 1.1, { k: "mid", lineY: 0.69, lineAt: 0.88, fill: "rgb(104,158,62)", fit: () => Math.max(W * 1.02, H * 0.62) });
+    // the Hatchery's own pieces on the painted entrance: a banner on each wall panel, a lit brazier each side of the door
+    const dressHatchery = (X, Y, AW, AH) => {
+      const bn = kit("banner"), br = kit("brazier");
+      if (bn) [0.2655, 0.7363].forEach((fxp, i) => {
+        const h = AH * 0.31, w = h * bn.naturalWidth / bn.naturalHeight;
+        bx.save(); bx.translate(X + AW * fxp, Y + AH * 0.338); bx.rotate(Math.sin(clock * 1.1 + i * 2.1) * 0.018);
+        bx.drawImage(bn, -w / 2, 0, w, h); bx.restore();
+      });
+      if (br) [0.17, 0.83].forEach((fxp, i) => {                // by the corner pillars, clear of the nest
+        const h = AH * 0.3, w = h * br.naturalWidth / br.naturalHeight, x = X + AW * fxp, y = Y + AH * 0.9;
+        bx.drawImage(br, x - w / 2, y - h, w, h);
+        const fl = 0.75 + 0.25 * Math.sin(clock * 9 + i * 1.7) * Math.sin(clock * 5.3 + i);
+        bx.save(); bx.globalCompositeOperation = "lighter"; dot(bx, L.tint.sun, x, y - h * 0.86, h * 0.42, 0.35 * fl); bx.restore();
+      });
+    };
+    if (SC.far || !skyArt) layer(L.far, 0.35, { k: "far", lineY: 0.56, lineAt: 0.37, fill: "rgb(125,167,135)", fit: (PW) => Math.max(PW, H * 1.1) });
+    layer(L.mid, 1.1, { k: "mid", lineY: 0.69, lineAt: 0.887, fill: "rgb(139,146,72)", fit: () => Math.max(W * 0.78, H * 0.55), after: dressHatchery });
     const gz = 1 + gl * 2.2;
     const gA = art("ground"), gY = base - H * 0.06 * gz + gl * H * 0.6;
     if (gA) {                                                  // the painted hilltop: its brow just above the nest's foot
-      const aw = Math.max(W, H * 0.97) * gz, ah = aw * gA.naturalHeight / gA.naturalWidth, ay = gY + H * 0.04 * gz - 0.264 * ah;
+      const aw = Math.max(W, H * 0.97) * gz, ah = aw * gA.naturalHeight / gA.naturalWidth, ay = gY + H * 0.04 * gz - 0.48 * ah;
       bx.drawImage(gA, cx - aw / 2 - tiltX * 20, ay, aw, ah);
-      if (ay + ah < H) { bx.fillStyle = "rgb(40,63,19)"; bx.fillRect(0, ay + ah - 1, W, H - ay - ah + 2); }
+      if (ay + ah < H) { bx.fillStyle = "rgb(83,115,58)"; bx.fillRect(0, ay + ah - 1, W, H - ay - ah + 2); }
     } else bx.drawImage(L.ground, cx - W * gz / 2 - tiltX * 20, gY, W * gz, H * 0.5 * gz);
 
     // ===== title =====
@@ -639,6 +670,8 @@
       }
       // one wide nest that holds all three
       const nk = k * 1.05, nsx = 1.45, nx = cx - 264 * nk * nsx, ny = base - 306 * nk, nw = 520 * nk * nsx, nh = 465 * nk;
+      const ds = kit("dais");
+      if (ds) { const dw = nw * 0.8, dh2 = dw * ds.naturalHeight / ds.naturalWidth; fx.drawImage(ds, cx - dw / 2, ny + nh * 0.9 - dh2 * 0.45, dw, dh2); }
       if (ready(IM.nb)) fx.drawImage(IM.nb, nx, ny, nw, nh);
       // a soft bed of moss and straw inside the nest, where the eggs sit
       fx.save(); fx.beginPath(); fx.ellipse(cx, ny + 262 * nk, 132 * nk * nsx, 52 * nk, 0, 0, 7); fx.clip();
@@ -839,9 +872,9 @@
     ctx.save(); ctx.globalAlpha = ease(en);
     const gA = art("ground");
     if (gA) {                                                  // the same painted hilltop, its brow just above where they stand
-      const aw = Math.max(W * 1.1, H), ah = aw * gA.naturalHeight / gA.naturalWidth, ay = H * 0.755 - 0.264 * ah;
+      const aw = Math.max(W * 1.1, H), ah = aw * gA.naturalHeight / gA.naturalWidth, ay = H * 0.755 - 0.48 * ah;
       ctx.drawImage(gA, cx - aw / 2, ay, aw, ah);
-      if (ay + ah < H) { ctx.fillStyle = "rgb(40,63,19)"; ctx.fillRect(0, ay + ah - 1, W, H - ay - ah + 2); }
+      if (ay + ah < H) { ctx.fillStyle = "rgb(83,115,58)"; ctx.fillRect(0, ay + ah - 1, W, H - ay - ah + 2); }
     } else {
       const hill = ctx.createLinearGradient(0, fy - H * 0.1, 0, H);
       hill.addColorStop(0, "#9edc76"); hill.addColorStop(1, "#4fa24c");
