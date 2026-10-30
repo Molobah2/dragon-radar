@@ -73,7 +73,7 @@ body.v22 .v22-hero { min-height: 0; padding-top: 30px; }
 @keyframes n22shine { 0%, 72%, 100% { opacity: 0; transform: scale(0) rotate(0); } 82% { opacity: 1; transform: scale(1) rotate(45deg); } 92% { opacity: 0; transform: scale(.3) rotate(90deg); } }
 .n22-egg img.n22-crack { position: absolute; left: 50%; top: 16%; width: auto; height: 34%; transform: translateX(-50%); object-fit: fill; pointer-events: none;
   opacity: 0; filter: drop-shadow(0 0 6px rgba(255, 196, 90, .75)); clip-path: inset(0 0 100% 0); transition: opacity .3s, clip-path .6s ease .1s; }   /* the light breaks through from the top down */
-.n22-rays { position: absolute; inset: -6%; border-radius: 50%; overflow: hidden; opacity: 0; transition: opacity .5s; pointer-events: none; }
+.n22-rays { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; opacity: 0; transition: opacity .5s; pointer-events: none; }
 .n22-rays::before { content: ""; position: absolute; inset: 0; animation: n22spin 18s linear infinite;
   background: url("https://res.cloudinary.com/gosbi0oh/image/upload/v1793385596/dragon-radar/v22/fx-rays.webp") center / contain no-repeat; }
 /* the light turns inside a still round window, so it never pushes the page wider than the screen */
