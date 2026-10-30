@@ -708,6 +708,12 @@
       if (c.puff > -9 && clock - c.puff > 2.4) c.puff = -9;
       HIT.push({ id: "cloud" + i, x0: x - w * 0.5, x1: x + w * 0.5, y0: y - w * 0.2, y1: y + w * 0.15, x, y, h: w * 0.3 });
     });
+    // the ending's rainbow rises behind the Hatchery, so the wall and the hill stand in front of it
+    const enB = seg(v, T.endStart - 0.2, T.endStart + T.endLen * 0.6), rbB = f3("rainbow");
+    if (enB > 0 && rbB) {
+      const R = Math.max(Math.min(W * 0.55, H * 0.7), H * 0.5) * (0.6 + 0.4 * easeOut(enB)), rw = R * 2.15, rh = rw * rbB.naturalHeight / rbB.naturalWidth;
+      bx.globalAlpha = 0.95 * ease(enB); bx.drawImage(rbB, cx - rw / 2 - tiltX * 10, H * 0.8 + R * 0.15 - rh * 0.93 - tiltY * 6, rw, rh); bx.globalAlpha = 1;
+    }
     const layer = (im, depth, paint) => {
       const z = 1 + gl * depth, w = W * 1.5 * z, h = H * 1.2 * z;
       const x0 = cx - w / 2 - tiltX * 14 * depth, y0 = H * 0.62 - h * 0.6 + gl * H * 0.1 * depth - tiltY * 8 * depth;
@@ -1042,10 +1048,7 @@
       ctx.fillStyle = hill; ctx.beginPath(); ctx.ellipse(cx, H * 1.05, W * 0.9, H * 0.3, 0, Math.PI, 2 * Math.PI); ctx.fill();
     }
     const R = Math.min(W * 0.55, H * 0.7) * (0.6 + 0.4 * easeOut(en)), rb = f3("rainbow");
-    if (rb) {                                                  // a real 3D rainbow, its feet in two little clouds on the hill
-      const rw = R * 2.15, rh = rw * rb.naturalHeight / rb.naturalWidth;
-      ctx.globalAlpha = 0.95 * ease(en); ctx.drawImage(rb, cx - rw / 2, fy + R * 0.15 - rh * 0.93, rw, rh);
-    } else ["255,120,120", "255,180,90", "255,225,110", "140,220,140", "120,180,255", "180,150,255"].forEach((col, i) => {
+    if (!rb) ["255,120,120", "255,180,90", "255,225,110", "140,220,140", "120,180,255", "180,150,255"].forEach((col, i) => {
       ctx.strokeStyle = `rgba(${col},${0.55 * ease(en)})`; ctx.lineWidth = R * 0.045; ctx.beginPath(); ctx.arc(cx, fy + R * 0.15, R - i * R * 0.045, Math.PI, 2 * Math.PI); ctx.stroke();
     });
     ctx.restore();
