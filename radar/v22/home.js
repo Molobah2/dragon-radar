@@ -1,7 +1,8 @@
 /* pdtools v2.2: the Sunrise Hatchery home.
    A bright morning on a floating island. Scrolling cracks the egg, Blinky, Pinky and Speed tumble out, the camera glides
    through the four parts of pdtools and ends on a sunny hilltop behind the rest of the home page.
-   All scene motion is drawn in code. Every dragon, the egg, the clouds, the butterflies and the letters answer a touch,
+   Everything on stage is a real 3D render: the paintings, the dragons and their clips, the eggs that crack on film, the
+   clouds, rainbow, butterflies, confetti and title letters. Every dragon, egg, cloud, butterfly and letter answers a touch,
    and none of it leaves the page. */
 (() => {
   "use strict";
@@ -33,6 +34,25 @@
   // real Creator Kit pieces, placed exactly as the team made them: the Hatchery banners, the lit braziers, the stone dais
   const KITI = {}; for (const [k, src] of Object.entries(A.kit || {})) KITI[k] = img(src);
   const kit = (k) => KITI[k] && ready(KITI[k]) ? KITI[k] : null;
+  // real 3D renders for everything that used to be drawn in code. Until one arrives, its code version stands in.
+  const F3 = A.fx3d || {}, F3I = {};
+  for (const k of ["clouds", "bfly", "conf", "rainbow", "rays"]) if (F3[k]) F3I[k] = img(F3[k].src);
+  const f3 = (k) => F3I[k] && ready(F3I[k]) ? F3I[k] : null;
+  const EGI = {}; for (const [id, m] of Object.entries(F3.eggs || {})) EGI[id] = img(m.src);
+  // one piece of a sheet of renders, centred on x, y and w wide; sx squeezes it (a wing beat, a tumbling flake)
+  function piece(ctx, k, i, x, y, w, rot, a, sx) {
+    const im = f3(k); if (!im || a <= 0.003) return !!im;
+    const r = F3[k].r[i], h = w * r[3] / r[2];
+    ctx.save(); ctx.translate(x, y); if (rot) ctx.rotate(rot); if (sx != null && sx !== 1) ctx.scale(sx, 1); ctx.globalAlpha = a;
+    ctx.drawImage(im, r[0], r[1], r[2], r[3], -w / 2, -h / 2, w, h); ctx.restore(); return true;
+  }
+  const near = new Map();          // the confetti piece closest in colour to what the moment asks for
+  function confFor(group, col) {
+    const key = group + col; if (near.has(key)) return near.get(key);
+    const c = String(col).split(",").map(Number), G = F3.conf.g[group]; let best = G[0], bd = 1e9;
+    for (const i of G) { const q = F3.conf.c[i], d = (q[0] - c[0]) ** 2 + (q[1] - c[1]) ** 2 + (q[2] - c[2]) ** 2; if (d < bd) { bd = d; best = i; } }
+    near.set(key, best); return best;
+  }
   const bg = document.getElementById("v22-bg"), fg = document.getElementById("v22-fg");
   const bx = bg.getContext("2d"), fx = fg.getContext("2d");
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -273,7 +293,40 @@
   }
   const eggKick = { blinky: -9, pinky: -9, speed: -9 };
   // one egg: idle, cracking, or open with its shards flying; the dragon inside is drawn behind the lower shell
+  // the egg on film: a real 3D egg cracking open, its frame chosen by the scroll so scrolling back closes it again
+  function filmOf(E) {
+    const m = F3.eggs && F3.eggs[E.spec.id], im = EGI[E.spec.id];
+    if (!m || !im || !ready(im)) return null;
+    if (E.film !== m) {               // once: the open shell's real rim and width replace the drawn egg's
+      const ry = E.ry, half = ry * m.egg[2] / m.egg[3];
+      E.film = m; E.rx = half;
+      E.zz = m.rim.map(([u, v]) => [u * half, ry - v * 2 * ry]);
+      E.v0 = E.zz.reduce((a, q) => a + q[1], 0) / E.zz.length / ry;
+    }
+    return { m, im };
+  }
+  function drawFilmEgg(ctx, E, F, p, alpha, insideDragon) {
+    const { x, y } = eggSpot(E), { ry, spec } = E, m = F.m;
+    const c0 = spec.crack[0], bu = spec.burst;
+    const t = p < c0 ? m.cr * seg(p, c0 - 0.1, c0) : p < bu ? lerp(m.cr, m.bu, seg(p, c0, bu)) : lerp(m.bu, 1, seg(p, bu, bu + 0.14));
+    const f = Math.round(clamp(t) * (m.n - 1)), opened = p >= bu - 0.005;
+    const kick = Math.max(0, 1 - (clock - eggKick[spec.id]) / 0.7);
+    const wob = opened ? 0 : kick * 0.16 * Math.sin(clock * 30) + 0.012 * Math.sin(clock * 2.2 + spec.dx * 3);
+    const k = 2 * ry / m.egg[3], ex = m.egg[0] + m.egg[2] / 2, eb = m.egg[1] + m.egg[3];
+    const col = f % m.cols, row = Math.floor(f / m.cols);
+    const draw = () => ctx.drawImage(F.im, col * m.cw, row * m.ch, m.cw, m.ch, -ex * k, -eb * k, m.cw * k, m.ch * k);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(wob); ctx.globalAlpha = alpha;
+    draw();
+    if (opened && insideDragon) {     // the dragon sits inside: behind the front of the shell, in front of its back wall
+      insideDragon();
+      ctx.save(); ctx.globalAlpha = alpha; ctx.translate(0, -ry); belowLinePath(ctx, E); ctx.clip(); ctx.translate(0, ry); draw(); ctx.restore();
+    }
+    ctx.restore();
+    return { x, y, opened, crackG: seg(p, c0, spec.crack[1]), top: y - 2 * ry, openY: y - ry + E.v0 * ry };
+  }
   function drawEgg(ctx, E, p, alpha, insideDragon) {
+    const F = filmOf(E);
+    if (F) return drawFilmEgg(ctx, E, F, p, alpha, insideDragon);
     const { x, y } = eggSpot(E), { rx, ry, spec } = E;
     const crackG = ease(seg(p, spec.crack[0], spec.crack[1])), opened = p >= spec.burst - 0.005;
     const kick = Math.max(0, 1 - (clock - eggKick[spec.id]) / 0.7);
@@ -326,20 +379,24 @@
   }
   function dot(ctx, spr, x, y, s, a) { if (a <= 0.003 || s <= 0.2) return; ctx.globalAlpha = a; ctx.drawImage(spr, x - s, y - s, s * 2, s * 2); }
   function petal(ctx, x, y, s, rot, col, a) {
+    if (F3.conf && piece(ctx, "conf", confFor("disc", col), x, y, s * 2.1, rot, a, Math.max(0.2, Math.abs(Math.cos(rot * 1.3))))) return;
     ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = a; ctx.fillStyle = `rgb(${col})`;
     ctx.beginPath(); ctx.ellipse(0, 0, s, s * 0.55, 0, 0, 7); ctx.fill(); ctx.restore();
   }
   function heart(ctx, x, y, s, col, a) {
+    if (F3.conf && piece(ctx, "conf", confFor("heart", col), x, y, s * 2, Math.sin(x * 0.05) * 0.2, a)) return;
     ctx.save(); ctx.translate(x, y); ctx.globalAlpha = a; ctx.fillStyle = `rgb(${col})`; ctx.beginPath();
     ctx.moveTo(0, s * 0.35); ctx.bezierCurveTo(-s, -s * 0.3, -s * 0.5, -s, 0, -s * 0.45); ctx.bezierCurveTo(s * 0.5, -s, s, -s * 0.3, 0, s * 0.35); ctx.fill(); ctx.restore();
   }
   function star(ctx, x, y, s, col, a, rot = 0) {
+    if (F3.conf && piece(ctx, "conf", confFor("star", col), x, y, s * 2.2, rot, a)) return;
     ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = a; ctx.fillStyle = `rgb(${col})`; ctx.beginPath();
     for (let i = 0; i < 8; i++) { const r = i % 2 ? s * 0.38 : s; const ang = (i / 8) * Math.PI * 2; ctx.lineTo(Math.cos(ang) * r, Math.sin(ang) * r); }
     ctx.fill(); ctx.restore();
   }
   function cloud(ctx, x, y, w, puff, seed) {
     const r = rng(seed), k = puff > 0 ? easeOut(Math.min(1, puff)) : 0, back = puff > 1 ? ease(seg(puff, 1, 2.2)) : 0;
+    if (F3.clouds && piece(ctx, "clouds", seed % 4, x, y - w * 0.05, w * 1.25 * (1 + (k - back) * 0.3), 0, 0.97 * (1 - (k - back) * 0.55))) return;
     const spread = (k - back) * w * 0.6, fade = 1 - (k - back) * 0.6;
     ctx.save(); ctx.globalAlpha = 0.92 * fade;
     for (let i = 0; i < 7; i++) {
@@ -349,7 +406,9 @@
     }
     ctx.restore();
   }
+  const BFLY = { "255,143,179": 1, "130,200,255": 2, "185,168,255": 3, "255,150,60": 4 };
   function butterfly(ctx, x, y, s, col, t, ang) {
+    if (F3.bfly && piece(ctx, "bfly", BFLY[col[0]] ?? 0, x, y, s * 2.7, ang, ctx.globalAlpha, 0.18 + 0.82 * Math.abs(Math.cos(t * 9)))) return;
     const flap = Math.abs(Math.sin(t * 14)) * 0.8 + 0.2;
     ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
     ctx.fillStyle = `rgb(${col[0]})`;
@@ -427,6 +486,7 @@
       const x = f.x + f.vx * e, y = f.y + f.vy * e + 0.5 * grav * e * e;
       if (f.kind === "star") star(ctx, x, y, f.s * (1 - q * 0.5), f.col, a, f.rot + f.vr * e);
       else if (f.kind === "heart") heart(ctx, x, y, f.s * 1.6, f.col, a);
+      else if (f.kind === "conf" && F3.conf && piece(ctx, "conf", confFor("ribbon", f.col), x, y, f.s * 2.4, f.rot + f.vr * e, a)) { /* a real ribbon */ }
       else if (f.kind === "conf") { ctx.save(); ctx.translate(x, y); ctx.rotate(f.rot + f.vr * e); ctx.globalAlpha = a; ctx.fillStyle = `rgb(${f.col})`; ctx.fillRect(-f.s * 0.6, -f.s * 0.3, f.s * 1.2, f.s * 0.6); ctx.restore(); }
       else if (f.kind === "dust") { ctx.globalAlpha = a * 0.6; ctx.fillStyle = `rgb(${f.col})`; ctx.beginPath(); ctx.arc(x, y, f.s * (1 + q * 2), 0, 7); ctx.fill(); }
       else if (f.kind === "trail") { ctx.globalAlpha = a * 0.7; ctx.fillStyle = `rgb(${f.col})`; ctx.beginPath(); ctx.arc(x, y, f.s * (1 - q), 0, 7); ctx.fill(); }
@@ -548,12 +608,23 @@
 
   // ---------- title letters ----------
   const pd = document.getElementById("v22-pd");
-  const LCOL = ["#ffb52e", "#ff6fa5", "", "#ff8a3d", "#7d6cff", "#2fc7a0", "#ffb52e", "#ff6fa5"];
+  const LCOL = ["#f2b84b", "#f2b84b", "", "#f2b84b", "#f2b84b", "#f2b84b", "#f2b84b", "#f2b84b"];   // only until the 3D letters arrive
   const letters = [..."PD TOOLS"].map((ch, i) => {
     const s = document.createElement("span");
     if (ch === " ") { s.className = "gap"; s.innerHTML = "&nbsp;"; } else { s.textContent = ch; s.style.setProperty("--c", LCOL[i]); }
     pd.appendChild(s); return s;
   });
+  // the letters are real 3D renders (ivory faces, honey gold sides) once their sheet arrives; text stands in until then
+  if (A.fx3d && A.fx3d.title) {
+    const TT = A.fx3d.title, ti = img(TT.src);
+    const dress = () => letters.forEach((s) => {
+      const i = TT.ch.indexOf(s.textContent); if (i < 0) return;
+      const r = TT.r[i], u = (v) => (v / TT.h).toFixed(4) + "em";
+      s.classList.add("l3"); s.style.width = u(r[2]);
+      s.style.backgroundImage = `url("${TT.src}")`; s.style.backgroundSize = `${u(TT.w)} 1em`; s.style.backgroundPosition = `-${u(r[0])} 0`;
+    });
+    if (ready(ti)) dress(); else ti.addEventListener("load", dress, { once: true });
+  }
   const jelly = (s) => { if (s.classList.contains("gap")) return; s.classList.remove("jelly"); void s.offsetWidth; s.classList.add("jelly"); };
   letters.forEach((s) => { s.addEventListener("pointerenter", () => jelly(s)); s.addEventListener("pointerdown", () => jelly(s)); s.addEventListener("animationend", () => s.classList.remove("jelly")); });
   const chaps = [...document.querySelectorAll(".v22-chap")].map((el, i) => {
@@ -714,7 +785,12 @@
       if (!lite) for (const E of EGGS) {
         const sp = E.spec, rays = ease(seg(p, sp.crack[0], sp.crack[1])) * (1 - seg(p, sp.burst, sp.burst + 0.1));
         if (rays <= 0.01) continue;
-        const { x, y } = eggSpot(E);
+        const { x, y } = eggSpot(E), rays3 = f3("rays");
+        if (rays3) {                    // a real burst of morning light behind the cracking egg
+          const s2 = H * 0.95 * (0.8 + 0.2 * rays);
+          fx.save(); fx.translate(x, y - E.ry); fx.rotate(clock * 0.05 + sp.dx); fx.globalCompositeOperation = "lighter";
+          fx.globalAlpha = sceneAlpha * 0.7 * rays; fx.drawImage(rays3, -s2 / 2, -s2 / 2, s2, s2); fx.restore(); fx.globalAlpha = sceneAlpha; continue;
+        }
         fx.save(); fx.translate(x, y - E.ry); fx.rotate(clock * 0.05 + sp.dx); fx.globalCompositeOperation = "lighter";
         for (let i = 0; i < 9; i++) {
           const a = (i / 9) * Math.PI * 2 + Math.sin(i * 3.1) * 0.3, len = H * (0.35 + 0.15 * Math.sin(clock * 0.7 + i));
@@ -756,6 +832,7 @@
           const bx2 = x + Math.cos(b.a) * d, by = oy + Math.sin(b.a) * d * 0.85 - EH * 0.5 * bt + EH * 0.8 * bt * bt;
           const a = (1 - tt * tt) * sceneAlpha, s = (1 - tt * 0.5) * EH * 0.026 * b.size + 1.5, col = pal[Math.floor(b.size * 7) % pal.length];
           if (b.kind === "petal") petal(fx, bx2, by, s, b.spin * bt, col, a);
+          else if (b.kind === "conf" && F3.conf && piece(fx, "conf", confFor("ribbon", col), bx2, by, s * 2.4, b.spin * bt, a)) { /* a real ribbon */ }
           else if (b.kind === "conf") { fx.save(); fx.translate(bx2, by); fx.rotate(b.spin * bt); fx.globalAlpha = a; fx.fillStyle = `rgb(${col})`; fx.fillRect(-s, -s * 0.45, s * 2, s * 0.9); fx.restore(); }
           else star(fx, bx2, by, s * 1.2, col, a, b.spin * bt);
         }
@@ -964,8 +1041,11 @@
       hill.addColorStop(0, "#9edc76"); hill.addColorStop(1, "#4fa24c");
       ctx.fillStyle = hill; ctx.beginPath(); ctx.ellipse(cx, H * 1.05, W * 0.9, H * 0.3, 0, Math.PI, 2 * Math.PI); ctx.fill();
     }
-    const R = Math.min(W * 0.55, H * 0.7) * (0.6 + 0.4 * easeOut(en));
-    ["255,120,120", "255,180,90", "255,225,110", "140,220,140", "120,180,255", "180,150,255"].forEach((col, i) => {
+    const R = Math.min(W * 0.55, H * 0.7) * (0.6 + 0.4 * easeOut(en)), rb = f3("rainbow");
+    if (rb) {                                                  // a real 3D rainbow, its feet in two little clouds on the hill
+      const rw = R * 2.15, rh = rw * rb.naturalHeight / rb.naturalWidth;
+      ctx.globalAlpha = 0.95 * ease(en); ctx.drawImage(rb, cx - rw / 2, fy + R * 0.15 - rh * 0.93, rw, rh);
+    } else ["255,120,120", "255,180,90", "255,225,110", "140,220,140", "120,180,255", "180,150,255"].forEach((col, i) => {
       ctx.strokeStyle = `rgba(${col},${0.55 * ease(en)})`; ctx.lineWidth = R * 0.045; ctx.beginPath(); ctx.arc(cx, fy + R * 0.15, R - i * R * 0.045, Math.PI, 2 * Math.PI); ctx.stroke();
     });
     ctx.restore();

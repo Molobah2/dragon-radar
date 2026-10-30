@@ -11,12 +11,24 @@ body.v22 { background: #bfe8ff; background-image: none; }
   color: var(--c); -webkit-text-stroke: .045em #fff; paint-order: stroke fill;
   text-shadow: 0 .05em 0 rgba(255, 255, 255, .9), 0 .12em .3em rgba(60, 90, 140, .28); }
 .v22-title h2 span.gap { width: .26em; cursor: default; }
+.v22-title h2 span.l3 { height: 1em; vertical-align: top; margin: 0 .012em; color: transparent; -webkit-text-stroke: 0; text-shadow: none;
+  background-repeat: no-repeat; filter: drop-shadow(0 .05em .06em rgba(95, 58, 18, .3)); }
+.v22-title h2 span.gap { width: .3em; }
 .v22-title h2 span.jelly { animation: v22jelly .75s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes v22jelly { 0% { scale: 1 1; } 25% { scale: 1.25 .78; } 50% { scale: .86 1.16; } 75% { scale: 1.06 .96; } 100% { scale: 1 1; } }
 
 header.v22-head { position: fixed; top: 0; left: 0; right: 0; z-index: 30; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-bottom: 10px; background: linear-gradient(rgba(40, 90, 140, .28), rgba(40, 90, 140, 0)); }
 header.v22-head .logo img { height: 48px; }
+/* the 3D logo: the badge turns like a coin now and then, the word floats a little in the morning light */
+header.v22-head .logo3d { display: inline-flex; align-items: center; gap: 8px; perspective: 500px; text-decoration: none; }
+header.v22-head .logo3d .lb { height: 50px; width: auto; filter: drop-shadow(0 6px 10px rgba(30, 50, 80, .35)); animation: v22coin 9s cubic-bezier(.5, 0, .3, 1) infinite; transform-style: preserve-3d; }
+header.v22-head .logo3d .lw { height: 30px; width: auto; filter: drop-shadow(0 4px 8px rgba(30, 50, 80, .3)); animation: v22float 5s ease-in-out infinite; }
+header.v22-head .logo3d:hover .lb { animation-duration: 2.2s; }
+@keyframes v22coin { 0%, 78% { transform: rotateY(0) translateY(0); } 84% { transform: rotateY(200deg) translateY(-3px); } 90%, 100% { transform: rotateY(360deg) translateY(0); } }
+@keyframes v22float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { header.v22-head .logo3d .lb, header.v22-head .logo3d .lw { animation: none; } }
+@media (max-width: 560px) { header.v22-head .logo3d .lb { height: 42px; } header.v22-head .logo3d .lw { height: 24px; } }
 .v22-track { position: relative; z-index: 0; pointer-events: none; }   /* only its height matters; no width, so no sideways scrollbar */
 
 .v22-hint { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -90,3 +102,4 @@ body.v22 .v22-hero { min-height: 0; padding-top: 30px; }
 body.v22 #tools { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 96px); }   /* "Pick a nest" stays clear of the fixed header after a jump */
 /* the nests' spinning rays reach past the screen edge on phones: never let the page scroll sideways */
 html:has(body.v22) { overflow-x: clip; }
+.n22 { overflow-x: clip; overflow-clip-margin: 16px; }   /* and at the source, for browsers where the page rule is not enough */

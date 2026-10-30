@@ -284,7 +284,8 @@
   {% endif %}
   <div class="wrap">
     <header{% if v22 %} class="v22-head"{% endif %}>
-      <a class="logo" href="{{ url_for('hub') }}"><img src="{{ asset('brand/pdtools-logo.webp') }}" alt="PD Tools" width="168" height="56"></a>
+      {% if v22 %}<a class="logo logo3d" href="{{ url_for('hub') }}" aria-label="PD Tools"><img class="lb" src="https://res.cloudinary.com/gosbi0oh/image/upload/v1793383577/dragon-radar/v22/logo-badge.webp" alt="" width="184" height="180"><img class="lw" src="https://res.cloudinary.com/gosbi0oh/image/upload/v1793383578/dragon-radar/v22/logo-word.webp" alt="PD Tools" width="261" height="65"></a>
+      {% else %}<a class="logo" href="{{ url_for('hub') }}"><img src="{{ asset('brand/pdtools-logo.webp') }}" alt="PD Tools" width="168" height="56"></a>{% endif %}
       <div class="hdr-right">{% include "_sound.html" %}
       <label class="lang-pick" title="Language">
         {{ ico("globe", 20) }}
