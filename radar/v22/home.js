@@ -88,93 +88,9 @@
 
   // ---------- the scene, cached in layers ----------
   let L = {};
-  function hills(ctx, w, h, base, amp, col, r, seed) {
-    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, h);
-    const n = 6 + Math.floor(r() * 3);
-    let y = base - r() * amp; ctx.lineTo(0, y);
-    for (let i = 1; i <= n; i++) {
-      const x = (i / n) * w, ny = base - r() * amp;
-      ctx.quadraticCurveTo(x - w / n / 2, Math.min(y, ny) - amp * (0.3 + r() * 0.5), x, ny); y = ny;
-    }
-    ctx.lineTo(w, h); ctx.closePath(); ctx.fill();
-  }
-  // soft lit foliage: each clump is lit from the sun (upper right) and shaded below, so it reads as rounded, not flat
-  function tree(ctx, x, base, s, leaf, dark, r) {
-    const tg = ctx.createLinearGradient(x - s * 0.06, 0, x + s * 0.06, 0);
-    tg.addColorStop(0, "#6e5238"); tg.addColorStop(1, "#a7835c");
-    ctx.fillStyle = tg; ctx.fillRect(x - s * 0.06, base - s * 0.45, s * 0.12, s * 0.45);
-    const blobs = 4 + Math.floor(r() * 3);
-    for (let i = 0; i < blobs; i++) {
-      const bx2 = x + (r() - 0.5) * s * 0.6, by = base - s * (0.55 + r() * 0.35), rr = s * (0.2 + r() * 0.15);
-      const g = ctx.createRadialGradient(bx2 + rr * 0.35, by - rr * 0.4, rr * 0.1, bx2, by, rr * 1.05);
-      g.addColorStop(0, leaf); g.addColorStop(0.55, i % 2 ? dark : leaf); g.addColorStop(1, dark);
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bx2, by, rr, 0, 7); ctx.fill();
-      ctx.fillStyle = "rgba(255,255,220,.18)"; ctx.beginPath(); ctx.arc(bx2 + rr * 0.3, by - rr * 0.35, rr * 0.35, 0, 7); ctx.fill();
-    }
-  }
-  function flowerDots(ctx, x0, y0, w, h, n, r) {
-    const cols = ["#ff8fb3", "#ffd84d", "#ffffff", "#b9a8ff", "#ff9a5c"];
-    for (let i = 0; i < n; i++) { ctx.fillStyle = cols[i % cols.length]; ctx.beginPath(); ctx.arc(x0 + r() * w, y0 + r() * h, 1.2 + r() * 2.6, 0, 7); ctx.fill(); }
-  }
   function build() {
-    const r = rng(7);
     const EH = Math.min(H * 0.3, W * 0.48);
     layout = { EH, cx: W / 2, base: H * 0.72, k: EH / 312 };
-    // sky: a clear morning, warm at the horizon
-    const sky = mk(W, H), s = sky.getContext("2d");
-    const g = s.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, "#5fbdf5"); g.addColorStop(0.35, "#9ad8ff"); g.addColorStop(0.6, "#d9f0ff"); g.addColorStop(0.7, "#fff1d1"); g.addColorStop(1, "#ffe2b5");
-    s.fillStyle = g; s.fillRect(0, 0, W, H);
-    const sx = W * 0.78, sy = H * 0.2;
-    const sun = s.createRadialGradient(sx, sy, 0, sx, sy, H * 0.5);
-    sun.addColorStop(0, "rgba(255,248,214,.95)"); sun.addColorStop(0.12, "rgba(255,236,170,.65)"); sun.addColorStop(0.45, "rgba(255,220,150,.18)"); sun.addColorStop(1, "rgba(255,220,150,0)");
-    s.fillStyle = sun; s.fillRect(0, 0, W, H);
-    s.fillStyle = "#fffbea"; s.beginPath(); s.arc(sx, sy, Math.max(16, H * 0.045), 0, 7); s.fill();
-    // floating islands far away
-    s.fillStyle = "rgba(150,180,230,.55)";
-    for (const [ix, iy, iw] of [[0.12, 0.3, 0.12], [0.3, 0.2, 0.06], [0.62, 0.36, 0.09], [0.9, 0.42, 0.07]]) {
-      const x = ix * W, y = iy * H, w = iw * W;
-      s.beginPath(); s.ellipse(x, y, w, w * 0.12, 0, 0, 7); s.fill();
-      s.beginPath(); s.moveTo(x - w * 0.8, y); s.quadraticCurveTo(x, y + w * 0.9, x + w * 0.8, y); s.fill();
-    }
-    L.sky = sky;
-    const PW = W * 1.5, PH = H * 1.2;
-    const far = mk(PW, PH), fa = far.getContext("2d");
-    hills(fa, PW, PH, PH * 0.6, PH * 0.06, "#b5e3bf", r);
-    for (let x = 0; x < PW; x += 30 + r() * 50) tree(fa, x, PH * 0.6 + r() * 10, PH * (0.05 + r() * 0.04), "#b8e6c0", "#8ec99c", r);
-    fa.fillStyle = "#a6dcb0"; fa.fillRect(0, PH * 0.62, PW, PH);
-    const haze = fa.createLinearGradient(0, PH * 0.45, 0, PH * 0.7);     // morning haze softens the distance
-    haze.addColorStop(0, "rgba(230,245,255,.0)"); haze.addColorStop(1, "rgba(230,245,255,.45)");
-    fa.fillStyle = haze; fa.fillRect(0, PH * 0.45, PW, PH * 0.55);
-    L.far = far;
-    const mid = mk(PW, PH), mi = mid.getContext("2d");
-    hills(mi, PW, PH, PH * 0.68, PH * 0.05, "#86cf7f", r);
-    mi.fillStyle = "#86cf7f"; mi.fillRect(0, PH * 0.69, PW, PH);
-    for (let x = -40; x < PW + 40; x += 40 + r() * 60) {
-      const dc = Math.abs(x - PW / 2) / (PW / 2);
-      if (dc < 0.22) continue;
-      tree(mi, x, PH * 0.69 + r() * 8, PH * (0.14 + r() * 0.12) * (0.7 + dc * 0.6), "#8edb7c", "#3f9a4f", r);
-    }
-    flowerDots(mi, 0, PH * 0.7, PW, PH * 0.3, 260, r);
-    L.mid = mid;
-    // the island ground under the nest, with flowers
-    const gr = mk(W, H * 0.5), gg = gr.getContext("2d");
-    const gd = gg.createLinearGradient(0, 0, 0, H * 0.5);
-    gd.addColorStop(0, "#9edc76"); gd.addColorStop(0.4, "#74c35e"); gd.addColorStop(1, "#4fa24c");
-    gg.fillStyle = gd; gg.beginPath(); gg.ellipse(W / 2, H * 0.5, W * 1.2, H * 0.44, 0, Math.PI, 2 * Math.PI); gg.lineTo(W * 2, H); gg.lineTo(-W, H); gg.fill();
-    flowerDots(gg, 0, H * 0.08, W, H * 0.42, 220, r);
-    L.ground = gr;
-    // flowering bushes framing the bottom corners
-    const front = mk(W, H), fr = front.getContext("2d");
-    for (const side of [-1, 1]) {
-      const x0 = side < 0 ? 0 : W;
-      for (let i = 0; i < 9; i++) {
-        const x = x0 + side * (-W * 0.02 + r() * W * 0.18), y = H * (0.86 + r() * 0.16), rr = Math.min(W, H) * (0.06 + r() * 0.07);
-        fr.fillStyle = i % 2 ? "#3f9a52" : "#4fae5e"; fr.beginPath(); fr.arc(x, y, rr, 0, 7); fr.fill();
-      }
-      flowerDots(fr, side < 0 ? 0 : W * 0.8, H * 0.8, W * 0.2, H * 0.2, 60, r);
-    }
-    L.front = front;
     // soft round sprites for glows
     L.tint = {};
     for (const [k, col] of Object.entries({ sun: "255,214,120", rose: "255,150,190", white: "255,250,235", blue: "140,170,255", mint: "130,230,190", gold: "255,201,77", lilac: "190,170,255" })) {
@@ -198,7 +114,7 @@
   }
   if (F3I.spark) F3I.spark.addEventListener("load", () => makeSparks(), { once: true });
 
-  // ---------- three eggs in one nest, drawn in code ----------
+  // ---------- three eggs in one nest: real 3D eggs that crack open on film ----------
   // Each dragon hatches from its own egg, in its own colours. These are pdtools' own egg designs, never official kit
   // eggs (the Creator Kit asks not to invent official egg states). Speed's hatches first, then Pinky's, then Blinky's.
   const EGG_SPECS = [
@@ -210,96 +126,16 @@
       crack: [0.06, 0.26], burst: 0.28 },
   ];
   let EGGS = [];
-  function eggHalfWidth(v) { const c = clamp(-v, -1, 1), th = Math.acos(c); return Math.sin(th) * (1 - 0.1 * Math.cos(th)); }
-  function eggPath(ctx, rx, ry) {
-    ctx.beginPath();
-    for (let i = 0; i <= 96; i++) { const th = (i / 96) * Math.PI * 2; const x = rx * Math.sin(th) * (1 - 0.1 * Math.cos(th)); const y = -ry * Math.cos(th); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-    ctx.closePath();
-  }
-  function buildEggs() { EGGS = EGG_SPECS.map((sp, i) => buildEgg(sp, 11 + i * 7)); }
-  function buildEgg(spec, seed) {
-    const ry = layout.EH * 0.34 * spec.size, rx = ry * 0.84;
-    const pad = 6, cw = rx * 2.3 + pad * 2, ch = ry * 2 + pad * 2;
-    const tex = mk(cw * DPR, ch * DPR), t = tex.getContext("2d");
-    t.scale(DPR, DPR); t.translate(cw / 2, ch / 2);
-    eggPath(t, rx, ry); t.save(); t.clip();
-    const base = t.createRadialGradient(-rx * 0.35, -ry * 0.42, ry * 0.05, -rx * 0.1, -ry * 0.1, ry * 1.35);
-    base.addColorStop(0, spec.base[0]); base.addColorStop(0.42, spec.base[1]); base.addColorStop(0.8, spec.base[2]); base.addColorStop(1, spec.base[3]);
-    t.fillStyle = base; t.fillRect(-cw, -ch, cw * 2, ch * 2);
-    const r = rng(seed);
-    for (let i = 0; i < 500; i++) { t.fillStyle = r() < 0.5 ? "rgba(255,255,255,.08)" : "rgba(120,70,30,.05)"; const s = 0.6 + r() * 1.2; t.fillRect((r() * 2 - 1) * rx, (r() * 2 - 1) * ry, s, s); }
-    for (let i = 0; i < 30; i++) {
-      const v = r() * 2 - 1, u = (r() * 2 - 1) * eggHalfWidth(v) * 0.92, s = ry * (0.04 + Math.pow(r(), 2) * 0.1);
-      t.fillStyle = `rgba(${spec.spots[i % spec.spots.length]},${0.55 + r() * 0.35})`;
-      t.beginPath(); t.ellipse(u * rx, v * ry, s * (1 + r() * 0.5), s, r() * 3, 0, 7); t.fill();
-    }
-    const sh = t.createLinearGradient(0, ry * 0.1, 0, ry);
-    sh.addColorStop(0, "rgba(0,0,0,0)"); sh.addColorStop(1, "rgba(120,60,20,.25)");
-    t.fillStyle = sh; t.fillRect(-cw, -ch, cw * 2, ch * 2);
-    t.restore();
-    const vein = mk(cw * DPR, ch * DPR), vv = vein.getContext("2d");
-    vv.scale(DPR, DPR); vv.translate(cw / 2, ch / 2); eggPath(vv, rx, ry); vv.clip();
-    const glow = vv.createRadialGradient(0, -ry * 0.1, 0, 0, -ry * 0.1, ry);
-    glow.addColorStop(0, "rgba(255,240,180,.95)"); glow.addColorStop(1, "rgba(255,240,180,0)");
-    vv.fillStyle = glow; vv.fillRect(-cw, -ch, cw * 2, ch * 2);
-    const v0 = -0.12, zz = [], N = 13;
-    for (let i = 0; i < N; i++) { const f = i / (N - 1); const v = v0 + (i % 2 ? 0.085 : -0.06) + (r() - 0.5) * 0.05; zz.push([(f * 2 - 1) * eggHalfWidth(v) * rx, v * ry]); }
-    const branches = [];
-    for (const [i, dir] of [[2, -1], [4, 1], [6, -1], [8, 1], [10, -1], [5, -1], [9, 1]]) {
-      const pts = [zz[i].slice()]; let [x, y] = zz[i];
-      for (let j = 0; j < 3; j++) { x += (r() - 0.5) * rx * 0.22; y += dir * ry * (0.08 + r() * 0.1); pts.push([x, y]); }
-      branches.push({ pts, at: 0.35 + r() * 0.5 });
-    }
-    const ring = [], ringIdx = [0, 3, 6, 9, 12];
-    for (let j = 0; j < ringIdx.length; j++) { const f = j / (ringIdx.length - 1); ring.push([(f * 2 - 1) * rx * 0.62, -ry * (0.6 + Math.sin(f * Math.PI) * 0.12)]); }
-    const shards = [], big = 1.6;
-    for (let j = 0; j < ringIdx.length - 1; j++) {
-      const poly = [];
-      for (let i = ringIdx[j]; i <= ringIdx[j + 1]; i++) poly.push(zz[i]);
-      poly.push(ring[j + 1], ring[j]);
-      if (j === 0) poly.splice(0, 0, [-rx * big, zz[0][1]]), poly.push([-rx * big, -ry * 0.6]);
-      if (j === ringIdx.length - 2) poly.splice(poly.length - 2, 0, [rx * big, zz[N - 1][1]], [rx * big, -ry * 0.6]);
-      shards.push(poly);
-    }
-    shards.push([...ring, [rx * big, -ry * 0.6], [rx * big, -ry * big], [-rx * big, -ry * big], [-rx * big, -ry * 0.6]]);
-    const sr = rng(seed + 12);
-    const meta = shards.map((poly) => {
-      let cx = 0, cy = 0; for (const p of poly) { cx += clamp(p[0], -rx, rx); cy += clamp(p[1], -ry, ry); } cx /= poly.length; cy /= poly.length;
-      const ang = Math.atan2(cy + ry * 0.3, cx) + (sr() - 0.5) * 0.4;
-      return { poly, cx, cy, vx: Math.cos(ang) * (0.9 + sr() * 0.8), vy: Math.sin(ang) * (1.1 + sr() * 0.6) - 0.6, spin: (sr() - 0.5) * 7 };
-    });
-    return { spec, rx, ry, tex, vein, cw, ch, zz, branches, shards: meta, v0 };
+  function buildEggs() { EGGS = EGG_SPECS.map(buildEgg); }
+  // an egg's size, and until its film arrives a simple rim (the film brings the real one)
+  function buildEgg(spec) {
+    const ry = layout.EH * 0.34 * spec.size, rx = ry * 0.84, v0 = -0.12, zz = [];
+    for (let i = 0; i < 13; i++) { const f = i / 12; zz.push([(f * 2 - 1) * rx, v0 * ry + (i % 2 ? 0.06 : -0.04) * ry]); }
+    return { spec, rx, ry, zz, v0 };
   }
   // where an egg sits on screen (its bottom centre, before the camera moves)
   // where an egg sits: settled down into the moss, not standing on top of it (PD22.eggSink tunes how deep)
   const eggSpot = (E) => ({ x: layout.cx + E.spec.dx * layout.EH, y: layout.base - E.spec.lift * layout.EH + (A.eggSink ?? 0.1) * layout.EH * (f3("moss") ? 1 : 0) });
-  function lerpPt(zz, f) { const i = Math.floor(clamp(f, 0, zz.length - 1)); const j = Math.min(zz.length - 1, i + 1); const t = f - i; return [lerp(zz[i][0], zz[j][0], t), lerp(zz[i][1], zz[j][1], t)]; }
-  function crackPath(ctx, E, g) {
-    const zz = E.zz, mid = (zz.length - 1) / 2, reach = g * mid;
-    ctx.beginPath();
-    for (const dir of [-1, 1]) {
-      ctx.moveTo(...lerpPt(zz, mid));
-      for (let n = 1, steps = Math.ceil(reach); n <= steps; n++) { const pt = lerpPt(zz, mid + dir * Math.min(n, reach)); ctx.lineTo(pt[0], pt[1]); }
-    }
-    for (const b of E.branches) {
-      const k = seg(g, b.at, b.at + 0.25); if (k <= 0) continue;
-      const n = (b.pts.length - 1) * k; ctx.moveTo(b.pts[0][0], b.pts[0][1]);
-      for (let j = 1; j <= Math.ceil(n); j++) { const f = Math.min(1, n - (j - 1)); const a = b.pts[j - 1], c = b.pts[j]; ctx.lineTo(lerp(a[0], c[0], f), lerp(a[1], c[1], f)); }
-    }
-  }
-  function strokeCrack(ctx, E, g, light) {
-    if (g <= 0) return;
-    const ry = E.ry;
-    crackPath(ctx, E, g);
-    ctx.lineJoin = "round"; ctx.lineCap = "round";
-    ctx.globalCompositeOperation = "lighter";
-    ctx.strokeStyle = `rgba(255,220,120,${0.3 * light})`; ctx.lineWidth = ry * 0.1; ctx.stroke();
-    ctx.globalCompositeOperation = "source-over";
-    ctx.strokeStyle = "rgba(120,70,30,.7)"; ctx.lineWidth = ry * 0.022; ctx.stroke();
-    ctx.globalCompositeOperation = "lighter";
-    ctx.strokeStyle = `rgba(255,252,220,${0.95 * light})`; ctx.lineWidth = ry * 0.012; ctx.stroke();
-    ctx.globalCompositeOperation = "source-over";
-  }
   function belowLinePath(ctx, E) {
     const { zz, rx, ry } = E; ctx.beginPath(); ctx.moveTo(-rx * 2, zz[0][1]);
     for (const p of zz) ctx.lineTo(p[0], p[1]);
@@ -341,44 +177,10 @@
   function drawEgg(ctx, E, p, alpha, insideDragon) {
     const F = filmOf(E);
     if (F) return drawFilmEgg(ctx, E, F, p, alpha, insideDragon);
-    const { x, y } = eggSpot(E), { rx, ry, spec } = E;
-    const crackG = ease(seg(p, spec.crack[0], spec.crack[1])), opened = p >= spec.burst - 0.005;
-    const kick = Math.max(0, 1 - (clock - eggKick[spec.id]) / 0.7);
-    const wob = opened ? 0 : (seg(p, spec.crack[0] - 0.04, spec.crack[1]) * 0.08 + 0.006) * Math.sin(clock * (6 + crackG * 10) + spec.dx * 3) + kick * 0.16 * Math.sin(clock * 30);
-    const drawTex = () => ctx.drawImage(E.tex, -E.cw / 2, -E.ch / 2, E.cw, E.ch);
-    ctx.save(); ctx.translate(x, y); ctx.rotate(wob); ctx.translate(0, -ry);
-    const openY = E.v0 * ry;
-    if (opened) {
-      const ow = rx * eggHalfWidth(E.v0) * 0.98, oh = ow * 0.3, heat = 1 - seg(p, spec.burst + 0.05, spec.burst + 0.3) * 0.7;
-      const inner = ctx.createRadialGradient(0, openY, 0, 0, openY, ow);
-      inner.addColorStop(0, `rgba(255,252,225,${heat})`); inner.addColorStop(0.55, `rgba(255,222,150,${0.9 * heat})`); inner.addColorStop(1, "rgba(214,160,100,1)");
-      ctx.fillStyle = inner; ctx.beginPath(); ctx.ellipse(0, openY - oh * 0.2, ow, oh, 0, 0, 7); ctx.fill();
-      if (insideDragon) { ctx.save(); ctx.translate(0, ry); insideDragon(); ctx.restore(); }
-      ctx.save(); belowLinePath(ctx, E); ctx.clip(); eggPath(ctx, rx, ry); ctx.clip(); drawTex(); ctx.restore();
-      ctx.beginPath(); E.zz.forEach((pt, i) => (i ? ctx.lineTo(pt[0], pt[1]) : ctx.moveTo(pt[0], pt[1])));
-      ctx.strokeStyle = `rgba(255,245,200,${0.9 * heat})`; ctx.lineWidth = ry * 0.018; ctx.stroke();
-      const tt = seg(p, spec.burst, spec.burst + 0.2);
-      if (tt < 1) for (const s of E.shards) {
-        const dx = s.vx * ry * 3.2 * easeOut(tt), dy = s.vy * ry * 2.6 * easeOut(tt) + ry * 5 * tt * tt;
-        ctx.save(); ctx.globalAlpha = alpha * (1 - seg(tt, 0.7, 1));
-        ctx.translate(s.cx + dx, s.cy + dy); ctx.rotate(s.spin * tt); ctx.translate(-s.cx, -s.cy);
-        ctx.beginPath(); s.poly.forEach((pt, i) => (i ? ctx.lineTo(pt[0], pt[1]) : ctx.moveTo(pt[0], pt[1]))); ctx.closePath(); ctx.clip();
-        eggPath(ctx, rx, ry); ctx.clip(); drawTex(); ctx.restore();
-      }
-      ctx.globalAlpha = alpha;
-    } else {
-      eggPath(ctx, rx, ry); ctx.save(); ctx.clip(); drawTex();
-      const beat = Math.pow(Math.max(0, Math.sin(clock * 2.4 + spec.dx * 2)), 6);
-      ctx.globalCompositeOperation = "lighter";
-      ctx.globalAlpha = alpha * clamp(0.05 + beat * 0.16 + crackG * 0.5 + kick * 0.3);
-      ctx.drawImage(E.vein, -E.cw / 2, -E.ch / 2, E.cw, E.ch);
-      ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = alpha;
-      ctx.restore();
-      strokeCrack(ctx, E, Math.max(crackG, kick * 0.25), clamp(0.6 + crackG * 0.5 + 0.2 * Math.sin(clock * 7)));
-    }
-    ctx.restore();
-    return { x, y, opened, crackG, top: y - 2 * ry, openY: y - ry + openY };
+    const { x, y } = eggSpot(E), { ry, spec } = E;          // not loaded yet: nothing is drawn (the stage waits for it)
+    return { x, y, opened: p >= spec.burst - 0.005, crackG: 0, top: y - 2 * ry, openY: y - ry + E.v0 * ry };
   }
+
 
   // ---------- living things ----------
   let P = {};
@@ -396,59 +198,26 @@
     if (s < 14 && SPK.has(spr)) { spr = SPK.get(spr); s *= 1.7; }      // a small light: the rendered twinkle; big ones stay soft halos
     ctx.globalAlpha = a; ctx.drawImage(spr, x - s, y - s, s * 2, s * 2);
   }
+  // the small things in the air are all real renders; one that has not loaded yet is simply not drawn
   const PETALS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15];
   function petal(ctx, x, y, s, rot, col, a) {
-    if (F3.petals && piece(ctx, "petals", PETALS[(Math.round(s * 13) + col.length) % PETALS.length], x, y, s * 2.4, rot, a, Math.max(0.25, Math.abs(Math.cos(rot * 1.3))))) return;
-    if (F3.conf && piece(ctx, "conf", confFor("disc", col), x, y, s * 2.1, rot, a, Math.max(0.2, Math.abs(Math.cos(rot * 1.3))))) return;
-    ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = a; ctx.fillStyle = `rgb(${col})`;
-    ctx.beginPath(); ctx.ellipse(0, 0, s, s * 0.55, 0, 0, 7); ctx.fill(); ctx.restore();
+    if (F3.petals) piece(ctx, "petals", PETALS[(Math.round(s * 13) + col.length) % PETALS.length], x, y, s * 2.4, rot, a, Math.max(0.25, Math.abs(Math.cos(rot * 1.3))));
   }
-  function heart(ctx, x, y, s, col, a) {
-    if (F3.conf && piece(ctx, "conf", confFor("heart", col), x, y, s * 2, Math.sin(x * 0.05) * 0.2, a)) return;
-    ctx.save(); ctx.translate(x, y); ctx.globalAlpha = a; ctx.fillStyle = `rgb(${col})`; ctx.beginPath();
-    ctx.moveTo(0, s * 0.35); ctx.bezierCurveTo(-s, -s * 0.3, -s * 0.5, -s, 0, -s * 0.45); ctx.bezierCurveTo(s * 0.5, -s, s, -s * 0.3, 0, s * 0.35); ctx.fill(); ctx.restore();
-  }
-  function star(ctx, x, y, s, col, a, rot = 0) {
-    if (F3.conf && piece(ctx, "conf", confFor("star", col), x, y, s * 2.2, rot, a)) return;
-    ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = a; ctx.fillStyle = `rgb(${col})`; ctx.beginPath();
-    for (let i = 0; i < 8; i++) { const r = i % 2 ? s * 0.38 : s; const ang = (i / 8) * Math.PI * 2; ctx.lineTo(Math.cos(ang) * r, Math.sin(ang) * r); }
-    ctx.fill(); ctx.restore();
-  }
+  function heart(ctx, x, y, s, col, a) { if (F3.conf) piece(ctx, "conf", confFor("heart", col), x, y, s * 2, Math.sin(x * 0.05) * 0.2, a); }
+  function star(ctx, x, y, s, col, a, rot = 0) { if (F3.conf) piece(ctx, "conf", confFor("star", col), x, y, s * 2.2, rot, a); }
   function cloud(ctx, x, y, w, puff, seed) {
-    const r = rng(seed), k = puff > 0 ? easeOut(Math.min(1, puff)) : 0, back = puff > 1 ? ease(seg(puff, 1, 2.2)) : 0;
-    if (F3.clouds && piece(ctx, "clouds", seed % 4, x, y - w * 0.05, w * 1.25 * (1 + (k - back) * 0.3), 0, 0.97 * (1 - (k - back) * 0.55))) return;
-    const spread = (k - back) * w * 0.6, fade = 1 - (k - back) * 0.6;
-    ctx.save(); ctx.globalAlpha = 0.92 * fade;
-    for (let i = 0; i < 7; i++) {
-      const ox = (r() - 0.5) * w, oy = (r() - 0.5) * w * 0.18, rr = w * (0.16 + r() * 0.14), dir = Math.sign(ox) || 1;
-      ctx.fillStyle = "rgba(140,170,210,.25)"; ctx.beginPath(); ctx.arc(x + ox + dir * spread, y + oy + rr * 0.25, rr, 0, 7); ctx.fill();
-      ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(x + ox + dir * spread, y + oy, rr, 0, 7); ctx.fill();
-    }
-    ctx.restore();
+    const k = puff > 0 ? easeOut(Math.min(1, puff)) : 0, back = puff > 1 ? ease(seg(puff, 1, 2.2)) : 0;
+    if (F3.clouds) piece(ctx, "clouds", seed % 4, x, y - w * 0.05, w * 1.25 * (1 + (k - back) * 0.3), 0, 0.97 * (1 - (k - back) * 0.55));
   }
-  const BFLY = { "255,143,179": 1, "130,200,255": 2, "185,168,255": 3, "255,150,60": 4 };
   const BFLY2 = { "255,143,179": 0, "255,150,60": 1, "130,200,255": 2, "185,168,255": 3 };
   function butterfly(ctx, x, y, s, col, t, ang) {
-    const b2 = f3("bfly2");
-    if (b2) {                           // a real 3D butterfly; its wings beat about its body
-      const i = BFLY2[col[0]] ?? 1, r = F3.bfly2.r[i], bp = F3.bfly2.body[i], w = s * 3.2, h = w * r[3] / r[2];
-      const beat = 0.45 + 0.55 * Math.abs(Math.cos(t * 9));
-      ctx.save(); ctx.translate(x, y); ctx.rotate(ang * 0.5); ctx.scale(1, beat);
-      ctx.drawImage(b2, r[0], r[1], r[2], r[3], -bp[0] * w, -bp[1] * h, w, h); ctx.restore(); return;
-    }
-    if (F3.bfly && piece(ctx, "bfly", BFLY[col[0]] ?? 0, x, y, s * 2.7, ang, ctx.globalAlpha, 0.18 + 0.82 * Math.abs(Math.cos(t * 9)))) return;
-    const flap = Math.abs(Math.sin(t * 14)) * 0.8 + 0.2;
-    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
-    ctx.fillStyle = `rgb(${col[0]})`;
-    for (const side of [-1, 1]) {
-      ctx.save(); ctx.scale(side * flap, 1);
-      ctx.beginPath(); ctx.ellipse(s * 0.55, -s * 0.35, s * 0.55, s * 0.42, -0.4, 0, 7); ctx.fill();
-      ctx.fillStyle = `rgb(${col[1]})`; ctx.beginPath(); ctx.ellipse(s * 0.45, s * 0.3, s * 0.36, s * 0.3, 0.4, 0, 7); ctx.fill();
-      ctx.fillStyle = `rgb(${col[0]})`; ctx.restore();
-    }
-    ctx.fillStyle = "#4a3a5a"; ctx.fillRect(-s * 0.06, -s * 0.5, s * 0.12, s);
-    ctx.restore();
+    const b2 = f3("bfly2"); if (!b2) return;     // a real 3D butterfly; its wings beat about its body
+    const i = BFLY2[col[0]] ?? 1, r = F3.bfly2.r[i], bp = F3.bfly2.body[i], w = s * 3.2, h = w * r[3] / r[2];
+    const beat = 0.45 + 0.55 * Math.abs(Math.cos(t * 9));
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang * 0.5); ctx.scale(1, beat);
+    ctx.drawImage(b2, r[0], r[1], r[2], r[3], -bp[0] * w, -bp[1] * h, w, h); ctx.restore();
   }
+
 
   // ---------- touch: reactions and effects ----------
   let HIT = [];                       // what can be touched this frame (front-most last)
@@ -515,11 +284,8 @@
       if (f.kind === "star") star(ctx, x, y, f.s * (1 - q * 0.5), f.col, a, f.rot + f.vr * e);
       else if (f.kind === "heart") heart(ctx, x, y, f.s * 1.6, f.col, a);
       else if (f.kind === "conf" && F3.conf && piece(ctx, "conf", confFor("ribbon", f.col), x, y, f.s * 2.4, f.rot + f.vr * e, a)) { /* a real ribbon */ }
-      else if (f.kind === "conf") { ctx.save(); ctx.translate(x, y); ctx.rotate(f.rot + f.vr * e); ctx.globalAlpha = a; ctx.fillStyle = `rgb(${f.col})`; ctx.fillRect(-f.s * 0.6, -f.s * 0.3, f.s * 1.2, f.s * 0.6); ctx.restore(); }
       else if (f.kind === "dust" && f3("dust")) { const im = f3("dust"), d = f.s * (1 + q * 2) * 2.6; ctx.globalAlpha = a * 0.75; ctx.drawImage(im, x - d / 2, y - d * 0.42, d, d * im.naturalHeight / im.naturalWidth); }
       else if (f.kind === "trail" && SPK.size) { const tc = f.col === DRAGON.speed[0] ? L.tint.sun : L.tint.lilac; ctx.save(); ctx.globalCompositeOperation = "lighter"; dot(ctx, tc, x, y, Math.max(1, f.s * (1 - q) * 1.4), a * 0.85); ctx.restore(); }
-      else if (f.kind === "dust") { ctx.globalAlpha = a * 0.6; ctx.fillStyle = `rgb(${f.col})`; ctx.beginPath(); ctx.arc(x, y, f.s * (1 + q * 2), 0, 7); ctx.fill(); }
-      else if (f.kind === "trail") { ctx.globalAlpha = a * 0.7; ctx.fillStyle = `rgb(${f.col})`; ctx.beginPath(); ctx.arc(x, y, f.s * (1 - q), 0, 7); ctx.fill(); }
     }
     ctx.globalAlpha = 1;
   }
@@ -707,9 +473,15 @@
     }
   });
 
+  // ---------- the stage shows only once its real art is in (or after 9 s whatever has come), never a stand in ----------
+  const MUST = () => [SC.sky, SC.mid, SC.ground, SC.front, IM.nb, IM.nf, ...Object.values(EGI), F3I.moss, F3I.clouds].filter(Boolean);
+  let shown = false;
+  function reveal() { shown = true; document.body.classList.add("v22-ready"); }
+
   // ---------- frame ----------
   function frame(now) {
     requestAnimationFrame(frame);
+    if (!shown && (now - t0 > 9000 || MUST().every((i) => i.complete))) reveal();
     const time = reduce ? 0 : (now - t0) / 1000;
     clock = (now - t0) / 1000;
     if (Math.abs(target - cur) > 1.5) cur = target;          // a big jump (skip, a link to the tools) lands at once, never replays the story
@@ -731,7 +503,7 @@
       const sw = W + 12, sh = H + 8, k2 = Math.max(sw / skyArt.naturalWidth, sh / skyArt.naturalHeight);
       const dw = skyArt.naturalWidth * k2, dh2 = skyArt.naturalHeight * k2;
       bx.drawImage(skyArt, (sw - dw) / 2 - tiltX * 6, (sh - dh2) * 0.35 - tiltY * 4, dw, dh2);
-    } else bx.drawImage(L.sky, -tiltX * 6, -tiltY * 4, W + 12, H + 8);
+    }
     P.clouds.forEach((c, i) => {
       const x = (((c.x + time * c.sp) % 1.3) - 0.15) * W - tiltX * 10, y = c.y * H - gl * H * 0.08 - tiltY * 6, w = c.w * W;
       cloud(bx, x, y, w, c.puff > -9 ? clock - c.puff : 0, c.seed);
@@ -748,7 +520,7 @@
       const z = 1 + gl * depth, w = W * 1.5 * z, h = H * 1.2 * z;
       const x0 = cx - w / 2 - tiltX * 14 * depth, y0 = H * 0.62 - h * 0.6 + gl * H * 0.1 * depth - tiltY * 8 * depth;
       const a = paint && art(paint.k);
-      if (!a) { bx.drawImage(im, x0, y0, w, h); return; }
+      if (!a) return;
       // the painting sits in the same frame the coded layer used (1.5 screens wide, 1.2 high), its line on the old line
       const PW = W * 1.5, PH = H * 1.2, s2 = w / PW, aw = paint.fit(PW), ah = aw * a.naturalHeight / a.naturalWidth;
       const ax = (PW - aw) / 2, ay = paint.lineY * PH - paint.lineAt * ah, bot = ay + ah;
@@ -771,15 +543,15 @@
         bx.save(); bx.globalCompositeOperation = "lighter"; dot(bx, L.tint.sun, x, y - h * 0.86, h * 0.42, 0.35 * fl); bx.restore();
       });
     };
-    if (SC.far || !skyArt) layer(L.far, 0.35, { k: "far", lineY: 0.56, lineAt: 0.37, fill: "rgb(125,167,135)", fit: (PW) => Math.max(PW, H * 1.1) });
-    layer(L.mid, 1.1, { k: "mid", lineY: 0.69, lineAt: 0.887, fill: "rgb(139,146,72)", fit: () => Math.max(W * 0.78, H * 0.55), after: dressHatchery });
+    if (SC.far) layer(null, 0.35, { k: "far", lineY: 0.56, lineAt: 0.37, fill: "rgb(125,167,135)", fit: (PW) => Math.max(PW, H * 1.1) });
+    layer(null, 1.1, { k: "mid", lineY: 0.69, lineAt: 0.887, fill: "rgb(139,146,72)", fit: () => Math.max(W * 0.78, H * 0.55), after: dressHatchery });
     const gz = 1 + gl * 2.2;
     const gA = art("ground"), gY = base - H * 0.06 * gz + gl * H * 0.6;
     if (gA) {                                                  // the painted hilltop: its brow just above the nest's foot
       const aw = Math.max(W, H * 0.97) * gz, ah = aw * gA.naturalHeight / gA.naturalWidth, ay = gY + H * 0.04 * gz - 0.48 * ah;
       bx.drawImage(gA, cx - aw / 2 - tiltX * 20, ay, aw, ah);
       if (ay + ah < H) { bx.fillStyle = "rgb(83,115,58)"; bx.fillRect(0, ay + ah - 1, W, H - ay - ah + 2); }
-    } else bx.drawImage(L.ground, cx - W * gz / 2 - tiltX * 20, gY, W * gz, H * 0.5 * gz);
+    }
 
     // ===== title =====
     // on short wide screens the letters would sit on the Hatchery banners: lift them, then shrink them just enough to clear
@@ -822,27 +594,17 @@
         const sp = E.spec, rays = ease(seg(p, sp.crack[0], sp.crack[1])) * (1 - seg(p, sp.burst, sp.burst + 0.1));
         if (rays <= 0.01) continue;
         const { x, y } = eggSpot(E), rays3 = f3("rays");
-        if (rays3) {                    // a real burst of morning light behind the cracking egg
-          const s2 = H * 0.95 * (0.8 + 0.2 * rays);
-          fx.save(); fx.translate(x, y - E.ry); fx.rotate(clock * 0.05 + sp.dx); fx.globalCompositeOperation = "lighter";
-          fx.globalAlpha = sceneAlpha * 0.7 * rays; fx.drawImage(rays3, -s2 / 2, -s2 / 2, s2, s2); fx.restore(); fx.globalAlpha = sceneAlpha; continue;
-        }
+        if (!rays3) continue;           // a real burst of morning light behind the cracking egg
+        const s2 = H * 0.95 * (0.8 + 0.2 * rays);
         fx.save(); fx.translate(x, y - E.ry); fx.rotate(clock * 0.05 + sp.dx); fx.globalCompositeOperation = "lighter";
-        for (let i = 0; i < 9; i++) {
-          const a = (i / 9) * Math.PI * 2 + Math.sin(i * 3.1) * 0.3, len = H * (0.35 + 0.15 * Math.sin(clock * 0.7 + i));
-          const gr = fx.createLinearGradient(0, 0, Math.cos(a) * len, Math.sin(a) * len);
-          gr.addColorStop(0, `rgba(255,236,170,${0.22 * rays})`); gr.addColorStop(1, "rgba(255,236,170,0)");
-          fx.fillStyle = gr; fx.beginPath(); fx.moveTo(0, 0);
-          fx.lineTo(Math.cos(a - 0.07) * len, Math.sin(a - 0.07) * len); fx.lineTo(Math.cos(a + 0.07) * len, Math.sin(a + 0.07) * len); fx.fill();
-        }
-        fx.restore(); fx.globalAlpha = sceneAlpha;
+        fx.globalAlpha = sceneAlpha * 0.7 * rays; fx.drawImage(rays3, -s2 / 2, -s2 / 2, s2, s2); fx.restore(); fx.globalAlpha = sceneAlpha;
       }
       // one wide nest that holds all three
       const nk = k * 1.05, nsx = 1.45, nx = cx - 264 * nk * nsx, ny = base - 306 * nk, nw = 520 * nk * nsx, nh = 465 * nk;
       const ds = kit("dais");
       if (ds) { const dw = nw * 0.8, dh2 = dw * ds.naturalHeight / ds.naturalWidth; fx.drawImage(ds, cx - dw / 2, ny + nh * 0.9 - dh2 * 0.45, dw, dh2); }
       if (ready(IM.nb)) fx.drawImage(IM.nb, nx, ny, nw, nh);
-      // a soft bed of moss and straw inside the nest, where the eggs sit: a real 3D render (the drawn bed only until it loads)
+      // a soft bed of moss and straw inside the nest, where the eggs sit: a real 3D render
       const moss = f3("moss");
       const MW = 270 * nk * nsx * 1.04, MH = MW * 0.31, MX = cx - MW / 2, MY = ny + 262 * nk - MH * 0.5;
       if (moss) {
@@ -852,16 +614,6 @@
           g2.addColorStop(0, "rgba(30,45,10,.45)"); g2.addColorStop(1, "rgba(30,45,10,0)");
           fx.save(); fx.translate(x, y); fx.scale(1, 0.32); fx.translate(-x, -y); fx.fillStyle = g2; fx.beginPath(); fx.arc(x, y, r2, 0, 7); fx.fill(); fx.restore();
         }
-      }
-      else {
-        fx.save(); fx.beginPath(); fx.ellipse(cx, ny + 262 * nk, 132 * nk * nsx, 52 * nk, 0, 0, 7); fx.clip();
-        const moss = fx.createRadialGradient(cx, ny + 250 * nk, 0, cx, ny + 262 * nk, 140 * nk * nsx);
-        moss.addColorStop(0, "#8fae4a"); moss.addColorStop(0.6, "#6d8c34"); moss.addColorStop(1, "#4a6224");
-        fx.fillStyle = moss; fx.fillRect(cx - 140 * nk * nsx, ny + 200 * nk, 280 * nk * nsx, 130 * nk);
-        fx.strokeStyle = "rgba(214,184,120,.75)"; fx.lineWidth = Math.max(1, nk * 2.2); fx.lineCap = "round";
-        for (let i = 0; i < 46; i++) { const a = i * 2.39996, rr = (i / 46) * 120 * nk * nsx, x0 = cx + Math.cos(a) * rr, y0 = ny + 262 * nk + Math.sin(a) * rr * 0.38;
-          fx.beginPath(); fx.moveTo(x0, y0); fx.quadraticCurveTo(x0 + 9 * nk, y0 - 5 * nk, x0 + 20 * nk * Math.cos(a * 3), y0 + 4 * nk * Math.sin(a * 5)); fx.stroke(); }
-        fx.restore();
       }
       for (const E of EGGS) {   // Blinky's egg sits in the middle, a little behind the other two
         const id = E.spec.id;
@@ -890,7 +642,6 @@
           const a = (1 - tt * tt) * sceneAlpha, s = (1 - tt * 0.5) * EH * 0.026 * b.size + 1.5, col = pal[Math.floor(b.size * 7) % pal.length];
           if (b.kind === "petal") petal(fx, bx2, by, s, b.spin * bt, col, a);
           else if (b.kind === "conf" && F3.conf && piece(fx, "conf", confFor("ribbon", col), bx2, by, s * 2.4, b.spin * bt, a)) { /* a real ribbon */ }
-          else if (b.kind === "conf") { fx.save(); fx.translate(bx2, by); fx.rotate(b.spin * bt); fx.globalAlpha = a; fx.fillStyle = `rgb(${col})`; fx.fillRect(-s, -s * 0.45, s * 2, s * 0.9); fx.restore(); }
           else star(fx, bx2, by, s * 1.2, col, a, b.spin * bt);
         }
         fx.globalAlpha = 1;
@@ -943,7 +694,7 @@
       const bh = Math.min(H * 0.5, W * 0.45) * fz, bw = bh * (fr.naturalWidth / 2) / fr.naturalHeight, hw = fr.naturalWidth / 2;
       fx.drawImage(fr, 0, 0, hw, fr.naturalHeight, fX, fY + H * fz - bh, bw, bh);
       fx.drawImage(fr, hw, 0, hw, fr.naturalHeight, fX + W * fz - bw, fY + H * fz - bh, bw, bh);
-    } else fx.drawImage(L.front, fX, fY, W * fz, H * fz);
+    }
     fx.globalAlpha = 1;
     for (const lf of P.petals) {
       const x = ((lf.x - time * lf.sp * 0.5) % 1 + 1) % 1, y = ((lf.y + time * lf.sp) % 1);
@@ -1093,15 +844,7 @@
       const aw = Math.max(W * 1.1, H), ah = aw * gA.naturalHeight / gA.naturalWidth, ay = H * 0.755 - 0.48 * ah;
       ctx.drawImage(gA, cx - aw / 2, ay, aw, ah);
       if (ay + ah < H) { ctx.fillStyle = "rgb(83,115,58)"; ctx.fillRect(0, ay + ah - 1, W, H - ay - ah + 2); }
-    } else {
-      const hill = ctx.createLinearGradient(0, fy - H * 0.1, 0, H);
-      hill.addColorStop(0, "#9edc76"); hill.addColorStop(1, "#4fa24c");
-      ctx.fillStyle = hill; ctx.beginPath(); ctx.ellipse(cx, H * 1.05, W * 0.9, H * 0.3, 0, Math.PI, 2 * Math.PI); ctx.fill();
     }
-    const R = Math.min(W * 0.55, H * 0.7) * (0.6 + 0.4 * easeOut(en)), rb = f3("rainbow");
-    if (!rb) ["255,120,120", "255,180,90", "255,225,110", "140,220,140", "120,180,255", "180,150,255"].forEach((col, i) => {
-      ctx.strokeStyle = `rgba(${col},${0.55 * ease(en)})`; ctx.lineWidth = R * 0.045; ctx.beginPath(); ctx.arc(cx, fy + R * 0.15, R - i * R * 0.045, Math.PI, 2 * Math.PI); ctx.stroke();
-    });
     ctx.restore();
     const dh = Math.min(EH * 0.95, H * 0.3, W * (W < 700 ? 0.3 : 1)), narrowE = W < 700;
     const spread = Math.min(W * (narrowE ? 0.33 : 0.3), dh * 1.4), inX = 1 - easeOut(seg(en, 0.2, 0.8));

@@ -12,7 +12,7 @@
   <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ asset('fonts.css') }}">
 {% include "_speed.html" %}
-{% if v22 %}<link rel="stylesheet" href="/v22/a/home.css?v={{ asset_version }}">{% endif %}
+{% if v22 %}<link rel="stylesheet" href="/v22/a/home.css?v={{ asset_version }}"><link rel="preload" as="image" href="https://res.cloudinary.com/gosbi0oh/image/upload/v1793335903/dragon-radar/v22/hatch-sky.webp">{% endif %}
   {% if cfg.scene_base %}<link rel="preconnect" href="{{ cfg.scene_base }}" crossorigin>
   <script>window.PD_FOREST = {{ {"base": cfg.scene_base, "folder": cfg.scene_folder, "ver": cfg.hub_version,
     "still": cfg.hub_scene, "intro": cfg.hub_intro, "loop": cfg.hub_loop} | tojson }};</script>{% endif %}
