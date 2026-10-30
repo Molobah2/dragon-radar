@@ -36,7 +36,7 @@
   const kit = (k) => KITI[k] && ready(KITI[k]) ? KITI[k] : null;
   // real 3D renders for everything that used to be drawn in code. Until one arrives, its code version stands in.
   const F3 = A.fx3d || {}, F3I = {};
-  for (const k of ["clouds", "bfly", "conf", "rainbow", "rays", "spark", "dust"]) if (F3[k]) F3I[k] = img(F3[k].src);
+  for (const k of ["clouds", "bfly", "conf", "rainbow", "rays", "spark", "dust", "moss"]) if (F3[k]) F3I[k] = img(F3[k].src);
   const f3 = (k) => F3I[k] && ready(F3I[k]) ? F3I[k] : null;
   const EGI = {}; for (const [id, m] of Object.entries(F3.eggs || {})) EGI[id] = img(m.src);
   // one piece of a sheet of renders, centred on x, y and w wide; sx squeezes it (a wing beat, a tumbling flake)
@@ -831,15 +831,19 @@
       const ds = kit("dais");
       if (ds) { const dw = nw * 0.8, dh2 = dw * ds.naturalHeight / ds.naturalWidth; fx.drawImage(ds, cx - dw / 2, ny + nh * 0.9 - dh2 * 0.45, dw, dh2); }
       if (ready(IM.nb)) fx.drawImage(IM.nb, nx, ny, nw, nh);
-      // a soft bed of moss and straw inside the nest, where the eggs sit
-      fx.save(); fx.beginPath(); fx.ellipse(cx, ny + 262 * nk, 132 * nk * nsx, 52 * nk, 0, 0, 7); fx.clip();
-      const moss = fx.createRadialGradient(cx, ny + 250 * nk, 0, cx, ny + 262 * nk, 140 * nk * nsx);
-      moss.addColorStop(0, "#8fae4a"); moss.addColorStop(0.6, "#6d8c34"); moss.addColorStop(1, "#4a6224");
-      fx.fillStyle = moss; fx.fillRect(cx - 140 * nk * nsx, ny + 200 * nk, 280 * nk * nsx, 130 * nk);
-      fx.strokeStyle = "rgba(214,184,120,.75)"; fx.lineWidth = Math.max(1, nk * 2.2); fx.lineCap = "round";
-      for (let i = 0; i < 46; i++) { const a = i * 2.39996, rr = (i / 46) * 120 * nk * nsx, x0 = cx + Math.cos(a) * rr, y0 = ny + 262 * nk + Math.sin(a) * rr * 0.38;
-        fx.beginPath(); fx.moveTo(x0, y0); fx.quadraticCurveTo(x0 + 9 * nk, y0 - 5 * nk, x0 + 20 * nk * Math.cos(a * 3), y0 + 4 * nk * Math.sin(a * 5)); fx.stroke(); }
-      fx.restore();
+      // a soft bed of moss and straw inside the nest, where the eggs sit: a real 3D render (the drawn bed only until it loads)
+      const moss = f3("moss");
+      if (moss) { const mw = 270 * nk * nsx * 1.04, mh = mw * 0.31; fx.drawImage(moss, cx - mw / 2, ny + 262 * nk - mh * 0.5, mw, mh); }
+      else {
+        fx.save(); fx.beginPath(); fx.ellipse(cx, ny + 262 * nk, 132 * nk * nsx, 52 * nk, 0, 0, 7); fx.clip();
+        const moss = fx.createRadialGradient(cx, ny + 250 * nk, 0, cx, ny + 262 * nk, 140 * nk * nsx);
+        moss.addColorStop(0, "#8fae4a"); moss.addColorStop(0.6, "#6d8c34"); moss.addColorStop(1, "#4a6224");
+        fx.fillStyle = moss; fx.fillRect(cx - 140 * nk * nsx, ny + 200 * nk, 280 * nk * nsx, 130 * nk);
+        fx.strokeStyle = "rgba(214,184,120,.75)"; fx.lineWidth = Math.max(1, nk * 2.2); fx.lineCap = "round";
+        for (let i = 0; i < 46; i++) { const a = i * 2.39996, rr = (i / 46) * 120 * nk * nsx, x0 = cx + Math.cos(a) * rr, y0 = ny + 262 * nk + Math.sin(a) * rr * 0.38;
+          fx.beginPath(); fx.moveTo(x0, y0); fx.quadraticCurveTo(x0 + 9 * nk, y0 - 5 * nk, x0 + 20 * nk * Math.cos(a * 3), y0 + 4 * nk * Math.sin(a * 5)); fx.stroke(); }
+        fx.restore();
+      }
       for (const E of EGGS) {   // Blinky's egg sits in the middle, a little behind the other two
         const id = E.spec.id;
         const info = drawEgg(fx, E, p, sceneAlpha, () => emergeDragon(fx, id, true));
