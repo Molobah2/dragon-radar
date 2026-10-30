@@ -66,19 +66,19 @@ body.v22 .v22-hero { min-height: 0; padding-top: 30px; }
 .n22-egg img { width: 100%; height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 22px 22px rgba(30, 60, 110, .35)); pointer-events: none; user-select: none; }
 @keyframes n22float { 0%, 100% { transform: translateY(0) rotate(-1.2deg); } 50% { transform: translateY(-8px) rotate(1.2deg); } }
 .n22-egg:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
-.n22-shine { position: absolute; inset: 0; border-radius: 30%; overflow: hidden; pointer-events: none; mix-blend-mode: soft-light; }
-.n22-shine::after { content: ""; position: absolute; top: -20%; bottom: -20%; width: 40%; left: -60%; transform: skewX(-18deg);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .9), transparent); animation: n22shine 6s ease-in-out infinite; animation-delay: calc(var(--d, 0) * 1.5s); }
-@keyframes n22shine { 0%, 70% { left: -60%; } 100% { left: 130%; } }
-.n22-crack { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity .3s; }
-.n22-crack path { fill: none; stroke: #fff6c8; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px #ffd36b);
-  stroke-dasharray: 60; stroke-dashoffset: 60; transition: stroke-dashoffset .6s ease .1s; }
-.n22-rays { position: absolute; inset: -6%; border-radius: 50%; opacity: 0; transition: opacity .5s; pointer-events: none;
-  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--hue) 60%, #fff) 0 6deg, transparent 6deg 22deg);
-  -webkit-mask: radial-gradient(circle, #000 18%, transparent 66%); mask: radial-gradient(circle, #000 18%, transparent 66%); animation: n22spin 18s linear infinite; }
+.n22-shine { position: absolute; inset: 0; border-radius: 30%; overflow: hidden; pointer-events: none; mix-blend-mode: screen; }
+.n22-shine::after { content: ""; position: absolute; top: 6%; left: 54%; width: 34%; aspect-ratio: 1; opacity: 0; transform: scale(0);
+  background: url("https://res.cloudinary.com/gosbi0oh/image/upload/v1793387228/dragon-radar/v22/fx-spark.webp") center / contain no-repeat;
+  animation: n22shine 6s ease-in-out infinite; animation-delay: calc(var(--d, 0) * 1.5s); }   /* a real twinkle catches the shell now and then */
+@keyframes n22shine { 0%, 72%, 100% { opacity: 0; transform: scale(0) rotate(0); } 82% { opacity: 1; transform: scale(1) rotate(45deg); } 92% { opacity: 0; transform: scale(.3) rotate(90deg); } }
+.n22-egg img.n22-crack { position: absolute; left: 50%; top: 16%; width: auto; height: 34%; transform: translateX(-50%); object-fit: fill; pointer-events: none;
+  opacity: 0; filter: drop-shadow(0 0 6px rgba(255, 196, 90, .75)); clip-path: inset(0 0 100% 0); transition: opacity .3s, clip-path .6s ease .1s; }   /* the light breaks through from the top down */
+.n22-rays { position: absolute; inset: -14%; opacity: 0; transition: opacity .5s; pointer-events: none;
+  background: url("https://res.cloudinary.com/gosbi0oh/image/upload/v1793385596/dragon-radar/v22/fx-rays.webp") center / contain no-repeat;
+  animation: n22spin 18s linear infinite; }   /* the same rendered morning light that bursts from the hatching eggs */
 @keyframes n22spin { to { transform: rotate(1turn); } }
 .n22-nest.open .n22-egg { animation-play-state: paused; transform: translateY(-14px) scale(1.06); }
-.n22-nest.open .n22-crack { opacity: 1; } .n22-nest.open .n22-crack path { stroke-dashoffset: 0; }
+.n22-nest.open .n22-egg img.n22-crack { opacity: 1; clip-path: inset(0); }
 .n22-nest.open .n22-rays { opacity: .85; }
 .n22-egg.knock { animation: n22knock .5s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes n22knock { 20% { transform: rotate(-7deg) scale(1.03); } 45% { transform: rotate(6deg); } 70% { transform: rotate(-3deg); } }

@@ -36,7 +36,7 @@
   const kit = (k) => KITI[k] && ready(KITI[k]) ? KITI[k] : null;
   // real 3D renders for everything that used to be drawn in code. Until one arrives, its code version stands in.
   const F3 = A.fx3d || {}, F3I = {};
-  for (const k of ["clouds", "bfly", "conf", "rainbow", "rays"]) if (F3[k]) F3I[k] = img(F3[k].src);
+  for (const k of ["clouds", "bfly", "conf", "rainbow", "rays", "spark", "dust"]) if (F3[k]) F3I[k] = img(F3[k].src);
   const f3 = (k) => F3I[k] && ready(F3I[k]) ? F3I[k] : null;
   const EGI = {}; for (const [id, m] of Object.entries(F3.eggs || {})) EGI[id] = img(m.src);
   // one piece of a sheet of renders, centred on x, y and w wide; sx squeezes it (a wing beat, a tumbling flake)
@@ -181,9 +181,22 @@
       const c = mk(64, 64), x = c.getContext("2d"); const q = x.createRadialGradient(32, 32, 0, 32, 32, 32);
       q.addColorStop(0, `rgba(${col},1)`); q.addColorStop(0.3, `rgba(${col},.5)`); q.addColorStop(1, `rgba(${col},0)`); x.fillStyle = q; x.fillRect(0, 0, 64, 64); L.tint[k] = c;
     }
+    makeSparks();
     buildEggs();
     buildParticles();
   }
+  // small lights (pollen, the sparkle ring, the dash trail) are a real rendered twinkle, tinted in each glow's colour
+  const SPK = new Map();
+  const SPCOL = { sun: "255,214,120", rose: "255,150,190", white: "255,250,235", blue: "140,170,255", mint: "130,230,190", gold: "255,201,77", lilac: "190,170,255" };
+  function makeSparks() {
+    const sp = f3("spark"); SPK.clear(); if (!sp || !L.tint) return;
+    for (const [k, c0] of Object.entries(L.tint)) {
+      const c = mk(96, 96), x = c.getContext("2d"); x.drawImage(sp, 0, 0, 96, 96);
+      x.globalCompositeOperation = "source-atop"; x.fillStyle = `rgba(${SPCOL[k]},.55)`; x.fillRect(0, 0, 96, 96);
+      SPK.set(c0, c);
+    }
+  }
+  if (F3I.spark) F3I.spark.addEventListener("load", () => makeSparks(), { once: true });
 
   // ---------- three eggs in one nest, drawn in code ----------
   // Each dragon hatches from its own egg, in its own colours. These are pdtools' own egg designs, never official kit
@@ -377,7 +390,11 @@
     P.petals = Array.from({ length: n(14) }, () => ({ x: r(), y: r(), sp: 0.02 + r() * 0.03, rot: r() * 6, vr: (r() - 0.5) * 1.6, sz: 0.6 + r() * 0.8, ph: r() * 6, col: r() < 0.5 ? "255,190,214" : "255,248,240" }));
     P.spark = Array.from({ length: n(70) }, () => ({ a: r() * Math.PI * 2, rad: 0.5 + r() * 0.9, sp: 0.2 + r() * 0.6, ph: r(), sz: 0.4 + r() }));
   }
-  function dot(ctx, spr, x, y, s, a) { if (a <= 0.003 || s <= 0.2) return; ctx.globalAlpha = a; ctx.drawImage(spr, x - s, y - s, s * 2, s * 2); }
+  function dot(ctx, spr, x, y, s, a) {
+    if (a <= 0.003 || s <= 0.2) return;
+    if (s < 14 && SPK.has(spr)) { spr = SPK.get(spr); s *= 1.7; }      // a small light: the rendered twinkle; big ones stay soft halos
+    ctx.globalAlpha = a; ctx.drawImage(spr, x - s, y - s, s * 2, s * 2);
+  }
   function petal(ctx, x, y, s, rot, col, a) {
     if (F3.conf && piece(ctx, "conf", confFor("disc", col), x, y, s * 2.1, rot, a, Math.max(0.2, Math.abs(Math.cos(rot * 1.3))))) return;
     ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = a; ctx.fillStyle = `rgb(${col})`;
@@ -488,6 +505,8 @@
       else if (f.kind === "heart") heart(ctx, x, y, f.s * 1.6, f.col, a);
       else if (f.kind === "conf" && F3.conf && piece(ctx, "conf", confFor("ribbon", f.col), x, y, f.s * 2.4, f.rot + f.vr * e, a)) { /* a real ribbon */ }
       else if (f.kind === "conf") { ctx.save(); ctx.translate(x, y); ctx.rotate(f.rot + f.vr * e); ctx.globalAlpha = a; ctx.fillStyle = `rgb(${f.col})`; ctx.fillRect(-f.s * 0.6, -f.s * 0.3, f.s * 1.2, f.s * 0.6); ctx.restore(); }
+      else if (f.kind === "dust" && f3("dust")) { const im = f3("dust"), d = f.s * (1 + q * 2) * 2.6; ctx.globalAlpha = a * 0.75; ctx.drawImage(im, x - d / 2, y - d * 0.42, d, d * im.naturalHeight / im.naturalWidth); }
+      else if (f.kind === "trail" && SPK.size) { const tc = f.col === DRAGON.speed[0] ? L.tint.sun : L.tint.lilac; ctx.save(); ctx.globalCompositeOperation = "lighter"; dot(ctx, tc, x, y, Math.max(1, f.s * (1 - q) * 1.4), a * 0.85); ctx.restore(); }
       else if (f.kind === "dust") { ctx.globalAlpha = a * 0.6; ctx.fillStyle = `rgb(${f.col})`; ctx.beginPath(); ctx.arc(x, y, f.s * (1 + q * 2), 0, 7); ctx.fill(); }
       else if (f.kind === "trail") { ctx.globalAlpha = a * 0.7; ctx.fillStyle = `rgb(${f.col})`; ctx.beginPath(); ctx.arc(x, y, f.s * (1 - q), 0, 7); ctx.fill(); }
     }
