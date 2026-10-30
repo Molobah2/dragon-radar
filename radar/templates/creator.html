@@ -117,7 +117,7 @@ body { background: #140a08; }
   </div>
   <canvas id="sparks" aria-hidden="true"></canvas>
   <div class="cw-shade" aria-hidden="true"></div>
-  <div class="pinky" aria-hidden="true"><img class="me" src="{{ asset('v21/pinky-frame.webp') }}" alt="" width="755" height="1000">{% if pick %}<span class="held"><span class="letter">{{ (pick.name or pick.user)[:1]|upper }}</span><img src="/api/avatar/{{ pick.user }}?s=big" alt="" onerror="this.remove()"></span>{% endif %}</div>
+  <div class="pinky" aria-hidden="true"><img class="me" {% if pick %}data-still {% endif %}src="{{ asset('v21/pinky-frame.webp') }}" alt="" width="755" height="1000">{% if pick %}<span class="held"><span class="letter">{{ (pick.name or pick.user)[:1]|upper }}</span><img src="/api/avatar/{{ pick.user }}?s=big" alt="" onerror="this.remove()"></span>{% endif %}</div>
   <i class="curtain l" aria-hidden="true"></i><i class="curtain r" aria-hidden="true"></i>
  </div>
 

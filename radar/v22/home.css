@@ -88,3 +88,5 @@ body.v22 .v22-hero { min-height: 0; padding-top: 30px; }
 @media (max-width: 760px) { .n22-card a { font-size: 12px; padding: 6px 11px 6px 6px; } .n22-card img, .n22-dot { width: 24px; height: 24px; } .n22-name b { font-size: 19px; } }
 @media (prefers-reduced-motion: reduce) { .n22-egg, .n22-shine::after, .n22-rays, .v22-hint i { animation: none; } }
 body.v22 #tools { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 96px); }   /* "Pick a nest" stays clear of the fixed header after a jump */
+/* the nests' spinning rays reach past the screen edge on phones: never let the page scroll sideways */
+html:has(body.v22) { overflow-x: clip; }

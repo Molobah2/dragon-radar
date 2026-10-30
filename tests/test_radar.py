@@ -3294,6 +3294,35 @@ def test_v22_home_is_only_for_jons_devices(cfg, Session):
     assert "window.PD22" in create_app(cfg).test_client().get("/").get_data(as_text=True)
 
 
+def test_living_dragons_play_only_with_v22(cfg, Session):
+    """v2.2 brings the posted dragon pictures to life (a loop made from each picture, laid exactly over it). Like the
+    rest of v2.2 it reaches only Jon's devices before launch, and those pages are never kept by a shared cache."""
+    from radar.live_clips import live_clips, LIVE
+    cfg.v2_public = True; cfg.v21_public = True
+    clips = live_clips()
+    assert set(clips) == set(LIVE) and len(clips) == 7
+    for name, c in clips.items():
+        assert (Path(__file__).parent.parent / "radar" / "static" / "v21" / f"{name}.webp").exists(), name
+        for size in ("big", "small"):
+            m = c[size]
+            assert m["src"].startswith("https://res.cloudinary.com/") and f"live-{name}" in m["src"]
+            assert 0 <= m["sx"] and m["sx"] + m["sw"] <= m["cw"] + 1 and 0 <= m["sy"] and m["sy"] + m["sh"] <= m["ch"] + 1
+            assert m["n"] > 8 and m["cols"] == 8 and m["fps"] > 0
+    stranger = create_app(cfg).test_client()
+    for path in ("/cheers", "/welcome", "/quiz", "/community"):
+        assert "PD_LIVE" not in stranger.get(path).get_data(as_text=True), path
+    app, jon = _v21_client(cfg)
+    jon.get("/lab/v22/on")
+    for path in ("/cheers", "/welcome", "/quiz", "/community", "/creator", "/wrapped"):
+        r = jon.get(path); page = r.get_data(as_text=True)
+        assert "window.PD_LIVE" in page and "/v22/a/live.js" in page and "no-store" in r.headers["Cache-Control"], path
+    assert "data-still" not in jon.get("/creator").get_data(as_text=True)     # no pick yet: the frame is empty, so it may move
+    js = jon.get("/v22/a/live.js")
+    assert js.status_code == 200 and "prefers-reduced-motion" in js.get_data(as_text=True)
+    jon.get("/lab/v22/off")
+    assert "PD_LIVE" not in jon.get("/cheers").get_data(as_text=True)
+
+
 def test_odd_input_never_crashes_and_locked_pictures_stay_private(cfg, Session):
     """Found in the Oct 30 audit: deep JSON, huge ids and 1e999 answered 500; a link with a backslash or a user@ part
     passed the video site check; locked Dragon Circle and unchecked book pictures were marked for shared caches."""

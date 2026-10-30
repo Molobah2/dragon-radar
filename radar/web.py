@@ -132,6 +132,18 @@ def create_app(cfg: Config | None = None) -> Flask:
     from .dragondle import START as _DLE_START
     DLE_START = _DLE_START.isoformat()
 
+    from .live_clips import live_clips
+
+    def _v22_live():
+        """The living dragons (radar/v22/live.js) load only where v2.2 is on; such a page is never kept by a shared cache."""
+        try:
+            on = has_request_context() and v22_on()
+        except Exception:
+            on = False
+        if on:
+            g.v22_page = True
+        return on
+
     @app.context_processor
     def _assets():
         return {"asset": lambda filename: url_for("static", filename=filename, v=version), "asset_version": version,
@@ -140,6 +152,8 @@ def create_app(cfg: Config | None = None) -> Flask:
                 "v2": getattr(g, "v2", False), "circle_open": getattr(g, "circle", False) or cfg.circle_public, "tester": getattr(g, "circle", False), "v2_private": getattr(g, "v2", False) and not cfg.v2_public,
                 "v21_open": cfg.v21_public or getattr(g, "circle", False), "v21_tools": V21_TOOLS,
                 "dle_start": DLE_START,
+                "v22_live": _v22_live(),
+                "live_clips": live_clips,
                 "nav": nav_for(request.path if has_request_context() else "/", cfg.v21_public or getattr(g, "circle", False), getattr(g, "circle", False) or cfg.circle_public)}
 
     # v2 tools in progress: add {"name", "url", "note"} here as each one is built
@@ -292,7 +306,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         elif resp.mimetype == "text/html":
             resp.headers.add("Vary", "Cookie")    # a preview page is never handed to someone else
-            if getattr(g, "v2", False) and not cfg.v2_public:
+            if (getattr(g, "v2", False) and not cfg.v2_public) or (g.get("v22_page") and not cfg.v22_public):
                 resp.headers["Cache-Control"] = "private, no-store"
         if cfg.noindex or request.path.startswith(("/preview", "/lab")):
             resp.headers["X-Robots-Tag"] = "noindex, nofollow"

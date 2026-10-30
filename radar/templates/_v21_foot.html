@@ -7,5 +7,6 @@
     <a class="v21-by" href="https://x.com/{{ cfg.author_x }}" target="_blank" rel="noopener">Built by Jon Wynn</a>
   </footer>
 
+{% if v22_live %}<script>window.PD_LIVE = {{ live_clips()|tojson }};</script><script src="/v22/a/live.js?v={{ asset_version }}" defer></script>{% endif %}
 {% include "_dock.html" %}
 {% include "_testbar.html" %}
