@@ -78,7 +78,7 @@ body { background: #0f1d1f; }
 @media (max-width: 520px) { .wall { grid-template-columns: 1fr 1fr; gap: 18px 12px; } .wall b { font-size: 15px; } .wall .meta { font-size: 12.5px; } }
 
 .ka-form { display: grid; gap: 14px; }
-.ka-form label > span { display: block; margin-bottom: 6px; font: 800 12px/1 var(--body); letter-spacing: 1.6px; text-transform: uppercase; color: var(--gold); }
+.ka-form label:not(.pick):not(.pledge) > span {   /* field names only: the picture picker and the pledge keep normal text */ display: block; margin-bottom: 6px; font: 800 12px/1 var(--body); letter-spacing: 1.6px; text-transform: uppercase; color: var(--gold); }
 .ka-form input[type=text], .ka-form input[type=url] { width: 100%; height: 50px; padding: 0 14px; border-radius: 14px; border: 1px solid rgba(255, 220, 170, .25);
   background: rgba(255, 244, 230, .06); font-size: 16px; font-weight: 700; color: var(--ink); }
 .ka-form small { display: block; margin-top: 6px; color: var(--mute); font-size: 13px; }

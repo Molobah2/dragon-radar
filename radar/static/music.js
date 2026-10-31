@@ -20,13 +20,23 @@
 .mp-wrap.open .mp{transform:none;opacity:1}
 .mp-head{display:flex;align-items:center;gap:10px;padding:18px 18px 8px}
 .mp-head h3{margin:0;flex:1;font:700 21px/1.15 var(--font-display,var(--display,inherit))}
-.mp-x{width:38px;height:38px;border-radius:50%;border:0;cursor:pointer;background:rgba(255,255,255,.12);color:#fff;font:700 20px/1 inherit}
-.mp-now{margin:4px 18px 10px;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.08);display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center}
-.mp-now small{grid-column:1/-1;font:800 11px/1 inherit;letter-spacing:.08em;text-transform:uppercase;color:#ffd76a}
+.mp-x{width:38px;height:38px;border-radius:50%;border:0;cursor:pointer;background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:20px;line-height:1;font-family:inherit}
+.mp-now{margin:4px 18px 10px;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.08);display:grid;grid-template-columns:1fr;gap:2px;align-items:center}
+.mp-now small{grid-column:1/-1;font-weight:800;font-size:11px;line-height:1;font-family:inherit;letter-spacing:.08em;text-transform:uppercase;color:#ffd76a}
 .mp-now b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mp-now span{color:rgba(244,246,255,.7);font-weight:700;font-size:13px}
-.mp-next{grid-row:2/4;grid-column:2;border:0;cursor:pointer;padding:9px 14px;border-radius:999px;font:800 13px/1 inherit;color:#2a1a00;background:linear-gradient(180deg,#ffe08a,#ffb347)}
+.mp-ctrls{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.mp-next{border:0;cursor:pointer;padding:9px 14px;border-radius:999px;font-weight:800;font-size:13px;line-height:1;font-family:inherit;color:#2a1a00;background:linear-gradient(180deg,#ffe08a,#ffb347)}
+.mp-btn{display:inline-flex;align-items:center;gap:6px;border:0;cursor:pointer;padding:9px 13px;border-radius:999px;font-weight:800;font-size:13px;line-height:1;font-family:inherit;color:#f4f6ff;background:rgba(255,255,255,.12);text-decoration:none}
+.mp-btn svg{width:15px;height:15px;flex:none}
+.mp-now .mp-btn span{color:inherit;font-size:13px;font-weight:800}
+.mp-btn[aria-pressed="true"]{background:#f4f6ff;color:#1b1840}
+.mp-btn:focus-visible,.mp-next:focus-visible,.mp-dl:focus-visible{outline:2px solid #ffd76a;outline-offset:2px}
+.mp-item{display:flex;align-items:center;gap:4px}.mp-item .mp-row{flex:1;min-width:0}
+.mp-dl{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:rgba(244,246,255,.75);text-decoration:none}
+.mp-dl:hover{background:rgba(255,255,255,.1);color:#fff}.mp-dl svg{width:17px;height:17px}
+.mp-head,.mp-now,.mp-chips{flex:none}
 .mp-chips{display:flex;gap:6px;overflow-x:auto;padding:2px 18px 10px;scrollbar-width:none}.mp-chips::-webkit-scrollbar{display:none}
-.mp-chip{flex:none;border:0;cursor:pointer;padding:8px 13px;border-radius:999px;font:800 13px/1 inherit;color:#f4f6ff;background:rgba(255,255,255,.1)}
+.mp-chip{flex:none;border:0;cursor:pointer;padding:8px 13px;border-radius:999px;font-weight:800;font-size:13px;line-height:1;font-family:inherit;color:#f4f6ff;background:rgba(255,255,255,.1)}
 .mp-chip.on{background:#f4f6ff;color:#1b1840}
 .mp-list{list-style:none;margin:0;padding:0 10px 8px;overflow-y:auto;overscroll-behavior:contain}
 .mp-row{width:100%;display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;text-align:left;border:0;cursor:pointer;padding:10px 10px;border-radius:16px;background:none;color:inherit;font:inherit}
@@ -50,6 +60,12 @@
     return [...seen.values()];
   };
   const keyOf = (x) => (x.x || x.by || "").toLowerCase();
+  const ICON = {
+    rep: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/><path d="M12 9.5v5"/></svg>',
+    dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg>',
+  };
+  // the file name a song saves as: "Title - Maker.m4a"
+  const fileName = (x) => `${x.title}${x.by ? " - " + x.by : ""}.${((x.src || "").split("?")[0].split(".").pop() || "m4a")}`.replace(/[\\/:*?"<>|]+/g, "");
   function build() {
     css();
     panel = document.createElement("div");
@@ -57,7 +73,9 @@
     panel.innerHTML = `<div class="mp" role="dialog" aria-modal="true" aria-labelledby="mp-title">
       <div class="mp-head"><h3 id="mp-title">Music by the community</h3><button class="mp-x" type="button" aria-label="Close">&times;</button></div>
       <div class="mp-now" aria-live="polite"><small>Now playing</small><b class="mp-title" id="mp-now-title"></b><span class="mp-by" id="mp-now-by"></span>
-        <button class="mp-next" type="button" id="mp-next">Next song</button></div>
+        <div class="mp-ctrls"><button class="mp-btn" type="button" id="mp-rep" aria-pressed="false">${ICON.rep}<span>Repeat</span></button>
+        <a class="mp-btn" id="mp-dl" href="#" download>${ICON.dl}<span>Download</span></a>
+        <button class="mp-next" type="button" id="mp-next">Next song</button></div></div>
       <div class="mp-chips" role="group" aria-label="Music makers"></div>
       <ul class="mp-list"></ul>
       <p class="mp-foot"></p></div>`;
@@ -67,6 +85,7 @@
     panel.querySelector("#mp-next").addEventListener("click", () => {
       S().skip();
     });
+    panel.querySelector("#mp-rep").addEventListener("click", () => { S().setRepeat(!S().repeat()); paint(); });
     addEventListener("keydown", (e) => { if (e.key === "Escape" && panel && !panel.hidden) closePanel(); });
   }
   function paint() {
@@ -78,6 +97,11 @@
       panel.querySelector("#mp-now-title").textContent = SONGS[playing].title;
       panel.querySelector("#mp-now-by").textContent = SONGS[playing].by || "";
       panel.querySelector("#mp-next").hidden = SONGS.length < 2;
+      const rep = panel.querySelector("#mp-rep"), on = S().repeat();
+      rep.setAttribute("aria-pressed", String(on));
+      rep.setAttribute("aria-label", on ? "Repeat is on" : "Repeat this song");
+      const dl = panel.querySelector("#mp-dl"), cs = SONGS[playing];
+      dl.href = cs.src; dl.setAttribute("download", fileName(cs)); dl.setAttribute("aria-label", `Download ${cs.title}`);
     }
     const chips = panel.querySelector(".mp-chips");
     chips.innerHTML = "";
@@ -105,12 +129,16 @@
       b.append(ico, txt, len);
       b.setAttribute("aria-label", `${x.title}, ${x.by || ""}`);
       b.addEventListener("click", () => { S().pick(i, view); setTimeout(paint, 400); });
-      li.append(b); list.append(li);
+      li.className = "mp-item";
+      const d = document.createElement("a"); d.className = "mp-dl"; d.href = x.src; d.setAttribute("download", fileName(x));
+      d.setAttribute("aria-label", `Download ${x.title}`); d.title = `Download ${x.title}`; d.innerHTML = ICON.dl;
+      li.append(b, d); list.append(li);
     });
     const foot = panel.querySelector(".mp-foot");
     foot.textContent = "";
     const m = view && makers().find((k) => k.key === view);
-    foot.append(document.createTextNode(only && playing >= 0 ? "Playing only these songs. When one ends, the next one plays." : "When a song ends, the next one plays."));
+    foot.append(document.createTextNode(S().repeat && S().repeat() && playing >= 0 ? "This song plays again when it ends."
+      : only && playing >= 0 ? "Playing only these songs. When one ends, the next one plays." : "When a song ends, the next one plays."));
     if (m && m.x) {
       foot.append(document.createTextNode(" "));
       const a = document.createElement("a"); a.href = `https://x.com/${m.x}`; a.target = "_blank"; a.rel = "noopener"; a.className = "mp-by"; a.style.display = "inline";
@@ -137,7 +165,7 @@
   let lastSig = "";
   setInterval(() => {
     if (!panel || panel.hidden) return;
-    const sig = `${S().playing()}|${S().only()}|${view}|${S().songs().length}`;
+    const sig = `${S().playing()}|${S().only()}|${view}|${S().songs().length}|${S().repeat && S().repeat()}`;
     if (sig !== lastSig) { lastSig = sig; paint(); }
   }, 2000);
   window.pdMusicPicker = { open: openPanel, close: closePanel };

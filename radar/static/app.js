@@ -343,11 +343,12 @@
   $("pg-save").addEventListener("click", async () => {
     $("pg-save").disabled = true;
     try {
-      const r = await fetch("/api/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ opened, streak, goal: readGoal(), dex: store.get("pd:dex", null), vid: myVid() }) });
+      const r = await fetch("/api/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ opened, streak, goal: readGoal(), dex: store.get("pd:dex", null), fol: store.obj("radar:followed"), vid: myVid() }) });
       const j = await r.json();
       if (!j.ok) throw new Error(j.message);
       $("pg-code-text").textContent = j.code; $("pg-code").hidden = false;
       pgMsg("Saved. Enter this code on your other device within 30 days.", true);
+      dispatchEvent(new Event("pd:backedup"));
     } catch (e) { pgMsg(e.message || "Could not save right now, please try again.", false); }
     $("pg-save").disabled = false;
   });
@@ -366,8 +367,9 @@
       const r = await fetch(`/api/backup/${encodeURIComponent(code)}?vid=${encodeURIComponent(myVid())}`);
       const j = await r.json();
       if (!j.ok) throw new Error(j.message);
-      const { added, dexIn } = applyProgress(j);
-      const bits = [added ? `${added} opened posts` : "", dexIn ? `${dexIn} dragon${dexIn === 1 ? "" : "s"}` : ""].filter(Boolean);
+      const { added, dexIn, folIn } = applyProgress(j);
+      const bits = [added ? `${added} opened posts` : "", dexIn ? `${dexIn} dragon${dexIn === 1 ? "" : "s"}` : "",
+        folIn ? `${folIn} Keeper${folIn === 1 ? "" : "s"} you follow` : ""].filter(Boolean);
       if (j.book) bits.push("your Book of Friends name");
       pgMsg(bits.length ? `Restored ${bits.join(" and ")}.` : "All set, nothing new to restore.", true);
       if (j.book) dispatchEvent(new Event("pd:bookchange"));
@@ -391,6 +393,13 @@
     if (s2.fz && (!streak.fz || s2.fz > streak.fz)) streak.fz = s2.fz;
     store.set("pd:streak", streak);
     const dexIn = mergeDex(j.dex);
+    // Keepers marked "Already following" come back too, so they are not suggested again
+    let folIn = 0;
+    if (j.fol && typeof j.fol === "object") {
+      const fol = store.obj("radar:followed");
+      for (const [u, t] of Object.entries(j.fol)) if (/^[a-z0-9_]{1,15}$/.test(u) && !fol[u]) { fol[u] = typeof t === "number" && t > 0 ? t : 1; folIn++; }
+      if (folIn) store.set("radar:followed", fol);
+    }
     // today's goal count: saved today on the other device, keep the higher number (yesterday's count never carries)
     const gIn = j.goal || {};
     if (gIn.day === today() && ((gIn.n | 0) > 0 || gIn.d === true || gIn.f === true)) {
@@ -401,7 +410,7 @@
       showGoal();
     }
     showStreak(); render();
-    return { added, dexIn };
+    return { added, dexIn, folIn };
   }
 
   // ---------- signed Keepers: progress kept safe on pdtools ----------
@@ -410,12 +419,16 @@
   // when the page opens or the book is signed again, so nothing is lost. Merged both ways: nothing is ever replaced.
   const SYNC_URL = "/api/book/progress";
   let syncSent = "", syncOff = false, syncTimer = null;
-  const progressBody = () => ({ opened, streak: readStreak(), goal: readGoal(), dex: store.get("pd:dex", null) });
+  const progressBody = () => ({ opened, streak: readStreak(), goal: readGoal(), dex: store.get("pd:dex", null), fol: store.obj("radar:followed") });
+  let safeKnown = false, safeSigned = false;   // is this browser kept safe on pdtools (signed into the Book of Friends)?
   async function pullSafe(say) {
-    const vid = myVid(); if (!vid || syncOff) return;
+    const vid = myVid();
+    if (!vid) { safeKnown = true; safeSigned = false; dispatchEvent(new Event("pd:safestate")); return; }   // no visitor id yet: this browser cannot be signed
+    if (syncOff) return;
     try {
       const j = await (await fetch(`${SYNC_URL}?vid=${encodeURIComponent(vid)}`, { headers: { Accept: "application/json" }, cache: "no-store" })).json();
-      if (!j.ok) { if (j.why === "unsigned") syncOff = true; return; }
+      if (!j.ok) { if (j.why === "unsigned") { syncOff = true; safeKnown = true; safeSigned = false; dispatchEvent(new Event("pd:safestate")); } return; }
+      safeKnown = true; safeSigned = true; dispatchEvent(new Event("pd:safestate"));
       const { added, dexIn } = applyProgress(j);
       if (added || dexIn) {
         const bits = [added ? `${added} opened posts` : "", dexIn ? `${dexIn} dragon${dexIn === 1 ? "" : "s"}` : ""].filter(Boolean);
@@ -440,6 +453,28 @@
     addEventListener("pd:dexsaved", () => pushSafe(true));
     addEventListener("pd:booksigned", () => { syncOff = false; pullSafe(true); });
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") pushSafe(true); });
+    keepSafe();
+  }
+
+  // ---------- keep your dragons safe ----------
+  // Dragons live in the browser, and browsers lose things (cleared data, the X app's own browser, a new phone).
+  // When a browser that has no safe copy on pdtools gets a new dragon, a gentle card offers a backup code or the
+  // Book of Friends. "Not now" waits three days; a backup code quiets it until the next new dragon.
+  function keepSafe() {
+    const box = $("keepsafe"); if (!box) return;
+    const dragons = () => { const h = store.obj("pd:dex").have || {}; return Object.values(h).filter((x) => x && (x.c | 0) + (x.r | 0) + (x.l | 0) > 0).length; };
+    const sign = $("ks-sign"); if (sign && !document.querySelector(".side-row[data-book]")) sign.hidden = true;
+    function check() {
+      const k = store.obj("pd:keepsafe"), n = dragons(), inApp = $("inapp") && !$("inapp").hidden;
+      box.hidden = !safeKnown || safeSigned || inApp || n < 1 || n <= (k.at | 0) || Date.now() < (k.later | 0);
+      if (!box.hidden && !box.dataset.seen) { box.dataset.seen = "1"; try { window.pdTrack && window.pdTrack("keepsafe", "shown"); } catch (e) { /* ignore */ } }
+    }
+    const quiet = (extra) => { store.set("pd:keepsafe", { ...store.obj("pd:keepsafe"), at: dragons(), ...extra }); check(); };
+    $("ks-save").addEventListener("click", () => { showStreak(); pgMsg("", true); openSheet("progress"); $("pg-save").click(); });
+    $("ks-later").addEventListener("click", () => { store.set("pd:keepsafe", { ...store.obj("pd:keepsafe"), later: Date.now() + 3 * 864e5 }); check(); });
+    addEventListener("pd:backedup", () => quiet({ later: 0 }));
+    ["pd:safestate", "pd:dexsaved", "pd:booksigned"].forEach((ev) => addEventListener(ev, check));
+    check();
   }
 
   // collectible dragons from a backup code: keep the higher count of each, never lose one

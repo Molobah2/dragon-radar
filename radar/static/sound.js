@@ -36,6 +36,7 @@
   // A Keeper can pick a song, or play only one maker's songs. After a song ends the next one in that list plays.
   let only = null;                      // the X handle of the maker whose songs are playing, or null for everyone
   let pickNext = null;                  // a song picked before the sound engine was allowed to start
+  let repeat = (() => { try { return localStorage.getItem("pd:repeat") === "1"; } catch (e) { return false; } })();   // replay one song
   const inList = (i) => !only || (SONGS[i] && (SONGS[i].x || "").toLowerCase() === only);
   function nextIdx(from) {
     for (let k = 1; k <= SONGS.length; k++) { const j = wrap(from + k); if (inList(j)) return j; }
@@ -148,6 +149,8 @@
     if (t.gain && ctx) { t.gain.gain.cancelScheduledValues(ctx.currentTime); t.gain.gain.value = 0; } else { clearInterval(t.timer); t.a.volume = 0; }
     if (at) seek(t, at); else { try { t.a.currentTime = 0; } catch (e) { /* not ready */ } }
     t.live = true;
+    if (cur) cur.t.a.loop = false;
+    t.a.loop = repeat;
     cur = { t, i: wrap(i) };
     media();
     return play(t).then(() => { if (curved) curveTo(t, SONG, secs, true); else fade(t, SONG, secs); });
@@ -176,7 +179,7 @@
 
   // the DJ: watches the playing song and brings in the next one at its mix point
   function tick() {
-    if (!cur || !on || !started || mixing) return;
+    if (!cur || !on || !started || mixing || repeat) return;
     const a = cur.t.a, s = song(cur.i);
     if (!a.duration || a.paused) return;
     const m = mixAt(s, a);
@@ -342,6 +345,8 @@
     after: (i) => nextIdx(i),
     last: () => lastIdx,
     seekNow: (secs) => { if (cur) seek(cur.t, secs); },
+    repeat: () => repeat,
+    setRepeat(v) { repeat = !!v; try { localStorage.setItem("pd:repeat", repeat ? "1" : "0"); } catch (e) { /* private */ } if (cur) cur.t.a.loop = repeat; media(); },
     skip: () => { if (cur && !cur.t.a.paused) mixNext(2.5, nextIdx(cur.i)); else pick(nextIdx(lastIdx)); },
     state: () => ["deckA", "deckB"].map((n) => tracks[n]).filter(Boolean).map((t) => ({ deck: t.name, src: t.src, at: t.a.currentTime,
       playing: !t.a.paused, level: t.gain ? t.gain.gain.value : t.a.volume })),

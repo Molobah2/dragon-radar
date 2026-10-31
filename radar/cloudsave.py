@@ -55,6 +55,14 @@ def merge(old: dict, new: dict) -> dict:
     if len(opened) > MAX_OPENED:
         opened = dict(sorted(opened.items(), key=lambda kv: -kv[1])[:MAX_OPENED])
     out = {"opened": opened, "streak": _run(old.get("streak") or {}, new.get("streak") or {})}
+    fol = {}                                         # Keepers marked "Already following": joined, a mark is never lost
+    for src in (old.get("fol"), new.get("fol")):
+        for k, v in (src.items() if isinstance(src, dict) else []):
+            if isinstance(k, str) and 0 < len(k) <= 15:
+                t = int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and 0 < v < 1e14 else 1
+                fol[k] = max(fol.get(k, 0), t)
+    if fol:
+        out["fol"] = dict(sorted(fol.items(), key=lambda kv: -kv[1])[:3000])
     goals = [x for x in (old.get("goal"), new.get("goal")) if isinstance(x, dict) and _day(x.get("day"))]
     if goals:
         top = max(x["day"] for x in goals)

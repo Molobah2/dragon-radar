@@ -843,6 +843,25 @@ def test_progress_backup_codes(cfg, Session):
     assert c.get("/api/backup/ZZZZ-ZZZZ").status_code == 404
 
 
+def test_follow_marks_travel_with_backups_and_the_safe_copy(cfg, Session):
+    """Keepers marked "Already following" come back on a new browser (mailbox, 31 Oct): only well formed X names are kept,
+    and the safe copy joins marks from every device."""
+    from radar.db import FriendDevice
+    c = create_app(cfg).test_client()
+    j = c.post("/api/backup", json={"opened": {}, "fol": {"Nacho_Avg": 1700000000000, "@dj": 1, "bad name!": 1, "x" * 20: 1, "ok": True}}).get_json()
+    back = c.get(f"/api/backup/{j['code']}").get_json()
+    assert back["fol"] == {"nacho_avg": 1700000000000, "dj": 1, "ok": 1}
+    cfg.v2_public = True
+    with Session() as s:
+        s.add_all([FriendDevice(vid="c" * 32, key="dee", username="Dee", code="x", confirmed=True),
+                   FriendDevice(vid="d" * 32, key="dee", username="Dee", code="y", confirmed=True)])
+        s.commit()
+    c2 = create_app(cfg).test_client()
+    assert c2.post("/api/book/progress", json={"vid": "c" * 32, "fol": {"alpha": 5}}).get_json()["ok"]
+    assert c2.post("/api/book/progress", json={"vid": "d" * 32, "fol": {"beta": 7, "alpha": 9}}).get_json()["ok"]
+    assert c2.get("/api/book/progress?vid=" + "c" * 32).get_json()["fol"] == {"alpha": 9, "beta": 7}
+
+
 def test_every_element_the_scripts_use_exists(cfg, Session):
     """app.js and keepers.js look elements up by id; a missing one breaks the page."""
     import re
@@ -1617,8 +1636,9 @@ def test_speed_budget(cfg, Session):
     c = v2_client(cfg)
     # /friends raised on purpose (120k to 124k): the song picker controls and the dragon book; the picker's
     # list itself (music.js) only loads when someone opens it
-    budgets = {"/friends": (133_500, 60_000),   # raised on purpose: the X app note, its move code button and the safe copy for signed Keepers, the audit fixes (dialog focus, phone layout), the v2.1 daily goal steps, the feed keeping its place (26 Oct), then swapping spare dragons (29 Oct)
-                "/": (15_000, 40_000), "/friends/keepers": (60_500, 40_000)}   # keepers raised on purpose (29 Oct): the shared stylesheet gained the dragon swap box
+    budgets = {"/friends": (135_000, 60_000),   # raised on purpose: the X app note, its move code button and the safe copy for signed Keepers, the audit fixes (dialog focus, phone layout), the v2.1 daily goal steps, the feed keeping its place (26 Oct), then swapping spare dragons (29 Oct), then the repeat button on the music player (31 Oct), then the keep your dragons safe card and follow marks in backups (31 Oct)
+                "/": (15_500, 40_000),   # raised on purpose (31 Oct): the music player repeat button lives in sound.js
+                "/friends/keepers": (60_500, 40_000)}   # keepers raised on purpose (29 Oct): the shared stylesheet gained the dragon swap box
     for path, (code_max, html_max) in budgets.items():
         html = c.get(path).get_data(as_text=True)
         assert "fonts.googleapis" not in html and "fonts.gstatic" not in html, path

@@ -171,6 +171,7 @@ html.theme-dark .refresh-btn:hover { background: linear-gradient(180deg, #313b5c
 html.theme-dark .inapp { background: linear-gradient(135deg, rgba(58, 44, 70, .97), rgba(40, 32, 62, .97)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 20px 40px -28px rgba(0, 0, 0, .8); }
 html.theme-dark .inapp b, html.theme-dark .inapp .ia-steps { color: #fff; }
 html.theme-dark .inapp p { color: rgba(236, 232, 255, .82); }
+html.theme-dark .keepsafe { background: linear-gradient(135deg, rgba(74, 56, 40, .97), rgba(52, 38, 60, .97)); }
 html.theme-dark .ia-x { background: rgba(255, 255, 255, .1); color: #fff; }
 html.theme-dark .help-card { background: rgba(30, 26, 56, .9); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 14px 30px -24px rgba(0, 0, 0, .8); }
 html.theme-dark .help-card h2, html.theme-dark .help-steps { color: #fff; }

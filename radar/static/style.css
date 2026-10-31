@@ -1331,8 +1331,9 @@ html.theme-dark .day-chip.done span { color: #86efac; }
 .inapp p { margin: 0; color: var(--ink-soft); font-weight: 700; font-size: 14.5px; line-height: 1.45; }
 .inapp .ia-steps { margin-top: 8px; color: var(--ink); }
 .ia-actions { display: grid; gap: 8px; }
+.keepsafe { padding-right: 18px; background: linear-gradient(135deg, rgba(255, 246, 214, .97), rgba(214, 240, 226, .95)); }
 .ia-x { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(29, 36, 51, .08); color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; }
-@media (max-width: 640px) { .inapp { grid-template-columns: 1fr; padding: 14px 44px 14px 16px; } .ia-actions { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .inapp { grid-template-columns: 1fr; padding: 14px 44px 14px 16px; } .ia-actions { grid-template-columns: 1fr 1fr; } .keepsafe { padding-right: 16px; } .keepsafe #ks-save { grid-column: 1 / -1; } }
 
 /* Help page */
 .help-hero { margin: 8px 0 16px; }

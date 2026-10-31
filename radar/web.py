@@ -2368,7 +2368,14 @@ def create_app(cfg: Config | None = None) -> Flask:
         streak_out = {"last": day(streak.get("last")), "count": num(streak.get("count"), 5000), "best": num(streak.get("best"), 5000)}
         if day(streak.get("fz")):
             streak_out["fz"] = streak["fz"]
-        return {"opened": clean, "streak": streak_out,
+        # the Keepers marked "Already following", so a new browser never suggests them again (X names and times only)
+        fol_in = body.get("fol") if isinstance(body.get("fol"), dict) else {}
+        fol = {}
+        for k, v in list(fol_in.items())[:3000]:
+            u = str(k).lower().lstrip("@")
+            if 0 < len(u) <= 15 and all(ch.isascii() and (ch.isalnum() or ch == "_") for ch in u):
+                fol[u] = num(v, 10**13) or 1
+        return {"opened": clean, "streak": streak_out, **({"fol": fol} if fol else {}),
                 **({"goal": goal_out} if goal_out["day"] and (goal_out["n"] or goal_out.get("d") or goal_out.get("f")) else {}),
                 **({"dex": dex_out} if have or dex_out["e"] or dex_out["s"] else {})}
 
