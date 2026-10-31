@@ -140,11 +140,11 @@
   // Each dragon hatches from its own egg, in its own colours. These are pdtools' own egg designs, never official kit
   // eggs (the Creator Kit asks not to invent official egg states). Speed's hatches first, then Pinky's, then Blinky's.
   const EGG_SPECS = [
-    { id: "blinky", dx: 0, lift: 0.06, size: 1, base: ["#fff8d6", "#ffe58a", "#f5c542", "#d9a21f"], spots: ["150,215,130", "255,255,235", "240,170,40"],
+    { id: "blinky", dx: 0, lift: 0.06, size: 1, tilt: 0, base: ["#fff8d6", "#ffe58a", "#f5c542", "#d9a21f"], spots: ["150,215,130", "255,255,235", "240,170,40"],
       crack: [0.44, 0.64], burst: 0.66 },
-    { id: "pinky", dx: -0.66, lift: 0, size: 0.9, base: ["#fff2f6", "#ffd0df", "#ff9fbf", "#e06f98"], spots: ["255,255,255", "255,120,160", "255,220,235"],
+    { id: "pinky", dx: -0.6, lift: 0, size: 0.9, tilt: -0.11, base: ["#fff2f6", "#ffd0df", "#ff9fbf", "#e06f98"], spots: ["255,255,255", "255,120,160", "255,220,235"],
       crack: [0.26, 0.46], burst: 0.48 },
-    { id: "speed", dx: 0.66, lift: 0, size: 0.9, base: ["#fff0dc", "#ffc27a", "#ff9a3c", "#d96a1c"], spots: ["105,90,210", "70,60,170", "255,230,170"],
+    { id: "speed", dx: 0.6, lift: 0, size: 0.9, tilt: 0.11, base: ["#fff0dc", "#ffc27a", "#ff9a3c", "#d96a1c"], spots: ["105,90,210", "70,60,170", "255,230,170"],
       crack: [0.06, 0.26], burst: 0.28 },
   ];
   let EGGS = [];
@@ -157,7 +157,7 @@
   }
   // where an egg sits on screen (its bottom centre, before the camera moves)
   // where an egg sits: settled down into the moss, not standing on top of it (PD22.eggSink tunes how deep)
-  const eggSpot = (E) => ({ x: layout.cx + E.spec.dx * layout.EH, y: layout.base - E.spec.lift * layout.EH + (A.eggSink ?? 0.1) * layout.EH * (f3("moss") ? 1 : 0) });
+  const eggSpot = (E) => ({ x: layout.cx + E.spec.dx * layout.EH, y: layout.base - E.spec.lift * layout.EH + (A.eggSink ?? 0.16) * layout.EH * (f3("moss") ? 1 : 0) });
   function belowLinePath(ctx, E) {
     const { zz, rx, ry } = E; ctx.beginPath(); ctx.moveTo(-rx * 2, zz[0][1]);
     for (const p of zz) ctx.lineTo(p[0], p[1]);
@@ -187,7 +187,7 @@
     const k = 2 * ry / m.egg[3], ex = m.egg[0] + m.egg[2] / 2, eb = m.egg[1] + m.egg[3];
     const col = f % m.cols, row = Math.floor(f / m.cols);
     const draw = () => ctx.drawImage(F.im, col * m.cw, row * m.ch, m.cw, m.ch, -ex * k, -eb * k, m.cw * k, m.ch * k);
-    ctx.save(); ctx.translate(x, y); ctx.rotate(wob); ctx.globalAlpha = alpha;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(wob + (spec.tilt || 0) * (1 - seg(p, bu, bu + 0.1))); ctx.globalAlpha = alpha;
     draw();
     if (opened && insideDragon) {     // the dragon sits inside: behind the front of the shell, in front of its back wall
       insideDragon();
@@ -640,9 +640,9 @@
       if (moss) {
         fx.drawImage(moss, MX, MY, MW, MH);
         for (const E of EGGS) {           // a soft shadow where each egg presses into the moss
-          const { x, y } = eggSpot(E), r2 = E.ry * 0.95, g2 = fx.createRadialGradient(x, y, 0, x, y, r2);
-          g2.addColorStop(0, "rgba(30,45,10,.45)"); g2.addColorStop(1, "rgba(30,45,10,0)");
-          fx.save(); fx.translate(x, y); fx.scale(1, 0.32); fx.translate(-x, -y); fx.fillStyle = g2; fx.beginPath(); fx.arc(x, y, r2, 0, 7); fx.fill(); fx.restore();
+          const { x, y } = eggSpot(E), r2 = E.ry * 1.25, g2 = fx.createRadialGradient(x, y, 0, x, y, r2);
+          g2.addColorStop(0, "rgba(22,32,6,.62)"); g2.addColorStop(0.55, "rgba(30,45,10,.3)"); g2.addColorStop(1, "rgba(30,45,10,0)");
+          fx.save(); fx.translate(x, y); fx.scale(1, 0.4); fx.translate(-x, -y); fx.fillStyle = g2; fx.beginPath(); fx.arc(x, y, r2, 0, 7); fx.fill(); fx.restore();
         }
       }
       for (const E of EGGS) {   // Blinky's egg sits in the middle, a little behind the other two
@@ -650,8 +650,14 @@
         const info = drawEgg(fx, E, p, sceneAlpha, () => emergeDragon(fx, id, true));
         if (!info.opened && sceneAlpha > 0.5 && gl <= 0) HIT.push({ id: "egg:" + id, x0: info.x - E.rx, x1: info.x + E.rx, y0: info.top, y1: info.y, x: info.x, y: info.y, h: 2 * E.ry });
       }
+      if (moss) for (const E of EGGS) {   // the moss wraps each egg's foot: its lower shell sits in shade
+        const { x, y } = eggSpot(E), r3 = E.rx * 1.2, cy3 = y - E.ry * 0.28, g3 = fx.createRadialGradient(x, cy3, 0, x, cy3, r3);
+        g3.addColorStop(0, "rgba(35,48,14,.5)"); g3.addColorStop(0.6, "rgba(35,48,14,.28)"); g3.addColorStop(1, "rgba(35,48,14,0)");
+        fx.save(); fx.globalCompositeOperation = "multiply"; fx.translate(x, cy3); fx.scale(1, 0.42); fx.translate(-x, -cy3);
+        fx.fillStyle = g3; fx.beginPath(); fx.arc(x, cy3, r3, 0, 7); fx.fill(); fx.restore();
+      }
       if (moss) {                         // the front of the moss bed comes up softly around the eggs' feet
-        const lo = A.mossLip ?? 0.46, key = Math.round(MW) + ":" + lo;
+        const lo = A.mossLip ?? 0.38, key = Math.round(MW) + ":" + lo;
         if (!L.lip || L.lip.key !== key) {
           const c = mk(MW, MH), g = c.getContext("2d"); g.drawImage(moss, 0, 0, MW, MH);
           const gr = g.createLinearGradient(0, 0, 0, MH); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(lo, "rgba(0,0,0,0)"); gr.addColorStop(Math.min(1, lo + 0.18), "#000"); gr.addColorStop(1, "#000");
