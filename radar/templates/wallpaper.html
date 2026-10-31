@@ -104,7 +104,7 @@ body { background: #140d2a; overflow-x: hidden; }
     </div>
 
     <ul class="wp-scenes" id="scenes" aria-label="Scene">
-      {% for key, name in [("glow", "Glow wood"), ("lake", "Sunrise lake"), ("sunflower", "Sunflower nap"), ("pond", "Frost pond"), ("blossom", "Blossom bridge"), ("shore", "Tide pools"), ("autumn", "Autumn path"), ("lavender", "Lavender dusk"), ("kite", "Kite hill"), ("oasis", "Desert stars"), ("falls", "Rainbow falls")] %}
+      {% for key, name in [("glow", "Glow wood"), ("lake", "Sunrise lake"), ("sunflower", "Sunflower nap"), ("pond", "Frost pond"), ("blossom", "Blossom bridge"), ("shore", "Tide pools"), ("autumn", "Autumn path"), ("lavender", "Lavender dusk"), ("kite", "Kite hill"), ("oasis", "Desert stars"), ("falls", "Rainbow falls"), ("lanterns", "Lantern night"), ("snowcabin", "Snowy cabin"), ("skyisle", "Sky island"), ("rain", "Rainy meadow"), ("aurora", "Aurora lake")] %}
       <li><button type="button" data-sc="{{ key }}" aria-pressed="{{ 'true' if loop.first else 'false' }}"><img src="{{ asset('v21/wall/' ~ key ~ '-t.jpg') }}" alt="" width="200" height="358" loading="{{ 'eager' if loop.index < 4 else 'lazy' }}" decoding="async"><span>{{ name }}</span></button></li>
       {% endfor %}
     </ul>

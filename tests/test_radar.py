@@ -2926,7 +2926,8 @@ def test_my_hatchery_wallpaper_puts_the_keepers_dragons_in_a_phone_scene(cfg, Se
     app, c = _v21_client(cfg)
     assert app.test_client().get("/wallpaper").status_code == 404
     page = c.get("/wallpaper").get_data(as_text=True)
-    for k in ("glow", "lake", "sunflower", "pond", "blossom", "shore", "autumn", "lavender", "kite", "oasis", "falls"):
+    for k in ("glow", "lake", "sunflower", "pond", "blossom", "shore", "autumn", "lavender", "kite", "oasis", "falls",
+              "lanterns", "snowcabin", "skyisle", "rain", "aurora"):
         assert f'data-sc="{k}"' in page
         for v in ("", "-m", "-t"):
             assert (Path(__file__).parent.parent / "radar" / "static" / "v21" / "wall" / f"{k}{v}.jpg").is_file(), k + v
