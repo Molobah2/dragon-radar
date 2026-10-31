@@ -162,14 +162,15 @@
     } catch (e) { /* offline: numbers from this browser only */ }
     const fans = {};
     for (const id of mine) { const p = byId[id]; if (p && !p.team && p.user) fans[p.user] = (fans[p.user] || 0) + 1; }
-    // the same streak the header shows (with the streak freeze), counted in calendar days
+    // the same streak the header shows (gentle: 2 days away takes off 2), counted in calendar days
     let live = 0;
     if (window.pdFeed && window.pdFeed.streak) live = window.pdFeed.streak() | 0;
     else {
       const st = get("pd:streak", {}) || {};
       const day = (d) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 864e5;
       const n = new Date(), t = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) / 864e5;
-      live = typeof st.last === "string" && t - day(st.last) <= 1 ? st.count | 0 : 0;
+      const gap = typeof st.last === "string" ? t - day(st.last) : 99, c = st.count | 0;
+      live = gap <= 1 ? c : c < 2 ? 0 : Math.max(0, c - 2 * Math.floor((gap - 1) / 2));
     }
     const top = Object.entries(fans).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([u]) => u);
     return { keepers: Object.keys(fans).length, opened: mine.length, streak: live, top, from: new Date(Date.now() - 6 * 864e5), to: new Date() };

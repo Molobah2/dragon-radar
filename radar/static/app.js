@@ -259,18 +259,24 @@
   const dayGap = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
   const readStreak = () => { const v = store.obj("pd:streak"); return { last: typeof v.last === "string" ? v.last : null, count: v.count | 0, best: v.best | 0, ...(typeof v.fz === "string" ? { fz: v.fz } : {}) }; };
   let streak = readStreak();
-  // v2 streak freeze: one missed day a week is forgiven, so a busy Keeper keeps a long streak
+  // a gentle streak: with 2 or more days, one missed day is forgiven, and every 2 days away takes off 2 days,
+  // never the whole run at once (a 1 day streak still starts over after a missed day)
   const FREEZE = !!data.v2;
-  const freezeReady = (s) => !s.fz || dayGap(s.fz, today()) >= 7;
+  const STEP = 2;
+  const keptAfter = (s, t) => {
+    if (!s.last) return 0;
+    const gap = dayGap(s.last, t);
+    if (gap <= 1) return s.count;
+    if ((s.count | 0) < 2) return 0;
+    return Math.max(0, s.count - STEP * Math.floor((gap - 1) / STEP));
+  };
   function bumpStreak() {
     streak = readStreak();                     // another tab may have moved it on
     const t = today();
     if (streak.last === t) return;
     const gap = streak.last ? dayGap(streak.last, t) : 0;
-    if (FREEZE && gap === 2 && streak.count > 1 && freezeReady(streak)) {
-      streak.fz = t; streak.count += 1;
-      setTimeout(() => toast(`\u{1F9CA} Streak freeze used. Your ${streak.count} day streak is safe. Next freeze in 7 days.`), 1200);
-    } else streak.count = gap === 1 ? streak.count + 1 : 1;
+    if (gap === 1) streak.count += 1;
+    else { const kept = gap > 1 ? keptAfter(streak, t) : 0; streak.count = kept + 1; }
     streak.best = Math.max(streak.best || 0, streak.count);
     streak.last = t;
     store.set("pd:streak", streak);
@@ -278,9 +284,7 @@
   }
   function liveStreak() {
     streak = readStreak();
-    if (!streak.last) return 0;
-    const gap = dayGap(streak.last, today());
-    return gap <= 1 || (FREEZE && gap === 2 && streak.count > 1 && freezeReady(streak)) ? streak.count : 0;
+    return keptAfter(streak, today());
   }
   function showStreak(bump) {
     const n = liveStreak(), b = $("streak");
@@ -289,9 +293,8 @@
     if (bump && n) { b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump"); }
     $("progress-streak").textContent = n ? `\u{1F525} ${n} day streak \u00b7 best ${Math.max(n, streak.best || 0)}`
       : "Open a post today to start a streak.";
-    if (FREEZE && $("progress-freeze")) $("progress-freeze").textContent = freezeReady(streak)
-      ? "\u{1F9CA} Streak freeze ready: miss one day this week and your streak stays safe."
-      : `\u{1F9CA} Streak freeze used. A new one is ready in ${7 - dayGap(streak.fz, today())} days.`;
+    if (FREEZE && $("progress-freeze")) $("progress-freeze").textContent =
+      "\u{1F9CA} Miss a day and your streak stays safe. Every 2 days away only takes 2 days off.";
   }
 
   // ---------- the tools menu: one button opens the list; choosing something, tapping outside or Escape closes it ----------

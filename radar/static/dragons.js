@@ -91,20 +91,21 @@
     const g = store.get("pd:goal", null); return !!g && g.day === today() && (g.n || 0) >= goalNow();
   }
   // the goal streak: days in a row with the daily goal finished
-  // streak freeze: one missed goal day a week is forgiven, so rares and legends stay in reach for busy Keepers
-  const freezeOk = (g) => (g.count || 0) > 1 && (!g.fz || dayGap(g.fz, today()) >= 7);
-  function goalStreak() {
-    const g = dex.g; if (!g || !g.last) return 0;
-    const gap = dayGap(g.last, today());
-    return gap <= 1 || (gap === 2 && freezeOk(g)) ? g.count || 0 : 0;
-  }
+  // gentle like the day streak: with 2 or more days, one missed goal day is forgiven and every 2 days away takes off 2
+  const goalKept = (g, t) => {
+    if (!g || !g.last) return 0;
+    const gap = dayGap(g.last, t);
+    if (gap <= 1) return g.count || 0;
+    if ((g.count || 0) < 2) return 0;
+    return Math.max(0, (g.count || 0) - 2 * Math.floor((gap - 1) / 2));
+  };
+  function goalStreak() { return goalKept(dex.g, today()); }
   function markGoalDay() {
     if (!goalDone()) return;
     const g = dex.g || { last: null, count: 0, best: 0 };
     if (g.last === today()) return;
     const gap = g.last ? dayGap(g.last, today()) : 0;
-    if (gap === 2 && freezeOk(g)) { g.fz = today(); g.count = (g.count || 0) + 1; }
-    else g.count = gap === 1 ? (g.count || 0) + 1 : 1;
+    g.count = gap === 1 ? (g.count || 0) + 1 : (gap > 1 ? goalKept(g, today()) : 0) + 1;
     g.best = Math.max(g.best || 0, g.count); g.last = today();
     dex.g = g; save();
   }
