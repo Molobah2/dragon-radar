@@ -17,17 +17,32 @@
   const ready = (i) => i.complete && i.naturalWidth > 0;
   // the painted scene (sky, far hills, the trees and meadow, the flowering bushes). Until a picture arrives, the scene
   // drawn in code stands in for it, so the page is never empty.
-  const SC = {}; for (const [k, src] of Object.entries(A.scene || {})) SC[k] = img(src);
+  // Each painting first arrives at a width that suits this screen (much smaller on phones and laptops); the full size
+  // one follows quietly once the page is showing, ready for the camera's glide in.
+  const cld = (src, w) => /res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(src) ? src.replace("/image/upload/", `/image/upload/c_limit,w_${w},q_auto/`) : src;
+  const sceneW = Math.min(3200, Math.max(1280, Math.ceil(Math.max(innerWidth, innerHeight * 1.6) * Math.min(window.devicePixelRatio || 1, 2) / 320) * 320));
+  const widthFor = (k) => k === "mid" && A.midExt ? Math.round(sceneW * (1 + 2 * A.midExt)) : sceneW;
+  const SC = {}; for (const [k, src] of Object.entries(A.scene || {})) SC[k] = img(sceneW < 3200 ? cld(src, widthFor(k)) : src);
+  function sharpenScene() {
+    if (sceneW >= 3200) return;
+    for (const [k, src] of Object.entries(A.scene || {})) {
+      const hi = img(src); hi.onload = () => { SC[k] = hi; if (k === "mid") soft.mid = null; };
+    }
+  }
   const soft = {};
   const art = (k) => {
     const a = SC[k] && ready(SC[k]) ? SC[k] : null;
     if (!a || k !== "mid") return a;
-    if (!soft.mid) {                                           // once: the Hatchery painting with its two ends faded out
+    if (A.midExt) {                                            // the wide Hatchery painting: trees and meadow carry on past both ends
+      if (!a.cw) { a.cw = a.naturalWidth / (1 + 2 * A.midExt); a.E = a.cw * A.midExt; }
+      return a;
+    }
+    if (!soft.mid) {                                           // older painting: just fade its two ends
       const c = mk(a.naturalWidth, a.naturalHeight), g = c.getContext("2d");
       g.drawImage(a, 0, 0); g.globalCompositeOperation = "destination-in";
       const gr = g.createLinearGradient(0, 0, c.width, 0);
       gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(0.035, "#000"); gr.addColorStop(0.965, "#000"); gr.addColorStop(1, "rgba(0,0,0,0)");
-      g.fillStyle = gr; g.fillRect(0, 0, c.width, c.height); soft.mid = c; soft.mid.naturalWidth = c.width; soft.mid.naturalHeight = c.height;
+      g.fillStyle = gr; g.fillRect(0, 0, c.width, c.height); soft.mid = c; c.naturalWidth = c.width; c.naturalHeight = c.height;
     }
     return soft.mid;
   };
@@ -67,6 +82,13 @@
   const backOut = (t) => { const c = 1.6; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
   const lerp = (a, b, t) => a + (b - a) * t;
   function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  // a painting's bottom edge carried on downward as its own mirror image, so the grass keeps going with no band or seam
+  function mirrorDown(ctx, im, dx, dw, yb, fillH) {
+    if (fillH <= 0) return;
+    const s = dw / im.naturalWidth, sh = Math.min(im.naturalHeight * 0.45, fillH / s);
+    ctx.save(); ctx.translate(0, yb * 2); ctx.scale(1, -1);
+    ctx.drawImage(im, 0, im.naturalHeight - sh, im.naturalWidth, sh, dx, yb - sh * s, dw, sh * s); ctx.restore();
+  }
   const mk = (w, h) => { const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; };
   const DRAGON = { blinky: ["255,201,77", "255,236,150"], pinky: ["255,143,179", "255,210,226"], speed: ["255,150,60", "120,105,230"] };
 
@@ -311,8 +333,10 @@
   const CLIP = {};
   for (const [id, set] of Object.entries(A.clips || {})) { CLIP[id] = {}; for (const [k, c] of Object.entries(set)) CLIP[id][k] = { c, im: null }; }
   const clipReady = (id, k) => { const e = CLIP[id] && CLIP[id][k]; if (!e || lite) return false; if (!e.im) e.im = img(e.c.src); return ready(e.im); };
-  for (const id in CLIP) if (CLIP[id].hatch) clipReady(id, "hatch");
-  setTimeout(() => { for (const id in CLIP) for (const k in CLIP[id]) clipReady(id, k); }, 2500);
+  function loadClips() {
+    setTimeout(() => { for (const id in CLIP) if (CLIP[id].hatch) clipReady(id, "hatch"); }, 200);
+    setTimeout(() => { for (const id in CLIP) for (const k in CLIP[id]) clipReady(id, k); }, 2500);
+  }
   // a hatch clip held on one frame chosen by the scroll (t from 0 to 1), so scrolling back plays it backwards
   const scrubbing = (id) => !!(CLIP[id] && CLIP[id].hatch) && clipReady(id, "hatch");
   function playClip(id, k) {
@@ -476,7 +500,7 @@
   // ---------- the stage shows only once its real art is in (or after 9 s whatever has come), never a stand in ----------
   const MUST = () => [SC.sky, SC.mid, SC.ground, SC.front, IM.nb, IM.nf, ...Object.values(EGI), F3I.moss, F3I.clouds].filter(Boolean);
   let shown = false;
-  function reveal() { shown = true; document.body.classList.add("v22-ready"); }
+  function reveal() { shown = true; document.body.classList.add("v22-ready"); loadClips(); setTimeout(sharpenScene, 1200); }
 
   // ---------- frame ----------
   function frame(now) {
@@ -522,10 +546,15 @@
       const a = paint && art(paint.k);
       if (!a) return;
       // the painting sits in the same frame the coded layer used (1.5 screens wide, 1.2 high), its line on the old line
-      const PW = W * 1.5, PH = H * 1.2, s2 = w / PW, aw = paint.fit(PW), ah = aw * a.naturalHeight / a.naturalWidth;
+      const PW = W * 1.5, PH = H * 1.2, s2 = w / PW, aw = paint.fit(PW), ah = aw * a.naturalHeight / (a.cw || a.naturalWidth);
       const ax = (PW - aw) / 2, ay = paint.lineY * PH - paint.lineAt * ah, bot = ay + ah;
-      bx.drawImage(a, x0 + ax * s2, y0 + ay * s2, aw * s2, ah * s2);
-      if (bot < PH) { bx.fillStyle = paint.fill; bx.fillRect(x0, y0 + bot * s2 - 1, w, (PH - bot) * s2 + 2); }
+      const ext = a.E ? a.E / a.cw : 0, ex = x0 + (ax - aw * ext) * s2, ew = aw * (1 + 2 * ext) * s2;
+      bx.drawImage(a, ex, y0 + ay * s2, ew, ah * s2);
+      if (bot < PH) {
+        const fy = y0 + bot * s2 - 1, fh = (PH - bot) * s2 + 2;
+        if (!a.E) { bx.fillStyle = paint.fill; bx.fillRect(x0, fy, w, fh); }
+        else mirrorDown(bx, a, ex, ew, fy + 1, fh);                // the meadow carries on below the painting
+      }
       if (paint.after) paint.after(x0 + ax * s2, y0 + ay * s2, aw * s2, ah * s2);
     };
     // the Hatchery's own pieces on the painted entrance: a banner on each wall panel, a lit brazier each side of the door
@@ -550,12 +579,13 @@
     if (gA) {                                                  // the painted hilltop: its brow just above the nest's foot
       const aw = Math.max(W, H * 0.97) * gz, ah = aw * gA.naturalHeight / gA.naturalWidth, ay = gY + H * 0.04 * gz - 0.48 * ah;
       bx.drawImage(gA, cx - aw / 2 - tiltX * 20, ay, aw, ah);
-      if (ay + ah < H) { bx.fillStyle = "rgb(83,115,58)"; bx.fillRect(0, ay + ah - 1, W, H - ay - ah + 2); }
+      // below the painting its own grass carries on down to the bottom of the screen (no flat colour band)
+      if (ay + ah < H) mirrorDown(bx, gA, cx - aw / 2 - tiltX * 20, aw, ay + ah, H - ay - ah + 1);
     }
 
     // ===== title =====
     // on short wide screens the letters would sit on the Hatchery banners: lift them, then shrink them just enough to clear
-    const ma = art("mid"), mR = ma ? ma.naturalHeight / ma.naturalWidth : 1358 / 3200;
+    const ma = SC.mid && ready(SC.mid) ? SC.mid : null, mR = ma ? ma.naturalHeight / (ma.naturalWidth / (1 + 2 * (A.midExt || 0))) : 1358 / 3200;
     const bannerTop = H * 0.728 - (0.887 - 0.338) * Math.max(W * 0.78, H * 0.55) * mR - 10;   // the mid layer and banner maths at rest
     let tf = Math.max(54, Math.min(W * 0.15, 200));
     let titleTop = Math.max(84, base - EH - tf * 1.05 - (W < 700 ? H * 0.05 : 0));
@@ -843,7 +873,7 @@
     if (gA) {                                                  // the same painted hilltop, its brow just above where they stand
       const aw = Math.max(W * 1.1, H), ah = aw * gA.naturalHeight / gA.naturalWidth, ay = H * 0.755 - 0.48 * ah;
       ctx.drawImage(gA, cx - aw / 2, ay, aw, ah);
-      if (ay + ah < H) { ctx.fillStyle = "rgb(83,115,58)"; ctx.fillRect(0, ay + ah - 1, W, H - ay - ah + 2); }
+      if (ay + ah < H) mirrorDown(ctx, gA, cx - aw / 2, aw, ay + ah, H - ay - ah + 1);
     }
     ctx.restore();
     const dh = Math.min(EH * 0.95, H * 0.3, W * (W < 700 ? 0.3 : 1)), narrowE = W < 700;
