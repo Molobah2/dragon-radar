@@ -682,6 +682,31 @@ def test_discord_rate_limit_is_noted_not_silent(cfg, Session):
         assert get_setting(s, "discord_after:123") is not None
 
 
+def test_discord_reads_through_the_relay_when_set(cfg, Session):
+    from radar.discord_share import collect_discord
+    now = utcnow()
+    a = x_id(now - timedelta(hours=1))
+    cfg.discord_bot_token, cfg.discord_channel_ids = "tok", "123"
+    cfg.discord_relay_url, cfg.discord_relay_key = "https://relay.example/functions/v1/discord-relay", "k"
+    seen = []
+
+    class Relay(FakeHttp):
+        def get(self, url, params=None, headers=None, timeout=None):
+            if "relay.example" in url:
+                seen.append((params, headers))
+                msgs, self.messages = self.messages, []
+                return FakeResp(200, msgs)
+            assert "discord.com" not in url
+            return super().get(url, params, headers, timeout)
+    with Session() as s:
+        run = CollectorRun(started_at=now); s.add(run)
+        http = Relay([{"id": "950", "content": f"https://x.com/ann/status/{a}"}], {a: ("Ann", "ann", "gm")})
+        assert collect_discord(s, cfg, run, now, http=http) == 1
+        assert seen[0][0]["channel"] == "123" and seen[0][1] == {"x-relay-key": "k", "Authorization": "Bot tok"}
+        assert json.loads(get_setting(s, "discord_health"))["channels"]["123"]["via"] == "relay"
+        assert get_setting(s, "discord_after:123") == "950"
+
+
 def test_welcome_row_lists_first_time_posters(cfg, Session):
     now = utcnow()
     with Session() as s:

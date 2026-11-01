@@ -93,6 +93,10 @@ class Config:
     discord_channel_ids: str = field(default_factory=lambda: os.environ.get("DISCORD_CHANNEL_IDS", "").strip())
     discord_require_verified: bool = field(default_factory=lambda: _bool("DISCORD_REQUIRE_VERIFIED", "0"))
     discord_max_per_run: int = field(default_factory=lambda: int(os.environ.get("DISCORD_MAX_PER_RUN", "60")))
+    # Discord's network blocks the shared Render address, so the share channel can be read through a small relay
+    # on Supabase instead (the discord-relay edge function). Both empty: read Discord directly as before.
+    discord_relay_url: str = field(default_factory=lambda: os.environ.get("DISCORD_RELAY_URL", "").strip())
+    discord_relay_key: str = field(default_factory=lambda: os.environ.get("DISCORD_RELAY_KEY", "").strip())
     # Daily drop: one message a day in a Discord channel the team chooses. Empty means switched off.
     drop_channel_id: str = field(default_factory=lambda: os.environ.get("DROP_CHANNEL_ID", "").strip())
     drop_hour: int = field(default_factory=lambda: int(os.environ.get("DROP_HOUR", "18")))

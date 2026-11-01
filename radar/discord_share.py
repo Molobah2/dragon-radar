@@ -38,13 +38,18 @@ def discord_snowflake(when: datetime) -> str:
     return str((ms - DISCORD_EPOCH_MS) << 22)
 
 
-def read_channel(token: str, channel_id: str, after: str, http, pages: int = 5) -> tuple[list[dict], str, dict]:
+def read_channel(token: str, channel_id: str, after: str, http, pages: int = 5, relay: tuple[str, str] | None = None) -> tuple[list[dict], str, dict]:
     """Messages newer than `after`, oldest first, the new bookmark, and how the read went.
-    A 429 used to stop the read without a word, so a blocked bot looked exactly like a quiet channel."""
-    out, newest, info = [], after, {"status": 200, "pages": 0}
+    A 429 used to stop the read without a word, so a blocked bot looked exactly like a quiet channel.
+    With a relay (url, key) the read goes through the Supabase edge function instead of straight to Discord."""
+    out, newest, info = [], after, {"status": 200, "pages": 0, "via": "relay" if relay else "direct"}
     for _ in range(pages):
-        r = http.get(f"{API}/channels/{channel_id}/messages", params={"after": newest, "limit": 100},
-                     headers={"Authorization": f"Bot {token}"}, timeout=15)
+        if relay:
+            r = http.get(relay[0], params={"channel": channel_id, "after": newest}, timeout=20,
+                         headers={"x-relay-key": relay[1], "Authorization": f"Bot {token}"})   # the relay stores no token
+        else:
+            r = http.get(f"{API}/channels/{channel_id}/messages", params={"after": newest, "limit": 100},
+                         headers={"Authorization": f"Bot {token}"}, timeout=15)
         info["status"] = r.status_code
         if r.status_code == 429:
             h = getattr(r, "headers", {}) or {}
@@ -97,7 +102,8 @@ def collect_discord(s, cfg, run, now: datetime, client=None, http=None) -> int:
             key = f"discord_after:{cid}"
             after = get_setting(s, key) or discord_snowflake(now - timedelta(days=3))
             try:
-                msgs, newest, info = read_channel(cfg.discord_bot_token, cid, after, http)
+                relay = (cfg.discord_relay_url, cfg.discord_relay_key) if cfg.discord_relay_url and cfg.discord_relay_key else None
+                msgs, newest, info = read_channel(cfg.discord_bot_token, cid, after, http, relay=relay)
             except requests.RequestException as e:
                 log.warning("Discord channel %s read failed: %s", cid, e)
                 health[cid] = {"status": getattr(getattr(e, "response", None), "status_code", None), "error": str(e)[:200]}
