@@ -662,6 +662,26 @@ def test_discord_share_channel_reads_links_free_and_checks_blue_tick_once(cfg, S
         assert run.est_cost_usd == 0
 
 
+def test_discord_rate_limit_is_noted_not_silent(cfg, Session):
+    from radar.discord_share import collect_discord
+    now = utcnow()
+    cfg.discord_bot_token, cfg.discord_channel_ids = "tok", "123"
+
+    class Blocked(FakeHttp):
+        def get(self, url, params=None, headers=None, timeout=None):
+            if "discord.com" in url:
+                r = FakeResp(429, {"message": "You are being rate limited.", "retry_after": 12.5, "global": True})
+                r.headers = {"X-RateLimit-Scope": "global"}
+                return r
+            return super().get(url, params, headers, timeout)
+    with Session() as s:
+        run = CollectorRun(started_at=now); s.add(run)
+        assert collect_discord(s, cfg, run, now, http=Blocked([], {})) == 0
+        h = json.loads(get_setting(s, "discord_health"))["channels"]["123"]
+        assert h["status"] == 429 and h["retry_after"] == 12.5 and h["is_global"] is True and h["scope"] == "global"
+        assert get_setting(s, "discord_after:123") is not None
+
+
 def test_welcome_row_lists_first_time_posters(cfg, Session):
     now = utcnow()
     with Session() as s:

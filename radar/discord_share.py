@@ -38,15 +38,28 @@ def discord_snowflake(when: datetime) -> str:
     return str((ms - DISCORD_EPOCH_MS) << 22)
 
 
-def read_channel(token: str, channel_id: str, after: str, http, pages: int = 5) -> tuple[list[dict], str]:
-    """Messages newer than `after`, oldest first, and the new bookmark."""
-    out, newest = [], after
+def read_channel(token: str, channel_id: str, after: str, http, pages: int = 5) -> tuple[list[dict], str, dict]:
+    """Messages newer than `after`, oldest first, the new bookmark, and how the read went.
+    A 429 used to stop the read without a word, so a blocked bot looked exactly like a quiet channel."""
+    out, newest, info = [], after, {"status": 200, "pages": 0}
     for _ in range(pages):
         r = http.get(f"{API}/channels/{channel_id}/messages", params={"after": newest, "limit": 100},
                      headers={"Authorization": f"Bot {token}"}, timeout=15)
+        info["status"] = r.status_code
         if r.status_code == 429:
+            h = getattr(r, "headers", {}) or {}
+            body = ""
+            try:
+                body = r.json()
+            except Exception:  # noqa: BLE001  Cloudflare answers a blocked address with a web page, not JSON
+                body = (getattr(r, "text", "") or "")[:160]
+            info.update(retry_after=(body.get("retry_after") if isinstance(body, dict) else None) or h.get("Retry-After"),
+                        is_global=bool(isinstance(body, dict) and body.get("global")), scope=h.get("X-RateLimit-Scope"),
+                        cloudflare=not isinstance(body, dict), body=body if isinstance(body, str) else None)
+            log.warning("Discord channel %s rate limited: %s", channel_id, info)
             break
         r.raise_for_status()
+        info["pages"] += 1
         batch = sorted(r.json(), key=lambda m: int(m["id"]))
         if not batch:
             break
@@ -54,7 +67,8 @@ def read_channel(token: str, channel_id: str, after: str, http, pages: int = 5) 
         newest = batch[-1]["id"]
         if len(batch) < 100:
             break
-    return out, newest
+    info["messages"] = len(out)
+    return out, newest, info
 
 
 def message_text(m: dict) -> str:
@@ -78,17 +92,24 @@ def collect_discord(s, cfg, run, now: datetime, client=None, http=None) -> int:
     try:
         # 1. new links from each channel go into a queue, so nothing is lost if X is busy
         queue = json.loads(get_setting(s, "discord_queue") or "[]")
+        health: dict = {}
         for cid in [c.strip() for c in cfg.discord_channel_ids.split(",") if c.strip()]:
             key = f"discord_after:{cid}"
             after = get_setting(s, key) or discord_snowflake(now - timedelta(days=3))
             try:
-                msgs, newest = read_channel(cfg.discord_bot_token, cid, after, http)
+                msgs, newest, info = read_channel(cfg.discord_bot_token, cid, after, http)
             except requests.RequestException as e:
                 log.warning("Discord channel %s read failed: %s", cid, e)
+                health[cid] = {"status": getattr(getattr(e, "response", None), "status_code", None), "error": str(e)[:200]}
                 continue
+            health[cid] = info
+            if msgs:
+                health[cid]["newest_message"] = msgs[-1].get("timestamp")
             for m in msgs:
                 queue.extend(post_ids_in(message_text(m)))
             set_setting(s, key, newest)
+        # every run leaves a note of how each channel read went, so a stuck bot shows up in one look
+        set_setting(s, "discord_health", json.dumps({"at": now.isoformat(), "channels": health}, default=str))
         queue = list(dict.fromkeys(queue))
         since = now - timedelta(days=cfg.feed_days)
         queue = [pid for pid in queue if x_time(pid) >= since]
