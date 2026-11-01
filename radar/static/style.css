@@ -633,10 +633,10 @@ body.dark-sky .mailbox { background: conic-gradient(from 210deg, #fff3c4, #e2a93
   transition: background .6s, color .6s, transform .2s cubic-bezier(.3, 1.5, .5, 1); }
 .sound-pill:hover { transform: translateY(-1px); }
 .snd-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
-.snd-bars i { display: block; width: 3px; height: 4px; border-radius: 2px; background: linear-gradient(180deg, #ff9670, #f0603d); transition: height .3s; }
+.snd-bars i { display: block; width: 3px; height: 14px; border-radius: 2px; background: linear-gradient(180deg, #ff9670, #f0603d); transform: scaleY(.29); transform-origin: bottom; transition: transform .3s; }
 .sound-pill.on .snd-bars i { animation: eq 1.1s ease-in-out infinite; }
 .sound-pill.on .snd-bars i:nth-child(2) { animation-delay: -.35s; } .sound-pill.on .snd-bars i:nth-child(3) { animation-delay: -.7s; } .sound-pill.on .snd-bars i:nth-child(4) { animation-delay: -.15s; }
-@keyframes eq { 0%, 100% { height: 4px; } 50% { height: 14px; } }
+@keyframes eq { 0%, 100% { transform: scaleY(.29); } 50% { transform: scaleY(1); } }
 body.dark-sky .sound-pill { background: rgba(20, 26, 69, .72); color: #f2f4ff; }
 @media (max-width: 560px) { .sound-pill .snd-label { display: none; } .sound-pill { padding: 8px 10px; } }
 

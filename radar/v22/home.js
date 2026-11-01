@@ -9,24 +9,38 @@
   const A = window.PD22;
   const stageEl = document.getElementById("v22-stage"), track = document.getElementById("v22-track");
   if (!A || !stageEl || !track) return;
-  const img = (src) => { const i = new Image(); i.decoding = "async"; i.src = src; return i; };
+  // every picture is decoded off the main thread before the canvas may draw it, so a big painting or egg film never
+  // freezes the page on its first frame (a canvas otherwise decodes it on the spot, in the middle of the animation)
+  const img = (src) => {
+    const i = new Image(); i.decoding = "async"; i._ok = false;
+    i.addEventListener("load", () => { const ok = () => { i._ok = true; i.dispatchEvent(new Event("pdok")); }; (i.decode ? i.decode() : Promise.resolve()).then(ok, ok); }, { once: true });
+    i.addEventListener("error", () => { i._bad = true; }, { once: true });
+    i.src = src; return i;
+  };
+  const onOk = (i, fn) => { if (i._ok) fn(); else i.addEventListener("pdok", fn, { once: true }); };
   const IM = { nb: img(A.nestBack), nf: img(A.nestFront), eggs: A.eggs.map(img) };
   // every pose each dragon has; the dragons move between them on their own and when touched
   const PIM = {};
   for (const [id, set] of Object.entries(A.poses)) { PIM[id] = {}; for (const [k, src] of Object.entries(set)) PIM[id][k] = img(src); }
-  const ready = (i) => i.complete && i.naturalWidth > 0;
+  const ready = (i) => !!i && i._ok === true && i.naturalWidth > 0;
   // the painted scene (sky, far hills, the trees and meadow, the flowering bushes). Until a picture arrives, the scene
   // drawn in code stands in for it, so the page is never empty.
   // Each painting first arrives at a width that suits this screen (much smaller on phones and laptops); the full size
   // one follows quietly once the page is showing, ready for the camera's glide in.
   const cld = (src, w) => /res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(src) ? src.replace("/image/upload/", `/image/upload/c_limit,w_${w},q_auto/`) : src;
-  const sceneW = Math.min(3200, Math.max(1280, Math.ceil(Math.max(innerWidth, innerHeight * 1.6) * Math.min(window.devicePixelRatio || 1, 2) / 320) * 320));
+  const sceneW = Math.min(3200, Math.max(1280, Math.ceil(Math.max(innerWidth, innerHeight * 1.6) * Math.min(window.devicePixelRatio || 1, innerWidth < 700 ? 1.5 : 1.75) / 320) * 320));
   const widthFor = (k) => k === "mid" && A.midExt ? Math.round(sceneW * (1 + 2 * A.midExt)) : sceneW;
   const SC = {}; for (const [k, src] of Object.entries(A.scene || {})) SC[k] = img(sceneW < 3200 ? cld(src, widthFor(k)) : src);
+  // the sharper paintings are only fetched once the camera is about to glide in, at the size the glide needs (not the
+  // 6000 px original), and swapped in only after they are decoded
+  let sharpened = false;
   function sharpenScene() {
-    if (sceneW >= 3200) return;
+    if (sharpened || lite) return; sharpened = true;
     for (const [k, src] of Object.entries(A.scene || {})) {
-      const hi = img(src); hi.onload = () => { SC[k] = hi; if (k === "mid") soft.mid = null; };
+      const want = Math.round(widthFor(k) * 1.6);
+      if (SC[k] && SC[k].naturalWidth >= want * 0.95) continue;
+      const hi = img(cld(src, want));
+      onOk(hi, () => { if (!SC[k] || hi.naturalWidth > SC[k].naturalWidth) { SC[k] = hi; if (k === "mid") soft.mid = null; } });
     }
   }
   const soft = {};
@@ -53,7 +67,13 @@
   const F3 = A.fx3d || {}, F3I = {};
   for (const k of ["clouds", "bfly", "conf", "rainbow", "rays", "spark", "dust", "moss", "bfly2", "petals"]) if (F3[k]) F3I[k] = img(F3[k].src);
   const f3 = (k) => F3I[k] && ready(F3I[k]) ? F3I[k] : null;
-  const EGI = {}; for (const [id, m] of Object.entries(F3.eggs || {})) EGI[id] = img(m.src);
+  // the egg films are big sheets (up to 3104 x 2520); a smaller screen gets them at the size it can actually show
+  const EGS = (() => { const eh = Math.min(innerHeight * 0.3, innerWidth * 0.48), d = Math.min(window.devicePixelRatio || 1, innerWidth < 700 ? 1.5 : 1.75);
+    return Math.min(1, Math.max(0.5, Math.ceil(0.68 * eh * d * 1.25 / 290 * 20) / 20)); })();
+  const EGI = {}; for (const [id, m] of Object.entries(F3.eggs || {})) {
+    const small = EGS < 1 && /res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(m.src);
+    EGI[id] = img(small ? m.src.replace("/image/upload/", `/image/upload/w_${Math.round(m.cols * m.cw * EGS)}/`) : m.src);
+  }
   // one piece of a sheet of renders, centred on x, y and w wide; sx squeezes it (a wing beat, a tumbling flake)
   function piece(ctx, k, i, x, y, w, rot, a, sx) {
     const im = f3(k); if (!im || a <= 0.003) return !!im;
@@ -97,12 +117,12 @@
   const TRACK = T.endStart + T.endLen + 0.8;     // the hilltop holds a moment before the page content arrives
 
   // ---------- sizing ----------
-  let W = 0, H = 0, DPR = 1, VH = 0, layout = null;
+  let W = 0, H = 0, DPR = 1, VH = 0, layout = null, DPR_CAP = 2;
   function size() {
     const w = innerWidth, h = Math.max(innerHeight, document.documentElement.clientHeight);
     const widthChanged = w !== W;
     W = w; H = h;
-    DPR = Math.min(window.devicePixelRatio || 1, W < 700 ? 1.6 : 2);
+    DPR = Math.min(window.devicePixelRatio || 1, DPR_CAP, W < 700 ? 1.5 : 1.75);
     for (const c of [bg, fg]) { c.width = Math.round(W * DPR); c.height = Math.round(H * DPR); }
     if (widthChanged || !VH) { VH = H; track.style.height = Math.round(TRACK * VH) + "px"; }
     build();
@@ -134,7 +154,7 @@
       SPK.set(c0, c);
     }
   }
-  if (F3I.spark) F3I.spark.addEventListener("load", () => makeSparks(), { once: true });
+  if (F3I.spark) onOk(F3I.spark, () => makeSparks());
 
   // ---------- three eggs in one nest: real 3D eggs that crack open on film ----------
   // Each dragon hatches from its own egg, in its own colours. These are pdtools' own egg designs, never official kit
@@ -186,7 +206,8 @@
     const wob = opened ? 0 : kick * 0.16 * Math.sin(clock * 30) + 0.012 * Math.sin(clock * 2.2 + spec.dx * 3);
     const k = 2 * ry / m.egg[3], ex = m.egg[0] + m.egg[2] / 2, eb = m.egg[1] + m.egg[3];
     const col = f % m.cols, row = Math.floor(f / m.cols);
-    const draw = () => ctx.drawImage(F.im, col * m.cw, row * m.ch, m.cw, m.ch, -ex * k, -eb * k, m.cw * k, m.ch * k);
+    const S = F.im.naturalWidth / (m.cols * m.cw);        // 1 for the full sheet, less for a smaller one
+    const draw = () => ctx.drawImage(F.im, col * m.cw * S, row * m.ch * S, m.cw * S, m.ch * S, -ex * k, -eb * k, m.cw * k, m.ch * k);
     ctx.save(); ctx.translate(x, y); ctx.rotate(wob + (spec.tilt || 0) * (1 - seg(p, bu, bu + 0.1))); ctx.globalAlpha = alpha;
     draw();
     if (opened && insideDragon) {     // the dragon sits inside: behind the front of the shell, in front of its back wall
@@ -443,7 +464,7 @@
       s.classList.add("l3"); s.style.width = u(r[2]);
       s.style.backgroundImage = `url("${TT.src}")`; s.style.backgroundSize = `${u(TT.w)} 1em`; s.style.backgroundPosition = `-${u(r[0])} 0`;
     });
-    if (ready(ti)) dress(); else ti.addEventListener("load", dress, { once: true });
+    onOk(ti, dress);
   }
   const jelly = (s) => { if (s.classList.contains("gap")) return; s.classList.remove("jelly"); void s.offsetWidth; s.classList.add("jelly"); };
   letters.forEach((s) => { s.addEventListener("pointerenter", () => jelly(s)); s.addEventListener("pointerdown", () => jelly(s)); s.addEventListener("animationend", () => s.classList.remove("jelly")); });
@@ -499,19 +520,29 @@
 
   // ---------- the stage shows only once its real art is in (or after 9 s whatever has come), never a stand in ----------
   const MUST = () => [SC.sky, SC.mid, SC.ground, SC.front, IM.nb, IM.nf, ...Object.values(EGI), F3I.moss, F3I.clouds].filter(Boolean);
+  const perf = { n: 0, sum: 0, last: 0, steps: 0 };   // a screen that cannot keep up gets fewer pixels, so it never stutters
+  let skipN = 0;
   let shown = false;
-  function reveal() { shown = true; document.body.classList.add("v22-ready"); loadClips(); setTimeout(sharpenScene, 1200); }
+  function reveal() { shown = true; document.body.classList.add("v22-ready"); setTimeout(loadClips, 600); }
 
   // ---------- frame ----------
   function frame(now) {
     requestAnimationFrame(frame);
-    if (!shown && (now - t0 > 9000 || MUST().every((i) => i.complete))) reveal();
+    if (!shown && (now - t0 > 9000 || MUST().every((i) => i._ok || i._bad))) reveal();
+    if (shown && perf.steps < 2) {
+      const dt = now - perf.last; perf.last = now;
+      if (dt > 0 && dt < 250) { perf.sum += dt; perf.n++; }
+      if (perf.n >= 90) { if (perf.sum / perf.n > 28 && DPR > 1.01) { DPR_CAP = Math.max(1, DPR - 0.4); size(); perf.steps++; } else perf.steps = 2; perf.n = 0; perf.sum = 0; }
+    }
     const time = reduce ? 0 : (now - t0) / 1000;
     clock = (now - t0) / 1000;
     if (Math.abs(target - cur) > 1.5) cur = target;          // a big jump (skip, a link to the tools) lands at once, never replays the story
     cur += (target - cur) * (reduce ? 1 : 0.11);
     if (Math.abs(target - cur) < 0.0005) cur = target;
     tiltX += (tiltTX - tiltX) * 0.06; tiltY += (tiltTY - tiltY) * 0.06;
+    if (shown && !sharpened && target > T.hero * 0.75) sharpenScene();
+    // once the story is over and nothing is moving, the hilltop behind the page is drawn every other frame
+    if (cur > T.endStart + T.endLen + 0.4 && Math.abs(target - cur) < 0.001 && clock - lastMove > 1 && (++skipN & 1)) return;
     HIT = [];
     tickActors();
     const v = cur;
