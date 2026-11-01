@@ -11,12 +11,30 @@
   if (!A || !stageEl || !track) return;
   // every picture is decoded off the main thread before the canvas may draw it, so a big painting or egg film never
   // freezes the page on its first frame (a canvas otherwise decodes it on the spot, in the middle of the animation)
+  // Each picture is also kept as a ready decoded bitmap: the browser may quietly throw away a decoded picture to save
+  // memory and decode it again in the middle of a frame (a sudden break in the movement), but a bitmap stays decoded.
+  // Low memory phones skip the bitmaps and keep the plain pictures.
+  const BMP = typeof createImageBitmap === "function" && !(navigator.deviceMemory && navigator.deviceMemory <= 2);
+  const WARM = [];                                   // pictures not yet handed to the graphics card, one per calm frame
   const img = (src) => {
     const i = new Image(); i.decoding = "async"; i._ok = false;
-    i.addEventListener("load", () => { const ok = () => { i._ok = true; i.dispatchEvent(new Event("pdok")); }; (i.decode ? i.decode() : Promise.resolve()).then(ok, ok); }, { once: true });
+    i.addEventListener("load", () => {
+      const ok = () => { i._ok = true; WARM.push(i); i.dispatchEvent(new Event("pdok")); };
+      // the bitmap is decoded from the file itself, wholly off the main thread (made from the picture, a big painting
+      // would be copied on the main thread and hold up a frame); if the file cannot be read again, the plain picture is used
+      if (BMP) fetch(i.currentSrc || i.src, { mode: "cors", credentials: "omit" }).then((r) => r.ok ? r.blob() : Promise.reject())
+        .then((b) => createImageBitmap(b)).then((b) => { i._bmp = b; ok(); })
+        .catch(() => (i.decode ? i.decode() : Promise.resolve()).then(ok, ok));
+      else (i.decode ? i.decode() : Promise.resolve()).then(ok, ok);
+    }, { once: true });
     i.addEventListener("error", () => { i._bad = true; }, { once: true });
     i.src = src; return i;
   };
+  // every drawing of a picture uses its bitmap when it has one (same size, so every crop still lines up)
+  {
+    const P2 = CanvasRenderingContext2D.prototype, DI = P2.drawImage;
+    if (!DI._pd) { P2.drawImage = function (im, ...a) { return DI.call(this, (im && im._bmp) || im, ...a); }; P2.drawImage._pd = true; }
+  }
   const onOk = (i, fn) => { if (i._ok) fn(); else i.addEventListener("pdok", fn, { once: true }); };
   const IM = { nb: img(A.nestBack), nf: img(A.nestFront), eggs: A.eggs.map(img) };
   // every pose each dragon has; the dragons move between them on their own and when touched
@@ -40,7 +58,7 @@
       const want = Math.round(widthFor(k) * 1.6);
       if (SC[k] && SC[k].naturalWidth >= want * 0.95) continue;
       const hi = img(cld(src, want));
-      onOk(hi, () => { if (!SC[k] || hi.naturalWidth > SC[k].naturalWidth) { SC[k] = hi; if (k === "mid") soft.mid = null; } });
+      onOk(hi, () => { hi._then = () => { if (!SC[k] || hi.naturalWidth > SC[k].naturalWidth) { SC[k] = hi; if (k === "mid") soft.mid = null; } }; });
     }
   }
   const soft = {};
@@ -520,7 +538,7 @@
 
   // ---------- the stage shows only once its real art is in (or after 9 s whatever has come), never a stand in ----------
   const MUST = () => [SC.sky, SC.mid, SC.ground, SC.front, IM.nb, IM.nf, ...Object.values(EGI), F3I.moss, F3I.clouds].filter(Boolean);
-  const perf = { n: 0, sum: 0, last: 0, steps: 0 };   // a screen that cannot keep up gets fewer pixels, so it never stutters
+  const perf = { n: 0, sum: 0, last: 0, steps: 0, prev: 0 };   // a screen that cannot keep up gets fewer pixels, so it never stutters
   let skipN = 0;
   let shown = false;
   function reveal() { shown = true; document.body.classList.add("v22-ready"); setTimeout(loadClips, 600); }
@@ -543,6 +561,11 @@
     if (shown && !sharpened && target > T.hero * 0.75) sharpenScene();
     // once the story is over and nothing is moving, the hilltop behind the page is drawn every other frame
     if (cur > T.endStart + T.endLen + 0.4 && Math.abs(target - cur) < 0.001 && clock - lastMove > 1 && (++skipN & 1)) return;
+    if (WARM.length && (now - perf.prev < 24 || !shown)) {
+      const w = WARM.shift(); bx.save(); bx.setTransform(1, 0, 0, 1, 0, 0); bx.globalAlpha = 0.01; bx.drawImage(w, 0, 0, 1, 1); bx.restore();
+      if (w._then) { const f = w._then; w._then = null; f(); }
+    }
+    perf.prev = now;
     HIT = [];
     tickActors();
     const v = cur;
