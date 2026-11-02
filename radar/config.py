@@ -210,6 +210,8 @@ COMMUNITY_MUSIC = [
      "avatar": "https://pbs.twimg.com/profile_images/2110632402162761728/my2B6t4a_200x200.jpg"},
     {"name": "Nacho", "x": "NachoAvg_", "songs": ["Pocket Full of Dragons"],
      "avatar": "https://pbs.twimg.com/profile_images/2098607625336487936/b-hopSxT_200x200.jpg"},
+    {"name": "Mia", "x": "InShineMood", "songs": ["Where's My Yellow Dragon?"],
+     "avatar": "https://pbs.twimg.com/profile_images/2090477053711908864/zbZQ9fG9_200x200.jpg"},
     {"name": "Jon Wynn", "x": "jonwynnx", "songs": ["Dragons Season", "Empire of Embers"]},   # listed last on the home page (27 Oct)
 ]
 
