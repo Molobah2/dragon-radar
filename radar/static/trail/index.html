@@ -2431,6 +2431,7 @@ const KTL = (() => {
     for (const g of b.segs) {
       if (g.gap || g.svg) continue;
       let str = g.k ? val(g.k) : g.t;
+      if (!g.k && /^\s*%/.test(str) && parts.length && parts[parts.length - 1].g.k === 'ahead' && parts[parts.length - 1].str === '—') str = str.replace('%', '');   // no percentage yet
       if (!parts.length) str = str.replace(/^\s+/, '');
       parts.push({ g, str: caseOf(str, g.tt), gap: prevEnd == null ? 0 : Math.max(0, g.x - prevEnd - 0.5) });
       prevEnd = g.x + g.w;

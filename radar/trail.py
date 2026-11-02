@@ -32,15 +32,20 @@ from flask import Response, abort, g, jsonify, redirect, request, send_from_dire
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, func, select
 from sqlalchemy.orm import Mapped, mapped_column
 
-from .db import Base, DailyCount, Post, utcnow
+from .db import Base, DailyCount, utcnow
 
 TRAIL_DIR = Path(__file__).parent / "static" / "trail"
 AUTH_URL = "https://x.com/i/oauth2/authorize"
 TOKEN_URL = "https://api.x.com/2/oauth2/token"
 REVOKE_URL = "https://api.x.com/2/oauth2/revoke"
 API = "https://api.x.com/2"
-TERMS = '(@Pocket_Dragons_ OR "pocket dragons" OR "ancient hatchery" OR #PocketDragons)'
-TRAIL_START = datetime(2026, 9, 1)          # the Hatchery opened on 8 September; nothing before counts
+# Everything comes from X itself. A Keeper's dragon posts do not always name the project ("Night 9 in the Ember
+# Chamber", "I just hatched a Tiger dragon", a welcome to a new Keeper), so the search takes the words Keepers
+# really use. Only their own posts are searched (from:), so these words can not pull in anyone else.
+TERMS = ('(@Pocket_Dragons_ OR "pocket dragons" OR "pocket dragon" OR "ancient hatchery" OR hatchery OR blinky OR pinky '
+         'OR dragon OR dragons OR keeper OR keepers OR pdtools OR "ember chamber" OR PD OR #PocketDragons OR 🐉)')
+TRAIL_START = datetime(2026, 9, 8)          # the Hatchery opened on 8 September; nothing before counts
+CARD_V = 2                                  # bump when the way a card is worked out changes: saved cards are made again
 MAX_POSTS = 1000                            # the most posts read for one Keeper (about $5 at worst)
 SPEND_KEY = "trail_spend_m"
 WALK_COLOURS = ["#6d5313", "#e0784f", "#7fa38f"]
@@ -54,7 +59,7 @@ class TrailCard(Base):
     card: Mapped[str] = mapped_column(Text, default="{}")
     posts: Mapped[int] = mapped_column(Integer, default=0)
     views: Mapped[int] = mapped_column(Integer, default=0)
-    source: Mapped[str] = mapped_column(String(12), default="")      # "all" (full search) or "recent+db"
+    source: Mapped[str] = mapped_column(String(12), default="")      # "all": X's full archive search
     partial: Mapped[bool] = mapped_column(Boolean, default=False)    # the day's money ran out part way
     cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
     fetched_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
@@ -107,7 +112,7 @@ def initials(name: str) -> str:
     return "".join(w[0] for w in name.split() if w)[:2].upper()
 
 
-def compute(posts: list[dict], user: dict, today: date, others: list[int]) -> dict:
+def compute(posts: list[dict], user: dict, today: date, others: list[int], mine: int | None = None) -> dict:
     """The card from a Keeper's posts. posts: [{id, at (datetime), m (public_metrics), mentions: [handles]}]."""
     posts = sorted(posts, key=lambda p: p["at"])
     n = len(posts)
@@ -155,9 +160,11 @@ def compute(posts: list[dict], user: dict, today: date, others: list[int]) -> di
             names[k] += 1
             shown.setdefault(k, h)
     walks = [[shown[k], str(c), WALK_COLOURS[i % 3]] for i, (k, c) in enumerate(names.most_common(3))]
-    # ahead of: share of other Keepers with fewer posts about the dragons
-    if len(others) >= 5:
-        ahead = round(100 * sum(1 for o in others if o < n) / len(others))
+    # ahead of: share of the other Keepers on the trail (their counts also straight from X) with fewer dragon posts.
+    # Until five others have walked it there is nobody fair to compare with, and the tile shows a dash.
+    me_n = n if mine is None else mine
+    if len(others) >= 5 and me_n > 0:
+        ahead = round(100 * sum(1 for o in others if o < me_n) / len(others))
         ahead = str(max(1, min(99, ahead)))
     else:
         ahead = "—"
@@ -178,7 +185,7 @@ def compute(posts: list[dict], user: dict, today: date, others: list[int]) -> di
         "bestViews": f"{bv:,}", "bestViewsDate": short_date(best_v["at"].date()) if best_v else "",
         "bestLikes": f"{mt(best_l, 'like_count'):,}" if best_l else "0", "bestLikesDate": short_date(best_l["at"].date()) if best_l else "",
         "streak": str(streak), "weeks": str(weeks), "weeksTotal": str(total_weeks), "ahead": ahead,
-        "rhythm": rhythm, "walks": walks, "markers": markers, "n": n, "viewsN": views,
+        "rhythm": rhythm, "walks": walks, "markers": markers, "n": n, "viewsN": views, "v": CARD_V,
     }
 
 
@@ -190,10 +197,9 @@ def _post(p: dict) -> dict:
 
 
 def search_posts(http: requests.Session, bearer: str, username: str, budget: float, cost_post: float,
-                 since_db: list[str] | None = None, sleep=time.sleep) -> tuple[list[dict], float, str, bool]:
-    """Every post the Keeper wrote about the dragons since the Hatchery opened.
-    Full archive search first; where the app's X plan does not include it, the last 7 days from recent search
-    plus the older posts pdtools already collected (looked up by id for fresh numbers)."""
+                 sleep=time.sleep) -> tuple[list[dict], float, str, bool]:
+    """Every post the Keeper wrote about the dragons since the Hatchery opened, straight from X's full archive
+    search. Nothing comes from pdtools' own collection."""
     h = {"Authorization": f"Bearer {bearer}", "User-Agent": "pdtools-trail/1.0"}
     q = f"from:{username} {TERMS} -is:retweet -is:reply"
     fields = {"tweet.fields": "created_at,public_metrics,entities", "max_results": 100}
@@ -222,29 +228,8 @@ def search_posts(http: requests.Session, bearer: str, username: str, budget: flo
                 return
             sleep(1.1)        # full archive search allows one request a second
 
-    try:
-        pages("/tweets/search/all", TRAIL_START)
-        return list(out.values()), cost, "all", partial
-    except XError as e:
-        if e.status not in (400, 401, 403):
-            raise
-    # recent search covers the last 7 days
-    week_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=6, hours=23)
-    pages("/tweets/search/recent", max(TRAIL_START, week_ago))
-    older = [i for i in (since_db or []) if i not in out]
-    for k in range(0, len(older), 100):
-        chunk = older[k:k + 100]
-        if cost + len(chunk) * cost_post > budget:
-            partial = True
-            break
-        r = http.get(f"{API}/tweets", params={"ids": ",".join(chunk), "tweet.fields": "created_at,public_metrics,entities"}, headers=h, timeout=20)
-        if r.status_code >= 400:
-            raise XError(r.status_code, r.text)
-        data = r.json().get("data") or []
-        cost += len(data) * cost_post
-        for p in data:
-            out[p["id"]] = _post(p)
-    return list(out.values()), cost, "recent+db", partial
+    pages("/tweets/search/all", TRAIL_START)
+    return list(out.values()), cost, "all", partial
 
 
 def register(app, cfg, Session, tz, has_preview=None) -> None:
@@ -358,12 +343,11 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
         with Session() as s:
             row = s.get(TrailCard, u["id"])
             saved = json.loads(row.card) if row else None
-            fresh = row is not None and not row.partial and now - row.fetched_at < timedelta(hours=cfg.trail_cache_hours)
+            fresh = row is not None and not row.partial and now - row.fetched_at < timedelta(hours=cfg.trail_cache_hours) \
+                and (saved or {}).get("v") == CARD_V
             left = cfg.trail_daily_cap_usd - spent_today(s, today())
-            ids = [] if fresh else list(s.scalars(select(Post.id).where(Post.author_id == u["id"], Post.created_at >= TRAIL_START)))
-            # others to compare with: Keepers pdtools has seen posting about the dragons since the Hatchery opened
-            others = [] if fresh else [c for _, c in s.execute(select(Post.author_id, func.count()).where(
-                Post.created_at >= TRAIL_START, Post.is_team.is_(False), Post.author_id != u["id"]).group_by(Post.author_id)).all()]
+            # others to compare with: Keepers who walked the trail, their counts also from X
+            others = [] if fresh else list(s.scalars(select(TrailCard.posts).where(TrailCard.user_id != u["id"])))
         if fresh:
             return jsonify({"card": saved, "cached": True})
         if not cfg.x_bearer_token:
@@ -379,7 +363,7 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
         try:
             # no database connection is held while X answers (the pool is small)
             try:
-                posts, cost, source, partial = search_posts(http, cfg.x_bearer_token, u["username"], left, cfg.cost_per_post_usd, ids)
+                posts, cost, source, partial = search_posts(http, cfg.x_bearer_token, u["username"], left, cfg.cost_per_post_usd)
             except (XError, requests.RequestException, ValueError) as e:
                 app.logger.warning("trail search failed for %s: %s", u["username"], e)
                 if saved:

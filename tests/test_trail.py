@@ -124,7 +124,7 @@ def test_card_numbers_come_from_their_dragon_posts(cfg, monkeypatch):
     r = c.get("/api/trail/me")
     card = r.get_json()["card"]
     q = [p for m, u, p in fake.calls if u.endswith("/tweets/search/all")][0]
-    assert q["query"].startswith("from:keeper_one (") and "-is:retweet" in q["query"] and q["start_time"].startswith("2026-09-01")
+    assert q["query"].startswith("from:keeper_one (") and "-is:retweet" in q["query"] and q["start_time"].startswith("2026-09-08") and "blinky" in q["query"] and " dragon " in q["query"]
     assert card["posts"] == "3" and card["views"] == "12.5K" and card["likes"] == "135" and card["reposts"] == "5"
     assert card["first"] == "8 Sep 2026" and card["last"] == "10 Sep 2026" and card["day"] == "3"
     assert card["bestViews"] == "12,000" and card["bestViewsDate"] == "Sep 8" and card["bestLikes"] == "90"
@@ -155,21 +155,6 @@ def test_the_daily_cap_stops_new_lookups_but_not_saved_cards(cfg, monkeypatch):
     sign_in(c)
     r = c.get("/api/trail/me")
     assert r.status_code == 429 and r.get_json()["why"] == "cap"
-
-
-def test_without_full_archive_search_older_posts_come_from_pdtools(cfg, monkeypatch):
-    recent = {"data": [tw("9", (date.today() - timedelta(days=1)).isoformat())], "meta": {}}
-    fake = FakeX(pages=[recent], full_archive=False)
-    app, c = make(cfg, fake, monkeypatch)
-    with make_session_factory(cfg.database_url)() as s:
-        s.add(Post(id="5", author_id="42", created_at=datetime(2026, 9, 20, 9)))
-        s.add(Post(id="6", author_id="77", created_at=datetime(2026, 9, 21, 9)))
-        s.commit()
-    sign_in(c)
-    card = c.get("/api/trail/me").get_json()["card"]
-    assert card["posts"] == "2"                                      # one from the last week, one pdtools already had
-    looked = [p for m, u, p in fake.calls if u.endswith("/2/tweets")]
-    assert looked and looked[0]["ids"] == "5"
 
 
 def test_no_dragon_posts_says_so(cfg, monkeypatch):
@@ -207,3 +192,33 @@ def test_compute_rhythm_and_weeks():
     assert c["rhythm"][49] == "t" and c["rhythm"][42] == 2 and c["rhythm"][43] == 2 and c["rhythm"][44] == 1
     assert c["weeks"] == "1" and c["weeksTotal"] == "2" and c["initials"] == "AB"
     assert c["ahead"] == "67"
+
+
+def test_an_old_saved_card_is_made_again(cfg, monkeypatch):
+    fake = FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}, {"data": [tw("1", "2026-09-08")], "meta": {}}])
+    app, c = make(cfg, fake, monkeypatch)
+    sign_in(c)
+    c.get("/api/trail/me")
+    with make_session_factory(cfg.database_url)() as s:
+        row = s.get(trail.TrailCard, "42"); j = json.loads(row.card); j["v"] = 1; row.card = json.dumps(j); s.commit()
+    assert c.get("/api/trail/me").get_json()["cached"] is False
+
+
+def test_everything_comes_from_x_and_ahead_compares_trail_keepers(cfg, monkeypatch):
+    fake = FakeX(pages=[{"data": [tw("1", "2026-09-08"), tw("2", "2026-09-09")], "meta": {}}])
+    app, c = make(cfg, fake, monkeypatch)
+    with make_session_factory(cfg.database_url)() as s:
+        s.add(Post(id="5", author_id="42", created_at=datetime(2026, 9, 20, 9)))       # pdtools knows it: not used
+        for i in range(6):
+            s.add(trail.TrailCard(user_id=f"o{i}", username=f"o{i}", posts=1, card="{}"))
+        s.commit()
+    sign_in(c)
+    card = c.get("/api/trail/me").get_json()["card"]
+    assert card["posts"] == "2" and card["ahead"] == "99"
+    assert not [u for m, u, p in fake.calls if u.endswith("/2/tweets")]
+
+
+def test_ahead_waits_for_five_trail_keepers(cfg, monkeypatch):
+    app, c = make(cfg, FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}]), monkeypatch)
+    sign_in(c)
+    assert c.get("/api/trail/me").get_json()["card"]["ahead"] == "—"
