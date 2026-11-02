@@ -179,12 +179,17 @@ def test_no_dragon_posts_says_so(cfg, monkeypatch):
     assert r.get_json()["why"] == "none"
 
 
-def test_hidden_until_launch(cfg, monkeypatch):
+def test_hidden_until_launch_even_with_v2_public(cfg, monkeypatch):
     cfg.trail_public = False
+    cfg.v2_public = True                 # the rest of pdtools v2 is public: the trail still is not
+    cfg.preview_key = "jons-key"
     app, c = make(cfg, FakeX(), monkeypatch)
-    assert c.get("/trail/").status_code == 404
-    assert c.get("/trail/x/connect").status_code == 404
-    assert c.get("/api/trail/me").status_code == 404
+    for path in ("/trail/", "/trail/x/connect", "/api/trail/me", "/api/trail/avatar"):
+        assert c.get(path).status_code == 404, path
+    assert c.post("/trail/x/disconnect").status_code == 404
+    c.get("/preview/jons-key")           # Jon's own preview pass opens it
+    assert c.get("/trail/").status_code in (200, 404)   # 404 only when the built page is missing
+    assert c.get("/api/trail/me").status_code == 401
 
 
 def test_avatar_is_served_from_pdtools(cfg, monkeypatch):

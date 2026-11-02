@@ -2727,5 +2727,9 @@ def create_app(cfg: Config | None = None) -> Flask:
             run_collection(s, XClient(cfg.x_bearer_token), cfg)
         return redirect(url_for("admin"))
 
-    trail_mod.register(app, cfg, Session, tz)
+    def has_preview() -> bool:
+        # Jon's own preview pass only: pdtools v2 is public, so g.v2 is true for everyone and cannot hide the trail
+        cookie = request.cookies.get(PREVIEW_COOKIE, "")
+        return bool(cfg.preview_key and cookie and hmac.compare_digest(cookie, preview_token()))
+    trail_mod.register(app, cfg, Session, tz, has_preview)
     return app

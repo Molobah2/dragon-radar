@@ -247,7 +247,7 @@ def search_posts(http: requests.Session, bearer: str, username: str, budget: flo
     return list(out.values()), cost, "recent+db", partial
 
 
-def register(app, cfg, Session, tz) -> None:
+def register(app, cfg, Session, tz, has_preview=None) -> None:
     http = requests.Session()
     inflight: set[str] = set()
     lock = threading.Lock()
@@ -255,7 +255,7 @@ def register(app, cfg, Session, tz) -> None:
     callback = cfg.trail_callback or f"{base}/trail/x/callback"
 
     def allowed() -> bool:
-        return cfg.trail_public or bool(g.get("v2"))
+        return cfg.trail_public or bool(has_preview and has_preview())
 
     def today() -> date:
         return datetime.now(tz).date()
@@ -341,6 +341,8 @@ def register(app, cfg, Session, tz) -> None:
 
     @app.post("/trail/x/disconnect")
     def trail_disconnect():
+        if not allowed():
+            abort(404)
         session.pop("trail_user", None)
         return jsonify({"ok": True})
 
@@ -405,6 +407,8 @@ def register(app, cfg, Session, tz) -> None:
     @app.get("/api/trail/avatar")
     def trail_avatar():
         """The Keeper's X picture from pdtools' own address, so the card can paint it onto the medallion."""
+        if not allowed():
+            abort(404)
         u = session.get("trail_user")
         if not u or not u.get("avatar", "").startswith("https://pbs.twimg.com/"):
             abort(404)
