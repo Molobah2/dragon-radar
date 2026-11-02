@@ -94,6 +94,7 @@ body.rv-going .rv *{pointer-events:none!important}
 body.switching .rv-tap{opacity:.55;pointer-events:none}
 .pdlogo{height:54px;width:90px;margin:-8px 0 0 -4px;pointer-events:none;user-select:none;-webkit-user-drag:none}
 body.shot .pdlogo{display:none}
+body.home-on .homebtn,body.shot .homebtn{display:none}
 @media (max-width:600px){.pdlogo{position:fixed;top:calc(60px + env(safe-area-inset-top,0px));left:50%;margin:0;height:60px;width:100px;transform:translateX(-50%);transition:opacity .4s}body.rv-on .pdlogo{opacity:0}}
 .corner .lang:focus-within{outline:2px solid currentColor;outline-offset:3px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:10;display:flex;align-items:center;gap:12px;max-width:calc(100% - 32px);box-sizing:border-box;padding:10px 10px 10px 16px;border-radius:16px;color:#fff;background:rgba(18,16,26,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 12px 40px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.12);font:600 13px/1.35 system-ui}
@@ -259,7 +260,7 @@ body[data-card="light"]{--bg:#f2ece2;--ink:#2e2a24;--soft:rgba(46,42,36,.7);--gl
 <button type="button" class="rv-skip" id="rv-skip" data-t="skip">SKIP</button>
 <p id="rv-welcome" data-t="welcome">Welcome to the Trail, Keeper</p>
 <div class="toast" id="toast" role="status" hidden><span id="toast-t"></span><a id="toast-x" href="https://x.com" target="_blank" rel="noopener" data-t="openX">OPEN X</a><button type="button" id="toast-c" aria-label="Close">&times;</button></div>
-<div class="corner l"><span class="lang"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 2.6 15.2 0 18M12 3c-2.6 2.8-2.6 15.2 0 18"/></svg><b id="langcode">EN</b><select id="lang" aria-label="Language"></select></span><img id="pdlogo" class="pdlogo" alt="Pocket Dragons" hidden></div>
+<div class="corner l"><button type="button" id="homebtn" class="homebtn" aria-label="Home" title="Home"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></button><span class="lang"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 2.6 15.2 0 18M12 3c-2.6 2.8-2.6 15.2 0 18"/></svg><b id="langcode">EN</b><select id="lang" aria-label="Language"></select></span><img id="pdlogo" class="pdlogo" alt="Pocket Dragons" hidden></div>
 <div class="corner r"><button type="button" id="snd" aria-pressed="true"><svg class="w" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="x" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="m17 9 5 6M22 9l-5 6"/></svg></button></div>
 <div class="pickwrap"><button type="button" class="pickbtn" id="pickbtn" aria-expanded="false" aria-controls="pickpanel"><i id="pickdot"></i><span id="pickname">Gilded Night</span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
 <div class="pickpanel" id="pickpanel" hidden>
@@ -274,7 +275,6 @@ body[data-card="light"]{--bg:#f2ece2;--ink:#2e2a24;--soft:rgba(46,42,36,.7);--gl
 <div class="home-shade"></div><div class="home-wash"></div>
 <div class="home-in"><div class="home-top"><p class="home-kick">Pocket Dragons</p><h1 class="home-h" data-t="kick">Keepers Trail</h1><p class="home-sub" data-t="hSub">Every post leaves a step on the trail.</p></div>
 <div class="home-bottom"><button type="button" id="home-go" class="home-go" data-t="hGo">WALK THE TRAIL</button><p class="home-note" id="home-note" role="status" aria-live="polite" hidden></p><p class="home-who" id="home-who" hidden><span data-t="hAs">Signed in as</span> <b id="home-handle"></b> · <button type="button" id="home-switch" data-t="hSwitch">Switch</button></p></div></div>
-<p class="home-credit"><b>Jon Wynn</b></p>
 </div>
 <script>
 /* The homepage. It paints first (before the heavy card code arrives): a tiny blurred picture at once, then the sharp still.
@@ -358,8 +358,22 @@ body[data-card="light"]{--bg:#f2ece2;--ink:#2e2a24;--soft:rgba(46,42,36,.7);--gl
     }
     walk();
   }
+  // back to the homepage from the card (the Home button in the corner, or the phone's back gesture)
+  window.KT_HOME_SHOW = function (fromHistory) {
+    if (!left) return; left = false; waiting = false;
+    var b = document.getElementById('home-go'); b.classList.remove('busy'); b.removeAttribute('aria-busy'); goLabel(gate === 'connect' ? 'hX' : 'hGo', gate === 'connect' ? 'CONNECT X TO BEGIN' : 'WALK THE TRAIL');
+    window.KT_HOME_DONE = false; document.body.classList.add('home-on');
+    H.classList.remove('out'); void H.offsetWidth;
+    requestAnimationFrame(function () { H.classList.remove('gone', 'leaving'); });
+    try { if (window.KT_HOME3D_START) window.KT_HOME3D_START(); } catch (e) {}
+    if (!fromHistory && history.state && history.state.kt === 'card') { try { history.back(); } catch (e) {} }
+    setTimeout(function () { try { b.focus({ preventScroll: true }); } catch (e) {} }, 400);
+  };
+  addEventListener('popstate', function () { if (left) window.KT_HOME_SHOW(true); });
+  document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#homebtn')) window.KT_HOME_SHOW(); });
   function walk() {
     if (left) return; left = true;
+    try { if (!history.state || history.state.kt !== 'card') history.pushState({ kt: 'card' }, ''); } catch (e) {}
     H.classList.add('leaving'); document.body.classList.add('home-leaving');
     setTimeout(function () { window.KT_BOOT_NOW(); try { if (window.KT_SND) window.KT_SND.unlock(); } catch (e) {} }, 60);
     setTimeout(function () { H.classList.add('gone'); document.body.classList.remove('home-on'); if (window.KT_ENTER) window.KT_ENTER(); else window.KT_HOME_DONE = true; }, still ? 300 : 1250);
@@ -417,8 +431,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
    snow drift between them and the camera, which breathes slowly so the layers move against each other.
    Runs as soon as three.js has arrived; the still picture underneath shows until the first frame is drawn. */
 (function () {
+ var running = false;
+ window.KT_HOME3D_START = start;      // also used when the Keeper comes back to the homepage from the card
+ if (!document.getElementById('home') || !document.getElementById('home').classList.contains('out')) start();
+ function start() {
   var H = document.getElementById('home'), host = document.getElementById('home-bg'), A = window.KT_HOME || {};
-  if (!H || !host || !window.THREE || window.KT_HOME_STILL || !A.bgwide || H.classList.contains('out')) return;
+  if (running || !H || !host || !window.THREE || window.KT_HOME_STILL || !A.bgwide) return;
+  running = true;
   var T = window.THREE, R;
   try { R = new T.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance' }); } catch (e) { return; }
   // where Blinky sits in each picture (share of width and height at his feet) and how tall he is
@@ -512,7 +531,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   addEventListener('resize', function () { clearTimeout(fit.t); fit.t = setTimeout(fit, 150); });
   fit(); frame();
   // once the Keeper has walked in, the scene is let go so the card has the device to itself
-  window.KT_HOME3D_STOP = function () { if (!live) return; live = false; try { R.dispose(); R.forceContextLoss(); } catch (e) {} cv.remove(); };
+  window.KT_HOME3D_STOP = function () { if (!live) return; live = false; running = false; try { R.dispose(); R.forceContextLoss(); } catch (e) {} cv.remove(); };
+ }
 })();
 </script>
 <script>"use strict";
