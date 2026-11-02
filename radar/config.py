@@ -74,6 +74,13 @@ class Config:
     team_x: bool = field(default_factory=lambda: _bool("TEAM_X", "1"))
     site_name: str = field(default_factory=lambda: os.environ.get("SITE_NAME", "Blinky's Friends"))
     x_bearer_token: str = field(default_factory=lambda: os.environ.get("X_BEARER_TOKEN", ""))
+    # Keepers Trail: "Sign in with X" (OAuth 2.0 client of the same X app), hidden behind the preview until TRAIL_PUBLIC=1
+    x_client_id: str = field(default_factory=lambda: os.environ.get("X_CLIENT_ID", "").strip())
+    x_client_secret: str = field(default_factory=lambda: os.environ.get("X_CLIENT_SECRET", "").strip())
+    trail_callback: str = field(default_factory=lambda: os.environ.get("TRAIL_CALLBACK_URL", "").strip())
+    trail_public: bool = field(default_factory=lambda: _bool("TRAIL_PUBLIC", "0"))
+    trail_daily_cap_usd: float = field(default_factory=lambda: float(os.environ.get("TRAIL_DAILY_CAP_USD", "10")))
+    trail_cache_hours: int = field(default_factory=lambda: int(os.environ.get("TRAIL_CACHE_HOURS", "24")))
     database_url: str = field(default_factory=lambda: _db_url(os.environ.get("DATABASE_URL", "sqlite:///radar.db")))
     search_query: str = field(default_factory=lambda: os.environ.get("SEARCH_QUERY", DEFAULT_QUERY))
     team_handle: str = field(default_factory=lambda: os.environ.get("TEAM_HANDLE", "Pocket_Dragons_"))

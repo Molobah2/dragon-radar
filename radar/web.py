@@ -24,6 +24,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .collector import run_collection
 from .config import Config
+from . import trail as trail_mod   # defines its table before the database is opened
 from .directory import has_dragon_tag, note_user
 from .db import (SIDE_RUNS, AuthorCheck, BlockedAuthor, CollectorRun, Keeper, Post, get_setting, make_session_factory, month_spend,
                  set_setting, utcnow)
@@ -2726,4 +2727,5 @@ def create_app(cfg: Config | None = None) -> Flask:
             run_collection(s, XClient(cfg.x_bearer_token), cfg)
         return redirect(url_for("admin"))
 
+    trail_mod.register(app, cfg, Session, tz)
     return app
