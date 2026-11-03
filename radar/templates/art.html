@@ -114,6 +114,67 @@ body { background: #0f1d1f; }
 .zoom img { max-width: 100%; max-height: 86vh; border-radius: 6px; box-shadow: 0 30px 60px -20px #000; }
 .zoom p { margin: 12px 0 0; text-align: center; font-weight: 800; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ===== the hall: a 3D gallery corridor (art3d.js); a lit plaster still shows until it is ready ===== */
+.hall { position: relative; height: calc(100vh - 64px); height: calc(100svh - 64px); min-height: 520px; max-height: 980px; overflow: hidden; outline: none;
+  background: #120d0a; isolation: isolate; }
+.hall-still { position: absolute; inset: 0; background:
+  radial-gradient(38% 46% at 50% 40%, rgba(255, 226, 180, .55), rgba(255, 226, 180, 0) 70%),
+  linear-gradient(180deg, rgba(18, 13, 10, .55), rgba(18, 13, 10, 0) 30%, rgba(18, 13, 10, 0) 64%, #1a120d 64.2%, #120d0a),
+  {% if hall_data.tex.wall %}url("{{ hall_data.tex.wall }}") center/420px,{% endif %} #6d6152; transition: opacity 1s ease; }
+.hall-still::after { content: ""; position: absolute; left: 50%; top: 40%; width: min(46vw, 300px); aspect-ratio: .8; transform: translate(-50%, -50%);
+  border: 12px solid #3b2618; background: #efe7d8; box-shadow: 0 20px 40px -10px rgba(0,0,0,.6), inset 0 0 0 14px #f4eee2; animation: breathe 2.4s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: .55; } }
+#hall-gl, #hall-gl canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#hall-gl canvas { opacity: 0; transition: opacity 1.2s ease; cursor: grab; }
+.hall.live #hall-gl canvas { opacity: 1; } .hall.live .hall-still { opacity: 0; }
+.hall-vig { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(130% 90% at 50% 45%, rgba(0,0,0,0) 55%, rgba(8, 5, 3, .55)); }
+.hall-ui { position: absolute; inset: 0; pointer-events: none; display: grid; grid-template-rows: auto 1fr auto; padding: 14px clamp(14px, 3vw, 28px) calc(16px + env(safe-area-inset-bottom)); }
+.hall-ui > * { pointer-events: auto; }
+.hall-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; pointer-events: none; }
+.hall-top > * { pointer-events: auto; }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(18, 12, 8, .62); border: 1px solid rgba(255, 220, 170, .28);
+  color: #ffe3b0; font: 800 13px/1 var(--body); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.chip i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; animation: pulse 2s ease-in-out infinite; }
+.chip.on { color: var(--mint); border-color: rgba(143, 240, 200, .45); }
+.hall-bottom { display: grid; justify-items: center; gap: 10px; }
+.cap { min-height: 52px; display: grid; justify-items: center; text-align: center; gap: 3px; text-shadow: 0 2px 14px rgba(0,0,0,.9); max-width: 32em; }
+.cap b { font: 700 clamp(19px, 2.6vw, 26px)/1.15 var(--disp); color: #fff6e6; overflow-wrap: anywhere; }
+.cap span { font: 800 13.5px/1.3 var(--body); color: #ffd59a; letter-spacing: .3px; }
+.walk { display: flex; align-items: center; gap: 10px; }
+.walk button, .walk a { height: 46px; min-width: 46px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(255, 220, 170, .35); background: rgba(18, 12, 8, .66);
+  color: #ffeccc; font: 700 15px/1 var(--disp); display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-decoration: none;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.walk button:hover, .walk a:hover { border-color: var(--gold); }
+.walk button:focus-visible, .walk a:focus-visible, .hall:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.walk .look { background: linear-gradient(180deg, #ffe08f, #ffb85c); color: #3a1a06; border-color: transparent; }
+.walk button:disabled { opacity: .4; cursor: default; }
+.walk svg { width: 20px; height: 20px; }
+.dots { font: 800 12px/1 var(--body); color: rgba(255, 236, 204, .7); letter-spacing: 1px; }
+.hint { font: 700 12.5px/1.2 var(--body); color: rgba(255, 236, 204, .7); transition: opacity .6s; }
+.bubble { position: absolute; z-index: 2; transform: translate(-6%, -100%); max-width: 210px; padding: 10px 13px; border-radius: 16px 16px 16px 4px; background: #fff8ec;
+  color: #2d1f15; font: 700 14px/1.3 var(--disp); box-shadow: 0 12px 26px -10px rgba(0,0,0,.6); pointer-events: none; opacity: 0; transition: opacity .4s; }
+.bubble.on { opacity: 1; }
+.hall.flat { height: auto; min-height: 0; max-height: none; background: none; }
+.hall.flat .hall-still, .hall.flat #hall-gl, .hall.flat .hall-vig, .hall.flat .hall-bottom, .hall.flat .bubble { display: none; }
+.hall.flat .hall-ui { position: static; }
+.hall-flathead { display: none; }
+.hall.flat .hall-flathead { display: grid; }
+
+/* one artwork, up close: a museum label beside it */
+.piece { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; background: rgba(8, 5, 3, .88); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.piece[hidden] { display: none; }
+.piece-in { width: min(1040px, 100%); max-height: calc(100svh - 32px); overflow: auto; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: clamp(16px, 3vw, 34px); align-items: center;
+  padding: clamp(14px, 2.6vw, 26px); border-radius: 24px; background: linear-gradient(180deg, #1c1410, #120d0a); border: 1px solid rgba(255, 220, 170, .18); position: relative; }
+.piece .frame img { aspect-ratio: auto; max-height: min(70svh, 640px); object-fit: contain; }
+.piece-lab { display: grid; gap: 10px; align-content: center; }
+.piece-lab .kick { justify-self: start; }
+.piece-lab h2 { margin: 0; font: 700 clamp(26px, 3.4vw, 38px)/1.08 var(--disp); overflow-wrap: anywhere; }
+.piece-lab .med { margin: 0; color: var(--gold); font-weight: 800; font-size: 14px; letter-spacing: .4px; }
+.piece-lab blockquote { margin: 0; padding: 4px 0 4px 14px; border-left: 3px solid rgba(255, 213, 154, .6); color: var(--soft); font-size: 16px; font-style: italic; overflow-wrap: anywhere; }
+.piece-x { position: absolute; top: 10px; right: 10px; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255, 220, 170, .3); background: rgba(0,0,0,.4); color: var(--ink); font-size: 22px; cursor: pointer; }
+@media (max-width: 760px) { .piece-in { grid-template-columns: 1fr; } .piece .frame img { max-height: 52svh; } }
+@media (prefers-reduced-motion: reduce) { .hall-still::after, .chip i { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .ka-world img, .phase i { animation: none; } }
 </style>
 </head>
@@ -133,10 +194,36 @@ body { background: #0f1d1f; }
     </div>
   </header>
 
-  <main class="ka-main">
+  <section class="hall" id="hall" tabindex="0" aria-label="The Keeper Art hall. Use the arrow keys to walk along the wall, and Enter to look closer.">
+    <div class="hall-still" aria-hidden="true"></div>
+    <div id="hall-gl"></div>
+    <div class="hall-vig" aria-hidden="true"></div>
+    <p class="bubble" id="bubble" aria-hidden="true">Welcome in! Swipe to walk the wall. Tap any piece to look closer.</p>
+    <div class="hall-ui">
+      <div class="hall-top">
+        <span class="chip"><span>Keeper Art · {{ week }}</span></span>
+        <span class="chip{{ ' on' if voting }}" id="clock"><i></i><span id="clock-t">{% if voting %}Voting is open until Sunday night (UTC){% else %}Voting opens on Friday{% endif %}</span></span>
+      </div>
+      <div></div>
+      <div class="hall-bottom" id="hall-bottom" hidden>
+        <div class="cap" id="cap" aria-live="polite"><b id="cap-t"></b><span id="cap-s"></span></div>
+        <div class="walk">
+          <button type="button" id="w-prev" aria-label="Walk back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <button type="button" class="look" id="w-look">Look closer</button>
+          <button type="button" id="w-next" aria-label="Walk on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+        <span class="dots" id="dots"></span>
+        <a class="hint" href="#list" id="hint">Swipe to walk · see it all as a list</a>
+      </div>
+    </div>
+  </section>
+  <script type="application/json" id="hall-data">{{ hall_data|tojson }}</script>
+
+  <main class="ka-main" id="list">
     <div class="ka-head">
       <span class="kick">Keeper Art · {{ week }}</span>
       <h1 data-i18n-html="zArtH1">Made by hand, <span>by Keepers</span></h1>
+      {% if theme %}<p class="kick" style="letter-spacing:1px">This week's theme · {{ theme }}</p>{% endif %}
       <p>Pocket Dragons art drawn, painted or sculpted by fellow Keepers. Every piece comes with a video of it being made, and Jon checks each one before it goes up. No AI art.</p>
       {% if voting %}<span class="phase"><i></i>Voting is open until Sunday night (UTC)</span>
       {% else %}<span class="phase wait"><i></i>Send in your art. Voting opens on Friday</span>{% endif %}
@@ -167,8 +254,9 @@ body { background: #0f1d1f; }
       <ul class="wall" id="wall">
         {% for a in items %}
         <li>
-          <a class="frame" href="/art/{{ a.id }}.webp?s=f" data-zoom data-title="{{ a.title }} by @{{ a.user }}"><span class="mat"><img src="/art/{{ a.id }}.webp" alt="{{ a.title }} by @{{ a.user }}" loading="lazy" width="640" height="640"></span></a>
+          <a class="frame" href="/art/p/{{ a.id }}" data-piece="{{ a.id }}"><span class="mat"><img src="/art/{{ a.id }}.webp" alt="{{ a.title }} by @{{ a.user }}" loading="lazy" width="640" height="640"></span></a>
           <b>{{ a.title }}</b>
+          {% if a.medium %}<span class="meta" style="color:var(--mute)">{{ a.medium }}</span>{% endif %}
           <span class="meta"><a href="https://x.com/{{ a.user }}" target="_blank" rel="noopener">@{{ a.user }}</a><a href="{{ a.proof }}" target="_blank" rel="noopener nofollow">Making-of video</a></span>
           {% if voting %}<button class="vote" type="button" data-vote="{{ a.id }}" data-user="{{ a.user|lower }}" aria-pressed="false">Vote</button>{% endif %}
         </li>
@@ -195,6 +283,10 @@ body { background: #0f1d1f; }
         <label><span>Title</span><input type="text" id="f-title" name="title" maxlength="60" placeholder="What did you make?" required autocomplete="off"></label>
         <label><span>Making-of video link</span><input type="url" id="f-proof" name="proof" maxlength="290" placeholder="https://" required inputmode="url" autocomplete="off">
           <small>A video of you making it, on X, YouTube, TikTok, Instagram or Google Drive (other sites and short links are not accepted). A short timelapse is perfect. The link is shown next to your art.</small></label>
+        <label><span>Made with</span><input type="text" id="f-medium" name="medium" maxlength="40" placeholder="Pencil and ink, clay, watercolour…" list="f-media" autocomplete="off">
+          <datalist id="f-media"><option value="Pencil"><option value="Ink"><option value="Watercolour"><option value="Acrylic paint"><option value="Oil paint"><option value="Coloured pencils"><option value="Markers"><option value="Clay"><option value="Crochet"><option value="Paper craft"><option value="Digital painting, by hand"></datalist>
+          <small>Shown on the museum label next to your art.</small></label>
+        <label><span>A line about it</span><input type="text" id="f-line" name="line" maxlength="140" placeholder="What it shows, or how you made it (optional)" autocomplete="off"></label>
         <label class="pick" for="f-image"><span class="prev" id="f-prev" aria-hidden="true">+</span><span><b style="display:block;font:700 16px/1.2 var(--disp)" id="f-pick-t">Pick your picture</b><small>A photo or scan of your art (JPG, PNG or WebP). It is made smaller on your phone before it is sent.</small></span>
           <input type="file" id="f-image" accept="image/jpeg,image/png,image/webp"></label>
         <label class="pledge"><input type="checkbox" id="f-pledge"><span>I made this myself, by hand. No AI was used for any part of it.</span></label>
@@ -227,6 +319,27 @@ body { background: #0f1d1f; }
   </main>
 
   {% include "_v21_foot.html" %}
+</div>
+
+<div class="piece" id="piece" hidden role="dialog" aria-modal="true" aria-labelledby="p-title">
+  <div class="piece-in">
+    <button class="piece-x" type="button" id="p-x" aria-label="Close">×</button>
+    <a class="frame" id="p-frame" href="#" target="_blank" rel="noopener"><span class="mat"><img id="p-img" alt=""></span></a>
+    <div class="piece-lab">
+      <span class="kick" id="p-kick"></span>
+      <h2 id="p-title"></h2>
+      <a class="by" id="p-by" target="_blank" rel="noopener"></a>
+      <p class="med" id="p-med"></p>
+      <blockquote id="p-line"></blockquote>
+      <div class="acts">
+        <a class="btn go" id="p-proof" target="_blank" rel="noopener nofollow">Watch it being made</a>
+        {% if voting %}<button class="vote" type="button" id="p-vote" data-vote="" data-user="" aria-pressed="false">Vote</button>{% endif %}
+        <a class="btn ghost" id="p-share" target="_blank" rel="noopener">Share</a>
+        <button class="btn ghost" type="button" id="p-copy">Copy link</button>
+      </div>
+      <p class="msg" id="p-msg" role="status" aria-live="polite"></p>
+    </div>
+  </div>
 </div>
 
 <div class="zoom" id="zoom" hidden role="dialog" aria-modal="true" aria-label="Artwork"><div><img id="zoom-img" alt=""><p id="zoom-t"></p></div></div>
@@ -302,18 +415,97 @@ body { background: #0f1d1f; }
   function load() { fetch(`/api/art/me?vid=${vid()}`).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.ok) fill(j); else $("send-load").innerHTML = '<p class="msg">Could not load right now. Refresh to try again.</p>'; }).catch(() => {}); }
   load();
 
-  document.querySelectorAll("[data-vote]").forEach((b) => b.addEventListener("click", async () => {
+  document.addEventListener("click", async (ev) => {
+    const b = ev.target.closest("[data-vote]"); if (!b || !b.dataset.vote) return;
     if (!me) { say($("vote-msg"), "One moment, still checking your Keeper name."); return; }
-    if (!me.signed) { say($("vote-msg"), WHY.unsigned); $("send").scrollIntoView({ behavior: calm ? "auto" : "smooth" }); return; }
+    if (!me.signed) { say(b.id === "p-vote" ? $("p-msg") : $("vote-msg"), WHY.unsigned); if (b.id !== "p-vote") $("send").scrollIntoView({ behavior: calm ? "auto" : "smooth" }); return; }
     b.disabled = true;
     try {
       const r = await fetch("/api/art/vote", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ vid: vid(), entry: +b.dataset.vote }) });
       const j = await r.json();
-      if (j.ok) { me.voted = j.voted; say($("vote-msg"), "Vote saved. Thank you for supporting a fellow Keeper.", true); }
-      else say($("vote-msg"), WHY[j.why] || WHY.busy);
-    } catch (e) { say($("vote-msg"), WHY.busy); }
+      const out = b.id === "p-vote" ? $("p-msg") : $("vote-msg");
+      if (j.ok) { me.voted = j.voted; say(out, "Vote saved. Thank you for supporting a fellow Keeper. You can change it until Sunday.", true); }
+      else say(out, WHY[j.why] || WHY.busy);
+    } catch (e) { say(b.id === "p-vote" ? $("p-msg") : $("vote-msg"), WHY.busy); }
     paintVotes();
-  }));
+  });
+
+  /* ===== the hall ===== */
+  const D = JSON.parse($("hall-data").textContent || "{}"), hall = $("hall");
+  const all = new Map(); [...(D.items || []), ...(D.hall || []), ...(D.last ? [D.last] : [])].forEach((a) => all.set(a.id, a));
+  const wk = (w) => { const d = new Date(w + "T00:00:00Z"); return "Week of " + d.toLocaleString("en", { month: "short", timeZone: "UTC" }) + " " + d.getUTCDate(); };
+  // the countdown to the vote (or to its end), in whole days and hours
+  function clock() {
+    const ms = Date.parse(D.next) - Date.now(); if (!(ms > 0)) return;
+    const h = Math.floor(ms / 36e5), d = Math.floor(h / 24), left = d ? `${d}d ${h % 24}h` : h ? `${h}h ${Math.floor(ms / 6e4) % 60}m` : `${Math.max(1, Math.floor(ms / 6e4))}m`;
+    $("clock-t").textContent = D.voting ? `Voting closes in ${left}` : `Voting opens in ${left}`;
+  }
+  clock(); setInterval(clock, 30000);
+
+  /* one artwork up close */
+  const piece = $("piece"); let back = null;
+  function open(a) {
+    if (!a) return; back = document.activeElement;
+    const winner = D.last && D.last.id === a.id, past = a.week !== D.week;
+    $("p-img").src = `/art/${a.id}.webp?s=f`; $("p-img").alt = `${a.title} by @${a.user}`; $("p-frame").href = `/art/${a.id}.webp?s=f`;
+    $("p-kick").textContent = winner ? "Keeper Art of last week" : past ? `Keeper Art of the week · ${wk(a.week)}` : `On the wall · ${wk(a.week)}`;
+    $("p-title").textContent = a.title;
+    const by = $("p-by"); by.href = `https://x.com/${a.user}`; by.textContent = "";
+    const ava = document.createElement("span"); ava.className = "ava"; ava.textContent = a.user.slice(0, 1).toUpperCase();
+    const im = document.createElement("img"); im.src = `/api/avatar/${encodeURIComponent(a.user)}`; im.alt = ""; im.onerror = () => im.remove(); ava.appendChild(im);
+    by.append(ava, "@" + a.user);
+    $("p-med").textContent = a.medium || ""; $("p-med").hidden = !a.medium;
+    $("p-line").textContent = a.line ? `“${a.line}”` : ""; $("p-line").hidden = !a.line;
+    $("p-proof").href = a.proof;
+    const link = `https://pdtools.xyz/art/p/${a.id}`;
+    $("p-share").href = "https://x.com/intent/post?text=" + encodeURIComponent(`“${a.title}” by @${a.user}, hand made Pocket Dragons art on the Keeper Art wall 🎨🐉`) + "&url=" + encodeURIComponent(link);
+    $("p-copy").onclick = () => { (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(() => say($("p-msg"), "Link copied.", true), () => say($("p-msg"), link, true)); };
+    const v = $("p-vote"); if (v) { const can = !past; v.hidden = !can; v.dataset.vote = can ? String(a.id) : ""; v.dataset.user = a.user.toLowerCase(); }
+    say($("p-msg"), ""); paintVotes();
+    piece.hidden = false; document.body.style.overflow = "hidden"; $("p-x").focus();
+  }
+  function close() { if (piece.hidden) return; piece.hidden = true; document.body.style.overflow = ""; if (back && back.focus) back.focus({ preventScroll: true }); }
+  $("p-x").addEventListener("click", close);
+  piece.addEventListener("click", (e) => { if (e.target === piece) close(); });
+  addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+  document.addEventListener("click", (e) => { const a = e.target.closest("[data-piece]"); if (!a) return; e.preventDefault(); open(all.get(+a.dataset.piece)); });
+  const toSend = () => { $("send").scrollIntoView({ behavior: calm ? "auto" : "smooth" }); };
+
+  const NAME = { entrance: ["", ""], hall: ["Wall of winners", "Keeper Art of the week, chosen by Keepers' votes"],
+    empty: ["Your art could hang here", "The wall fills up as Jon checks this week's art"], end: ["Your art here", "Send in your own hand made Pocket Dragons art"] };
+  window.KA_UI = {
+    vid,
+    open, send: toSend,
+    stop(st, k, n) {
+      const it = st.item, nm = NAME[st.kind];
+      $("cap-t").textContent = it ? it.title : nm[0];
+      $("cap-s").textContent = it ? `@${it.user}${it.medium ? " · " + it.medium : ""}${st.kind === "winner" ? " · Keeper Art of last week" : ""}` : nm[1];
+      $("w-look").textContent = it ? "Look closer" : st.kind === "end" || st.kind === "empty" ? "Send yours in" : st.kind === "hall" ? "Tap a winner" : "Start the walk";
+      $("w-look").disabled = st.kind === "hall";
+      $("w-prev").disabled = k === 0; $("w-next").disabled = k === n - 1;
+      $("dots").textContent = `${k + 1} / ${n}`;
+      if (k > 0) $("hint").style.opacity = ".45";
+    },
+    bubble(on, x, y) { const b = $("bubble"); b.classList.toggle("on", on); if (on) { b.style.left = x + "%"; b.style.top = y + "%"; } },
+    ready() { $("hall-bottom").hidden = false; },
+  };
+  $("w-prev").addEventListener("click", () => window.KA_GO && window.KA_GO(-1));
+  $("w-next").addEventListener("click", () => window.KA_GO && window.KA_GO(1));
+  $("w-look").addEventListener("click", () => { const st = window.KA_AT && window.KA_AT(); if (!st) return;
+    if (st.item) open(st.item); else if (st.kind === "entrance") window.KA_GO(1); else if (st.kind === "end" || st.kind === "empty") toSend(); });
+
+  // the hall is drawn with three.js, loaded only when this device can show it well; everyone else gets the list
+  const cn = navigator.connection || {};
+  const gl = (() => { try { const c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch (e) { return false; } })();
+  if (!gl || calm || cn.saveData || /(^|-)2g$/.test(cn.effectiveType || "")) {
+    hall.classList.add("flat");
+    if (D.focus) open(all.get(D.focus));
+  } else {
+    window.KA_HALL = D;
+    const add = (src) => new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+    add("{{ asset('vendor/three.min.js') }}").then(() => add("{{ asset('art3d.js') }}")).catch(() => { hall.classList.add("flat"); if (D.focus) open(all.get(D.focus)); });
+    setTimeout(() => { if (!hall.classList.contains("live")) { hall.classList.add("flat"); if (D.focus) open(all.get(D.focus)); } }, 15000);   // never stuck on the still
+  }
 
   /* the picture is made smaller on this device first: at most 1600 px, so a phone photo sends quickly */
   let blob = null;
@@ -343,7 +535,7 @@ body { background: #0f1d1f; }
     if (!/^https:\/\/\S{6,}$/.test(proof)) return say(msg, WHY.proof);
     if (!blob) return say(msg, WHY.image);
     if (!$("f-pledge").checked) return say(msg, WHY.pledge);
-    const fd = new FormData(); fd.append("vid", vid()); fd.append("title", title); fd.append("proof", proof); fd.append("pledge", "yes"); fd.append("image", blob, "art.jpg");
+    const fd = new FormData(); fd.append("vid", vid()); fd.append("title", title); fd.append("proof", proof); fd.append("pledge", "yes"); fd.append("medium", $("f-medium").value.trim()); fd.append("line", $("f-line").value.trim()); fd.append("image", blob, "art.jpg");
     $("f-send").disabled = true; say(msg, "Sending…", true);
     try {
       const r = await fetch("/api/art/submit", { method: "POST", body: fd });

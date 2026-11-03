@@ -370,6 +370,7 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
       <label class="hatch-xname" id="hatch-xname" hidden><span>Your X name for the card</span>
         <input id="hatch-xname-in" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="16" placeholder="@yourname"></label>
       <div class="sheet-actions" id="hatch-actions" hidden>
+        <button class="btn btn-go" id="hatch-next" type="button" hidden>Hatch the next egg</button>
         <button class="btn btn-go" id="hatch-share" type="button" hidden>Share</button>
         <a class="btn btn-go" id="hatch-post" href="https://x.com/intent/post" target="_blank" rel="noopener">Post on X</a>
         <button class="btn btn-soft" id="hatch-save" type="button">Save picture</button>
@@ -409,7 +410,7 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
         <span class="dex-dots" id="dex-dots" aria-hidden="true"><i></i><i></i><i></i></span>
         <button class="dex-arrow" id="dex-next-page" type="button" aria-label="Next page">&#8250;</button>
       </div>
-      <p class="dex-how">{% if v21_open %}Finish the daily goal to hatch one egg: open 10 Keeper posts, play the Dragon Quiz and follow 1 new Keeper.{% else %}Cheer on 20 fellow Keepers a day to hatch one egg.{% endif %} New dragons come at a steady pace, so keep showing up every day. Rare holo dragons need a 3 day goal streak and golden legends need 7, so do not break the chain. Three spare dragons can be swapped for one you have not found yet. Your dragons live on this device, and the code in My progress moves them to another one.</p>
+      <p class="dex-how">{% if v21_open %}Finish the daily goal to hatch your eggs: open 10 Keeper posts, play the Dragon Quiz and follow 1 new Keeper.{% else %}Cheer on 20 fellow Keepers a day to hatch your eggs.{% endif %} Every egg brings a dragon you do not have yet, and on some days the goal opens more than one egg, so a Keeper who keeps showing up can find all 35 before mint. Rare holo dragons need a 2 day goal streak and golden legends need 4, and in the last 5 days before mint nothing is held back. Three spare dragons can be swapped for one you have not found yet. Your dragons live on this device, and the code in My progress moves them to another one.</p>
       <div class="sheet-actions dex-actions">
         <button class="btn btn-go" id="dex-save" type="button">Save my book</button>
         <button class="btn btn-go" id="dex-share" type="button" hidden>Share</button>
@@ -491,7 +492,7 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
     </div>
   </div>
   {% endif %}
-  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "updated": updated, "goal": 10 if (v2 and v21_open) else (20 if v2 else 5), "goal_rule": "mix" if (v2 and v21_open) else ("keeper" if v2 else "quiet"), "dle_start": dle_start, "v2": v2, "icons": {"bulb": cfg.icon("bulb")}} | tojson }}</script>
+  <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "updated": updated, "goal": 10 if (v2 and v21_open) else (20 if v2 else 5), "goal_rule": "mix" if (v2 and v21_open) else ("keeper" if v2 else "quiet"), "season_end": cfg.dex_season_end, "dle_start": dle_start, "v2": v2, "icons": {"bulb": cfg.icon("bulb")}} | tojson }}</script>
   <script src="{{ asset('keeper.js') }}"></script>
   <script src="{{ asset('app.js') }}"></script>
   {% if v2 %}<script src="{{ asset('weekly2.js') }}" defer></script>{% else %}<script src="{{ asset('weekly.js') }}" defer></script>{% endif %}

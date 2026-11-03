@@ -10,6 +10,18 @@
   {% else %}
   <p>v2 is public. Everything below is live for everyone.</p>
   {% endif %}
+  {% if tester %}
+  <h3 class="lab-sub">Needs you{% if needs %} · {{ needs|length }}{% endif %}</h3>
+  {% if needs %}
+  <ul class="lab-list lab-needs">
+    {% for title, detail, url in needs %}
+    <li><a href="{{ url }}"{% if url.startswith("http") %} target="_blank" rel="noopener"{% endif %}><b>{{ title }}</b><span>{{ detail }}</span></a></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="lab-sub" style="font-size:15px">All clear. Nothing on the site is waiting for you.</p>
+  {% endif %}
+  {% endif %}
   <ul class="lab-list">
     {% for t in lab_tools %}
     <li><a href="{{ t.url }}"><b>{{ t.name }}</b><span>{{ t.note }}</span></a></li>

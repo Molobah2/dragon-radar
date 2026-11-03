@@ -110,6 +110,8 @@ class Config:
     # Realistic meadow renders on a Cloudinary CDN (empty base = the hand drawn canvas meadow)
     scene_base: str = field(default_factory=lambda: os.environ.get("SCENE_BASE", "https://res.cloudinary.com/gosbi0oh").rstrip("/"))
     scene_folder: str = field(default_factory=lambda: os.environ.get("SCENE_FOLDER", "dragon-radar"))
+    # the last day of the dragon season (mint): every Keeper who finishes the daily goal can find all 35 by then
+    dex_season_end: str = field(default_factory=lambda: os.environ.get("DEX_SEASON_END", "2026-11-30"))
     scene_version: str = field(default_factory=lambda: os.environ.get("SCENE_VERSION", "2").strip())
     scene_videos: str = field(default_factory=lambda: os.environ.get("SCENE_VIDEOS", ""))  # e.g. "day:meadow-day-loop,night:meadow-night-loop"
     # pdtools home: forest hut scene (still, walk out intro, idle loop) and the badge logo, all on the same CDN

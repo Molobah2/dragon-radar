@@ -273,6 +273,8 @@ class ArtEntry(Base):
     note: Mapped[str] = mapped_column(String(160), default="")              # Jon's short reason when it is not approved
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    medium: Mapped[str] = mapped_column(String(40), default="")             # what it is made with, for the museum label
+    line: Mapped[str] = mapped_column(String(140), default="")              # the artist's own line about the piece
 
 
 class ArtVote(Base):
@@ -299,6 +301,7 @@ def make_session_factory(database_url: str) -> sessionmaker:
         kwargs.update(pool_size=5, max_overflow=3, pool_recycle=300)
     engine = create_engine(database_url, **kwargs)
     Base.metadata.create_all(engine)
+    ensure_columns(engine)
     ensure_indexes(engine)
     lock_tables(engine)
     return sessionmaker(bind=engine, expire_on_commit=False)
@@ -349,6 +352,30 @@ def lock_tables(engine) -> None:
                 conn.execute(text(f'ALTER TABLE "{table.name}" ENABLE ROW LEVEL SECURITY'))
         except Exception:  # noqa: BLE001  never a reason to fail the start
             pass
+
+
+# Columns added to tables that already exist. create_all never changes a table that is already there, so each new
+# column is added here once (checked first, so it is safe on every start, on SQLite and on Postgres).
+EXTRA_COLUMNS = (
+    ("art_entries", "medium", "VARCHAR(40) DEFAULT '' NOT NULL"),
+    ("art_entries", "line", "VARCHAR(140) DEFAULT '' NOT NULL"),
+)
+
+
+def ensure_columns(engine) -> None:
+    from sqlalchemy import inspect, text
+    try:
+        insp = inspect(engine)
+        have = {t: {c["name"] for c in insp.get_columns(t)} for t in {t for t, _, _ in EXTRA_COLUMNS} if insp.has_table(t)}
+    except Exception:  # noqa: BLE001  never a reason to fail the start
+        return
+    for table, col, kind in EXTRA_COLUMNS:
+        if table in have and col not in have[table]:
+            try:
+                with engine.begin() as conn:
+                    conn.execute(text(f'ALTER TABLE "{table}" ADD COLUMN "{col}" {kind}'))
+            except Exception:  # noqa: BLE001  another worker may have added it a moment ago
+                pass
 
 
 def ensure_indexes(engine) -> None:

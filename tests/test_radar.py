@@ -3306,7 +3306,7 @@ def test_keeper_art_late_sunday_entry_and_swap_schedule(cfg, Session, monkeypatc
     assert "Night egg" in c.get("/art").get_data(as_text=True)
     assert "max-age=300" in c.get(f"/art/{first['id']}.webp").headers["Cache-Control"]
     js = (Path(__file__).parent.parent / "radar" / "static" / "dragons.js").read_text()
-    assert "&& e.key !== eggKey()" in js and "Math.min(foundIn(tier), swapLog().length)" in js
+    assert "&& e.key !== eggKey()" in js and "(pending.i | 0) !== hatchedToday()" in js
 
 
 def test_backup_code_links_a_book_only_once():

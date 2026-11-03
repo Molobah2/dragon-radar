@@ -1,5 +1,5 @@
-/* Collectible dragons (v2). Finishing the daily goal (20 posts from fellow Keepers) hatches one egg a day.
-   35 to collect on a fixed pace (about half in 30 goal days, all in 90); rares need a goal streak of 3, legends 7. Everything is kept in this browser
+/* Collectible dragons (v2). Finishing the daily goal (20 posts from fellow Keepers) hatches the day's eggs (one or more, see the pace below).
+   35 to collect, all of them within reach before mint (the season end); rares need a goal streak of 2, legends 4. Everything is kept in this browser
    (localStorage "pd:dex") and travels with the My progress backup code. */
 (() => {
   "use strict";
@@ -31,15 +31,15 @@
   const byKey = Object.fromEntries([...ENTRIES, ...SECRETS].map((e) => [e.key, e]));
   const TOTAL = ENTRIES.length;
 
-  // The pace: one egg a day, and a fixed number of completed goal days brings each new dragon.
-  // A Keeper who finishes the goal every day has about half the shelf after 30 days and all of it after 90.
-  // Rares wait for a 3 day goal streak and legends for a 7 day one, so steady Keepers pull ahead.
-  const SCHEDULE = {
-    common: [1, 2, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 24, 27, 33],
-    rare: [10, 20, 29, 36, 40, 44, 48, 52, 56, 64, 68, 72, 76, 80, 85],
-    legend: [30, 45, 60, 75, 90],
-  };
-  const NEED = { common: 0, rare: 3, legend: 7 };
+  // The pace (Nov 2026): every Keeper can find all 35 before mint. Finishing the daily goal opens the day's eggs:
+  // usually one, and more on days when the dragons still missing outnumber the days left, so a Keeper who keeps
+  // showing up has the whole shelf by the last day. Rares need a 2 day goal streak and legends a 4 day one,
+  // and in the final 5 days nothing is held back. Every egg brings a dragon you do not have yet.
+  const SEASON_END = (() => { try { const v = JSON.parse($("radar-data").textContent).season_end; return /^\d{4}-\d{2}-\d{2}$/.test(v || "") ? v : ""; } catch (e) { return ""; } })();
+  const NEED = { common: 0, rare: 2, legend: 4 };
+  const MAX_EGGS = 3;              // the most eggs in one day, so even a late start stays a treat
+  const daysLeft = () => (SEASON_END ? Math.max(0, dayGap(today(), SEASON_END) + 1) : 0);   // today included
+  const lastStretch = () => daysLeft() > 0 && daysLeft() <= 5;
 
   // ---------- the collection ----------
   function load() {
@@ -109,31 +109,36 @@
     g.best = Math.max(g.best || 0, g.count); g.last = today();
     dex.g = g; save();
   }
-  const canHatch = () => goalDone() && dex.last !== today();
-  // commons got by swapping are a bonus: they never use up a new dragon the egg schedule promised
-  const hatchedIn = (tier) => foundIn(tier) - (tier === "common" ? Math.min(foundIn(tier), swapLog().length) : 0);
-  const due = (tier, n) => SCHEDULE[tier].filter((d) => d <= n).length - hatchedIn(tier);
+  // eggs today: how many the goal opens today, and how many are already hatched (an older save counts today's one)
+  const hatchedToday = () => (dex.t && dex.t.day === today() ? dex.t.n | 0 : dex.last === today() ? 1 : 0);
+  function eggsToday() {
+    if (dex.t && dex.t.day === today() && dex.t.q) return dex.t.q;
+    const missing = TOTAL - found(), left = daysLeft();
+    if (!missing || !left) return 1;                 // the shelf is full, or the season has ended: one egg a day
+    return Math.min(MAX_EGGS, Math.max(1, Math.ceil(missing / left)));
+  }
+  const eggsLeft = () => Math.max(0, eggsToday() - hatchedToday());
+  const canHatch = () => goalDone() && eggsLeft() > 0;
   const rand = (list) => list[Math.floor(Math.random() * list.length)];
+  const allowed = (tier, gs) => lastStretch() || gs >= NEED[tier];
 
   function roll() {
-    const n = dex.n + 1, gs = goalStreak();
-    for (const tier of ["legend", "rare", "common"]) {
-      if (due(tier, n) > 0 && gs >= NEED[tier]) {
-        const missing = ENTRIES.filter((e) => e.tier === tier && !owned(e));
-        if (missing.length) return { entry: rand(missing), fresh: true };
-      }
-    }
-    // no new one today: a copy of one you have (rares only while your streak holds)
-    const mine = ENTRIES.filter((e) => owned(e) && e.tier !== "legend" && (e.tier === "common" || gs >= NEED.rare));
-    const commons = mine.filter((e) => e.tier === "common"), rares = mine.filter((e) => e.tier === "rare");
-    const pool = rares.length && Math.random() < 0.2 ? rares : commons.length ? commons : ENTRIES.filter((e) => e.tier === "common");
-    return { entry: rand(pool), fresh: false };
+    const gs = goalStreak();
+    // a dragon you do not have yet, from every tier your streak has opened, all equally likely
+    const missing = ENTRIES.filter((e) => !owned(e) && allowed(e.tier, gs));
+    if (missing.length) return { entry: rand(missing), fresh: true };
+    // only when nothing new can hatch today (the shelf is full, or the rest waits for your streak): a copy,
+    // spread evenly over every dragon you have, so no single one keeps coming back
+    const mine = ENTRIES.filter((e) => owned(e) && e.tier !== "legend");
+    return { entry: rand(mine.length ? mine : ENTRIES.filter((e) => e.tier === "common")), fresh: false };
   }
   function keep(entry) {
     if (entry.tier === "secret") { dex.s[entry.sp.id] = today(); dex.log.push({ k: entry.key, day: today() }); dex.log = dex.log.slice(-120); save(); return; }
     const h = dex.have[entry.sp.id] || {}, k = TK[entry.tier];
     h[k] = (h[k] || 0) + 1;
     dex.have[entry.sp.id] = h;
+    if (!dex.t || dex.t.day !== today()) dex.t = { day: today(), n: hatchedToday(), q: eggsToday() };
+    dex.t.n = (dex.t.n | 0) + 1;
     dex.last = today(); dex.n = (dex.n || 0) + 1;
     track("hatch", entry.tier);
     dex.log.push({ k: entry.key, day: today() });
@@ -142,14 +147,15 @@
   }
   // what to look forward to, for the shelf
   function nextNews() {
-    const n = dex.n, gs = goalStreak();
-    const waiting = ["legend", "rare"].find((t) => due(t, n) > 0 && gs < NEED[t]);
-    if (waiting) return `A ${waiting === "legend" ? "golden legend" : "rare holo dragon"} is waiting for you. It hatches once your goal streak reaches ${NEED[waiting]} days.`;
-    if (TIERS.some((t) => due(t, n + 1) > 0 && gs + 1 >= NEED[t] && ENTRIES.some((e) => e.tier === t && !owned(e)))) return "Your next egg brings a new dragon.";
-    const all = [...SCHEDULE.common, ...SCHEDULE.rare, ...SCHEDULE.legend].filter((d) => d > n).sort((a, b) => a - b);
-    if (!all.length) return found() >= TOTAL ? "You found every dragon. A true Keeper legend." : "";
-    const k = all[0] - n;
-    return k <= 1 ? "Your next egg brings a new dragon." : "More dragons are on the way. Keep your streak going.";
+    const gs = goalStreak(), missing = TOTAL - found(), left = daysLeft();
+    if (!missing) return "You found every dragon. A true Keeper legend.";
+    const more = eggsLeft();
+    if (goalDone() && more > 0) return more === 1 ? "You have 1 more egg to hatch today." : `You have ${more} more eggs to hatch today.`;
+    const waiting = ["legend", "rare"].find((t) => !allowed(t, gs) && ENTRIES.some((e) => e.tier === t && !owned(e)));
+    if (waiting && !ENTRIES.some((e) => !owned(e) && allowed(e.tier, gs)))
+      return `A ${waiting === "legend" ? "golden legend" : "rare holo dragon"} is waiting for you. It hatches once your goal streak reaches ${NEED[waiting]} days.`;
+    if (left > 0) return `Dragons left to find: ${missing}. Days until mint: ${left}. Finish your goal each day and you will have them all.`;
+    return "Finish tomorrow's goal for your next dragon.";
   }
 
   // ---------- sticker images: cut out of the art sheet on this device ----------
@@ -327,16 +333,17 @@
     markGoalDay();
     // decided now and saved straight away, so reloading cannot reroll it
     let pending = store.get("pd:dexEgg", null);
-    if (!pending || pending.day !== today() || !byKey[pending.k]) {
+    if (!pending || pending.day !== today() || (pending.i | 0) !== hatchedToday() || !byKey[pending.k]) {
       const r = roll();
-      pending = { day: today(), k: r.entry.key, fresh: r.fresh };
+      pending = { day: today(), i: hatchedToday(), k: r.entry.key, fresh: r.fresh };
       store.set("pd:dexEgg", pending);
     }
     shown = { entry: byKey[pending.k], fresh: !!pending.fresh };
     const t = shown.entry.tier;
     paintEgg(shown.entry);
     sticker(shown.entry, 520);   // start loading while they look at the egg
-    $("hatch-title").textContent = t === "legend" ? "A golden egg!" : t === "rare" ? "A shimmering egg!" : "Your egg is ready";
+    const many = eggsToday() > 1, nth = hatchedToday() + 1;
+    $("hatch-title").textContent = t === "legend" ? "A golden egg!" : t === "rare" ? "A shimmering egg!" : many ? `Egg ${nth} of ${eggsToday()} today` : "Your egg is ready";
     $("hatch-sub").textContent = t === "legend" ? "Something legendary is inside. Tap to hatch it."
       : MIX ? "You finished today's goal. Tap the egg to hatch it." : `You cheered on ${GOAL} fellow Keepers today. Tap the egg to hatch it.`;
     $("hatch-name").textContent = ""; $("hatch-name").hidden = true;
@@ -513,6 +520,7 @@
     $("hatch-post").href = `https://x.com/intent/post?text=${encodeURIComponent(postText(entry, mode))}`;
     $("hatch-actions").hidden = false;
     if ($("hatch-film")) $("hatch-film").hidden = true;
+    if ($("hatch-next")) { const more = mode === "view" ? 0 : eggsLeft(); $("hatch-next").hidden = !(goalDone() && more > 0); $("hatch-next").textContent = `Hatch the next egg (${more} left today)`; }
     // cards pop up for moments worth sharing (a new dragon, a rare, a legend), never for every copy, so nothing feels farmed
     const worth = mode !== "copy" || t !== "common";
     ["hatch-post", "hatch-save"].forEach((id) => { if ($(id)) $(id).hidden = !worth; });
@@ -1118,6 +1126,7 @@
     prepBook();
   }
   $("dex-hatch").addEventListener("click", () => { closeSheet(dexEl); setTimeout(openHatch, 260); });
+  if ($("hatch-next")) $("hatch-next").addEventListener("click", () => { $("hatch-next").hidden = true; openHatch(); });
   $("dex-close").addEventListener("click", () => closeSheet(dexEl));
   document.querySelectorAll("[data-dex]").forEach((b) => b.addEventListener("click", openDex));
 

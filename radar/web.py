@@ -258,6 +258,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     @v2_only
     def lab():
         art_waiting = books_waiting = 0
+        needs = []
         cf_seen = bool(request.headers.get("X-Origin-Key"))   # for setting up the Cloudflare secret header
         if g.get("circle"):                          # Jon's own devices: how much is waiting for him
             from .db import ArtEntry, BookPage
@@ -265,8 +266,40 @@ def create_app(cfg: Config | None = None) -> Flask:
                 art_waiting = s.scalar(select(func.count()).select_from(ArtEntry).where(ArtEntry.status == "pending")) or 0
                 trusted = book_trusted(s)
                 books_waiting = sum(1 for k in s.scalars(select(BookPage.key).where(BookPage.image != b"")).all() if k not in trusted)
+                needs = attention(s, utcnow(), art_waiting, books_waiting)
         return render_template("lab.html", cfg=cfg, lab_tools=LAB_TOOLS, art_waiting=art_waiting, books_waiting=books_waiting,
-                               cf_seen=cf_seen, cf_on=bool(cfg.origin_key))
+                               needs=needs, cf_seen=cf_seen, cf_on=bool(cfg.origin_key))
+
+    def attention(s, now, art_waiting, books_waiting):
+        """Everything on the site that waits for Jon, most urgent first: (title, detail, link)."""
+        from .db import ArtEntry, ArtVote, Feedback, ReportStatus
+        from .v21 import current_pick, week_start
+        out = []
+        pick = current_pick(s, now)
+        if not pick or not pick.get("current"):
+            since = f"The site still shows @{pick['user']} (week of {week_label(pick['week'])[8:]})." if pick else "No creator has been picked yet."
+            out.append(("Pick this week's Creator of the week", since, "/lab/creator"))
+        if art_waiting:
+            oldest = s.scalar(select(func.min(ArtEntry.created_at)).where(ArtEntry.status == "pending"))
+            days = (now - oldest).days if oldest else 0
+            out.append((f"{art_waiting} Keeper Art {'entry' if art_waiting == 1 else 'entries'} to review",
+                        f"The oldest has waited {days} day{'' if days == 1 else 's'}." if days else "Sent today.", "/lab/art"))
+        if books_waiting:
+            out.append((f"{books_waiting} dragon book {'picture' if books_waiting == 1 else 'pictures'} to approve",
+                        "A Keeper's first picture only shows on their page after you approve it.", "/lab/books"))
+        reports = s.scalar(select(func.count()).select_from(ReportStatus).where(ReportStatus.status.in_(("open", "auto")))) or 0
+        if reports:
+            out.append((f"{reports} reported {'post' if reports == 1 else 'posts'} to look at", "Hide it or keep it in the admin page.", "/admin"))
+        if now.weekday() == 6:                      # Sunday: the art vote closes tonight
+            wk = week_start(now).date()
+            if s.scalar(select(func.count()).select_from(ArtVote).where(ArtVote.week == wk)):
+                out.append(("Check every voter's proof post tonight", "The Keeper Art vote closes at midnight UTC.", "/lab/art"))
+        fresh = s.scalars(select(Feedback).where(Feedback.created_at >= now - timedelta(days=7), Feedback.comment != "")).all()
+        if fresh:
+            out.append((f"{len(fresh)} new {'comment' if len(fresh) == 1 else 'comments'} from ratings this week", "Read them in the admin page.", "/admin"))
+        if cfg.suggest_url and now.weekday() in (0, 3):   # Monday and Thursday: a nudge to read the mailbox
+            out.append(("Read the mailbox", "New ideas and reports from Keepers.", cfg.suggest_url))
+        return out
 
     @app.get("/lab/circle/<mode>")
     def circle_lock(mode):
@@ -1875,14 +1908,23 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     # ---------- v2.1: Keeper Art, hand made art checked by Jon and a weekend vote (see art.py) ----------
     @app.get("/art")
+    @app.get("/art/p/<int:focus_id>")
     @v21_only
-    def art_home():
+    def art_home(focus_id=None):
+        """The Keeper Art hall. /art/p/<id> is one artwork's own link: the same hall, opened on that piece, with its
+        picture and name in the link preview."""
         from . import art
+        if focus_id is not None and not 0 < focus_id < 2**31:
+            abort(404)
         now = utcnow()
         week = art.week_of(now.date())
         with Session() as s:
             items = art.gallery(s, week)
             hall = art.hall(s, week)
+            theme = art.prompt(s)
+            focus = art.piece(s, focus_id) if focus_id else None
+        if focus_id and not focus:
+            abort(404)
         last_week = (week - timedelta(days=7)).isoformat()
         last = hall[0] if hall and hall[0]["week"] == last_week else None
         og = {}
@@ -1890,7 +1932,18 @@ def create_app(cfg: Config | None = None) -> Flask:
             og = {"og_img": f"https://pdtools.xyz/art/{last['id']}.webp?s=f", "og_alt": f"{last['title']} by @{last['user']}",
                   "og_title": f"{last['title']} by @{last['user']}, Keeper Art of the week",
                   "og_desc": "Hand made Pocket Dragons art by Keepers. Vote for your favourite every weekend on PD Tools."}
-        return render_template("art.html", cfg=cfg, items=items, last=last, hall=[h for h in hall if h is not last],
+        if focus:
+            og = {"og_img": f"https://pdtools.xyz/art/{focus['id']}.webp?s=f", "og_alt": f"{focus['title']} by @{focus['user']}",
+                  "og_title": f"{focus['title']} by @{focus['user']} · Keeper Art",
+                  "og_desc": (focus["line"] or "Hand made Pocket Dragons art by a Keeper.") + " On the wall at PD Tools Keeper Art."}
+        hall = [h for h in hall if h is not last]
+        data = {"week": week.isoformat(), "label": art.week_label(week), "voting": art.voting_open(now), "prompt": theme,
+                "next": art.next_vote(now).strftime("%Y-%m-%dT%H:%M:%SZ"), "focus": focus["id"] if focus else None,
+                "items": items, "last": last, "hall": hall,
+                "tex": {k: f"{cfg.scene_base}/image/upload/{t}/{cfg.scene_folder}/art3d/{k}" for k, t in
+                        (("wall", "c_scale,w_1024/f_auto/q_auto"), ("floor", "c_scale,w_1024/f_auto/q_auto"),
+                         ("curator", "c_scale,h_900/f_auto/q_auto"))} if cfg.scene_base else {}}
+        return render_template("art.html", cfg=cfg, items=items, last=last, hall=hall, theme=theme, hall_data=data,
                                week=art.week_label(week), voting=art.voting_open(now), week_label=lambda w: art.week_label(date.fromisoformat(w)),
                                **({"og_title": "Keeper Art · PD Tools", "og_desc": "Hand made Pocket Dragons art by Keepers. Vote for your favourite every weekend."} | og))
 
@@ -1966,7 +2019,8 @@ def create_app(cfg: Config | None = None) -> Flask:
                     art_inflight.add(lock_key)
             try:
                 out = art.submit(s, dev, request.form.get("title", ""),
-                                 request.form.get("proof", ""), raw, request.form.get("pledge") == "yes", utcnow())
+                                 request.form.get("proof", ""), raw, request.form.get("pledge") == "yes", utcnow(),
+                                 medium=request.form.get("medium", ""), line=request.form.get("line", ""))
                 if out.get("ok"):
                     s.commit()
             finally:
@@ -2043,9 +2097,20 @@ def create_app(cfg: Config | None = None) -> Flask:
             s.commit()
             items = art.gallery(s, week)
             tally, who = art.tally(s, week), art.voters(s, week)
+            theme = art.prompt(s)
         for it in items:
             it["votes"], it["voters"] = tally.get(it["id"], 0), who.get(it["id"], [])
-        return render_template("art_lab.html", cfg=cfg, q=q, csrf=lab_csrf(), wall=items, checked=session.pop("art_checked", None))
+        return render_template("art_lab.html", cfg=cfg, q=q, csrf=lab_csrf(), wall=items, theme=theme, checked=session.pop("art_checked", None))
+
+    @app.post("/lab/art/prompt")
+    @circle_only   # Jon's tools stay locked even after launch
+    def art_set_prompt():
+        from . import art
+        check_csrf()
+        with Session() as s:
+            art.set_prompt(s, request.form.get("prompt", ""))
+            s.commit()
+        return redirect(url_for("art_lab"))
 
     @app.post("/lab/art/check")
     @circle_only   # Jon's tools stay locked even after launch

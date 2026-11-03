@@ -17,6 +17,9 @@ from .db import ArtEntry, ArtVote, utcnow
 
 MAX_UPLOAD = 1_800_000           # the page shrinks the picture before sending, so a real upload is far below this
 TITLE_MAX = 60
+MEDIUM_MAX = 40
+LINE_MAX = 140
+PROMPT_MAX = 90
 PROOF = re.compile(r"^https://[^\s<>\"']{6,290}$")
 # the making-of video has to live on a video site, so a link can not be swapped for something else after approval
 PROOF_HOSTS = ("x.com", "twitter.com", "youtube.com", "youtu.be", "tiktok.com", "instagram.com", "drive.google.com")
@@ -81,8 +84,12 @@ def mine(s, key: str, week: date) -> ArtEntry | None:
                     .order_by(ArtEntry.id.desc()))
 
 
-def submit(s, dev, title: str, proof: str, raw: bytes, pledge: bool, now: datetime) -> dict:
-    title = " ".join((title or "").split())[:TITLE_MAX]
+def tidy(text: str, n: int) -> str:
+    return " ".join((text or "").split())[:n]
+
+
+def submit(s, dev, title: str, proof: str, raw: bytes, pledge: bool, now: datetime, medium: str = "", line: str = "") -> dict:
+    title = tidy(title, TITLE_MAX)
     proof = (proof or "").strip()
     if not dev:
         return {"ok": False, "why": "unsigned"}
@@ -101,7 +108,7 @@ def submit(s, dev, title: str, proof: str, raw: bytes, pledge: bool, now: dateti
     if not pics:
         return {"ok": False, "why": "image"}
     e = ArtEntry(week=week, key=dev.key, username=dev.username, title=title, proof=proof, image=pics[0], thumb=pics[1],
-                 status="pending", created_at=now)
+                 status="pending", created_at=now, medium=tidy(medium, MEDIUM_MAX), line=tidy(line, LINE_MAX))
     s.add(e)
     s.flush()
     return {"ok": True, "id": e.id}
@@ -114,7 +121,33 @@ def gallery(s, week: date) -> list[dict]:
 
 
 def card(e: ArtEntry) -> dict:
-    return {"id": e.id, "user": e.username, "title": e.title, "proof": e.proof, "week": e.week.isoformat()}
+    return {"id": e.id, "user": e.username, "title": e.title, "proof": e.proof, "week": e.week.isoformat(),
+            "medium": e.medium or "", "line": e.line or ""}
+
+
+def piece(s, entry_id: int) -> dict | None:
+    """One artwork for its own share page: only art that is on the wall."""
+    e = s.get(ArtEntry, entry_id)
+    return card(e) if e and e.status == "approved" else None
+
+
+def prompt(s) -> str:
+    """This week's theme, set by Jon in the lab. Optional: an empty theme means anything Pocket Dragons."""
+    from .db import get_setting
+    return get_setting(s, "art_prompt", "")
+
+
+def set_prompt(s, text: str) -> None:
+    from .db import set_setting
+    set_setting(s, "art_prompt", tidy(text, PROMPT_MAX))
+
+
+def next_vote(now: datetime) -> datetime:
+    """When voting next opens (Friday 00:00 UTC), or when it closes if it is open now (Monday 00:00 UTC)."""
+    d = now.date()
+    if voting_open(now):
+        return datetime.combine(week_of(d) + timedelta(days=7), datetime.min.time())
+    return datetime.combine(week_of(d) + timedelta(days=4), datetime.min.time())
 
 
 def tally(s, week: date) -> dict[int, int]:

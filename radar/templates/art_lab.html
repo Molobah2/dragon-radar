@@ -5,6 +5,11 @@
 <section class="panel al">
   <h2>Keeper Art reviews</h2>
   <p>Watch the making-of video, look at the art, then approve or say no. Nothing shows on <a href="/art">the wall</a> until you approve it. A short reason is shown only to the artist.</p>
+  <h3 class="al-sub">This week's theme</h3>
+  <form class="al-act" method="post" action="/lab/art/prompt"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="text" name="prompt" maxlength="90" value="{{ theme }}" placeholder="For example: Blinky at the beach (leave empty for any Pocket Dragons art)">
+    <button class="al-btn" type="submit">Save theme</button>
+    <span class="al-note">Shown at the entrance of the Keeper Art hall. Optional.</span></form>
   <h3 class="al-sub">Waiting ({{ q.pending|length }})</h3>
   <ol class="al-list">
     {% for a in q.pending %}
@@ -12,6 +17,7 @@
       <a class="al-pic" href="/art/{{ a.id }}.webp?s=f" target="_blank" rel="noopener"><img src="/art/{{ a.id }}.webp" alt="" loading="lazy"></a>
       <div class="al-info">
         <b>{{ a.title }}</b>
+        {% if a.medium or a.line %}<span>{{ a.medium }}{% if a.medium and a.line %} · {% endif %}{% if a.line %}“{{ a.line }}”{% endif %}</span>{% endif %}
         <span><a href="https://x.com/{{ a.user }}" target="_blank" rel="noopener">@{{ a.user }}</a> · sent {{ a.sent }} · {{ a.week }}</span>
         <a class="al-btn ghost" href="{{ a.proof }}" target="_blank" rel="noopener nofollow">Watch the making-of video</a>
         <form class="al-act" method="post" action="/lab/art/review">
