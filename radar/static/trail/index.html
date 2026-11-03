@@ -76,6 +76,13 @@ body.rv-done .pickwrap{animation:kt-rise .8s .15s cubic-bezier(.2,.8,.2,1) both}
 @keyframes kt-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 #rv-welcome{position:fixed;left:0;right:0;top:calc(72px + env(safe-area-inset-top,0px));margin:0;padding:0 16px;text-align:center;font:800 clamp(20px,4.8vw,34px)/1.12 system-ui;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.6),0 0 40px rgba(0,0,0,.3);opacity:0;pointer-events:none;z-index:6}
 #rv-welcome.show{animation:kt-welcome 3.8s ease both}
+.rv-why{margin:8px 0 0;font:700 clamp(13px,2.6vw,16px)/1.35 system-ui;color:var(--load,#ffd98a);text-shadow:0 1px 12px rgba(0,0,0,.55)}
+#rv-shine{position:fixed;left:50%;transform:translateX(-50%);top:0;width:max-content;max-width:calc(100% - 32px);z-index:6;pointer-events:none;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+#rv-shine p{margin:0;padding:7px 16px;border-radius:999px;font:800 clamp(13px,2.8vw,17px)/1.2 system-ui;color:#fff;background:rgba(10,8,16,.42);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 0 0 1px rgba(255,255,255,.14) inset;opacity:0;animation:kt-shine 5.2s ease both}
+#rv-shine p b{color:var(--load,#ffd98a)}
+#rv-shine p+p{animation-delay:.9s}
+@keyframes kt-shine{0%{opacity:0;transform:translateY(8px)}10%{opacity:1;transform:none}82%{opacity:1}100%{opacity:0;transform:translateY(-4px)}}
+body.shot #rv-shine{display:none}
 @keyframes kt-welcome{0%{opacity:0;transform:translateY(12px) scale(.96)}14%{opacity:1;transform:none}74%{opacity:1}100%{opacity:0;transform:translateY(-6px)}}
 .corner{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));z-index:9;display:flex;gap:6px}
 .corner.l{left:max(16px,env(safe-area-inset-left,0px))}.corner.r{right:max(16px,env(safe-area-inset-right,0px))}
@@ -253,12 +260,13 @@ body[data-card="light"]{--bg:#f2ece2;--ink:#2e2a24;--soft:rgba(46,42,36,.7);--gl
 <div id="stage" role="img" aria-label="Keepers Trail card"></div>
 <div class="load" data-t="load">LOADING CARD</div>
 <div class="rv" id="rv" hidden>
-<div class="rv-top"><p class="rv-kick" data-t="kick">Keepers Trail</p><h1 class="rv-h" data-t="title">Your card is ready</h1><p class="rv-sub" data-t="sub">Your journey on X, sealed in one card.</p></div>
+<div class="rv-top"><p class="rv-kick" data-t="kick">Keepers Trail</p><h1 class="rv-h" data-t="title">Your card is ready</h1><p class="rv-sub" data-t="sub">Your journey on X, sealed in one card.</p><p class="rv-why" id="rv-why" hidden></p></div>
 <div class="rv-bottom"><div class="rv-tapwrap"><button type="button" class="rv-tap" id="rv-tap" data-t="tap">Tap to reveal</button><p class="rv-holdhint" data-t="hold">Or hold to crack it yourself</p></div>
 <div class="rv-eggs"><p class="rv-eh"><span data-t="choose">Choose your egg</span> <b id="rv-name"></b></p><div class="rv-row" id="rv-eggs" role="group"></div></div></div>
 </div>
 <button type="button" class="rv-skip" id="rv-skip" data-t="skip">SKIP</button>
 <p id="rv-welcome" data-t="welcome">Welcome to the Trail, Keeper</p>
+<div id="rv-shine" aria-live="polite"></div>
 <div class="toast" id="toast" role="status" hidden><span id="toast-t"></span><a id="toast-x" href="https://x.com" target="_blank" rel="noopener" data-t="openX">OPEN X</a><button type="button" id="toast-c" aria-label="Close">&times;</button></div>
 <div class="corner l"><button type="button" id="homebtn" class="homebtn" aria-label="Home" title="Home"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></button><span class="lang"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 2.6 15.2 0 18M12 3c-2.6 2.8-2.6 15.2 0 18"/></svg><b id="langcode">EN</b><select id="lang" aria-label="Language"></select></span><img id="pdlogo" class="pdlogo" alt="Pocket Dragons" hidden></div>
 <div class="corner r"><button type="button" id="snd" aria-pressed="true"><svg class="w" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="x" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="m17 9 5 6M22 9l-5 6"/></svg></button></div>
@@ -383,18 +391,18 @@ body[data-card="light"]{--bg:#f2ece2;--ink:#2e2a24;--soft:rgba(46,42,36,.7);--gl
 </script>
 <script>/* The card speaks the same 10 languages as pdtools. It follows the pdtools choice when there is one, then this browser's language. */
 (function () {
-  var K = ['load', 'img', 'turn', 'vid', 'share', 'again', 'hint', 'mkImg', 'mkVid', 'saving', 'noVid', 'kick', 'title', 'sub', 'tap', 'choose', 'welcome', 'classic', 'eggs', 'shareText', 'attach', 'sndOn', 'sndOff', 'design', 'openX', 'hold', 'skip', 'vOnly', 'vRev', 'hSub', 'hGo', 'hX', 'hRead', 'hAs', 'hSwitch', 'hBusy', 'hCancel', 'hNone', 'hFail', 'hSafe'];
+  var K = ['load', 'img', 'turn', 'vid', 'share', 'again', 'hint', 'mkImg', 'mkVid', 'saving', 'noVid', 'kick', 'title', 'sub', 'tap', 'choose', 'welcome', 'classic', 'eggs', 'shareText', 'attach', 'sndOn', 'sndOff', 'design', 'openX', 'hold', 'skip', 'vOnly', 'vRev', 'hSub', 'hGo', 'hX', 'hRead', 'hAs', 'hSwitch', 'hBusy', 'hCancel', 'hNone', 'hFail', 'hSafe', 'eggIs', 'why_views', 'why_replies', 'why_reposts', 'why_likes', 'why_streak', 'shine', 's_views', 's_replies', 's_reposts', 's_likes', 'since', 'd_posts', 'd_views', 'd_likes', 'd_replies', 'd_reposts', 'd_followers'];
   var S = {
-    en: ['LOADING CARD', 'SAVE IMAGE', 'TURN CARD', 'SAVE VIDEO', 'SHARE ON X', 'REVEAL AGAIN', 'Tap the card or swipe to turn it.', 'Making image', 'Making video {n}%', 'Saving', 'Could not make the video here', 'Keepers Trail', 'Your card is ready', 'Your journey on X, sealed in one card.', 'Tap to reveal', 'Choose your egg', 'Welcome to the Trail, Keeper', 'Classic', 'The 16 eggs', 'My Keepers Trail card is here. Every post, every reply, every day on the trail. 🐉', 'Image saved. Attach it to your post on X.', 'Sound on', 'Sound off', 'Card design', 'OPEN X', 'Or hold to crack it yourself', 'SKIP', 'Card only', 'With the reveal', 'Every post leaves a step on the trail.', 'WALK THE TRAIL', "CONNECT X TO BEGIN", "Reading your trail on X…", "Signed in as", "Switch", "The trail is busy today. Please come back tomorrow.", "X sign in was cancelled.", "No Pocket Dragons posts found on this account yet.", "Could not reach X just now. Please try again.", "Read only. We count your own posts about Pocket Dragons, nothing is posted for you."],
-    es: ['CARGANDO TARJETA', 'GUARDAR IMAGEN', 'GIRAR TARJETA', 'GUARDAR VIDEO', 'COMPARTIR EN X', 'REVELAR DE NUEVO', 'Toca la tarjeta o desliza para girarla.', 'Creando imagen', 'Creando video {n}%', 'Guardando', 'No se pudo crear el video aquí', 'Keepers Trail', 'Tu tarjeta está lista', 'Tu viaje en X, sellado en una tarjeta.', 'Toca para revelar', 'Elige tu huevo', 'Bienvenido al Trail, Keeper', 'Clásicos', 'Los 16 huevos', 'Ya tengo mi tarjeta Keepers Trail. Cada post, cada respuesta, cada día en el camino. 🐉', 'Imagen guardada. Adjúntala a tu post en X.', 'Sonido activado', 'Sonido desactivado', 'Diseño de la tarjeta', 'ABRIR X', 'O mantén pulsado para romperlo tú', 'SALTAR', 'Solo la tarjeta', 'Con la revelación', 'Cada post deja un paso en el sendero.', 'RECORRE EL SENDERO', "CONECTA X PARA EMPEZAR", "Leyendo tu camino en X…", "Conectado como", "Cambiar", "El sendero está lleno hoy. Vuelve mañana, por favor.", "Se canceló el inicio de sesión con X.", "Aún no hay publicaciones sobre Pocket Dragons en esta cuenta.", "No se pudo conectar con X. Inténtalo de nuevo.", "Solo lectura. Contamos tus propias publicaciones sobre Pocket Dragons y no publicamos nada por ti."],
-    fr: ['CHARGEMENT DE LA CARTE', "ENREGISTRER L'IMAGE", 'RETOURNER LA CARTE', 'ENREGISTRER LA VIDÉO', 'PARTAGER SUR X', 'RÉVÉLER À NOUVEAU', 'Touche la carte ou glisse pour la retourner.', "Création de l'image", 'Création de la vidéo {n} %', 'Enregistrement', 'Impossible de créer la vidéo ici', 'Keepers Trail', 'Ta carte est prête', 'Ton parcours sur X, scellé dans une carte.', 'Touche pour révéler', 'Choisis ton œuf', 'Bienvenue sur le Trail, Keeper', 'Classiques', 'Les 16 œufs', 'Ma carte Keepers Trail est là. Chaque post, chaque réponse, chaque jour sur le chemin. 🐉', 'Image enregistrée. Joins-la à ton post sur X.', 'Son activé', 'Son coupé', 'Design de la carte', 'OUVRIR X', 'Ou maintiens pour le briser toi-même', 'PASSER', 'Carte seule', 'Avec la révélation', 'Chaque post laisse un pas sur le sentier.', 'SUIVRE LE SENTIER', "CONNECTE X POUR COMMENCER", "Lecture de ton parcours sur X…", "Connecté en tant que", "Changer", "Le sentier est complet aujourd'hui. Reviens demain.", "La connexion à X a été annulée.", "Aucune publication sur Pocket Dragons sur ce compte pour l'instant.", "Impossible de joindre X pour le moment. Réessaie.", "Lecture seule. Nous comptons tes publications sur Pocket Dragons, rien n’est publié à ta place."],
-    pt: ['CARREGANDO CARTÃO', 'SALVAR IMAGEM', 'VIRAR CARTÃO', 'SALVAR VÍDEO', 'COMPARTILHAR NO X', 'REVELAR DE NOVO', 'Toque no cartão ou deslize para virá-lo.', 'Criando imagem', 'Criando vídeo {n}%', 'Salvando', 'Não foi possível criar o vídeo aqui', 'Keepers Trail', 'Seu cartão está pronto', 'Sua jornada no X, selada em um cartão.', 'Toque para revelar', 'Escolha seu ovo', 'Bem-vindo ao Trail, Keeper', 'Clássicos', 'Os 16 ovos', 'Meu cartão Keepers Trail chegou. Cada post, cada resposta, cada dia na trilha. 🐉', 'Imagem salva. Anexe ao seu post no X.', 'Som ligado', 'Som desligado', 'Design do cartão', 'ABRIR O X', 'Ou segure para quebrar você mesmo', 'PULAR', 'Só o cartão', 'Com a revelação', 'Cada post deixa um passo na trilha.', 'PERCORRA A TRILHA', "CONECTE O X PARA COMEÇAR", "Lendo sua trilha no X…", "Conectado como", "Trocar", "A trilha está cheia hoje. Volte amanhã, por favor.", "O login com X foi cancelado.", "Ainda não há posts sobre Pocket Dragons nesta conta.", "Não foi possível acessar o X agora. Tente de novo.", "Somente leitura. Contamos seus próprios posts sobre Pocket Dragons e nada é postado por você."],
-    tr: ['KART YÜKLENİYOR', 'GÖRSELİ KAYDET', 'KARTI ÇEVİR', 'VİDEOYU KAYDET', "X'TE PAYLAŞ", 'TEKRAR AÇ', 'Kartı çevirmek için dokun ya da kaydır.', 'Görsel hazırlanıyor', 'Video hazırlanıyor %{n}', 'Kaydediliyor', 'Video burada hazırlanamadı', 'Keepers Trail', 'Kartın hazır', "X'teki yolculuğun, tek bir kartta.", 'Açmak için dokun', 'Yumurtanı seç', "Trail'e hoş geldin, Keeper", 'Klasik', '16 yumurta', 'Keepers Trail kartım geldi. Her gönderi, her yanıt, yolda geçen her gün. 🐉', "Görsel kaydedildi. X'teki gönderine ekle.", 'Ses açık', 'Ses kapalı', 'Kart tasarımı', 'X\'İ AÇ', 'Ya da kendin kırmak için basılı tut', 'GEÇ', 'Sadece kart', 'Açılışla birlikte', 'Her gönderi patikada bir adım bırakır.', 'PATİKADA YÜRÜ', "BAŞLAMAK İÇİN X BAĞLA", "X'teki yolun okunuyor…", "Giriş yapan", "Değiştir", "Patika bugün çok yoğun. Lütfen yarın tekrar gel.", "X girişi iptal edildi.", "Bu hesapta henüz Pocket Dragons gönderisi yok.", "Şu an X'e ulaşılamadı. Lütfen tekrar dene.", "Yalnızca okuma. Pocket Dragons hakkındaki kendi gönderilerini sayarız, senin adına hiçbir şey paylaşılmaz."],
-    ru: ['ЗАГРУЗКА КАРТЫ', 'СОХРАНИТЬ ФОТО', 'ПЕРЕВЕРНУТЬ', 'СОХРАНИТЬ ВИДЕО', 'ПОДЕЛИТЬСЯ В X', 'ОТКРЫТЬ СНОВА', 'Нажми на карту или проведи, чтобы перевернуть.', 'Создаём изображение', 'Создаём видео {n}%', 'Сохраняем', 'Здесь не получилось создать видео', 'Keepers Trail', 'Твоя карта готова', 'Твой путь в X в одной карте.', 'Нажми, чтобы открыть', 'Выбери своё яйцо', 'Добро пожаловать на Trail, Keeper', 'Классика', '16 яиц', 'Моя карта Keepers Trail готова. Каждый пост, каждый ответ, каждый день в пути. 🐉', 'Изображение сохранено. Прикрепи его к посту в X.', 'Звук включён', 'Звук выключен', 'Дизайн карты', 'ОТКРЫТЬ X', 'Или удерживай, чтобы разбить самому', 'ПРОПУСТИТЬ', 'Только карта', 'С открытием', 'Каждый пост оставляет шаг на тропе.', 'ПРОЙТИ ПО ТРОПЕ', "ПОДКЛЮЧИ X, ЧТОБЫ НАЧАТЬ", "Читаем твой путь в X…", "Вход выполнен как", "Сменить", "Сегодня тропа переполнена. Загляни завтра.", "Вход через X отменён.", "На этом аккаунте пока нет постов о Pocket Dragons.", "Не удалось связаться с X. Попробуй ещё раз.", "Только чтение. Мы считаем твои посты о Pocket Dragons и ничего не публикуем за тебя."],
-    vi: ['ĐANG TẢI THẺ', 'LƯU ẢNH', 'LẬT THẺ', 'LƯU VIDEO', 'CHIA SẺ LÊN X', 'MỞ LẠI', 'Chạm vào thẻ hoặc vuốt để lật.', 'Đang tạo ảnh', 'Đang tạo video {n}%', 'Đang lưu', 'Không thể tạo video ở đây', 'Keepers Trail', 'Thẻ của bạn đã sẵn sàng', 'Hành trình của bạn trên X, gói trong một tấm thẻ.', 'Chạm để mở', 'Chọn quả trứng của bạn', 'Chào mừng đến Trail, Keeper', 'Cổ điển', '16 quả trứng', 'Thẻ Keepers Trail của mình đây. Mỗi bài đăng, mỗi trả lời, mỗi ngày trên hành trình. 🐉', 'Đã lưu ảnh. Đính kèm vào bài đăng trên X.', 'Bật âm thanh', 'Tắt âm thanh', 'Mẫu thẻ', 'MỞ X', 'Hoặc nhấn giữ để tự phá vỡ', 'BỎ QUA', 'Chỉ thẻ', 'Kèm màn mở thẻ', 'Mỗi bài đăng để lại một bước trên con đường.', 'BƯỚC LÊN CON ĐƯỜNG', "KẾT NỐI X ĐỂ BẮT ĐẦU", "Đang đọc hành trình của bạn trên X…", "Đã đăng nhập là", "Đổi", "Hôm nay con đường đang quá tải. Hãy quay lại vào ngày mai.", "Đã hủy đăng nhập X.", "Tài khoản này chưa có bài đăng nào về Pocket Dragons.", "Chưa kết nối được với X. Hãy thử lại.", "Chỉ đọc. Chúng tôi đếm bài đăng của bạn về Pocket Dragons, không đăng gì thay bạn."],
-    id: ['MEMUAT KARTU', 'SIMPAN GAMBAR', 'BALIK KARTU', 'SIMPAN VIDEO', 'BAGIKAN KE X', 'BUKA LAGI', 'Ketuk kartu atau geser untuk membaliknya.', 'Membuat gambar', 'Membuat video {n}%', 'Menyimpan', 'Video tidak bisa dibuat di sini', 'Keepers Trail', 'Kartumu sudah siap', 'Perjalananmu di X, tersegel dalam satu kartu.', 'Ketuk untuk membuka', 'Pilih telurmu', 'Selamat datang di Trail, Keeper', 'Klasik', '16 telur', 'Kartu Keepers Trail milikku sudah ada. Setiap postingan, setiap balasan, setiap hari di perjalanan. 🐉', 'Gambar tersimpan. Lampirkan ke postinganmu di X.', 'Suara aktif', 'Suara mati', 'Desain kartu', 'BUKA X', 'Atau tahan untuk memecahkannya sendiri', 'LEWATI', 'Kartu saja', 'Dengan pembukaan', 'Setiap postingan meninggalkan satu langkah di jalur.', 'TELUSURI JALURNYA', "HUBUNGKAN X UNTUK MULAI", "Membaca jejakmu di X…", "Masuk sebagai", "Ganti", "Jalur sedang penuh hari ini. Silakan kembali besok.", "Masuk dengan X dibatalkan.", "Belum ada postingan Pocket Dragons di akun ini.", "Tidak bisa menghubungi X sekarang. Coba lagi.", "Hanya membaca. Kami menghitung postinganmu tentang Pocket Dragons, tidak ada yang diposting atas namamu."],
-    ko: ['카드 불러오는 중', '이미지 저장', '카드 뒤집기', '영상 저장', 'X에 공유', '다시 공개', '카드를 탭하거나 밀어서 뒤집어 보세요.', '이미지 만드는 중', '영상 만드는 중 {n}%', '저장 중', '여기서는 영상을 만들 수 없어요', 'Keepers Trail', '카드가 준비됐어요', 'X에서의 여정을 카드 한 장에 담았어요.', '탭해서 공개하기', '내 알을 고르세요', 'Trail에 오신 걸 환영해요, Keeper', '클래식', '16가지 알', '내 Keepers Trail 카드가 나왔어요. 모든 게시물, 모든 답글, 함께한 모든 날. 🐉', '이미지를 저장했어요. X 게시물에 첨부하세요.', '소리 켜짐', '소리 꺼짐', '카드 디자인', 'X 열기', '길게 눌러 직접 깨뜨릴 수도 있어요', '건너뛰기', '카드만', '공개 장면 포함', '모든 게시물이 길 위에 한 걸음을 남겨요.', '길을 따라 걷기', "X를 연결하고 시작하기", "X에서 너의 여정을 읽는 중…", "로그인 계정", "변경", "오늘은 트레일이 붐벼요. 내일 다시 와 주세요.", "X 로그인이 취소되었어요.", "이 계정에는 아직 Pocket Dragons 게시물이 없어요.", "지금 X에 연결할 수 없어요. 다시 시도해 주세요.", "읽기 전용이에요. Pocket Dragons에 관한 내 게시물만 세고, 대신 게시하는 것은 없어요."],
-    zh: ['正在加载卡片', '保存图片', '翻转卡片', '保存视频', '分享到 X', '再次揭晓', '点按卡片或滑动即可翻转。', '正在生成图片', '正在生成视频 {n}%', '正在保存', '这里无法生成视频', 'Keepers Trail', '你的卡片已就绪', '你在 X 上的旅程，封存在一张卡片里。', '点按揭晓', '选择你的蛋', '欢迎来到 Trail，Keeper', '经典', '16 枚蛋', '我的 Keepers Trail 卡片来了。每一条帖子，每一次回复，旅途中的每一天。🐉', '图片已保存。把它附加到你的 X 帖子里。', '声音开启', '声音关闭', '卡片设计', '打开 X', '或长按，亲手把它敲开', '跳过', '仅卡片', '包含揭晓动画', '每一条帖子，都是小径上的一步。', '踏上小径', "连接 X 开始", "正在读取你在 X 上的足迹…", "已登录", "切换", "今天的步道太拥挤了，请明天再来。", "已取消 X 登录。", "这个账号还没有关于 Pocket Dragons 的帖子。", "暂时无法连接 X，请重试。", "只读。我们只统计你关于 Pocket Dragons 的帖子，不会替你发布任何内容。"]
+    en: ['LOADING CARD', 'SAVE IMAGE', 'TURN CARD', 'SAVE VIDEO', 'SHARE ON X', 'REVEAL AGAIN', 'Tap the card or swipe to turn it.', 'Making image', 'Making video {n}%', 'Saving', 'Could not make the video here', 'Keepers Trail', 'Your card is ready', 'Your journey on X, sealed in one card.', 'Tap to reveal', 'Choose your egg', 'Welcome to the Trail, Keeper', 'Classic', 'The 16 eggs', 'My Keepers Trail card is here. Every post, every reply, every day on the trail. 🐉', 'Image saved. Attach it to your post on X.', 'Sound on', 'Sound off', 'Card design', 'OPEN X', 'Or hold to crack it yourself', 'SKIP', 'Card only', 'With the reveal', 'Every post leaves a step on the trail.', 'WALK THE TRAIL', "CONNECT X TO BEGIN", "Reading your trail on X…", "Signed in as", "Switch", "The trail is busy today. Please come back tomorrow.", "X sign in was cancelled.", "No Pocket Dragons posts found on this account yet.", "Could not reach X just now. Please try again.", "Read only. We count your own posts about Pocket Dragons, nothing is posted for you.", "Your trail egg is {e}.", "Your posts travel far.", "Your posts start conversations.", "Your posts spread fast.", "Your posts are loved.", "{n} days in a row, and the fire never went out.", "Your trail shines brightest in {s}", "views", "replies", "reposts", "likes", "Since your last visit: {d}", "+{n} posts", "+{n} views", "+{n} likes", "+{n} replies", "+{n} reposts", "+{n} followers"],
+    es: ['CARGANDO TARJETA', 'GUARDAR IMAGEN', 'GIRAR TARJETA', 'GUARDAR VIDEO', 'COMPARTIR EN X', 'REVELAR DE NUEVO', 'Toca la tarjeta o desliza para girarla.', 'Creando imagen', 'Creando video {n}%', 'Guardando', 'No se pudo crear el video aquí', 'Keepers Trail', 'Tu tarjeta está lista', 'Tu viaje en X, sellado en una tarjeta.', 'Toca para revelar', 'Elige tu huevo', 'Bienvenido al Trail, Keeper', 'Clásicos', 'Los 16 huevos', 'Ya tengo mi tarjeta Keepers Trail. Cada post, cada respuesta, cada día en el camino. 🐉', 'Imagen guardada. Adjúntala a tu post en X.', 'Sonido activado', 'Sonido desactivado', 'Diseño de la tarjeta', 'ABRIR X', 'O mantén pulsado para romperlo tú', 'SALTAR', 'Solo la tarjeta', 'Con la revelación', 'Cada post deja un paso en el sendero.', 'RECORRE EL SENDERO', "CONECTA X PARA EMPEZAR", "Leyendo tu camino en X…", "Conectado como", "Cambiar", "El sendero está lleno hoy. Vuelve mañana, por favor.", "Se canceló el inicio de sesión con X.", "Aún no hay publicaciones sobre Pocket Dragons en esta cuenta.", "No se pudo conectar con X. Inténtalo de nuevo.", "Solo lectura. Contamos tus propias publicaciones sobre Pocket Dragons y no publicamos nada por ti.", "Tu huevo del Trail es {e}.", "Tus posts llegan lejos.", "Tus posts inician conversaciones.", "Tus posts se difunden rápido.", "Tus posts encantan.", "{n} días seguidos y el fuego nunca se apagó.", "Tu Trail brilla más en {s}", "vistas", "respuestas", "reposts", "me gusta", "Desde tu última visita: {d}", "+{n} posts", "+{n} vistas", "+{n} me gusta", "+{n} respuestas", "+{n} reposts", "+{n} seguidores"],
+    fr: ['CHARGEMENT DE LA CARTE', "ENREGISTRER L'IMAGE", 'RETOURNER LA CARTE', 'ENREGISTRER LA VIDÉO', 'PARTAGER SUR X', 'RÉVÉLER À NOUVEAU', 'Touche la carte ou glisse pour la retourner.', "Création de l'image", 'Création de la vidéo {n} %', 'Enregistrement', 'Impossible de créer la vidéo ici', 'Keepers Trail', 'Ta carte est prête', 'Ton parcours sur X, scellé dans une carte.', 'Touche pour révéler', 'Choisis ton œuf', 'Bienvenue sur le Trail, Keeper', 'Classiques', 'Les 16 œufs', 'Ma carte Keepers Trail est là. Chaque post, chaque réponse, chaque jour sur le chemin. 🐉', 'Image enregistrée. Joins-la à ton post sur X.', 'Son activé', 'Son coupé', 'Design de la carte', 'OUVRIR X', 'Ou maintiens pour le briser toi-même', 'PASSER', 'Carte seule', 'Avec la révélation', 'Chaque post laisse un pas sur le sentier.', 'SUIVRE LE SENTIER', "CONNECTE X POUR COMMENCER", "Lecture de ton parcours sur X…", "Connecté en tant que", "Changer", "Le sentier est complet aujourd'hui. Reviens demain.", "La connexion à X a été annulée.", "Aucune publication sur Pocket Dragons sur ce compte pour l'instant.", "Impossible de joindre X pour le moment. Réessaie.", "Lecture seule. Nous comptons tes publications sur Pocket Dragons, rien n’est publié à ta place.", "Ton œuf du Trail est {e}.", "Tes posts vont loin.", "Tes posts lancent des conversations.", "Tes posts se partagent vite.", "Tes posts sont adorés.", "{n} jours d'affilée, et le feu ne s'est jamais éteint.", "Ton Trail brille le plus côté {s}", "vues", "réponses", "reposts", "j'aime", "Depuis ta dernière visite : {d}", "+{n} posts", "+{n} vues", "+{n} j'aime", "+{n} réponses", "+{n} reposts", "+{n} abonnés"],
+    pt: ['CARREGANDO CARTÃO', 'SALVAR IMAGEM', 'VIRAR CARTÃO', 'SALVAR VÍDEO', 'COMPARTILHAR NO X', 'REVELAR DE NOVO', 'Toque no cartão ou deslize para virá-lo.', 'Criando imagem', 'Criando vídeo {n}%', 'Salvando', 'Não foi possível criar o vídeo aqui', 'Keepers Trail', 'Seu cartão está pronto', 'Sua jornada no X, selada em um cartão.', 'Toque para revelar', 'Escolha seu ovo', 'Bem-vindo ao Trail, Keeper', 'Clássicos', 'Os 16 ovos', 'Meu cartão Keepers Trail chegou. Cada post, cada resposta, cada dia na trilha. 🐉', 'Imagem salva. Anexe ao seu post no X.', 'Som ligado', 'Som desligado', 'Design do cartão', 'ABRIR O X', 'Ou segure para quebrar você mesmo', 'PULAR', 'Só o cartão', 'Com a revelação', 'Cada post deixa um passo na trilha.', 'PERCORRA A TRILHA', "CONECTE O X PARA COMEÇAR", "Lendo sua trilha no X…", "Conectado como", "Trocar", "A trilha está cheia hoje. Volte amanhã, por favor.", "O login com X foi cancelado.", "Ainda não há posts sobre Pocket Dragons nesta conta.", "Não foi possível acessar o X agora. Tente de novo.", "Somente leitura. Contamos seus próprios posts sobre Pocket Dragons e nada é postado por você.", "Seu ovo do Trail é {e}.", "Seus posts vão longe.", "Seus posts começam conversas.", "Seus posts se espalham rápido.", "Seus posts são amados.", "{n} dias seguidos, e o fogo nunca apagou.", "Seu Trail brilha mais em {s}", "visualizações", "respostas", "reposts", "curtidas", "Desde sua última visita: {d}", "+{n} posts", "+{n} visualizações", "+{n} curtidas", "+{n} respostas", "+{n} reposts", "+{n} seguidores"],
+    tr: ['KART YÜKLENİYOR', 'GÖRSELİ KAYDET', 'KARTI ÇEVİR', 'VİDEOYU KAYDET', "X'TE PAYLAŞ", 'TEKRAR AÇ', 'Kartı çevirmek için dokun ya da kaydır.', 'Görsel hazırlanıyor', 'Video hazırlanıyor %{n}', 'Kaydediliyor', 'Video burada hazırlanamadı', 'Keepers Trail', 'Kartın hazır', "X'teki yolculuğun, tek bir kartta.", 'Açmak için dokun', 'Yumurtanı seç', "Trail'e hoş geldin, Keeper", 'Klasik', '16 yumurta', 'Keepers Trail kartım geldi. Her gönderi, her yanıt, yolda geçen her gün. 🐉', "Görsel kaydedildi. X'teki gönderine ekle.", 'Ses açık', 'Ses kapalı', 'Kart tasarımı', 'X\'İ AÇ', 'Ya da kendin kırmak için basılı tut', 'GEÇ', 'Sadece kart', 'Açılışla birlikte', 'Her gönderi patikada bir adım bırakır.', 'PATİKADA YÜRÜ', "BAŞLAMAK İÇİN X BAĞLA", "X'teki yolun okunuyor…", "Giriş yapan", "Değiştir", "Patika bugün çok yoğun. Lütfen yarın tekrar gel.", "X girişi iptal edildi.", "Bu hesapta henüz Pocket Dragons gönderisi yok.", "Şu an X'e ulaşılamadı. Lütfen tekrar dene.", "Yalnızca okuma. Pocket Dragons hakkındaki kendi gönderilerini sayarız, senin adına hiçbir şey paylaşılmaz.", "Trail yumurtan: {e}.", "Gönderilerin uzaklara ulaşıyor.", "Gönderilerin sohbet başlatıyor.", "Gönderilerin hızla yayılıyor.", "Gönderilerin çok seviliyor.", "{n} gün üst üste ve ateş hiç sönmedi.", "Trail'in en çok {s} ile parlıyor", "görüntülenme", "yanıt", "repost", "beğeni", "Son ziyaretinden beri: {d}", "+{n} gönderi", "+{n} görüntülenme", "+{n} beğeni", "+{n} yanıt", "+{n} repost", "+{n} takipçi"],
+    ru: ['ЗАГРУЗКА КАРТЫ', 'СОХРАНИТЬ ФОТО', 'ПЕРЕВЕРНУТЬ', 'СОХРАНИТЬ ВИДЕО', 'ПОДЕЛИТЬСЯ В X', 'ОТКРЫТЬ СНОВА', 'Нажми на карту или проведи, чтобы перевернуть.', 'Создаём изображение', 'Создаём видео {n}%', 'Сохраняем', 'Здесь не получилось создать видео', 'Keepers Trail', 'Твоя карта готова', 'Твой путь в X в одной карте.', 'Нажми, чтобы открыть', 'Выбери своё яйцо', 'Добро пожаловать на Trail, Keeper', 'Классика', '16 яиц', 'Моя карта Keepers Trail готова. Каждый пост, каждый ответ, каждый день в пути. 🐉', 'Изображение сохранено. Прикрепи его к посту в X.', 'Звук включён', 'Звук выключен', 'Дизайн карты', 'ОТКРЫТЬ X', 'Или удерживай, чтобы разбить самому', 'ПРОПУСТИТЬ', 'Только карта', 'С открытием', 'Каждый пост оставляет шаг на тропе.', 'ПРОЙТИ ПО ТРОПЕ', "ПОДКЛЮЧИ X, ЧТОБЫ НАЧАТЬ", "Читаем твой путь в X…", "Вход выполнен как", "Сменить", "Сегодня тропа переполнена. Загляни завтра.", "Вход через X отменён.", "На этом аккаунте пока нет постов о Pocket Dragons.", "Не удалось связаться с X. Попробуй ещё раз.", "Только чтение. Мы считаем твои посты о Pocket Dragons и ничего не публикуем за тебя.", "Твоё яйцо Trail: {e}.", "Твои посты видят далеко.", "Твои посты начинают разговоры.", "Твои посты быстро разлетаются.", "Твои посты любят.", "{n} дней подряд, и огонь ни разу не погас.", "Твой Trail ярче всего в {s}", "просмотрах", "ответах", "репостах", "лайках", "С прошлого визита: {d}", "+{n} постов", "+{n} просмотров", "+{n} лайков", "+{n} ответов", "+{n} репостов", "+{n} подписчиков"],
+    vi: ['ĐANG TẢI THẺ', 'LƯU ẢNH', 'LẬT THẺ', 'LƯU VIDEO', 'CHIA SẺ LÊN X', 'MỞ LẠI', 'Chạm vào thẻ hoặc vuốt để lật.', 'Đang tạo ảnh', 'Đang tạo video {n}%', 'Đang lưu', 'Không thể tạo video ở đây', 'Keepers Trail', 'Thẻ của bạn đã sẵn sàng', 'Hành trình của bạn trên X, gói trong một tấm thẻ.', 'Chạm để mở', 'Chọn quả trứng của bạn', 'Chào mừng đến Trail, Keeper', 'Cổ điển', '16 quả trứng', 'Thẻ Keepers Trail của mình đây. Mỗi bài đăng, mỗi trả lời, mỗi ngày trên hành trình. 🐉', 'Đã lưu ảnh. Đính kèm vào bài đăng trên X.', 'Bật âm thanh', 'Tắt âm thanh', 'Mẫu thẻ', 'MỞ X', 'Hoặc nhấn giữ để tự phá vỡ', 'BỎ QUA', 'Chỉ thẻ', 'Kèm màn mở thẻ', 'Mỗi bài đăng để lại một bước trên con đường.', 'BƯỚC LÊN CON ĐƯỜNG', "KẾT NỐI X ĐỂ BẮT ĐẦU", "Đang đọc hành trình của bạn trên X…", "Đã đăng nhập là", "Đổi", "Hôm nay con đường đang quá tải. Hãy quay lại vào ngày mai.", "Đã hủy đăng nhập X.", "Tài khoản này chưa có bài đăng nào về Pocket Dragons.", "Chưa kết nối được với X. Hãy thử lại.", "Chỉ đọc. Chúng tôi đếm bài đăng của bạn về Pocket Dragons, không đăng gì thay bạn.", "Quả trứng Trail của bạn là {e}.", "Bài đăng của bạn lan xa.", "Bài đăng của bạn khơi mở trò chuyện.", "Bài đăng của bạn lan nhanh.", "Bài đăng của bạn được yêu thích.", "{n} ngày liên tiếp, ngọn lửa chưa từng tắt.", "Trail của bạn tỏa sáng nhất ở {s}", "lượt xem", "phản hồi", "repost", "lượt thích", "Từ lần ghé trước: {d}", "+{n} bài đăng", "+{n} lượt xem", "+{n} lượt thích", "+{n} phản hồi", "+{n} repost", "+{n} người theo dõi"],
+    id: ['MEMUAT KARTU', 'SIMPAN GAMBAR', 'BALIK KARTU', 'SIMPAN VIDEO', 'BAGIKAN KE X', 'BUKA LAGI', 'Ketuk kartu atau geser untuk membaliknya.', 'Membuat gambar', 'Membuat video {n}%', 'Menyimpan', 'Video tidak bisa dibuat di sini', 'Keepers Trail', 'Kartumu sudah siap', 'Perjalananmu di X, tersegel dalam satu kartu.', 'Ketuk untuk membuka', 'Pilih telurmu', 'Selamat datang di Trail, Keeper', 'Klasik', '16 telur', 'Kartu Keepers Trail milikku sudah ada. Setiap postingan, setiap balasan, setiap hari di perjalanan. 🐉', 'Gambar tersimpan. Lampirkan ke postinganmu di X.', 'Suara aktif', 'Suara mati', 'Desain kartu', 'BUKA X', 'Atau tahan untuk memecahkannya sendiri', 'LEWATI', 'Kartu saja', 'Dengan pembukaan', 'Setiap postingan meninggalkan satu langkah di jalur.', 'TELUSURI JALURNYA', "HUBUNGKAN X UNTUK MULAI", "Membaca jejakmu di X…", "Masuk sebagai", "Ganti", "Jalur sedang penuh hari ini. Silakan kembali besok.", "Masuk dengan X dibatalkan.", "Belum ada postingan Pocket Dragons di akun ini.", "Tidak bisa menghubungi X sekarang. Coba lagi.", "Hanya membaca. Kami menghitung postinganmu tentang Pocket Dragons, tidak ada yang diposting atas namamu.", "Telur Trail-mu adalah {e}.", "Postinganmu menjangkau jauh.", "Postinganmu memulai percakapan.", "Postinganmu menyebar cepat.", "Postinganmu disukai banyak orang.", "{n} hari berturut-turut, dan apinya tak pernah padam.", "Trail-mu paling bersinar di {s}", "tayangan", "balasan", "repost", "suka", "Sejak kunjungan terakhirmu: {d}", "+{n} postingan", "+{n} tayangan", "+{n} suka", "+{n} balasan", "+{n} repost", "+{n} pengikut"],
+    ko: ['카드 불러오는 중', '이미지 저장', '카드 뒤집기', '영상 저장', 'X에 공유', '다시 공개', '카드를 탭하거나 밀어서 뒤집어 보세요.', '이미지 만드는 중', '영상 만드는 중 {n}%', '저장 중', '여기서는 영상을 만들 수 없어요', 'Keepers Trail', '카드가 준비됐어요', 'X에서의 여정을 카드 한 장에 담았어요.', '탭해서 공개하기', '내 알을 고르세요', 'Trail에 오신 걸 환영해요, Keeper', '클래식', '16가지 알', '내 Keepers Trail 카드가 나왔어요. 모든 게시물, 모든 답글, 함께한 모든 날. 🐉', '이미지를 저장했어요. X 게시물에 첨부하세요.', '소리 켜짐', '소리 꺼짐', '카드 디자인', 'X 열기', '길게 눌러 직접 깨뜨릴 수도 있어요', '건너뛰기', '카드만', '공개 장면 포함', '모든 게시물이 길 위에 한 걸음을 남겨요.', '길을 따라 걷기', "X를 연결하고 시작하기", "X에서 너의 여정을 읽는 중…", "로그인 계정", "변경", "오늘은 트레일이 붐벼요. 내일 다시 와 주세요.", "X 로그인이 취소되었어요.", "이 계정에는 아직 Pocket Dragons 게시물이 없어요.", "지금 X에 연결할 수 없어요. 다시 시도해 주세요.", "읽기 전용이에요. Pocket Dragons에 관한 내 게시물만 세고, 대신 게시하는 것은 없어요.", "당신의 Trail 알: {e}", "당신의 게시물은 많은 사람에게 닿아요.", "당신의 게시물은 대화를 열어요.", "당신의 게시물은 빠르게 퍼져요.", "당신의 게시물은 사랑받아요.", "{n}일 연속, 불꽃이 한 번도 꺼지지 않았어요.", "당신의 Trail은 {s}에서 가장 빛나요", "조회수", "답글", "재게시", "좋아요", "지난 방문 이후: {d}", "게시물 +{n}", "조회수 +{n}", "좋아요 +{n}", "답글 +{n}", "재게시 +{n}", "팔로워 +{n}"],
+    zh: ['正在加载卡片', '保存图片', '翻转卡片', '保存视频', '分享到 X', '再次揭晓', '点按卡片或滑动即可翻转。', '正在生成图片', '正在生成视频 {n}%', '正在保存', '这里无法生成视频', 'Keepers Trail', '你的卡片已就绪', '你在 X 上的旅程，封存在一张卡片里。', '点按揭晓', '选择你的蛋', '欢迎来到 Trail，Keeper', '经典', '16 枚蛋', '我的 Keepers Trail 卡片来了。每一条帖子，每一次回复，旅途中的每一天。🐉', '图片已保存。把它附加到你的 X 帖子里。', '声音开启', '声音关闭', '卡片设计', '打开 X', '或长按，亲手把它敲开', '跳过', '仅卡片', '包含揭晓动画', '每一条帖子，都是小径上的一步。', '踏上小径', "连接 X 开始", "正在读取你在 X 上的足迹…", "已登录", "切换", "今天的步道太拥挤了，请明天再来。", "已取消 X 登录。", "这个账号还没有关于 Pocket Dragons 的帖子。", "暂时无法连接 X，请重试。", "只读。我们只统计你关于 Pocket Dragons 的帖子，不会替你发布任何内容。", "你的 Trail 之蛋：{e}。", "你的帖子传得很远。", "你的帖子总能引发对话。", "你的帖子传播得很快。", "你的帖子很受喜爱。", "连续 {n} 天，火焰从未熄灭。", "你的 Trail 在{s}上最闪耀", "浏览量", "回复", "转发", "点赞", "自上次访问以来：{d}", "帖子 +{n}", "浏览 +{n}", "点赞 +{n}", "回复 +{n}", "转发 +{n}", "关注者 +{n}"]
   };
   var NAMES = [['en', 'English'], ['es', 'Español'], ['fr', 'Français'], ['pt', 'Português'], ['tr', 'Türkçe'], ['ru', 'Русский'], ['vi', 'Tiếng Việt'], ['id', 'Indonesia'], ['ko', '한국어'], ['zh', '中文']];
   var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2588,6 +2596,226 @@ const KTL = (() => {
 </script>
 <script>window.KT_SFX=null;</script>
 <script>window.KT_BOOT=function(){
+// ---------- every species writes its numbers onto the card its own way ----------
+// Each tile on the front carries a small shader. While wiP runs from 0 to 1 the tile's words and numbers arrive in the design's
+// own style: lava that cools, frost that grows, a constellation, claw marks, ink strokes, a split-flap board. At wiP = 1 the tile
+// is drawn exactly as before, so stills, saved images and the card after the reveal never change.
+const WI_MODE = { default: 0, lava: 1, ice: 2, speed: 3, space: 4, ghost: 5, tiger: 6, water: 7, tree: 8, jelly: 9, lightning: 10,
+  panda: 11, pink: 12, light: 13, shadow: 14, acid: 15, twoface: 16, butter: 17, twilight: 18 };
+const WI_GLSL = `
+uniform float wiP; uniform int wiM; uniform float wiT; uniform float wiS; uniform float wiA;
+vec3 wiGlow; float wiHide; float wiME; float wiMS;
+float wiH(vec2 p) { p = fract(p * vec2(123.34, 456.21) + wiS * 0.013); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float wiN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(wiH(i), wiH(i + vec2(1.0, 0.0)), f.x), mix(wiH(i + vec2(0.0, 1.0)), wiH(i + vec2(1.0, 1.0)), f.x), f.y); }
+float wiF(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { s += a * wiN(p); p = p * 2.03 + 1.7; a *= 0.5; } return s; }
+float wiSeg(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0); return length(pa - ba * h); }
+`;
+const WI_MAIN = `
+wiGlow = vec3(0.0); wiHide = 0.0; wiME = 1.0; wiMS = -1.0;
+#ifdef USE_MAP
+if (wiP < 0.999) {
+  vec2 uv = vMapUv; float p = clamp(wiP, 0.0, 1.0);
+  vec2 q = vec2(uv.x * wiA, uv.y), ctr = vec2(0.5 * wiA, 0.5); float maxd = length(ctr);
+  float by = clamp(uv.y, 0.2, 0.8);           // the tile's own background at this height, read from its clear left and right edges
+  vec3 base = mix(texture2D(map, vec2(0.03, by)).rgb, texture2D(map, vec2(0.97, by)).rgb, smoothstep(0.1, 0.9, uv.x));
+  vec2 su = uv, blur = vec2(0.0);
+  float r = 1.0, fr = 0.0, glowK = 1.0, overA = 0.0, ex = 0.0, dim = 1.0;
+  vec3 tint = vec3(1.0), over = vec3(1.0), exC = vec3(1.0);
+  if (wiM == 1) {                                   // lava: molten metal pours up from below, glows, then cools and sets
+    float f = uv.y * 0.85 + (wiF(q * 5.0 + 3.0) - 0.5) * 0.35, f0 = p * 1.5 - 0.25;
+    r = smoothstep(f - 0.06, f + 0.02, f0); fr = clamp(1.0 - (f0 - f) / 0.55, 0.0, 1.0) * r;
+    tint = mix(vec3(1.0, 0.22, 0.02), vec3(1.0, 0.92, 0.6), fr * fr); glowK = 2.4;
+    float cr = 1.0 - smoothstep(0.0, 0.03, abs(wiF(q * 7.0 + 11.0) - 0.5));
+    ex = cr * exp(-pow((f0 - f - 0.04) / 0.1, 2.0)) * (1.0 - smoothstep(0.7, 1.0, p)) * 1.1; exC = vec3(1.0, 0.4, 0.08);
+  } else if (wiM == 2) {                            // ice: frost creeps in from the edges, the number forms inside it, then the frost clears
+    float n = wiF(q * 9.0 + 7.0);
+    float d = min(min(q.x, wiA - q.x), min(uv.y, 1.0 - uv.y)) / (0.5 * min(wiA, 1.0));
+    float cover = smoothstep(d - 0.12, d + 0.02, p * 2.4 - n * 0.6), melt = smoothstep(0.58, 1.0, p);
+    r = smoothstep(n - 0.12, n + 0.04, (p - 0.32) * 1.9);
+    overA = cover * (1.0 - melt) * (0.5 + 0.45 * smoothstep(0.42, 0.78, wiF(q * 24.0 + 1.0))); over = vec3(0.86, 0.95, 1.0);
+    ex = step(0.982, wiH(floor(q * 70.0) + floor(wiT * 7.0))) * overA * 2.2; exC = vec3(0.9, 0.97, 1.0);
+    fr = r * (1.0 - melt); tint = vec3(0.62, 0.9, 1.0); glowK = 0.9;
+  } else if (wiM == 3) {                            // speed: the number races in from the left with a motion blur, then locks
+    float e = 1.0 - pow(1.0 - p, 3.0), off = (1.0 - e) * 0.6;
+    su.x = uv.x + off; blur = vec2(off * 0.45, 0.0);
+    r = smoothstep(0.0, 0.18, p); fr = 1.0 - e; tint = vec3(1.0, 0.82, 0.32); glowK = 1.8;
+  } else if (wiM == 4) {                            // space: stars light up, join like a constellation, and the number appears around them
+    float cs = 0.2; vec2 c = floor(q / cs); float g = 0.0, ln = 0.0;
+    for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) {
+      vec2 nb = c + vec2(float(i), float(j));
+      vec2 s = (nb + 0.2 + 0.6 * vec2(wiH(nb), wiH(nb + 17.0))) * cs; float t0 = wiH(nb + 5.0) * 0.5, lit = smoothstep(t0, t0 + 0.07, p);
+      vec2 nr = nb + vec2(1.0, 0.0), nu = nb + vec2(0.0, 1.0);
+      vec2 s2 = (nr + 0.2 + 0.6 * vec2(wiH(nr), wiH(nr + 17.0))) * cs, s3 = (nu + 0.2 + 0.6 * vec2(wiH(nu), wiH(nu + 17.0))) * cs;
+      float l2 = smoothstep(wiH(nr + 5.0) * 0.5, wiH(nr + 5.0) * 0.5 + 0.07, p), l3 = smoothstep(wiH(nu + 5.0) * 0.5, wiH(nu + 5.0) * 0.5 + 0.07, p);
+      float dd = length(q - s); g += lit * (exp(-dd * dd / 0.00012) * 1.6 + exp(-dd * dd / 0.0016) * 0.25) * (0.75 + 0.25 * sin(wiT * 9.0 + wiH(nb) * 30.0));
+      ln += lit * l2 * exp(-pow(wiSeg(q, s, s2) / 0.0024, 2.0)) * 0.55 + lit * l3 * exp(-pow(wiSeg(q, s, s3) / 0.0024, 2.0)) * 0.55;
+    }
+    float t0 = wiH(c + 5.0) * 0.5; r = smoothstep(0.0, 0.22, p - t0 - 0.1 + (wiF(q * 18.0) - 0.5) * 0.1);
+    float fade = 1.0 - smoothstep(0.78, 1.0, p); ex = (g + ln) * fade; exC = vec3(1.0, 0.78, 0.95);
+    fr = r * fade * 0.6; tint = vec3(1.0, 0.45, 0.85); glowK = 1.2;
+  } else if (wiM == 5) {                            // ghost: the number appears like breath on a cold window, wobbles once and settles
+    float fog = wiF(q * 3.0 + vec2(wiT * 0.18, 0.0));
+    su = uv + vec2(sin(uv.y * 26.0 + wiT * 5.0), cos(uv.x * 20.0 + wiT * 4.0)) * 0.007 * (1.0 - p);
+    r = smoothstep(0.12, 0.85, p + (fog - 0.5) * 0.35);
+    overA = (1.0 - smoothstep(0.0, 0.92, p)) * 0.6 * (0.55 + 0.6 * fog); over = vec3(0.94, 0.96, 1.0);
+    fr = r * (1.0 - p); tint = vec3(0.82, 0.88, 1.0); glowK = 0.8;
+  } else if (wiM == 6) {                            // tiger: three claw marks tear across and the number is underneath
+    vec2 dir = normalize(vec2(-0.42, 1.0)), nrm = vec2(dir.y, -dir.x); float band = 0.0, rim = 0.0;
+    for (int i = 0; i < 3; i++) {
+      float fi = float(i), o = clamp((p - fi * 0.13) / 0.24, 0.0, 1.0), eo = 1.0 - pow(1.0 - o, 3.0);
+      vec2 c0 = vec2((0.3 + fi * 0.2) * wiA, 0.5); float perp = abs(dot(q - c0, nrm)), along = dot(q - c0, dir);
+      float wdt = 0.07 * min(wiA, 1.6) * (0.35 + 0.65 * eo) * (1.0 - abs(along) * 0.55), cut = smoothstep(0.75 - 1.6 * eo - 0.02, 0.75 - 1.6 * eo, along);
+      band = max(band, (1.0 - smoothstep(wdt, wdt + 0.012, perp)) * cut);
+      rim = max(rim, exp(-pow((perp - wdt) / 0.007, 2.0)) * cut * step(0.001, o));
+    }
+    r = max(band, smoothstep(0.62, 0.95, p)); fr = band * (1.0 - smoothstep(0.5, 1.0, p)); tint = vec3(1.0, 0.6, 0.2); glowK = 1.4;
+    ex = rim * (1.0 - smoothstep(0.6, 1.0, p)) * 1.8; exC = vec3(1.0, 0.55, 0.15); dim = 1.0 - band * (1.0 - smoothstep(0.3, 0.9, p)) * 0.18;
+  } else if (wiM == 7) {                            // water: the number rises through ripples, wavy first, then sharp
+    float d = length(q - ctr), f0 = p * 1.3 * maxd; vec2 dir = (q - ctr) / max(d, 1e-4);
+    su = uv + vec2(dir.x / wiA, dir.y) * sin(d * 60.0 - wiT * 10.0) * 0.011 * (1.0 - p);
+    r = 1.0 - smoothstep(f0 - 0.09, f0, d); fr = r * (1.0 - p); tint = vec3(0.55, 0.88, 1.0); glowK = 1.1;
+    ex = exp(-pow((d - f0) / 0.022, 2.0)) * (1.0 - smoothstep(0.75, 1.0, p)) * 1.2; exC = vec3(0.65, 0.9, 1.0);
+  } else if (wiM == 8) {                            // tree: a green vine grows across and the number grows behind it
+    float f = uv.x * 0.78 + uv.y * 0.22 + (wiF(q * 4.0 + 2.0) - 0.5) * 0.42, f0 = p * 1.5 - 0.22;
+    r = smoothstep(f - 0.05, f + 0.02, f0); fr = clamp(1.0 - (f0 - f) / 0.3, 0.0, 1.0) * r; tint = vec3(0.45, 1.0, 0.4); glowK = 1.5;
+    float tip = exp(-pow((f0 - f) / 0.05, 2.0));
+    ex = (tip * 0.9 + step(0.975, wiH(floor(q * 46.0))) * tip * 2.5) * (1.0 - smoothstep(0.8, 1.0, p)); exC = vec3(0.5, 1.0, 0.45);
+  } else if (wiM == 9) {                            // jelly: the number drops in, squashes, and bounces twice
+    float drop = 1.0 - smoothstep(0.0, 0.32, p); drop *= drop; float k = max(0.0, p - 0.32), sq = sin(k * 24.0) * exp(-k * 7.5) * 0.24;
+    su.y = uv.y - drop * 0.55; su = vec2((su.x - 0.5) / (1.0 + sq * 0.6) + 0.5, (su.y - 0.15) / (1.0 - sq) + 0.15);
+    r = smoothstep(0.0, 0.12, p); fr = 1.0 - smoothstep(0.3, 1.0, p); tint = vec3(1.0, 0.82, 0.25); glowK = 1.2;
+  } else if (wiM == 10) {                           // lightning: a strike flashes across, the number flickers on like a neon sign
+    float on = step(0.42, wiH(vec2(floor(wiT * 26.0), 3.0)));
+    r = step(0.12, p) * mix(on, 1.0, smoothstep(0.55, 0.78, p));
+    float by = 0.5 + (wiN(vec2(uv.x * 9.0, floor(wiT * 22.0))) - 0.5) * 0.4;
+    float bolt = exp(-pow((uv.y - by) / 0.012, 2.0)) * smoothstep(0.06, 0.1, p) * (1.0 - smoothstep(0.14, 0.28, p));
+    ex = bolt * 3.0; exC = vec3(0.85, 0.93, 1.0);
+    fr = r * (1.0 - smoothstep(0.62, 1.0, p)); tint = vec3(0.75, 0.88, 1.0); glowK = 2.0;
+  } else if (wiM == 11) {                           // panda: an ink brush paints the number stroke by stroke, wet and dark at first
+    float f0 = p * 1.25 - 0.1, rag = (wiF(vec2(uv.y * 18.0, uv.x * 2.0)) - 0.5) * 0.12;
+    r = smoothstep(-0.03, 0.0, f0 + rag - uv.x); fr = clamp(1.0 - (f0 - uv.x) / 0.22, 0.0, 1.0) * r; tint = vec3(0.02, 0.02, 0.03); glowK = 0.0;
+  } else if (wiM == 12 || wiM == 18) {              // pink: petals swirl together into the number. twilight: fireflies gather and glow it on
+    float cs = wiM == 12 ? 0.16 : 0.19; vec2 c = floor(q / cs); float g = 0.0;
+    r = 0.0;
+    for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) {
+      vec2 nb = c + vec2(float(i), float(j)); float t0 = wiH(nb + 3.0) * 0.55, grow = clamp((p - t0) / 0.3, 0.0, 1.0);
+      vec2 s = (nb + 0.5 + 0.35 * (vec2(wiH(nb), wiH(nb + 9.0)) - 0.5)) * cs;
+      if (wiM == 18) s += vec2(sin(wiT * 1.3 + wiH(nb) * 6.0), cos(wiT * 1.1 + wiH(nb + 2.0) * 5.0)) * cs * 0.3 * (1.0 - grow);
+      vec2 dv = q - s; float len = length(dv), ang = atan(dv.y, dv.x);
+      float rr = grow * cs * (wiM == 12 ? 0.95 * (0.78 + 0.22 * cos(5.0 * ang + wiH(nb) * 6.28)) : 0.9);
+      r = max(r, 1.0 - smoothstep(rr - 0.012, rr, len));
+      float lit = smoothstep(t0 - 0.12, t0, p) * (1.0 - smoothstep(0.75, 1.0, p));
+      g += wiM == 18 ? lit * (exp(-len * len / 0.0002) * 1.8 + exp(-len * len / 0.002) * 0.3) * (0.7 + 0.3 * sin(wiT * 7.0 + wiH(nb) * 20.0))
+                     : (1.0 - smoothstep(rr - 0.012, rr, len)) * (1.0 - grow) * 0.5;
+    }
+    r = max(r, smoothstep(0.85, 1.0, p));
+    if (wiM == 12) { tint = vec3(1.0, 0.55, 0.8); fr = clamp(g, 0.0, 1.0); glowK = 1.0; ex = g * 0.4; exC = vec3(1.0, 0.7, 0.88); }
+    else { tint = vec3(1.0, 0.9, 0.55); fr = r * (1.0 - smoothstep(0.6, 1.0, p)) * 0.6; glowK = 1.2; ex = g; exC = vec3(1.0, 0.88, 0.5); }
+  } else if (wiM == 13) {                           // light: gold leaf pressed into the marble, catching a glint of sun
+    float f = uv.x * 0.7 + (1.0 - uv.y) * 0.3, f0 = p * 1.55 - 0.28;
+    r = smoothstep(f - 0.04, f + 0.02, f0); float gl = exp(-pow((f0 - f - 0.05) / 0.05, 2.0));
+    fr = max(gl, clamp(1.0 - (f0 - f) / 0.4, 0.0, 1.0) * r * 0.7); tint = vec3(1.0, 0.8, 0.36); glowK = 1.3;
+    ex = gl * (1.0 - smoothstep(0.85, 1.0, p)) * 0.55; exC = vec3(1.0, 0.92, 0.7);
+  } else if (wiM == 14) {                           // shadow: the tile sits in darkness, the number comes out of it with an eclipse rim
+    float d = length(q - ctr) / maxd, f0 = p * 1.3;
+    r = 1.0 - smoothstep(f0 - 0.12, f0, d); dim = mix(0.16, 1.0, 1.0 - smoothstep(f0 - 0.06, f0 + 0.2, d));
+    ex = exp(-pow((d - f0) / 0.03, 2.0)) * (1.0 - smoothstep(0.82, 1.0, p)) * 1.6; exC = vec3(0.82, 0.8, 1.0);
+    fr = r * (1.0 - p) * 0.5; tint = vec3(0.85, 0.82, 1.0); glowK = 1.0;
+  } else if (wiM == 15) {                           // acid: it eats its way through the tile, glowing and fizzing at the edges
+    float n = wiF(q * 5.0 + 4.0), f0 = p * 1.3 - 0.15;
+    r = smoothstep(n - 0.04, n, f0); float rim = exp(-pow((f0 - n) / 0.024, 2.0));
+    float fz = step(0.985, wiH(floor(q * 54.0) + vec2(0.0, floor(wiT * 6.0)))) * smoothstep(0.0, 0.05, f0 - n) * (1.0 - smoothstep(0.0, 0.2, f0 - n));
+    ex = (rim * 1.6 + fz * 2.5) * (1.0 - smoothstep(0.85, 1.0, p)); exC = vec3(0.45, 1.0, 0.5);
+    fr = clamp(1.0 - (f0 - n) / 0.25, 0.0, 1.0) * r; tint = vec3(0.4, 1.0, 0.45); glowK = 1.6;
+  } else if (wiM == 16) {                           // 2Face: each tile splits blue and red, and the halves slide together
+    float e = 1.0 - pow(1.0 - p, 3.0), off = (1.0 - e) * 0.5, side = step(0.5, uv.x);
+    su.x = side > 0.5 ? uv.x - off : uv.x + off;
+    r = (side < 0.5 ? step(su.x, 0.5) : step(0.5, su.x)) * smoothstep(0.0, 0.2, p);
+    tint = side < 0.5 ? vec3(0.42, 0.62, 1.0) : vec3(1.0, 0.45, 0.38); fr = 1.0 - e; glowK = 1.5;
+    ex = exp(-pow((uv.x - 0.5) * wiA / 0.008, 2.0)) * (1.0 - smoothstep(0.7, 1.0, p)) * 2.0; exC = vec3(1.0);
+  } else if (wiM == 17) {                           // Gilded Night: a split-flap board clatters through, column by column, and locks
+    float col = floor(uv.x / 0.085), lockT = 0.2 + col * 0.055 * (0.9 / max(0.6, 1.0 / wiA * 1.4)), st = floor(p * 14.0);
+    float locked = step(lockT, p);
+    if (locked < 0.5) su.y = fract(uv.y + wiH(vec2(col, st)) * 0.8 + 0.1);
+    r = smoothstep(0.0, 0.06, p); fr = locked * clamp(1.0 - (p - lockT) / 0.18, 0.0, 1.0) + (1.0 - locked) * 0.35;
+    tint = vec3(1.0, 0.82, 0.42); glowK = 1.3;
+    float q2 = fract(p * 14.0); overA = (1.0 - locked) * (exp(-pow((uv.y - 0.5) / 0.006, 2.0)) * 0.6 + step(uv.y, 0.5) * 0.25 * (1.0 - q2)); over = vec3(0.0);
+  } else {                                          // any other design: a soft light wipes across
+    float f = uv.x * 0.8 + (1.0 - uv.y) * 0.2, f0 = p * 1.4 - 0.2;
+    r = smoothstep(f - 0.05, f + 0.05, f0); fr = clamp(1.0 - (f0 - f) / 0.3, 0.0, 1.0) * r; glowK = 0.8;
+  }
+  vec3 col = vec3(0.0);
+  for (int i = 0; i < 5; i++) col += texture2D(map, su + blur * float(i) * 0.25).rgb;
+  col *= 0.2 * diffuse;
+  vec3 b = base * diffuse;
+  float tm = smoothstep(0.018, 0.1, length(col - b));        // where the words and numbers are
+  #ifdef USE_METALNESSMAP
+  wiME = texture2D(metalnessMap, vec2(0.03, by)).b;          // on gold and silver tiles the words are also marked in the metal
+  wiMS = texture2D(metalnessMap, su).b;                       // the metal moves with the words when they slide, ripple or drop
+  tm = max(tm, smoothstep(0.06, 0.25, abs(wiMS - wiME)));
+  #endif
+  wiHide = tm * (1.0 - r);
+  vec3 shown = mix(col, b, wiHide);
+  shown = mix(shown, tint, tm * r * fr * (wiM == 11 ? 0.85 : 0.55));
+  shown = mix(shown, over, clamp(overA, 0.0, 1.0)) * dim;
+  diffuseColor.rgb = shown;
+  wiGlow = tint * tm * r * fr * glowK * 0.9 + exC * ex * smoothstep(0.0, 0.04, p);
+}
+#endif
+`;
+function writeIn(m, key, aspect) {
+  const U = { wiP: { value: 1 }, wiM: { value: WI_MODE[key] != null ? WI_MODE[key] : 0 }, wiT: { value: 0 }, wiS: { value: Math.random() * 100 }, wiA: { value: aspect } };
+  const prev = m.onBeforeCompile;
+  m.onBeforeCompile = (sh, r) => {
+    if (prev) prev(sh, r);
+    Object.assign(sh.uniforms, U);
+    sh.fragmentShader = WI_GLSL + sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n' + WI_MAIN)
+      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\n#ifdef USE_METALNESSMAP\nif (wiMS >= 0.0) metalnessFactor = metalness * mix(wiMS, wiME, wiHide);\n#endif')
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += wiGlow;');
+  };
+  const prevKey = m.customProgramCacheKey && m.customProgramCacheKey !== THREE.Material.prototype.customProgramCacheKey ? m.customProgramCacheKey.bind(m) : null;
+  m.customProgramCacheKey = () => (prevKey ? prevKey() : '') + 'wi';
+  m.userData.wi = U; return m;
+}
+
+// ---------- what the trail says about the Keeper ----------
+// From the card's own numbers: where their trail shines brightest, the egg that suits them, and what changed since their last visit.
+// Nothing here is a ranking against other Keepers; every card gets its own moment.
+const TRAIL = (() => {
+  const num = (v) => { const s = String(v == null ? '' : v).replace(/,/g, '').trim(), m = s.match(/^([\d.]+)\s*([KkMm]?)/); if (!m) return 0;
+    return parseFloat(m[1]) * (/k/i.test(m[2]) ? 1e3 : /m/i.test(m[2]) ? 1e6 : 1); };
+  const card = () => (typeof KTL !== 'undefined' ? KTL.card : null) || {};
+  // what a typical post on X gets, so each stat is judged against its own kind and not against the others
+  const NORM = { views: 400, likes: 10, replies: 3, reposts: 2 };
+  function standout() {
+    const c = card(), posts = num(c.posts); if (!posts) return null;
+    let best = null, bv = 0;
+    for (const k of ['views', 'replies', 'reposts', 'likes']) { const v = num(c[k]) / posts / NORM[k]; if (v > bv) { bv = v; best = k; } }
+    return best;
+  }
+  // the egg that suits this trail: replies flow like water, reposts spread at speed, likes are love, views carry light far,
+  // and a long unbroken streak is a fire that never went out
+  const EGG = { views: 'light', replies: 'water', reposts: 'speed', likes: 'pink' };
+  function egg() {
+    const c = card(); if (num(c.streak) >= 21) return { k: 'lava', why: 'streak', n: num(c.streak) };
+    const s = standout(); return s ? { k: EGG[s], why: s } : null;
+  }
+  // since the last visit on this device: the numbers that grew
+  const KEYS = ['posts', 'views', 'likes', 'replies', 'reposts', 'followers'];
+  const fmt = (n) => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M' : n >= 1e4 ? (n / 1e3).toFixed(n >= 1e5 ? 0 : 1).replace(/\.0$/, '') + 'K' : Math.round(n).toLocaleString('en-US');
+  function since() {
+    const c = card(), who = (c.handle || '').toLowerCase(); if (!who || (typeof KTL !== 'undefined' && !KTL.live && !/[?&]since=1/.test(location.search))) return null;
+    let prev = null; try { prev = JSON.parse(localStorage.getItem('kt-last:' + who) || 'null'); } catch (e) {}
+    const now = {}; KEYS.forEach(k => now[k] = num(c[k]));
+    try { localStorage.setItem('kt-last:' + who, JSON.stringify(Object.assign({ at: Date.now() }, now))); } catch (e) {}
+    if (!prev) return null;
+    const up = KEYS.filter(k => now[k] > (prev[k] || 0)).map(k => [k, fmt(now[k] - (prev[k] || 0))]);
+    return up.length ? up.slice(0, 3) : null;
+  }
+  return { num, standout, egg, since };
+})();
+
 /* Keepers Trail card, 3D. Card units: 1 = 1000 css px of the 2400 x 1350 design. */
 (function () {
 const TH = window.KT_THEMES, COMMON = window.KT_COMMON; let A = COMMON, SC = null, C = null;
@@ -2765,6 +2993,7 @@ function face(side, data, sign) {
     if (t.kind === 'gold') top = gold(tex(t.tex), t.metal ? tex(t.metal, false) : null, { normalScale: new THREE.Vector2(0.18, 0.18), envMapIntensity: 1.6, roughness: 0.28 });
     else top = new THREE.MeshPhysicalMaterial({ map: tex(t.tex), roughness: 0.42, normalMap: dtex('egg-n.jpg', w * 3, h * 3), normalScale: new THREE.Vector2(0.06, 0.06),
       clearcoat: 0.75, clearcoatRoughness: 0.16, envMapIntensity: 0.85, sheen: 0.2, sheenColor: new THREE.Color(0xffffff), sheenRoughness: 0.5 });
+    if (sign > 0 && READ.some(c => t.cls.split(' ').includes(c))) writeIn(top, WBK, w / h);   // the reveal writes this tile on in the design's own way
     const sideM = t.kind === 'gold' ? gold(null, null, { color: new THREE.Color(t.side) }) :
       new THREE.MeshPhysicalMaterial({ color: new THREE.Color(t.side), roughness: 0.4, clearcoat: 0.7, clearcoatRoughness: 0.2, envMapIntensity: 0.85 });
     const m = new THREE.Mesh(slab(w, h, r, depth, bev, 6), [top, sideM]); tg.add(m);
@@ -2817,10 +3046,12 @@ function lathe(R, h, edge, dome = 0, rim = false) {
 
 // ---------- the card ----------
 const card = new THREE.Group(); scene.add(card);
-const CARDS = {};
+const CARDS = {}; if (SHOT) window.KT_CARDS = CARDS;
+let WBK = null;                                         // the design being built, so its tiles know how to write themselves on
 let building = null;                                    // textures of the theme being built, so we know when it is ready
 function buildTheme(k, data) {
   C = data.cfg; SC = data.scene; A = Object.assign({}, COMMON, data.assets); C.polishEnv = studio(C, true);
+  WBK = k;
   const g = new THREE.Group();
   const body = new THREE.Mesh(slab(W, H, px(72), T - 0.012, 0.006, 6), [
     new THREE.MeshPhysicalMaterial({ color: C.body, roughness: 0.6, envMapIntensity: 0.8 }), mkEdge()]);
@@ -2832,7 +3063,7 @@ function buildTheme(k, data) {
   // the front's tiles in the order the reveal lights them up, ending on the views
   const ft = SC.front.tiles, av = SC.front.ava && SC.front.ava._g;
   CARDS[k].read = READ.map(c => ft.find(t => t.cls.split(' ').includes(c))).filter(t => t && t._g && t._top).map(t => ({ g: t._g, z: t._g.position.z, top: t._top,
-    e0: t._top.emissive.clone(), ei0: t._top.emissiveIntensity, ava: t.cls.split(' ').includes('profile') ? av : null, az: av ? av.position.z : 0 }));
+    cls: t.cls, wi: t._top.userData.wi, e0: t._top.emissive.clone(), ei0: t._top.emissiveIntensity, ava: t.cls.split(' ').includes('profile') ? av : null, az: av ? av.position.z : 0 }));
   if (data.bgVideo && !SHOT) liveBackdrop(k, data.bgVideo);
   return CARDS[k];
 }
@@ -2958,7 +3189,10 @@ function setTheme(k) {
 }
 let start = P.get('theme'); if (!start) { try { start = localStorage.getItem('kt-theme'); } catch (e) {} }
 // the Keeper's own numbers arrive first (on pdtools, after they sign in with X); then the first design is painted and built
-(window.KT_CARD_READY || Promise.resolve(window.KT_CARD || null)).then((c) => { if (c && typeof KTL !== 'undefined') KTL.set(c); setTheme(start || ORDER[0]); });
+(window.KT_CARD_READY || Promise.resolve(window.KT_CARD || null)).then((c) => { if (c && typeof KTL !== 'undefined') KTL.set(c);
+  // a first visit opens on the egg that suits this Keeper's trail (they can still pick any other)
+  if (!start && typeof TRAIL !== 'undefined') { const eg = TRAIL.egg(); if (eg && ORDER.includes(eg.k)) { start = eg.k; window.KT_EGG = eg; } }
+  setTheme(start || ORDER[0]); });
 document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => { const k = b.dataset.pick, fresh = k !== want; setTheme(k); if (fresh && RV && RV.reseal) RV.reseal(); }));
 
 // ---------- Blinky, standing next to the card ----------
@@ -3264,7 +3498,9 @@ const SND = (() => {
   async function loadAll(c, store, only) { const d = await getData(); if (!d) return store; await Promise.all(Object.keys(d).filter(k => !only || only(k)).map(async k => { if (!store[k]) store[k] = await decode(c, d, k); })); return store; }
   function bus(c) {                                 // a gentle compressor so the loud and soft sounds sit together
     const o = c.createGain(), comp = c.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3; comp.attack.value = 0.003; comp.release.value = 0.25;
-    o.gain.value = 0.9; o.connect(comp); comp.connect(c.destination); return o;
+    // a low pass on everything, opened wide; slow motion closes it so the world goes deep and muffled, then it snaps open again
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 20000; lp.Q.value = 0.7;
+    o.gain.value = 0.9; o.connect(lp); lp.connect(comp); comp.connect(c.destination); o.lp = lp; o.dry = comp; return o;
   }
   function play(c, o, B, k, t, { g = 1, rate = 1, pan = 0, pan1 = null, dur = 0 } = {}) {
     const b = B[k]; if (!b) return null;
@@ -3278,6 +3514,14 @@ const SND = (() => {
     const s = c.createBufferSource(); s.buffer = b; s.loop = true; s.loopStart = 0.03; s.loopEnd = b.duration - 0.03;
     const gn = c.createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.linearRampToValueAtTime(g0, t + 0.25); s.connect(gn); gn.connect(o); s.start(t);
     return { s, gn };
+  }
+  const lpFor = (a) => 20000 * Math.pow(0.03, Math.max(0, Math.min(1, a)));     // how far the slow motion closes the low pass
+  // the slow motion's own sounds, played around the filter so they stay clear: a deep heartbeat as time stops, a slowed whoosh
+  function slowHitAt(c, o, B, i, n, t) {
+    const last = i === n - 1, dry = o.dry || o;
+    play(c, dry, B, 'heart', t, { g: last ? 0.75 : 0.55, rate: last ? 0.62 : 0.72 });
+    play(c, dry, B, 'whoosh', t + 0.02, { g: last ? 0.32 : 0.42, rate: 0.48 });
+    if (last) play(c, dry, B, 'impact', t + 0.05, { g: 0.35, rate: 0.55 });
   }
   const SCALE = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3, 2, 9 / 4, 5 / 2];   // the tiles climb a bright, open scale
   // ----- each design's sounds -----
@@ -3364,6 +3608,8 @@ const SND = (() => {
     play(k, what, i, last) { const c = live(); if (!c) return; const v = voice(k), t = at();
       if (what === 'tick') tickAt(c, out, bufs, v, i, t, last); else if (Array.isArray(v[what])) fireList(c, out, bufs, v[what], t); },
     arrive(k) { if (!ctx || !on) return; const c = live(); if (!c) return; play(c, out, bufs, voice(k).arrive, at(), { g: 0.5 }); },
+    slow(a) { if (!ctx || !out || !out.lp) return; const f = lpFor(a), now = ctx.currentTime; if (Math.abs(f - (out.lpF || 20000)) < 30) return; out.lpF = f; out.lp.frequency.setTargetAtTime(f, now, 0.025); },
+    slowHit(k, i, n) { const c = live(); if (!c) return; slowHitAt(c, out, bufs, i, n, at()); },
     turnCard() { const c = live(); if (!c) return; play(c, out, bufs, 'flip', at(), { g: 0.8 }); play(c, out, bufs, 'whoosh', at(), { g: 0.25 }); },
     // the film: the card's music, a card flick as it turns to the back, and when chosen the design's reveal first
     async film(k, R, plan = { sec: 14, reveal: true, turnStart: 9 }) {
@@ -3380,9 +3626,12 @@ const SND = (() => {
       [0.28, 0.58, 0.86].forEach((h, i) => play(c, o, B, v.cracks[i], R.h0 + h * R.hd, { g: 0.9 }));
       if (v.heart) for (let t = R.h0 + 0.05, s = -1; t < R.turn; s = -s) { play(c, o, B, 'heart', t, { g: 0.45 + hAt(t) * 0.5, pan: s * 0.7 }); t += 1.0 - hAt(t) * 0.6; }
       if (v.rnd) for (let t = R.h0 + 0.2, i = 0; t < R.turn; i++) { const ks = v.rnd[0]; play(c, o, B, ks[i % ks.length], t, { g: v.rnd[1] + hAt(t) * v.rnd[2], pan: (i % 3 - 1) * 0.4 }); t += 0.7 - hAt(t) * 0.45; }
+      if (R.slow && o0.lp) { o0.lp.frequency.setValueAtTime(20000, 0); R.slow.forEach(([t, a]) => o0.lp.frequency.setValueAtTime(lpFor(a), t)); o0.lp.frequency.setValueAtTime(20000, R.slow.length ? R.slow[R.slow.length - 1][0] + 0.05 : 0); }
+      (R.beats || []).forEach((t, i, all) => slowHitAt(c, o0, B, i, all.length, t));
       fireList(c, o, B, v.turn, R.turn); fireList(c, o, B, v.land, R.land);
       R.ticks.forEach((t, i) => tickAt(c, o, B, v, i, t, i === R.ticks.length - 1));
       fireList(c, o, B, v.fin, R.ticks[R.ticks.length - 1] + 0.25);
+      if (R.shine) tickAt(c, o, B, v, 7, R.shine, true);
       play(c, o, B, 'music', R.after - 0.6, { g: 0.55 });
       play(c, o, B, 'whoosh', plan.turnStart - 0.1, { g: 0.25 }); play(c, o, B, 'flip', plan.turnStart + 0.05, { g: 0.7 });
       return c.startRendering();
@@ -3440,11 +3689,34 @@ const RECIPES = {
     parts: { wait: 'bubbles', hatch: 'bubbles', land: 'fountain' }, tex: 'bubble', cols: ['#7dff9e', '#d8ffb0', '#2fd860', '#ffffff'], flash: '190,255,200', ring: '#9dffb0', flick: 'glow', ovc: '125,255,160' },
 };
 const recipe = () => RECIPES[theme] || RECIPES.default;
+// ----- slow motion -----
+// The reveal's clock slows right down at three moments and then snaps back: the seal bursting apart, the card edge-on in its last
+// spin, and the landing. u is the reveal's own time since the turn began; the speed of that clock is speedAt(u).
+const RM0 = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+function slowBeats(pc, R) {
+  if (RM0 || !pc.slow) return [];
+  const TU = pc.turn, spin = R.spin || 3, snap = R.turn === 'snap', want = spin === 1 ? 0.5 : 1 - 0.5 / spin;
+  let lo = 0, hi = 1; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2, e = snap ? 1 - Math.pow(1 - m, 4) : (m < 0.5 ? 4 * m * m * m : 1 - Math.pow(-2 * m + 2, 3) / 2); if (e < want) lo = m; else hi = m; }
+  const k = pc.slow, B = [];
+  if (pc === PACE.full || pc === PACE.film) B.push({ c: 0.11 * TU, d: 0.86 * k, s: 0.075 });   // the seal bursts: every shard hangs in the air
+  if (pc === PACE.full || pc === PACE.film) B.push({ c: lo * TU, d: 0.9 * k, s: 0.05 });       // edge-on in the last spin
+  B.push({ c: TU + 0.04, d: 0.84 * k, s: 0.1 });                                                   // the landing: the burst freezes, then falls
+  return B;
+}
+const speedAt = (B, u) => { let s = 1; for (const b of B) s -= b.d * Math.exp(-((u - b.c) / b.s) * ((u - b.c) / b.s)); return Math.max(0.07, s); };
+// the same clock for the saved film: real seconds since the turn <-> the reveal's own time
+function warpTable(B, uEnd) {
+  const du = 1 / 600, U = [0], Tt = [0]; let t = 0;
+  for (let u = du; u <= uEnd + 1; u += du) { t += du / speedAt(B, u - du / 2); U.push(u); Tt.push(t); }
+  const tOf = (u) => { const i = Math.min(U.length - 1, Math.max(0, Math.round(u / du))); return Tt[i] + Math.max(0, u - U[i]); };
+  const uOf = (tr) => { let lo = 0, hi = Tt.length - 1; if (tr >= Tt[hi]) return U[hi] + (tr - Tt[hi]); while (hi - lo > 1) { const m = (lo + hi) >> 1; if (Tt[m] < tr) lo = m; else hi = m; } const f = (tr - Tt[lo]) / Math.max(1e-9, Tt[hi] - Tt[lo]); return U[lo] + f * du; };
+  return { tOf, uOf };
+}
 // how long each step takes: the full reveal, the short one for later visits, and the one inside the saved film
 const PACE = {
-  full: { arrive: 1.7, hatch: 2.4, turn: 1.5, gap: 0.22, settle: 0.9 },
-  short: { arrive: 0.6, hatch: 0.9, turn: 1.0, gap: 0.08, settle: 0.5 },
-  film: { arrive: 0, hatch: 1.3, turn: 1.2, gap: 0.12, settle: 0.4, h0: 0.4 },
+  full: { arrive: 1.7, hatch: 2.4, turn: 1.5, gap: 0.24, settle: 0.9, write: 0.95, slow: 1 },
+  short: { arrive: 0.6, hatch: 0.9, turn: 1.0, gap: 0.1, settle: 0.5, write: 0.55, slow: 0.55 },
+  film: { arrive: 0, hatch: 1.3, turn: 1.2, gap: 0.16, settle: 0.4, h0: 0.4, write: 0.75, slow: 1 },
 };
 
 RV = (() => {
@@ -3685,13 +3957,14 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
   // the journey's tiles on the front, hidden until they light up one by one
   function tiles() { const c = theme && CARDS[theme]; return c && c.read ? c.read : []; }
   const tmpC = new THREE.Color();
-  function setTiles(fn) { tiles().forEach((t, i) => { const [s, flash, lift] = fn(i); t.g.scale.setScalar(Math.max(0.0001, s)); t.g.position.z = t.z + lift;
+  function setTiles(fn, tw) { tiles().forEach((t, i) => { const [s, flash, lift, wp] = fn(i); t.g.scale.setScalar(Math.max(0.0001, wp == null ? s : 0.97 + 0.03 * s)); t.g.position.z = t.z + lift;
+    if (t.wi) { t.wi.wiP.value = wp == null ? 1 : wp; t.wi.wiT.value = tw || 0; }
     if (t.ava) { t.ava.scale.setScalar(Math.max(0.0001, s)); t.ava.position.z = t.az + lift; }
     tmpC.copy(WHITE).lerp(accent, 0.35); t.top.emissive.copy(flash > 0.001 ? tmpC : t.e0); t.top.emissiveIntensity = flash > 0.001 ? flash : t.ei0; }); }
-  const showTiles = () => setTiles(() => [1, 0, 0]);
+  const showTiles = () => setTiles(() => [1, 0, 0, 1]);
   // the back stays hidden until the card has landed, so the seal never breaks open onto the back's numbers
   const back = (v) => { if (v) { for (const k in CARDS) if (CARDS[k].back) CARDS[k].back.visible = true; } else { const c = theme && CARDS[theme]; if (c && c.back) c.back.visible = false; } };
-  const hideTiles = () => setTiles(() => [0, 0, 0]);
+  const hideTiles = () => setTiles(() => [0, 0, 0, 0]);
 
   // ----- the layer over the 3D: darkness, flashes, lightning, the glow of lava, the seam of light -----
   const OV = document.createElement('canvas'); OV.id = 'rv-ov'; document.getElementById('stage').after(OV);
@@ -3832,7 +4105,24 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
   }
 
   // ----- the state of a reveal -----
-  let state = 'off', pace = PACE.full, mode = 'full', a0 = 0, h = 0, holding = false, auto = false, pressT = 0, tTurn = 0, lastT = 0, fired = {}, film = false;
+  let state = 'off', pace = PACE.full, mode = 'full', a0 = 0, h = 0, holding = false, auto = false, pressT = 0, tTurn = 0, lastT = 0, fired = {}, film = false, vg = 0, beats = [], so = -1, sinceV, whyK = null;
+  // the tile of the stat this Keeper's trail shines brightest in
+  const standIdx = () => { const k = typeof TRAIL !== 'undefined' ? TRAIL.standout() : null; return k ? tiles().findIndex(t => t.cls && t.cls.split(' ').includes(k)) : -1; };
+  const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function why() {                                  // on the waiting screen: the egg picked for this trail, and why
+    const el = $('rv-why'); if (!el) return; const eg = window.KT_EGG, L = window.KT_L || ((k) => k);
+    if (!eg || eg.k !== theme) { el.hidden = true; return; }
+    el.textContent = L('eggIs').replace('{e}', (window.KT_NAMES || {})[eg.k] || eg.k) + ' ' + L('why_' + eg.why).replace('{n}', eg.n || ''); el.hidden = false;
+  }
+  function shine() {                                // after the reveal: where the trail shines, and what grew since the last visit
+    const box = $('rv-shine'); if (!box || typeof TRAIL === 'undefined') return; const L = window.KT_L || ((k) => k), out = [];
+    const k = TRAIL.standout(); if (k) out.push(esc(L('shine')).replace('{s}', '<b>' + esc(L('s_' + k)) + '</b>'));
+    if (sinceV === undefined) sinceV = TRAIL.since();
+    if (sinceV) { out.push(esc(L('since')).replace('{d}', sinceV.map(([kk, v]) => '<b>' + esc(L('d_' + kk).replace('{n}', v)) + '</b>').join(' · '))); sinceV = null; }
+    box.innerHTML = out.map((h, i) => `<p style="animation-delay:${0.8 + i * 0.9}s">${h}</p>`).join('');
+    const w = $('rv-welcome'); requestAnimationFrame(() => { const r = w.getBoundingClientRect(); box.style.top = Math.round(r.bottom + 10) + 'px'; });
+  }
+  const buzz = (v) => { try { if (navigator.vibrate) navigator.vibrate(v); } catch (e) {} };
   const fire = (k, fn) => { if (!fired[k]) { fired[k] = 1; if (!film) fn(); } };
 
   // particles, by role
@@ -3943,7 +4233,9 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     hideTiles(); back(false);
   }
   function poseGo(t, u) {
-    const R = recipe(), TU = pace.turn, n = tiles().length, end = TU + 0.35 + n * pace.gap + 0.6 + pace.settle;
+    const R = recipe(), TU = pace.turn, n = tiles().length, tDone = 0.35 + (n - 1) * pace.gap + pace.write * 1.3 + 0.1, end = TU + tDone + (so >= 0 ? 1.2 : 0.2) + pace.settle;
+    beats.forEach((b, i) => { if (u >= b.c - b.s * 1.3) fire('slow' + i, () => SND.slowHit(theme, i, beats.length)); });
+    if (!film) { fire('buzz0', () => buzz(14)); if (u >= TU) fire('buzz1', () => buzz([22, 45, 70])); }
     split = null;
     if (u < TU) {                                  // the turn
       const x0 = u / TU, e = R.turn === 'snap' ? 1 - Math.pow(1 - x0, 4) : ease3(x0);
@@ -3983,12 +4275,14 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       parts(R.parts.land, t, 1, u2);
       const fl = (u2 < 0.06 ? u2 / 0.06 : Math.exp(-(u2 - 0.06) * 4.5)) * 0.62;
       Object.assign(S, { veil: 0.88 * (1 - clamp01((u - TU + 0.2) / 1.2)), flash: fl, under: R.under ? 0.5 * Math.exp(-u2 * 1.5) : 0, ov: Math.max(0, 1 - u2 / 2.2), warp: 0, sheet: 0, strike: 0, seam: theme === 'twoface' ? 0.7 * Math.exp(-u2 * 3) : 0, t });
-      setTiles((i) => { const ui = u2 - 0.35 - i * pace.gap, last = i === n - 1;
+      setTiles((i) => { const ui = u2 - 0.35 - i * pace.gap, last = i === n - 1, D = pace.write * (last ? 1.3 : 1);
         if (ui >= 0) fire('tile' + i, () => SND.play(theme, 'tick', i, last));
-        const p = clamp01(ui / (last ? 0.5 : 0.32)), s = p <= 0 ? 0 : backOut(p);
-        const flash = ui < 0 ? 0 : Math.max(0, 1 - ui / (last ? 0.9 : 0.5)) * (last ? 1.2 : 0.8);
-        return [s, flash, (1 - clamp01(ui / 0.4)) * 0.03]; });
-      if (u2 > 0.35 + n * pace.gap + 0.2) fire('fin', () => SND.play(theme, 'fin'));
+        const p = clamp01(ui / (last ? 0.5 : 0.32)), s = p <= 0 ? 0 : backOut(p), wp = clamp01(ui / D);
+        let flash = ui < 0 ? 0 : Math.max(0, 1 - ui / (last ? 1.1 : 0.7)) * (last ? 0.7 : 0.35), lift = (1 - clamp01(ui / 0.5)) * 0.03 * (ui >= 0 ? 1 : 0);
+        if (i === so) { const pe = Math.sin(Math.PI * clamp01((u2 - tDone) / 1.3)); flash += pe * 0.7; lift += pe * 0.04; }   // the stat this trail shines brightest in
+        return [s, flash, lift, wp]; }, t);
+      if (so >= 0 && u2 >= tDone) fire('shine', () => SND.play(theme, 'tick', 7, true));
+      if (u2 > 0.35 + (n - 1) * pace.gap + pace.write * 1.3 * 0.8) fire('fin', () => SND.play(theme, 'fin'));
       if (u > end && !film) finish();
     }
     key.position.set(-2.5 + Math.sin(card.rotation.y) * 2, 3 - card.rotation.x * 4, 4);
@@ -3999,40 +4293,45 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
   function startWait(m) {
     mode = m; pace = PACE[m]; state = 'arrive'; film = false; grp.visible = true; colsFor = null; tint(); fired = {}; h = 0; holding = false; auto = false;
     body.classList.remove('rv-done'); ui('wait'); $('rv').hidden = false; flip = flipNow = Math.PI; a0 = clock.getElapsedTime(); lastT = a0; lay = -1;
-    window.KT_REVEAL = 'wait'; hideTiles(); SND.arrive(theme);
+    window.KT_REVEAL = 'wait'; hideTiles(); SND.arrive(theme); why(); const sb = $('rv-shine'); if (sb) sb.innerHTML = '';
   }
   function beginHatch() { if (body.classList.contains('switching') || !(theme && CARDS[theme]) || CARDS[theme].pending) return false;
     state = 'hatch'; SND.droneStart(theme); window.KT_REVEAL = 'hatch'; return true; }
-  function beginTurn(t) { state = 'go'; tTurn = t; holding = false; SND.droneStop(); SND.play(theme, 'turn'); window.KT_REVEAL = 'go'; ui('going'); }
+  function beginTurn(t) { state = 'go'; tTurn = t; vg = 0; beats = slowBeats(pace, recipe()); so = standIdx(); holding = false; SND.droneStop(); SND.play(theme, 'turn'); window.KT_REVEAL = 'go'; ui('going'); }
   function finish() {
-    state = 'off'; grp.visible = false; cover.visible = false; split = null; showTiles(); back(true); card.scale.setScalar(1); card.position.set(0, baseY, 0); card.rotation.z = 0;
+    state = 'off'; SND.slow(0); grp.visible = false; cover.visible = false; split = null; showTiles(); back(true); card.scale.setScalar(1); card.position.set(0, baseY, 0); card.rotation.z = 0;
     flip = flipNow = 0; sweepForce = null; lights(1); Object.assign(S, { veil: 0, flash: 0, under: 0, ov: 0, warp: 0, sheet: 0, strike: 0, seam: 0 }); ovx.clearRect(0, 0, OV.width, OV.height);
     if (mode === 'full') { try { localStorage.setItem('kt-seen', '1'); } catch (e) {} }
     body.classList.remove('rv-on', 'rv-going', 'rv-hold'); body.classList.add('rv-done'); $('rv').hidden = true;
-    const w = $('rv-welcome'); w.classList.remove('show'); void w.offsetWidth; w.classList.add('show');
+    const w = $('rv-welcome'); w.classList.remove('show'); void w.offsetWidth; w.classList.add('show'); shine();
     window.KT_REVEAL = 'done';
   }
   function pose(t) {
     if (lay !== innerWidth * 10000 + innerHeight && layout()) lay = innerWidth * 10000 + innerHeight;
-    tint(); const dt = Math.min(0.1, Math.max(0, t - lastT)); lastT = t;
+    tint(); const dtR = Math.max(0, t - lastT), dt = Math.min(0.1, dtR); lastT = t; if (whyK !== theme) { whyK = theme; why(); }
     if (state === 'arrive' || state === 'wait') { const A = t - a0; if (state === 'arrive' && A >= pace.arrive) state = 'wait'; poseWait(t, A); }
     else if (state === 'hatch') {
       if (holding || auto) h = Math.min(1, h + dt / pace.hatch); else h = Math.max(0, h - dt * 0.7);
       SND.droneSet(h);
-      if (h >= 1) { beginTurn(t); poseGo(t, 0); }
+      if (h >= 1) { beginTurn(t); poseGo(t, 0); SND.slow(1 - speedAt(beats, 0)); }
       else if (h <= 0 && !holding && !auto) { state = 'wait'; a0 = t - 9; SND.droneStop(); ui('wait'); window.KT_REVEAL = 'wait'; poseWait(t, 9); }
       else poseHatch(t, h, t - pressT);
-    } else if (state === 'go') poseGo(t, t - tTurn);
+    } else if (state === 'go') { vg += Math.min(0.25, dtR) * speedAt(beats, vg); SND.slow(1 - speedAt(beats, vg)); poseGo(tTurn + vg, vg); }
     if (state !== 'off') drawOV(ovx, OV.width, OV.height, S);
   }
   // the film's reveal at time tt (seconds into the film): sealed, cracking, turning, landing, lighting up
   const FP = PACE.film;
-  const filmTimes = () => { const n = tiles().length || 8, land = FP.h0 + FP.hatch + FP.turn; return { h0: FP.h0, hd: FP.hatch, turn: FP.h0 + FP.hatch, land,
-    ticks: Array.from({ length: n }, (_, i) => land + 0.35 + i * FP.gap), after: land + 0.35 + n * FP.gap + 0.6 }; };
+  let WT = null, WTK = '';
+  const warp = () => { const k = theme + '|' + (tiles().length || 8); if (WTK !== k) { WTK = k; const B = slowBeats(FP, recipe()); WT = Object.assign(warpTable(B, FP.turn + 6), { B }); } return WT; };
+  const filmTimes = () => { const n = tiles().length || 8, turn = FP.h0 + FP.hatch, w = warp(), at = (u) => turn + w.tOf(u), land = at(FP.turn);
+    const slow = []; for (let tr = 0; tr <= w.tOf(FP.turn + 0.6); tr += 1 / 50) slow.push([turn + tr, 1 - speedAt(w.B, w.uOf(tr))]);
+    return { h0: FP.h0, hd: FP.hatch, turn, land, slow, beats: w.B.map(b => at(Math.max(0, b.c - b.s * 1.3))),
+      ticks: Array.from({ length: n }, (_, i) => at(FP.turn + 0.35 + i * FP.gap)), shine: standIdx() >= 0 ? at(FP.turn + 0.35 + (n - 1) * FP.gap + FP.write * 1.3 + 0.1) : null,
+      after: at(FP.turn + 0.35 + (n - 1) * FP.gap + FP.write * 1.3 + (standIdx() >= 0 ? 1.4 : 0.5)) }; };
   function filmPose(tt, ws) {
     film = true; pace = FP; grp.visible = true; tint(); WS = ws || 0.8; WY = 0;
     const F = filmTimes();
-    if (tt < F.h0) poseWait(tt, 9); else if (tt < F.turn) poseHatch(tt, (tt - F.h0) / FP.hatch, tt - F.h0); else poseGo(tt, tt - F.turn);
+    if (tt < F.h0) poseWait(tt, 9); else if (tt < F.turn) poseHatch(tt, (tt - F.h0) / FP.hatch, tt - F.h0); else { const u = warp().uOf(tt - F.turn); beats = warp().B; so = standIdx(); poseGo(F.turn + u, u); }
     return tt < F.after;
   }
   function filmEnd() { film = false; grp.visible = false; cover.visible = false; split = null; showTiles(); back(true); card.scale.setScalar(1); card.position.set(0, 0, 0); card.rotation.z = 0; sweepForce = null; lights(1); lay = -1; pace = PACE[mode];
@@ -4054,7 +4353,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     // a different egg picked after a reveal: it comes sealed, waiting to be cracked like the first one
     reseal() { if (state !== 'off' || exporting || !body.classList.contains('rv-done')) return; $('rv-welcome').classList.remove('show'); startWait('short'); },
     pose(t) {
-      if (SHOT && RT != null) { if (RT < 0) { layout(); tint(); poseWait(2, 9); } else filmPose(RT, P.get('ws') ? +P.get('ws') : 0.8); drawOV(ovx, OV.width, OV.height, S); return; }
+      if (SHOT && RT != null) { const rt = window.KT_RVT != null ? window.KT_RVT : RT; if (rt < 0) { layout(); tint(); poseWait(2, 9); } else filmPose(rt, P.get('ws') ? +P.get('ws') : 0.8); drawOV(ovx, OV.width, OV.height, S); return; }
       if (state !== 'off') pose(t);
     },
     dbg: () => ({ state, h, holding, auto }),
@@ -4062,6 +4361,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
   };
 })();
 
+window.KT_RV = RV;
 // ---------- the page around the reveal: buttons, sound switch, share ----------
 (() => {
   const $ = (id) => document.getElementById(id), L = window.KT_L || ((k) => k);
