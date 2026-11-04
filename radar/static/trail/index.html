@@ -2605,7 +2605,7 @@ const WI_MODE = { default: 0, lava: 1, ice: 2, speed: 3, space: 4, ghost: 5, tig
   panda: 11, pink: 12, light: 13, shadow: 14, acid: 15, twoface: 16, butter: 17, twilight: 18 };
 const WI_SH = { wiTilt: { value: 0 }, wiTime: { value: 0 } };          // shared by every tile: the card's tilt and the time
 const WI_GLSL = `
-uniform float wiP; uniform int wiM; uniform float wiT; uniform float wiS; uniform float wiA; uniform float wiTilt; uniform float wiTime;
+uniform float wiP; uniform int wiM; uniform float wiT; uniform float wiS; uniform float wiA; uniform float wiTilt; uniform float wiTime; uniform vec3 wiB; uniform float wiHasB; uniform float wiPulse;
 vec3 wiGlow; float wiHide; float wiME; float wiMS;
 float wiH(vec2 p) { p = fract(p * vec2(123.34, 456.21) + wiS * 0.013); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float wiN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
@@ -2621,6 +2621,7 @@ if (wiP < 0.999) {
   vec2 q = vec2(uv.x * wiA, uv.y), ctr = vec2(0.5 * wiA, 0.5); float maxd = length(ctr);
   float by = clamp(uv.y, 0.2, 0.8);           // the tile's own background at this height, read from its clear left and right edges
   vec3 base = mix(texture2D(map, vec2(0.03, by)).rgb, texture2D(map, vec2(0.97, by)).rgb, smoothstep(0.1, 0.9, uv.x));
+  if (wiHasB > 0.5 && length(base - wiB) > 0.1) base = wiB;
   vec2 su = uv, blur = vec2(0.0);
   float r = 1.0, fr = 0.0, glowK = 1.0, overA = 0.0, ex = 0.0, dim = 1.0;
   vec3 tint = vec3(1.0), over = vec3(1.0), exC = vec3(1.0);
@@ -2633,9 +2634,9 @@ if (wiP < 0.999) {
   } else if (wiM == 2) {                            // ice: frost creeps in from the edges, the number forms inside it, then the frost clears
     float n = wiF(q * 9.0 + 7.0);
     float d = min(min(q.x, wiA - q.x), min(uv.y, 1.0 - uv.y)) / (0.5 * min(wiA, 1.0));
-    float cover = smoothstep(d - 0.12, d + 0.02, p * 2.4 - n * 0.6), melt = smoothstep(0.58, 1.0, p);
+    float cover = smoothstep(d - 0.12, d + 0.02, p * 2.4 - n * 0.6), melt = smoothstep(0.45, 0.85, p);
     r = smoothstep(n - 0.12, n + 0.04, (p - 0.32) * 1.9);
-    overA = cover * (1.0 - melt) * (0.5 + 0.45 * smoothstep(0.42, 0.78, wiF(q * 24.0 + 1.0))); over = vec3(0.86, 0.95, 1.0);
+    overA = cover * (1.0 - melt) * (0.32 + 0.38 * smoothstep(0.42, 0.78, wiF(q * 24.0 + 1.0))); over = vec3(0.88, 0.96, 1.0);
     ex = step(0.982, wiH(floor(q * 70.0) + floor(wiT * 7.0))) * overA * 2.2; exC = vec3(0.9, 0.97, 1.0);
     fr = r * (1.0 - melt); tint = vec3(0.62, 0.9, 1.0); glowK = 0.9;
   } else if (wiM == 3) {                            // speed: the number races in from the left with a motion blur, then locks
@@ -2676,13 +2677,13 @@ if (wiP < 0.999) {
   } else if (wiM == 7) {                            // water: the number rises through ripples, wavy first, then sharp
     float d = length(q - ctr), f0 = p * 1.3 * maxd; vec2 dir = (q - ctr) / max(d, 1e-4);
     su = uv + vec2(dir.x / wiA, dir.y) * sin(d * 60.0 - wiT * 10.0) * 0.011 * (1.0 - p);
-    r = 1.0 - smoothstep(f0 - 0.09, f0, d); fr = r * (1.0 - p); tint = vec3(0.55, 0.88, 1.0); glowK = 1.1;
-    ex = exp(-pow((d - f0) / 0.022, 2.0)) * (1.0 - smoothstep(0.75, 1.0, p)) * 1.2; exC = vec3(0.65, 0.9, 1.0);
+    r = (1.0 - smoothstep(f0 - 0.09, f0, d)) * smoothstep(0.0, 0.05, p); fr = r * (1.0 - p); tint = vec3(0.55, 0.88, 1.0); glowK = 1.1;
+    ex = exp(-pow((d - f0) / 0.022, 2.0)) * (1.0 - smoothstep(0.75, 1.0, p)) * smoothstep(0.03, 0.15, f0) * 1.2; exC = vec3(0.65, 0.9, 1.0);
   } else if (wiM == 8) {                            // tree: a green vine grows across and the number grows behind it
     float f = uv.x * 0.78 + uv.y * 0.22 + (wiF(q * 4.0 + 2.0) - 0.5) * 0.42, f0 = p * 1.5 - 0.22;
     r = smoothstep(f - 0.05, f + 0.02, f0); fr = clamp(1.0 - (f0 - f) / 0.3, 0.0, 1.0) * r; tint = vec3(0.45, 1.0, 0.4); glowK = 1.5;
-    float tip = exp(-pow((f0 - f) / 0.05, 2.0));
-    ex = (tip * 0.9 + step(0.975, wiH(floor(q * 46.0))) * tip * 2.5) * (1.0 - smoothstep(0.8, 1.0, p)); exC = vec3(0.5, 1.0, 0.45);
+    float tip = exp(-pow((f0 - f) / 0.016, 2.0));
+    ex = (tip * 1.1 + step(0.985, wiH(floor(q * 46.0))) * exp(-pow((f0 - f) / 0.04, 2.0)) * 1.6) * (1.0 - smoothstep(0.8, 1.0, p)); exC = vec3(0.5, 1.0, 0.45);
   } else if (wiM == 9) {                            // jelly: the number drops in, squashes, and bounces twice
     float drop = 1.0 - smoothstep(0.0, 0.32, p); drop *= drop; float k = max(0.0, p - 0.32), sq = sin(k * 24.0) * exp(-k * 7.5) * 0.24;
     su.y = uv.y - drop * 0.55; su = vec2((su.x - 0.5) / (1.0 + sq * 0.6) + 0.5, (su.y - 0.15) / (1.0 - sq) + 0.15);
@@ -2709,10 +2710,11 @@ if (wiP < 0.999) {
       r = max(r, 1.0 - smoothstep(rr - 0.012, rr, len));
       float lit = smoothstep(t0 - 0.12, t0, p) * (1.0 - smoothstep(0.75, 1.0, p));
       g += wiM == 18 ? lit * (exp(-len * len / 0.0002) * 1.8 + exp(-len * len / 0.002) * 0.3) * (0.7 + 0.3 * sin(wiT * 7.0 + wiH(nb) * 20.0))
-                     : (1.0 - smoothstep(rr - 0.012, rr, len)) * (1.0 - grow) * 0.5;
+                     : (1.0 - smoothstep(rr - 0.012, rr, len)) * step(0.001, grow) * (1.0 - grow);
     }
     r = max(r, smoothstep(0.85, 1.0, p));
-    if (wiM == 12) { tint = vec3(1.0, 0.55, 0.8); fr = clamp(g, 0.0, 1.0); glowK = 1.0; ex = g * 0.4; exC = vec3(1.0, 0.7, 0.88); }
+    if (wiM == 12) { tint = vec3(1.0, 0.55, 0.8); fr = clamp(g, 0.0, 1.0); glowK = 1.0; ex = g * 0.25; exC = vec3(1.0, 0.7, 0.88);
+      overA = clamp(g, 0.0, 1.0) * 0.38; over = vec3(1.0, 0.72, 0.88); }                // the petals themselves, blooming and fading as the number forms
     else { tint = vec3(1.0, 0.9, 0.55); fr = r * (1.0 - smoothstep(0.6, 1.0, p)) * 0.6; glowK = 1.2; ex = g; exC = vec3(1.0, 0.88, 0.5); }
   } else if (wiM == 13) {                           // light: gold leaf pressed into the marble, catching a glint of sun
     float f = uv.x * 0.7 + (1.0 - uv.y) * 0.3, f0 = p * 1.55 - 0.28;
@@ -2721,8 +2723,8 @@ if (wiP < 0.999) {
     ex = gl * (1.0 - smoothstep(0.85, 1.0, p)) * 0.55; exC = vec3(1.0, 0.92, 0.7);
   } else if (wiM == 14) {                           // shadow: the tile sits in darkness, the number comes out of it with an eclipse rim
     float d = length(q - ctr) / maxd, f0 = p * 1.3;
-    r = 1.0 - smoothstep(f0 - 0.12, f0, d); dim = mix(0.16, 1.0, 1.0 - smoothstep(f0 - 0.06, f0 + 0.2, d));
-    ex = exp(-pow((d - f0) / 0.03, 2.0)) * (1.0 - smoothstep(0.82, 1.0, p)) * 1.6; exC = vec3(0.82, 0.8, 1.0);
+    float on = smoothstep(0.0, 0.06, p); r = (1.0 - smoothstep(f0 - 0.12, f0, d)) * on; dim = mix(0.16, 1.0, (1.0 - smoothstep(f0 - 0.06, f0 + 0.12, d)) * on);
+    ex = exp(-pow((d - f0) / 0.03, 2.0)) * (1.0 - smoothstep(0.82, 1.0, p)) * smoothstep(0.03, 0.15, f0) * 1.6; exC = vec3(0.82, 0.8, 1.0);
     fr = r * (1.0 - p) * 0.5; tint = vec3(0.85, 0.82, 1.0); glowK = 1.0;
   } else if (wiM == 15) {                           // acid: it eats its way through the tile, glowing and fizzing at the edges
     float n = wiF(q * 5.0 + 4.0), f0 = p * 1.3 - 0.15;
@@ -2737,12 +2739,17 @@ if (wiP < 0.999) {
     tint = side < 0.5 ? vec3(0.42, 0.62, 1.0) : vec3(1.0, 0.45, 0.38); fr = 1.0 - e; glowK = 1.5;
     ex = exp(-pow((uv.x - 0.5) * wiA / 0.008, 2.0)) * (1.0 - smoothstep(0.7, 1.0, p)) * 2.0; exC = vec3(1.0);
   } else if (wiM == 17) {                           // Gilded Night: a split-flap board clatters through, column by column, and locks
-    float col = floor(uv.x / 0.085), lockT = 0.2 + col * 0.055 * (0.9 / max(0.6, 1.0 / wiA * 1.4)), st = floor(p * 14.0);
-    float locked = step(lockT, p);
-    if (locked < 0.5) su.y = fract(uv.y + wiH(vec2(col, st)) * 0.8 + 0.1);
-    r = smoothstep(0.0, 0.06, p); fr = locked * clamp(1.0 - (p - lockT) / 0.18, 0.0, 1.0) + (1.0 - locked) * 0.35;
-    tint = vec3(1.0, 0.82, 0.42); glowK = 1.3;
-    float q2 = fract(p * 14.0); overA = (1.0 - locked) * (exp(-pow((uv.y - 0.5) / 0.006, 2.0)) * 0.6 + step(uv.y, 0.5) * 0.25 * (1.0 - q2)); over = vec3(0.0);
+    float cw = 0.1 / max(1.0, wiA * 0.55), col = floor(uv.x / cw), n = 1.0 / cw;
+    float t0 = 0.05 + col / n * 0.6, f = clamp((p - t0) / 0.16, 0.0, 1.0);                 // this column's flap: 0 up, 1 down and locked
+    float ang = (1.0 - f) * 1.5708, c = cos(ang), top = step(0.5, uv.y);
+    // the upper half is always there; the lower half is the flap folding down onto it
+    float y = top > 0.5 ? uv.y : 0.5 - (0.5 - uv.y) / max(c, 0.02);
+    su.y = y; float inFlap = top > 0.5 ? 1.0 : step(0.0, y);
+    r = (top > 0.5 ? step(0.02, f) : inFlap * step(0.02, f));
+    dim = top > 0.5 ? 1.0 : mix(0.45, 1.0, c);
+    fr = clamp(1.0 - (p - t0 - 0.16) / 0.2, 0.0, 1.0) * step(0.99, f); tint = vec3(1.0, 0.84, 0.46); glowK = 1.4;
+    overA = (1.0 - smoothstep(0.85, 1.0, p)) * exp(-pow((uv.y - 0.5) / 0.004, 2.0)) * 0.55 + (1.0 - smoothstep(0.0, 0.02, abs(fract(uv.x / cw) - 0.0))) * 0.3 * (1.0 - smoothstep(0.85, 1.0, p));
+    over = vec3(0.02);
   } else {                                          // any other design: a soft light wipes across
     float f = uv.x * 0.8 + (1.0 - uv.y) * 0.2, f0 = p * 1.4 - 0.2;
     r = smoothstep(f - 0.05, f + 0.05, f0); fr = clamp(1.0 - (f0 - f) / 0.3, 0.0, 1.0) * r; glowK = 0.8;
@@ -2766,7 +2773,9 @@ if (wiP < 0.999) {
 } else {
   // at rest: each species keeps a quiet shine of its own on the tile, and it moves as the card tilts under the finger
   vec2 uv = vMapUv, q = vec2(uv.x * wiA, uv.y); float by = clamp(uv.y, 0.2, 0.8);
-  vec3 base = mix(texture2D(map, vec2(0.03, by)).rgb, texture2D(map, vec2(0.97, by)).rgb, smoothstep(0.1, 0.9, uv.x)) * diffuse;
+  vec3 base = mix(texture2D(map, vec2(0.03, by)).rgb, texture2D(map, vec2(0.97, by)).rgb, smoothstep(0.1, 0.9, uv.x));
+  if (wiHasB > 0.5 && length(base - wiB) > 0.1) base = wiB;
+  base *= diffuse;
   float bg = 1.0 - smoothstep(0.018, 0.1, length(diffuseColor.rgb - base));      // only the tile's background shines, never the words
   float k = wiTilt * 0.35, band = exp(-pow((uv.x * 0.75 + uv.y * 0.25 - 0.5 + k) / 0.09, 2.0)), t = wiTime;
   vec3 sh = vec3(0.0);
@@ -2784,13 +2793,17 @@ if (wiP < 0.999) {
   else if (wiM == 3 || wiM == 10) sh = vec3(1.0, 0.85, 0.4) * exp(-pow((uv.x - fract(t * 0.18 + k)) * wiA / 0.05, 2.0)) * 0.12;                  // speed and lightning: a streak running across
   else sh = vec3(1.0) * band * 0.07;
   wiGlow = sh * bg;
+  if (wiPulse > 0.0) {                         // the stat this trail shines brightest in: a slow sweep of light across the whole tile
+    float sw = exp(-pow((uv.x * 0.75 + uv.y * 0.25 - (wiPulse * 1.7 - 0.35)) / 0.07, 2.0)) * sin(3.14159 * wiPulse);
+    wiGlow += vec3(1.0, 0.9, 0.7) * sw * (0.3 * bg + 0.38 * (1.0 - bg));
+  }
 }
 #endif
 `;
 // the patterns come from the Keeper's own handle, so no two Keepers' cards ever play quite the same, and theirs always does
 const wiSeed = () => { const h = ((typeof KTL !== 'undefined' && KTL.card && KTL.card.handle) || 'keeper').toLowerCase(); let s = 7; for (const ch of h) s = (s * 31 + ch.charCodeAt(0)) % 9973; return s / 97; };
 function writeIn(m, key, aspect) {
-  const U = { wiTilt: WI_SH.wiTilt, wiTime: WI_SH.wiTime, wiP: { value: 1 }, wiM: { value: WI_MODE[key] != null ? WI_MODE[key] : 0 }, wiT: { value: 0 }, wiS: { value: wiSeed() + aspect * 7.3 }, wiA: { value: aspect } };
+  const U = { wiTilt: WI_SH.wiTilt, wiTime: WI_SH.wiTime, wiB: { value: new THREE.Color() }, wiHasB: { value: 0 }, wiPulse: { value: 0 }, wiP: { value: 1 }, wiM: { value: WI_MODE[key] != null ? WI_MODE[key] : 0 }, wiT: { value: 0 }, wiS: { value: wiSeed() + aspect * 7.3 }, wiA: { value: aspect } };
   const prev = m.onBeforeCompile;
   m.onBeforeCompile = (sh, r) => {
     if (prev) prev(sh, r);
@@ -2801,7 +2814,23 @@ function writeIn(m, key, aspect) {
   };
   const prevKey = m.customProgramCacheKey && m.customProgramCacheKey !== THREE.Material.prototype.customProgramCacheKey ? m.customProgramCacheKey.bind(m) : null;
   m.customProgramCacheKey = () => (prevKey ? prevKey() : '') + 'wi';
-  m.userData.wi = U; return m;
+  m.userData.wi = U; wiBase(m, U); return m;
+}
+
+// the tile's own background colour: the most common brightness across the tile (in coarse steps, so a grain or pattern
+// on the background still counts as one), and the average colour of those pixels. Read once, as soon as the picture is there.
+function wiBase(m, U, tries = 0) {
+  const im = m.map && m.map.image;
+  if (!im || !(im.width || im.naturalWidth) || (im.complete === false)) { if (tries < 40) setTimeout(() => wiBase(m, U, tries + 1), 150); return; }
+  try {
+    const W0 = 128, H0 = 64, c = document.createElement('canvas'); c.width = W0; c.height = H0; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0, W0, H0);
+    const d = x.getImageData(5, 4, W0 - 10, H0 - 8).data, N = 12, cnt = new Array(N).fill(0), sum = Array.from({ length: N }, () => [0, 0, 0]);
+    for (let i = 0; i < d.length; i += 4) { const l = (0.3 * d[i] + 0.55 * d[i + 1] + 0.15 * d[i + 2]) / 255, b = Math.min(N - 1, Math.floor(l * N));
+      cnt[b]++; sum[b][0] += d[i]; sum[b][1] += d[i + 1]; sum[b][2] += d[i + 2]; }
+    let b = 0; for (let k = 1; k < N; k++) if (cnt[k] > cnt[b]) b = k;
+    const n = cnt[b]; if (!n) return;
+    U.wiB.value.setRGB(sum[b][0] / n / 255, sum[b][1] / n / 255, sum[b][2] / n / 255, THREE.SRGBColorSpace); U.wiHasB.value = 1;
+  } catch (e) {}
 }
 
 // ---------- what the trail says about the Keeper ----------
@@ -3810,7 +3839,7 @@ float evor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       for (let i = 0; i < 90; i++) { const sx = rnd() * w, sy = rnd() * h, r = 1 + rnd() * 3; x.fillStyle = kind === 'deco' ? spot : '#ffffff'; x.beginPath(); x.arc(sx, sy, r, 0, 7); x.fill();
         e.fillStyle = kind === 'deco' ? spot : '#ffffff'; e.globalAlpha = 0.9; e.beginPath(); e.arc(sx / 2, sy / 2, r * 0.7, 0, 7); e.fill(); e.globalAlpha = 1; }
     } else if (kind === 'veins' || kind === 'frost' || kind === 'bark') {
-      const col = kind === 'frost' ? '#ffffff' : spot, lw = kind === 'veins' ? 5 : kind === 'bark' ? 7 : 2.5;
+      const col = kind === 'frost' ? '#7fb8d8' : spot, lw = kind === 'veins' ? 5 : kind === 'bark' ? 7 : 2.5;
       for (let i = 0; i < (kind === 'frost' ? 60 : 26); i++) { let px = rnd() * w, py = rnd() * h; const pts2 = [[px, py]];
         for (let s = 0; s < 9; s++) { px += (rnd() - 0.5) * (kind === 'bark' ? 30 : 90); py += (kind === 'bark' ? 50 : (rnd() - 0.5) * 90); pts2.push([px, py]); }
         wrap(() => { x.strokeStyle = col; x.lineWidth = lw; x.lineJoin = 'round'; x.globalAlpha = kind === 'frost' ? 0.6 : 0.95; x.beginPath(); pts2.forEach(p => x.lineTo(p[0], p[1])); x.stroke(); x.globalAlpha = 1; });
@@ -4182,8 +4211,8 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
   // the journey's tiles on the front, hidden until they light up one by one
   function tiles() { const c = theme && CARDS[theme]; return c && c.read ? c.read : []; }
   const tmpC = new THREE.Color();
-  function setTiles(fn, tw) { tiles().forEach((t, i) => { const [s, flash, lift, wp] = fn(i); t.g.scale.setScalar(Math.max(0.0001, wp == null ? s : 0.97 + 0.03 * s)); t.g.position.z = t.z + lift;
-    if (t.wi) { t.wi.wiP.value = wp == null ? 1 : wp; t.wi.wiT.value = tw || 0; }
+  function setTiles(fn, tw) { tiles().forEach((t, i) => { const [s, flash, lift, wp, pu] = fn(i); t.g.scale.setScalar(Math.max(0.0001, wp == null ? s : 0.97 + 0.03 * s)); t.g.position.z = t.z + lift;
+    if (t.wi) { t.wi.wiP.value = wp == null ? 1 : wp; t.wi.wiT.value = tw || 0; t.wi.wiPulse.value = pu || 0; }
     if (t.ava) { t.ava.scale.setScalar(Math.max(0.0001, s)); t.ava.position.z = t.az + lift; }
     tmpC.copy(WHITE).lerp(accent, 0.35); t.top.emissive.copy(flash > 0.001 ? tmpC : t.e0); t.top.emissiveIntensity = flash > 0.001 ? flash : t.ei0; }); }
   const showTiles = () => setTiles(() => [1, 0, 0, 1]);
@@ -4504,9 +4533,9 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       setTiles((i) => { const ui = u2 - 0.35 - i * pace.gap, last = i === n - 1, D = pace.write * (last ? 1.3 : 1);
         if (ui >= 0) fire('tile' + i, () => SND.play(theme, 'tick', i, last));
         const p = clamp01(ui / (last ? 0.5 : 0.32)), s = p <= 0 ? 0 : backOut(p), wp = clamp01(ui / D);
-        let flash = ui < 0 ? 0 : Math.max(0, 1 - ui / (last ? 1.1 : 0.7)) * (last ? 0.7 : 0.35), lift = (1 - clamp01(ui / 0.5)) * 0.03 * (ui >= 0 ? 1 : 0);
-        if (i === so) { const pe = Math.sin(Math.PI * clamp01((u2 - tDone) / 1.3)); flash += pe * 0.7; lift += pe * 0.04; }   // the stat this trail shines brightest in
-        return [s, flash, lift, wp]; }, t);
+        let flash = ui < 0 ? 0 : Math.max(0, 1 - ui / (last ? 1.1 : 0.7)) * (last ? 0.12 : 0.05), lift = (1 - clamp01(ui / 0.5)) * 0.03 * (ui >= 0 ? 1 : 0);
+        let pu = 0; if (i === so) { const x = clamp01((u2 - tDone) / 1.3), pe = Math.sin(Math.PI * x); lift += pe * 0.05; pu = x > 0 && x < 1 ? x : 0; }   // the stat this trail shines brightest in
+        return [s, flash, lift, wp, pu]; }, t);
       if (so >= 0 && u2 >= tDone) fire('shine', () => SND.play(theme, 'tick', 7, true));
       if (u2 > 0.35 + (n - 1) * pace.gap + pace.write * 1.3 * 0.8) fire('fin', () => SND.play(theme, 'fin'));
       if (u > end && !film) finish();
