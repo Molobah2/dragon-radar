@@ -222,3 +222,15 @@ def test_ahead_waits_for_five_trail_keepers(cfg, monkeypatch):
     app, c = make(cfg, FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}]), monkeypatch)
     sign_in(c)
     assert c.get("/api/trail/me").get_json()["card"]["ahead"] == "—"
+
+
+def test_each_keeper_gets_a_card_number_that_never_changes(cfg, monkeypatch):
+    page = lambda: {"data": [tw("1", "2026-09-08")], "meta": {}}
+    fake = FakeX(pages=[page(), page()])
+    app, c = make(cfg, fake, monkeypatch)
+    sign_in(c)
+    assert c.get("/api/trail/me").get_json()["card"]["no"] == 1
+    assert c.get("/api/trail/me").get_json()["card"]["no"] == 1            # the same number from the saved card
+    fake.me = {"id": "77", "username": "keeper_two", "name": "Keeper Two", "public_metrics": {"followers_count": 9}, "profile_image_url": ""}
+    c2 = app.test_client(); sign_in(c2)
+    assert c2.get("/api/trail/me").get_json()["card"]["no"] == 2

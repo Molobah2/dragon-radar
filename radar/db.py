@@ -359,6 +359,7 @@ def lock_tables(engine) -> None:
 EXTRA_COLUMNS = (
     ("art_entries", "medium", "VARCHAR(40) DEFAULT '' NOT NULL"),
     ("art_entries", "line", "VARCHAR(140) DEFAULT '' NOT NULL"),
+    ("trail_cards", "no", "INTEGER"),
 )
 
 

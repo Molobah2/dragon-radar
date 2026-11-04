@@ -79,7 +79,7 @@ body.rv-done .pickwrap{animation:kt-rise .8s .15s cubic-bezier(.2,.8,.2,1) both}
 .rv-why{margin:8px 0 0;font:700 clamp(13px,2.6vw,16px)/1.35 system-ui;color:var(--load,#ffd98a);text-shadow:0 1px 12px rgba(0,0,0,.55)}
 #rv-shine{position:fixed;left:50%;transform:translateX(-50%);top:0;width:max-content;max-width:calc(100% - 32px);z-index:6;pointer-events:none;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
 #rv-shine p{margin:0;padding:7px 16px;border-radius:999px;font:800 clamp(13px,2.8vw,17px)/1.2 system-ui;color:#fff;background:rgba(10,8,16,.42);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 0 0 1px rgba(255,255,255,.14) inset;opacity:0;animation:kt-shine 5.2s ease both}
-#rv-shine p b{color:var(--load,#ffd98a)}
+#rv-shine p b{color:#fff;font-weight:900;text-shadow:0 0 12px var(--load,#ffd98a),0 0 2px var(--load,#ffd98a)}
 #rv-shine p+p{animation-delay:.9s}
 @keyframes kt-shine{0%{opacity:0;transform:translateY(8px)}10%{opacity:1;transform:none}82%{opacity:1}100%{opacity:0;transform:translateY(-4px)}}
 body.shot #rv-shine{display:none}
@@ -139,6 +139,7 @@ body.rv-going.rv-hold .rv{opacity:.35}
 .vidpick{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);display:flex;gap:8px;padding:8px;border-radius:22px;pointer-events:auto;
  background:var(--glass);box-shadow:inset 0 0 0 1px var(--line),0 14px 34px rgba(0,0,0,.28);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .vidpick[hidden]{display:none}
+.vidpick{flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw - 24px)}
 .ui .vidpick button{display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 18px;border-radius:16px;letter-spacing:.08em;white-space:nowrap;font-size:12.5px}
 .ui .vidpick button span{font:600 11px/1 system-ui;letter-spacing:.04em;opacity:.75}
 .ui .vidpick button+button{background:var(--glass);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
@@ -276,7 +277,7 @@ body[data-card="light"]{--bg:#f2ece2;--ink:#2e2a24;--soft:rgba(46,42,36,.7);--gl
 <p class="pp-h" data-t="classic">Classic</p><div class="pp-row" id="pp-classic"></div>
 <p class="pp-h" data-t="eggs">The 16 eggs</p><div class="pp-row" id="pp-eggs"></div>
 </div></div>
-<div class="ui"><div class="vidpick" id="vidpick" role="group" aria-label="Save video" hidden><button type="button" data-vid="0"><b data-t="vOnly">Card only</b><span id="vid-s0">20 s</span></button><button type="button" data-vid="1"><b data-t="vRev">With the reveal</b><span id="vid-s1">25 s</span></button></div><div class="btns"><button type="button" class="ghost" data-save="image" id="save-image" data-t="img">SAVE IMAGE</button><button id="turn" type="button" data-t="turn">TURN CARD</button><button type="button" class="ghost" data-save="video" id="save-video" data-t="vid">SAVE VIDEO</button></div><div class="btns row2"><button type="button" class="ghost" id="share" data-save="share" data-t="share">SHARE ON X</button><button type="button" class="ghost" id="again" data-t="again">REVEAL AGAIN</button></div><p id="savestate" aria-live="polite"></p><p class="hint" data-t="hint">Tap the card or swipe to turn it.</p></div>
+<div class="ui"><div class="vidpick" id="vidpick" role="group" aria-label="Save video" hidden><button type="button" data-vid="0"><b data-t="vOnly">Card only</b><span id="vid-s0">20 s</span></button><button type="button" data-vid="1"><b data-t="vRev">With the reveal</b><span id="vid-s1">25 s</span></button><button type="button" data-vid="2"><b data-t="vVert">Vertical for X</b><span id="vid-s2">29 s</span></button></div><div class="btns"><button type="button" class="ghost" data-save="image" id="save-image" data-t="img">SAVE IMAGE</button><button id="turn" type="button" data-t="turn">TURN CARD</button><button type="button" class="ghost" data-save="video" id="save-video" data-t="vid">SAVE VIDEO</button></div><div class="btns row2"><button type="button" class="ghost" id="share" data-save="share" data-t="share">SHARE ON X</button><button type="button" class="ghost" id="again" data-t="again">REVEAL AGAIN</button></div><p id="savestate" aria-live="polite"></p><p class="hint" data-t="hint">Tap the card or swipe to turn it.</p></div>
 <script>window.KT_TRAIL_API="/api/trail/me";window.KT_TRAIL_BASE="/trail";</script><script>window.KT_HOME={"bgwide": "home-bg-wide.jpg", "bgtall": "home-bg-tall.jpg", "blinky": "home-blinky.webp", "pwide": "home-wide.webp", "ptall": "home-tall.webp", "qwide": "data:image/webp;base64,UklGRqwAAABXRUJQVlA4IKAAAADwBACdASogABIAPtFgqU+oJSOiKAgBABoJYwC7BazEB/8T0XNYy5RypbyHXZDFGzAA/vb4N/IRqxskQYg7gtG0LaZv5RYg21KHhd7WIJDuY+G72FRK1p2a996+vMn9Xop6hsgQfr/0Pl4odW90RlIqSDO8Hhj2jDCc/3P3V+3nKS2ukUysxtkDVe3l5+7br2BT5frEkqyDUzL5I1JsrwAA", "qtall": "data:image/webp;base64,UklGRj4BAABXRUJQVlA4IDIBAACwCACdASogADkAPtFUpUuoJKOhrAsxABoJZQDI2brTteiv7nKoYSoHT+ozGCVjz95HusAP3XGOUm77QP1OTrAnOyLEgPbO0aevycUjIAAA/vJ2lfF5A5Hqh7Nr71+WuHKSGFxczMhFd1kWB4oCyK3dYQq2p57nATCqsCUwtk6XCHD8SmluEf2YrEBmitWDJlvhszayrBZ+9B02YeTOOhxqz1p9G9yl41Uk8Nqy6FKwc++ZCApjMjf217sk8ls4g/Jdk3p2q/KUjsk9eMmRvO0QLb5I0LnaMmBOzW16kN5CpKXeJGccjmkANpr2oEYdUbh5UtGKvwMivCLRgNvggC1qQgZJXN4oZ6aV5slhMo9Ve7bc5FST1h9g22VGdEPZTagyuOxpkb6KmFrj8f7QHSwAAAA=", "enter": "home-enter.mp3"};</script>
 <div id="home" class="home" role="region" aria-label="Keepers Trail">
 <div class="home-bg" id="home-bg"></div>
@@ -391,18 +392,18 @@ body[data-card="light"]{--bg:#f2ece2;--ink:#2e2a24;--soft:rgba(46,42,36,.7);--gl
 </script>
 <script>/* The card speaks the same 10 languages as pdtools. It follows the pdtools choice when there is one, then this browser's language. */
 (function () {
-  var K = ['load', 'img', 'turn', 'vid', 'share', 'again', 'hint', 'mkImg', 'mkVid', 'saving', 'noVid', 'kick', 'title', 'sub', 'tap', 'choose', 'welcome', 'classic', 'eggs', 'shareText', 'attach', 'sndOn', 'sndOff', 'design', 'openX', 'hold', 'skip', 'vOnly', 'vRev', 'hSub', 'hGo', 'hX', 'hRead', 'hAs', 'hSwitch', 'hBusy', 'hCancel', 'hNone', 'hFail', 'hSafe', 'eggIs', 'why_views', 'why_replies', 'why_reposts', 'why_likes', 'why_streak', 'shine', 's_views', 's_replies', 's_reposts', 's_likes', 'since', 'd_posts', 'd_views', 'd_likes', 'd_replies', 'd_reposts', 'd_followers'];
+  var K = ['load', 'img', 'turn', 'vid', 'share', 'again', 'hint', 'mkImg', 'mkVid', 'saving', 'noVid', 'kick', 'title', 'sub', 'tap', 'choose', 'welcome', 'classic', 'eggs', 'shareText', 'attach', 'sndOn', 'sndOff', 'design', 'openX', 'hold', 'skip', 'vOnly', 'vRev', 'hSub', 'hGo', 'hX', 'hRead', 'hAs', 'hSwitch', 'hBusy', 'hCancel', 'hNone', 'hFail', 'hSafe', 'eggIs', 'why_views', 'why_replies', 'why_reposts', 'why_likes', 'why_streak', 'shine', 's_views', 's_replies', 's_reposts', 's_likes', 'since', 'd_posts', 'd_views', 'd_likes', 'd_replies', 'd_reposts', 'd_followers', 'vVert', 'trailNo'];
   var S = {
-    en: ['LOADING CARD', 'SAVE IMAGE', 'TURN CARD', 'SAVE VIDEO', 'SHARE ON X', 'REVEAL AGAIN', 'Tap the card or swipe to turn it.', 'Making image', 'Making video {n}%', 'Saving', 'Could not make the video here', 'Keepers Trail', 'Your card is ready', 'Your journey on X, sealed in one card.', 'Tap to reveal', 'Choose your egg', 'Welcome to the Trail, Keeper', 'Classic', 'The 16 eggs', 'My Keepers Trail card is here. Every post, every reply, every day on the trail. 🐉', 'Image saved. Attach it to your post on X.', 'Sound on', 'Sound off', 'Card design', 'OPEN X', 'Or hold to crack it yourself', 'SKIP', 'Card only', 'With the reveal', 'Every post leaves a step on the trail.', 'WALK THE TRAIL', "CONNECT X TO BEGIN", "Reading your trail on X…", "Signed in as", "Switch", "The trail is busy today. Please come back tomorrow.", "X sign in was cancelled.", "No Pocket Dragons posts found on this account yet.", "Could not reach X just now. Please try again.", "Read only. We count your own posts about Pocket Dragons, nothing is posted for you.", "Your trail egg is {e}.", "Your posts travel far.", "Your posts start conversations.", "Your posts spread fast.", "Your posts are loved.", "{n} days in a row, and the fire never went out.", "Your trail shines brightest in {s}", "views", "replies", "reposts", "likes", "Since your last visit: {d}", "+{n} posts", "+{n} views", "+{n} likes", "+{n} replies", "+{n} reposts", "+{n} followers"],
-    es: ['CARGANDO TARJETA', 'GUARDAR IMAGEN', 'GIRAR TARJETA', 'GUARDAR VIDEO', 'COMPARTIR EN X', 'REVELAR DE NUEVO', 'Toca la tarjeta o desliza para girarla.', 'Creando imagen', 'Creando video {n}%', 'Guardando', 'No se pudo crear el video aquí', 'Keepers Trail', 'Tu tarjeta está lista', 'Tu viaje en X, sellado en una tarjeta.', 'Toca para revelar', 'Elige tu huevo', 'Bienvenido al Trail, Keeper', 'Clásicos', 'Los 16 huevos', 'Ya tengo mi tarjeta Keepers Trail. Cada post, cada respuesta, cada día en el camino. 🐉', 'Imagen guardada. Adjúntala a tu post en X.', 'Sonido activado', 'Sonido desactivado', 'Diseño de la tarjeta', 'ABRIR X', 'O mantén pulsado para romperlo tú', 'SALTAR', 'Solo la tarjeta', 'Con la revelación', 'Cada post deja un paso en el sendero.', 'RECORRE EL SENDERO', "CONECTA X PARA EMPEZAR", "Leyendo tu camino en X…", "Conectado como", "Cambiar", "El sendero está lleno hoy. Vuelve mañana, por favor.", "Se canceló el inicio de sesión con X.", "Aún no hay publicaciones sobre Pocket Dragons en esta cuenta.", "No se pudo conectar con X. Inténtalo de nuevo.", "Solo lectura. Contamos tus propias publicaciones sobre Pocket Dragons y no publicamos nada por ti.", "Tu huevo del Trail es {e}.", "Tus posts llegan lejos.", "Tus posts inician conversaciones.", "Tus posts se difunden rápido.", "Tus posts encantan.", "{n} días seguidos y el fuego nunca se apagó.", "Tu Trail brilla más en {s}", "vistas", "respuestas", "reposts", "me gusta", "Desde tu última visita: {d}", "+{n} posts", "+{n} vistas", "+{n} me gusta", "+{n} respuestas", "+{n} reposts", "+{n} seguidores"],
-    fr: ['CHARGEMENT DE LA CARTE', "ENREGISTRER L'IMAGE", 'RETOURNER LA CARTE', 'ENREGISTRER LA VIDÉO', 'PARTAGER SUR X', 'RÉVÉLER À NOUVEAU', 'Touche la carte ou glisse pour la retourner.', "Création de l'image", 'Création de la vidéo {n} %', 'Enregistrement', 'Impossible de créer la vidéo ici', 'Keepers Trail', 'Ta carte est prête', 'Ton parcours sur X, scellé dans une carte.', 'Touche pour révéler', 'Choisis ton œuf', 'Bienvenue sur le Trail, Keeper', 'Classiques', 'Les 16 œufs', 'Ma carte Keepers Trail est là. Chaque post, chaque réponse, chaque jour sur le chemin. 🐉', 'Image enregistrée. Joins-la à ton post sur X.', 'Son activé', 'Son coupé', 'Design de la carte', 'OUVRIR X', 'Ou maintiens pour le briser toi-même', 'PASSER', 'Carte seule', 'Avec la révélation', 'Chaque post laisse un pas sur le sentier.', 'SUIVRE LE SENTIER', "CONNECTE X POUR COMMENCER", "Lecture de ton parcours sur X…", "Connecté en tant que", "Changer", "Le sentier est complet aujourd'hui. Reviens demain.", "La connexion à X a été annulée.", "Aucune publication sur Pocket Dragons sur ce compte pour l'instant.", "Impossible de joindre X pour le moment. Réessaie.", "Lecture seule. Nous comptons tes publications sur Pocket Dragons, rien n’est publié à ta place.", "Ton œuf du Trail est {e}.", "Tes posts vont loin.", "Tes posts lancent des conversations.", "Tes posts se partagent vite.", "Tes posts sont adorés.", "{n} jours d'affilée, et le feu ne s'est jamais éteint.", "Ton Trail brille le plus côté {s}", "vues", "réponses", "reposts", "j'aime", "Depuis ta dernière visite : {d}", "+{n} posts", "+{n} vues", "+{n} j'aime", "+{n} réponses", "+{n} reposts", "+{n} abonnés"],
-    pt: ['CARREGANDO CARTÃO', 'SALVAR IMAGEM', 'VIRAR CARTÃO', 'SALVAR VÍDEO', 'COMPARTILHAR NO X', 'REVELAR DE NOVO', 'Toque no cartão ou deslize para virá-lo.', 'Criando imagem', 'Criando vídeo {n}%', 'Salvando', 'Não foi possível criar o vídeo aqui', 'Keepers Trail', 'Seu cartão está pronto', 'Sua jornada no X, selada em um cartão.', 'Toque para revelar', 'Escolha seu ovo', 'Bem-vindo ao Trail, Keeper', 'Clássicos', 'Os 16 ovos', 'Meu cartão Keepers Trail chegou. Cada post, cada resposta, cada dia na trilha. 🐉', 'Imagem salva. Anexe ao seu post no X.', 'Som ligado', 'Som desligado', 'Design do cartão', 'ABRIR O X', 'Ou segure para quebrar você mesmo', 'PULAR', 'Só o cartão', 'Com a revelação', 'Cada post deixa um passo na trilha.', 'PERCORRA A TRILHA', "CONECTE O X PARA COMEÇAR", "Lendo sua trilha no X…", "Conectado como", "Trocar", "A trilha está cheia hoje. Volte amanhã, por favor.", "O login com X foi cancelado.", "Ainda não há posts sobre Pocket Dragons nesta conta.", "Não foi possível acessar o X agora. Tente de novo.", "Somente leitura. Contamos seus próprios posts sobre Pocket Dragons e nada é postado por você.", "Seu ovo do Trail é {e}.", "Seus posts vão longe.", "Seus posts começam conversas.", "Seus posts se espalham rápido.", "Seus posts são amados.", "{n} dias seguidos, e o fogo nunca apagou.", "Seu Trail brilha mais em {s}", "visualizações", "respostas", "reposts", "curtidas", "Desde sua última visita: {d}", "+{n} posts", "+{n} visualizações", "+{n} curtidas", "+{n} respostas", "+{n} reposts", "+{n} seguidores"],
-    tr: ['KART YÜKLENİYOR', 'GÖRSELİ KAYDET', 'KARTI ÇEVİR', 'VİDEOYU KAYDET', "X'TE PAYLAŞ", 'TEKRAR AÇ', 'Kartı çevirmek için dokun ya da kaydır.', 'Görsel hazırlanıyor', 'Video hazırlanıyor %{n}', 'Kaydediliyor', 'Video burada hazırlanamadı', 'Keepers Trail', 'Kartın hazır', "X'teki yolculuğun, tek bir kartta.", 'Açmak için dokun', 'Yumurtanı seç', "Trail'e hoş geldin, Keeper", 'Klasik', '16 yumurta', 'Keepers Trail kartım geldi. Her gönderi, her yanıt, yolda geçen her gün. 🐉', "Görsel kaydedildi. X'teki gönderine ekle.", 'Ses açık', 'Ses kapalı', 'Kart tasarımı', 'X\'İ AÇ', 'Ya da kendin kırmak için basılı tut', 'GEÇ', 'Sadece kart', 'Açılışla birlikte', 'Her gönderi patikada bir adım bırakır.', 'PATİKADA YÜRÜ', "BAŞLAMAK İÇİN X BAĞLA", "X'teki yolun okunuyor…", "Giriş yapan", "Değiştir", "Patika bugün çok yoğun. Lütfen yarın tekrar gel.", "X girişi iptal edildi.", "Bu hesapta henüz Pocket Dragons gönderisi yok.", "Şu an X'e ulaşılamadı. Lütfen tekrar dene.", "Yalnızca okuma. Pocket Dragons hakkındaki kendi gönderilerini sayarız, senin adına hiçbir şey paylaşılmaz.", "Trail yumurtan: {e}.", "Gönderilerin uzaklara ulaşıyor.", "Gönderilerin sohbet başlatıyor.", "Gönderilerin hızla yayılıyor.", "Gönderilerin çok seviliyor.", "{n} gün üst üste ve ateş hiç sönmedi.", "Trail'in en çok {s} ile parlıyor", "görüntülenme", "yanıt", "repost", "beğeni", "Son ziyaretinden beri: {d}", "+{n} gönderi", "+{n} görüntülenme", "+{n} beğeni", "+{n} yanıt", "+{n} repost", "+{n} takipçi"],
-    ru: ['ЗАГРУЗКА КАРТЫ', 'СОХРАНИТЬ ФОТО', 'ПЕРЕВЕРНУТЬ', 'СОХРАНИТЬ ВИДЕО', 'ПОДЕЛИТЬСЯ В X', 'ОТКРЫТЬ СНОВА', 'Нажми на карту или проведи, чтобы перевернуть.', 'Создаём изображение', 'Создаём видео {n}%', 'Сохраняем', 'Здесь не получилось создать видео', 'Keepers Trail', 'Твоя карта готова', 'Твой путь в X в одной карте.', 'Нажми, чтобы открыть', 'Выбери своё яйцо', 'Добро пожаловать на Trail, Keeper', 'Классика', '16 яиц', 'Моя карта Keepers Trail готова. Каждый пост, каждый ответ, каждый день в пути. 🐉', 'Изображение сохранено. Прикрепи его к посту в X.', 'Звук включён', 'Звук выключен', 'Дизайн карты', 'ОТКРЫТЬ X', 'Или удерживай, чтобы разбить самому', 'ПРОПУСТИТЬ', 'Только карта', 'С открытием', 'Каждый пост оставляет шаг на тропе.', 'ПРОЙТИ ПО ТРОПЕ', "ПОДКЛЮЧИ X, ЧТОБЫ НАЧАТЬ", "Читаем твой путь в X…", "Вход выполнен как", "Сменить", "Сегодня тропа переполнена. Загляни завтра.", "Вход через X отменён.", "На этом аккаунте пока нет постов о Pocket Dragons.", "Не удалось связаться с X. Попробуй ещё раз.", "Только чтение. Мы считаем твои посты о Pocket Dragons и ничего не публикуем за тебя.", "Твоё яйцо Trail: {e}.", "Твои посты видят далеко.", "Твои посты начинают разговоры.", "Твои посты быстро разлетаются.", "Твои посты любят.", "{n} дней подряд, и огонь ни разу не погас.", "Твой Trail ярче всего в {s}", "просмотрах", "ответах", "репостах", "лайках", "С прошлого визита: {d}", "+{n} постов", "+{n} просмотров", "+{n} лайков", "+{n} ответов", "+{n} репостов", "+{n} подписчиков"],
-    vi: ['ĐANG TẢI THẺ', 'LƯU ẢNH', 'LẬT THẺ', 'LƯU VIDEO', 'CHIA SẺ LÊN X', 'MỞ LẠI', 'Chạm vào thẻ hoặc vuốt để lật.', 'Đang tạo ảnh', 'Đang tạo video {n}%', 'Đang lưu', 'Không thể tạo video ở đây', 'Keepers Trail', 'Thẻ của bạn đã sẵn sàng', 'Hành trình của bạn trên X, gói trong một tấm thẻ.', 'Chạm để mở', 'Chọn quả trứng của bạn', 'Chào mừng đến Trail, Keeper', 'Cổ điển', '16 quả trứng', 'Thẻ Keepers Trail của mình đây. Mỗi bài đăng, mỗi trả lời, mỗi ngày trên hành trình. 🐉', 'Đã lưu ảnh. Đính kèm vào bài đăng trên X.', 'Bật âm thanh', 'Tắt âm thanh', 'Mẫu thẻ', 'MỞ X', 'Hoặc nhấn giữ để tự phá vỡ', 'BỎ QUA', 'Chỉ thẻ', 'Kèm màn mở thẻ', 'Mỗi bài đăng để lại một bước trên con đường.', 'BƯỚC LÊN CON ĐƯỜNG', "KẾT NỐI X ĐỂ BẮT ĐẦU", "Đang đọc hành trình của bạn trên X…", "Đã đăng nhập là", "Đổi", "Hôm nay con đường đang quá tải. Hãy quay lại vào ngày mai.", "Đã hủy đăng nhập X.", "Tài khoản này chưa có bài đăng nào về Pocket Dragons.", "Chưa kết nối được với X. Hãy thử lại.", "Chỉ đọc. Chúng tôi đếm bài đăng của bạn về Pocket Dragons, không đăng gì thay bạn.", "Quả trứng Trail của bạn là {e}.", "Bài đăng của bạn lan xa.", "Bài đăng của bạn khơi mở trò chuyện.", "Bài đăng của bạn lan nhanh.", "Bài đăng của bạn được yêu thích.", "{n} ngày liên tiếp, ngọn lửa chưa từng tắt.", "Trail của bạn tỏa sáng nhất ở {s}", "lượt xem", "phản hồi", "repost", "lượt thích", "Từ lần ghé trước: {d}", "+{n} bài đăng", "+{n} lượt xem", "+{n} lượt thích", "+{n} phản hồi", "+{n} repost", "+{n} người theo dõi"],
-    id: ['MEMUAT KARTU', 'SIMPAN GAMBAR', 'BALIK KARTU', 'SIMPAN VIDEO', 'BAGIKAN KE X', 'BUKA LAGI', 'Ketuk kartu atau geser untuk membaliknya.', 'Membuat gambar', 'Membuat video {n}%', 'Menyimpan', 'Video tidak bisa dibuat di sini', 'Keepers Trail', 'Kartumu sudah siap', 'Perjalananmu di X, tersegel dalam satu kartu.', 'Ketuk untuk membuka', 'Pilih telurmu', 'Selamat datang di Trail, Keeper', 'Klasik', '16 telur', 'Kartu Keepers Trail milikku sudah ada. Setiap postingan, setiap balasan, setiap hari di perjalanan. 🐉', 'Gambar tersimpan. Lampirkan ke postinganmu di X.', 'Suara aktif', 'Suara mati', 'Desain kartu', 'BUKA X', 'Atau tahan untuk memecahkannya sendiri', 'LEWATI', 'Kartu saja', 'Dengan pembukaan', 'Setiap postingan meninggalkan satu langkah di jalur.', 'TELUSURI JALURNYA', "HUBUNGKAN X UNTUK MULAI", "Membaca jejakmu di X…", "Masuk sebagai", "Ganti", "Jalur sedang penuh hari ini. Silakan kembali besok.", "Masuk dengan X dibatalkan.", "Belum ada postingan Pocket Dragons di akun ini.", "Tidak bisa menghubungi X sekarang. Coba lagi.", "Hanya membaca. Kami menghitung postinganmu tentang Pocket Dragons, tidak ada yang diposting atas namamu.", "Telur Trail-mu adalah {e}.", "Postinganmu menjangkau jauh.", "Postinganmu memulai percakapan.", "Postinganmu menyebar cepat.", "Postinganmu disukai banyak orang.", "{n} hari berturut-turut, dan apinya tak pernah padam.", "Trail-mu paling bersinar di {s}", "tayangan", "balasan", "repost", "suka", "Sejak kunjungan terakhirmu: {d}", "+{n} postingan", "+{n} tayangan", "+{n} suka", "+{n} balasan", "+{n} repost", "+{n} pengikut"],
-    ko: ['카드 불러오는 중', '이미지 저장', '카드 뒤집기', '영상 저장', 'X에 공유', '다시 공개', '카드를 탭하거나 밀어서 뒤집어 보세요.', '이미지 만드는 중', '영상 만드는 중 {n}%', '저장 중', '여기서는 영상을 만들 수 없어요', 'Keepers Trail', '카드가 준비됐어요', 'X에서의 여정을 카드 한 장에 담았어요.', '탭해서 공개하기', '내 알을 고르세요', 'Trail에 오신 걸 환영해요, Keeper', '클래식', '16가지 알', '내 Keepers Trail 카드가 나왔어요. 모든 게시물, 모든 답글, 함께한 모든 날. 🐉', '이미지를 저장했어요. X 게시물에 첨부하세요.', '소리 켜짐', '소리 꺼짐', '카드 디자인', 'X 열기', '길게 눌러 직접 깨뜨릴 수도 있어요', '건너뛰기', '카드만', '공개 장면 포함', '모든 게시물이 길 위에 한 걸음을 남겨요.', '길을 따라 걷기', "X를 연결하고 시작하기", "X에서 너의 여정을 읽는 중…", "로그인 계정", "변경", "오늘은 트레일이 붐벼요. 내일 다시 와 주세요.", "X 로그인이 취소되었어요.", "이 계정에는 아직 Pocket Dragons 게시물이 없어요.", "지금 X에 연결할 수 없어요. 다시 시도해 주세요.", "읽기 전용이에요. Pocket Dragons에 관한 내 게시물만 세고, 대신 게시하는 것은 없어요.", "당신의 Trail 알: {e}", "당신의 게시물은 많은 사람에게 닿아요.", "당신의 게시물은 대화를 열어요.", "당신의 게시물은 빠르게 퍼져요.", "당신의 게시물은 사랑받아요.", "{n}일 연속, 불꽃이 한 번도 꺼지지 않았어요.", "당신의 Trail은 {s}에서 가장 빛나요", "조회수", "답글", "재게시", "좋아요", "지난 방문 이후: {d}", "게시물 +{n}", "조회수 +{n}", "좋아요 +{n}", "답글 +{n}", "재게시 +{n}", "팔로워 +{n}"],
-    zh: ['正在加载卡片', '保存图片', '翻转卡片', '保存视频', '分享到 X', '再次揭晓', '点按卡片或滑动即可翻转。', '正在生成图片', '正在生成视频 {n}%', '正在保存', '这里无法生成视频', 'Keepers Trail', '你的卡片已就绪', '你在 X 上的旅程，封存在一张卡片里。', '点按揭晓', '选择你的蛋', '欢迎来到 Trail，Keeper', '经典', '16 枚蛋', '我的 Keepers Trail 卡片来了。每一条帖子，每一次回复，旅途中的每一天。🐉', '图片已保存。把它附加到你的 X 帖子里。', '声音开启', '声音关闭', '卡片设计', '打开 X', '或长按，亲手把它敲开', '跳过', '仅卡片', '包含揭晓动画', '每一条帖子，都是小径上的一步。', '踏上小径', "连接 X 开始", "正在读取你在 X 上的足迹…", "已登录", "切换", "今天的步道太拥挤了，请明天再来。", "已取消 X 登录。", "这个账号还没有关于 Pocket Dragons 的帖子。", "暂时无法连接 X，请重试。", "只读。我们只统计你关于 Pocket Dragons 的帖子，不会替你发布任何内容。", "你的 Trail 之蛋：{e}。", "你的帖子传得很远。", "你的帖子总能引发对话。", "你的帖子传播得很快。", "你的帖子很受喜爱。", "连续 {n} 天，火焰从未熄灭。", "你的 Trail 在{s}上最闪耀", "浏览量", "回复", "转发", "点赞", "自上次访问以来：{d}", "帖子 +{n}", "浏览 +{n}", "点赞 +{n}", "回复 +{n}", "转发 +{n}", "关注者 +{n}"]
+    en: ['LOADING CARD', 'SAVE IMAGE', 'TURN CARD', 'SAVE VIDEO', 'SHARE ON X', 'REVEAL AGAIN', 'Tap the card or swipe to turn it.', 'Making image', 'Making video {n}%', 'Saving', 'Could not make the video here', 'Keepers Trail', 'Your card is ready', 'Your journey on X, sealed in one card.', 'Tap to reveal', 'Choose your egg', 'Welcome to the Trail, Keeper', 'Classic', 'The 16 eggs', 'My Keepers Trail card is here. Every post, every reply, every day on the trail. 🐉', 'Image saved. Attach it to your post on X.', 'Sound on', 'Sound off', 'Card design', 'OPEN X', 'Or hold to crack it yourself', 'SKIP', 'Card only', 'With the reveal', 'Every post leaves a step on the trail.', 'WALK THE TRAIL', "CONNECT X TO BEGIN", "Reading your trail on X…", "Signed in as", "Switch", "The trail is busy today. Please come back tomorrow.", "X sign in was cancelled.", "No Pocket Dragons posts found on this account yet.", "Could not reach X just now. Please try again.", "Read only. We count your own posts about Pocket Dragons, nothing is posted for you.", "Your trail egg is {e}.", "Your posts travel far.", "Your posts start conversations.", "Your posts spread fast.", "Your posts are loved.", "{n} days in a row, and the fire never went out.", "Your trail shines brightest in {s}", "views", "replies", "reposts", "likes", "Since your last visit: {d}", "+{n} posts", "+{n} views", "+{n} likes", "+{n} replies", "+{n} reposts", "+{n} followers", "Vertical for X", "Keeper No. {n} on the Trail"],
+    es: ['CARGANDO TARJETA', 'GUARDAR IMAGEN', 'GIRAR TARJETA', 'GUARDAR VIDEO', 'COMPARTIR EN X', 'REVELAR DE NUEVO', 'Toca la tarjeta o desliza para girarla.', 'Creando imagen', 'Creando video {n}%', 'Guardando', 'No se pudo crear el video aquí', 'Keepers Trail', 'Tu tarjeta está lista', 'Tu viaje en X, sellado en una tarjeta.', 'Toca para revelar', 'Elige tu huevo', 'Bienvenido al Trail, Keeper', 'Clásicos', 'Los 16 huevos', 'Ya tengo mi tarjeta Keepers Trail. Cada post, cada respuesta, cada día en el camino. 🐉', 'Imagen guardada. Adjúntala a tu post en X.', 'Sonido activado', 'Sonido desactivado', 'Diseño de la tarjeta', 'ABRIR X', 'O mantén pulsado para romperlo tú', 'SALTAR', 'Solo la tarjeta', 'Con la revelación', 'Cada post deja un paso en el sendero.', 'RECORRE EL SENDERO', "CONECTA X PARA EMPEZAR", "Leyendo tu camino en X…", "Conectado como", "Cambiar", "El sendero está lleno hoy. Vuelve mañana, por favor.", "Se canceló el inicio de sesión con X.", "Aún no hay publicaciones sobre Pocket Dragons en esta cuenta.", "No se pudo conectar con X. Inténtalo de nuevo.", "Solo lectura. Contamos tus propias publicaciones sobre Pocket Dragons y no publicamos nada por ti.", "Tu huevo del Trail es {e}.", "Tus posts llegan lejos.", "Tus posts inician conversaciones.", "Tus posts se difunden rápido.", "Tus posts encantan.", "{n} días seguidos y el fuego nunca se apagó.", "Tu Trail brilla más en {s}", "vistas", "respuestas", "reposts", "me gusta", "Desde tu última visita: {d}", "+{n} posts", "+{n} vistas", "+{n} me gusta", "+{n} respuestas", "+{n} reposts", "+{n} seguidores", "Vertical para X", "Keeper n.º {n} del Trail"],
+    fr: ['CHARGEMENT DE LA CARTE', "ENREGISTRER L'IMAGE", 'RETOURNER LA CARTE', 'ENREGISTRER LA VIDÉO', 'PARTAGER SUR X', 'RÉVÉLER À NOUVEAU', 'Touche la carte ou glisse pour la retourner.', "Création de l'image", 'Création de la vidéo {n} %', 'Enregistrement', 'Impossible de créer la vidéo ici', 'Keepers Trail', 'Ta carte est prête', 'Ton parcours sur X, scellé dans une carte.', 'Touche pour révéler', 'Choisis ton œuf', 'Bienvenue sur le Trail, Keeper', 'Classiques', 'Les 16 œufs', 'Ma carte Keepers Trail est là. Chaque post, chaque réponse, chaque jour sur le chemin. 🐉', 'Image enregistrée. Joins-la à ton post sur X.', 'Son activé', 'Son coupé', 'Design de la carte', 'OUVRIR X', 'Ou maintiens pour le briser toi-même', 'PASSER', 'Carte seule', 'Avec la révélation', 'Chaque post laisse un pas sur le sentier.', 'SUIVRE LE SENTIER', "CONNECTE X POUR COMMENCER", "Lecture de ton parcours sur X…", "Connecté en tant que", "Changer", "Le sentier est complet aujourd'hui. Reviens demain.", "La connexion à X a été annulée.", "Aucune publication sur Pocket Dragons sur ce compte pour l'instant.", "Impossible de joindre X pour le moment. Réessaie.", "Lecture seule. Nous comptons tes publications sur Pocket Dragons, rien n’est publié à ta place.", "Ton œuf du Trail est {e}.", "Tes posts vont loin.", "Tes posts lancent des conversations.", "Tes posts se partagent vite.", "Tes posts sont adorés.", "{n} jours d'affilée, et le feu ne s'est jamais éteint.", "Ton Trail brille le plus côté {s}", "vues", "réponses", "reposts", "j'aime", "Depuis ta dernière visite : {d}", "+{n} posts", "+{n} vues", "+{n} j'aime", "+{n} réponses", "+{n} reposts", "+{n} abonnés", "Vertical pour X", "Keeper n° {n} du Trail"],
+    pt: ['CARREGANDO CARTÃO', 'SALVAR IMAGEM', 'VIRAR CARTÃO', 'SALVAR VÍDEO', 'COMPARTILHAR NO X', 'REVELAR DE NOVO', 'Toque no cartão ou deslize para virá-lo.', 'Criando imagem', 'Criando vídeo {n}%', 'Salvando', 'Não foi possível criar o vídeo aqui', 'Keepers Trail', 'Seu cartão está pronto', 'Sua jornada no X, selada em um cartão.', 'Toque para revelar', 'Escolha seu ovo', 'Bem-vindo ao Trail, Keeper', 'Clássicos', 'Os 16 ovos', 'Meu cartão Keepers Trail chegou. Cada post, cada resposta, cada dia na trilha. 🐉', 'Imagem salva. Anexe ao seu post no X.', 'Som ligado', 'Som desligado', 'Design do cartão', 'ABRIR O X', 'Ou segure para quebrar você mesmo', 'PULAR', 'Só o cartão', 'Com a revelação', 'Cada post deixa um passo na trilha.', 'PERCORRA A TRILHA', "CONECTE O X PARA COMEÇAR", "Lendo sua trilha no X…", "Conectado como", "Trocar", "A trilha está cheia hoje. Volte amanhã, por favor.", "O login com X foi cancelado.", "Ainda não há posts sobre Pocket Dragons nesta conta.", "Não foi possível acessar o X agora. Tente de novo.", "Somente leitura. Contamos seus próprios posts sobre Pocket Dragons e nada é postado por você.", "Seu ovo do Trail é {e}.", "Seus posts vão longe.", "Seus posts começam conversas.", "Seus posts se espalham rápido.", "Seus posts são amados.", "{n} dias seguidos, e o fogo nunca apagou.", "Seu Trail brilha mais em {s}", "visualizações", "respostas", "reposts", "curtidas", "Desde sua última visita: {d}", "+{n} posts", "+{n} visualizações", "+{n} curtidas", "+{n} respostas", "+{n} reposts", "+{n} seguidores", "Vertical para o X", "Keeper nº {n} do Trail"],
+    tr: ['KART YÜKLENİYOR', 'GÖRSELİ KAYDET', 'KARTI ÇEVİR', 'VİDEOYU KAYDET', "X'TE PAYLAŞ", 'TEKRAR AÇ', 'Kartı çevirmek için dokun ya da kaydır.', 'Görsel hazırlanıyor', 'Video hazırlanıyor %{n}', 'Kaydediliyor', 'Video burada hazırlanamadı', 'Keepers Trail', 'Kartın hazır', "X'teki yolculuğun, tek bir kartta.", 'Açmak için dokun', 'Yumurtanı seç', "Trail'e hoş geldin, Keeper", 'Klasik', '16 yumurta', 'Keepers Trail kartım geldi. Her gönderi, her yanıt, yolda geçen her gün. 🐉', "Görsel kaydedildi. X'teki gönderine ekle.", 'Ses açık', 'Ses kapalı', 'Kart tasarımı', 'X\'İ AÇ', 'Ya da kendin kırmak için basılı tut', 'GEÇ', 'Sadece kart', 'Açılışla birlikte', 'Her gönderi patikada bir adım bırakır.', 'PATİKADA YÜRÜ', "BAŞLAMAK İÇİN X BAĞLA", "X'teki yolun okunuyor…", "Giriş yapan", "Değiştir", "Patika bugün çok yoğun. Lütfen yarın tekrar gel.", "X girişi iptal edildi.", "Bu hesapta henüz Pocket Dragons gönderisi yok.", "Şu an X'e ulaşılamadı. Lütfen tekrar dene.", "Yalnızca okuma. Pocket Dragons hakkındaki kendi gönderilerini sayarız, senin adına hiçbir şey paylaşılmaz.", "Trail yumurtan: {e}.", "Gönderilerin uzaklara ulaşıyor.", "Gönderilerin sohbet başlatıyor.", "Gönderilerin hızla yayılıyor.", "Gönderilerin çok seviliyor.", "{n} gün üst üste ve ateş hiç sönmedi.", "Trail'in en çok {s} ile parlıyor", "görüntülenme", "yanıt", "repost", "beğeni", "Son ziyaretinden beri: {d}", "+{n} gönderi", "+{n} görüntülenme", "+{n} beğeni", "+{n} yanıt", "+{n} repost", "+{n} takipçi", "X için dikey", "Trail'in {n} numaralı Keeper'ı"],
+    ru: ['ЗАГРУЗКА КАРТЫ', 'СОХРАНИТЬ ФОТО', 'ПЕРЕВЕРНУТЬ', 'СОХРАНИТЬ ВИДЕО', 'ПОДЕЛИТЬСЯ В X', 'ОТКРЫТЬ СНОВА', 'Нажми на карту или проведи, чтобы перевернуть.', 'Создаём изображение', 'Создаём видео {n}%', 'Сохраняем', 'Здесь не получилось создать видео', 'Keepers Trail', 'Твоя карта готова', 'Твой путь в X в одной карте.', 'Нажми, чтобы открыть', 'Выбери своё яйцо', 'Добро пожаловать на Trail, Keeper', 'Классика', '16 яиц', 'Моя карта Keepers Trail готова. Каждый пост, каждый ответ, каждый день в пути. 🐉', 'Изображение сохранено. Прикрепи его к посту в X.', 'Звук включён', 'Звук выключен', 'Дизайн карты', 'ОТКРЫТЬ X', 'Или удерживай, чтобы разбить самому', 'ПРОПУСТИТЬ', 'Только карта', 'С открытием', 'Каждый пост оставляет шаг на тропе.', 'ПРОЙТИ ПО ТРОПЕ', "ПОДКЛЮЧИ X, ЧТОБЫ НАЧАТЬ", "Читаем твой путь в X…", "Вход выполнен как", "Сменить", "Сегодня тропа переполнена. Загляни завтра.", "Вход через X отменён.", "На этом аккаунте пока нет постов о Pocket Dragons.", "Не удалось связаться с X. Попробуй ещё раз.", "Только чтение. Мы считаем твои посты о Pocket Dragons и ничего не публикуем за тебя.", "Твоё яйцо Trail: {e}.", "Твои посты видят далеко.", "Твои посты начинают разговоры.", "Твои посты быстро разлетаются.", "Твои посты любят.", "{n} дней подряд, и огонь ни разу не погас.", "Твой Trail ярче всего в {s}", "просмотрах", "ответах", "репостах", "лайках", "С прошлого визита: {d}", "+{n} постов", "+{n} просмотров", "+{n} лайков", "+{n} ответов", "+{n} репостов", "+{n} подписчиков", "Вертикально для X", "Keeper № {n} на Trail"],
+    vi: ['ĐANG TẢI THẺ', 'LƯU ẢNH', 'LẬT THẺ', 'LƯU VIDEO', 'CHIA SẺ LÊN X', 'MỞ LẠI', 'Chạm vào thẻ hoặc vuốt để lật.', 'Đang tạo ảnh', 'Đang tạo video {n}%', 'Đang lưu', 'Không thể tạo video ở đây', 'Keepers Trail', 'Thẻ của bạn đã sẵn sàng', 'Hành trình của bạn trên X, gói trong một tấm thẻ.', 'Chạm để mở', 'Chọn quả trứng của bạn', 'Chào mừng đến Trail, Keeper', 'Cổ điển', '16 quả trứng', 'Thẻ Keepers Trail của mình đây. Mỗi bài đăng, mỗi trả lời, mỗi ngày trên hành trình. 🐉', 'Đã lưu ảnh. Đính kèm vào bài đăng trên X.', 'Bật âm thanh', 'Tắt âm thanh', 'Mẫu thẻ', 'MỞ X', 'Hoặc nhấn giữ để tự phá vỡ', 'BỎ QUA', 'Chỉ thẻ', 'Kèm màn mở thẻ', 'Mỗi bài đăng để lại một bước trên con đường.', 'BƯỚC LÊN CON ĐƯỜNG', "KẾT NỐI X ĐỂ BẮT ĐẦU", "Đang đọc hành trình của bạn trên X…", "Đã đăng nhập là", "Đổi", "Hôm nay con đường đang quá tải. Hãy quay lại vào ngày mai.", "Đã hủy đăng nhập X.", "Tài khoản này chưa có bài đăng nào về Pocket Dragons.", "Chưa kết nối được với X. Hãy thử lại.", "Chỉ đọc. Chúng tôi đếm bài đăng của bạn về Pocket Dragons, không đăng gì thay bạn.", "Quả trứng Trail của bạn là {e}.", "Bài đăng của bạn lan xa.", "Bài đăng của bạn khơi mở trò chuyện.", "Bài đăng của bạn lan nhanh.", "Bài đăng của bạn được yêu thích.", "{n} ngày liên tiếp, ngọn lửa chưa từng tắt.", "Trail của bạn tỏa sáng nhất ở {s}", "lượt xem", "phản hồi", "repost", "lượt thích", "Từ lần ghé trước: {d}", "+{n} bài đăng", "+{n} lượt xem", "+{n} lượt thích", "+{n} phản hồi", "+{n} repost", "+{n} người theo dõi", "Dọc cho X", "Keeper số {n} trên Trail"],
+    id: ['MEMUAT KARTU', 'SIMPAN GAMBAR', 'BALIK KARTU', 'SIMPAN VIDEO', 'BAGIKAN KE X', 'BUKA LAGI', 'Ketuk kartu atau geser untuk membaliknya.', 'Membuat gambar', 'Membuat video {n}%', 'Menyimpan', 'Video tidak bisa dibuat di sini', 'Keepers Trail', 'Kartumu sudah siap', 'Perjalananmu di X, tersegel dalam satu kartu.', 'Ketuk untuk membuka', 'Pilih telurmu', 'Selamat datang di Trail, Keeper', 'Klasik', '16 telur', 'Kartu Keepers Trail milikku sudah ada. Setiap postingan, setiap balasan, setiap hari di perjalanan. 🐉', 'Gambar tersimpan. Lampirkan ke postinganmu di X.', 'Suara aktif', 'Suara mati', 'Desain kartu', 'BUKA X', 'Atau tahan untuk memecahkannya sendiri', 'LEWATI', 'Kartu saja', 'Dengan pembukaan', 'Setiap postingan meninggalkan satu langkah di jalur.', 'TELUSURI JALURNYA', "HUBUNGKAN X UNTUK MULAI", "Membaca jejakmu di X…", "Masuk sebagai", "Ganti", "Jalur sedang penuh hari ini. Silakan kembali besok.", "Masuk dengan X dibatalkan.", "Belum ada postingan Pocket Dragons di akun ini.", "Tidak bisa menghubungi X sekarang. Coba lagi.", "Hanya membaca. Kami menghitung postinganmu tentang Pocket Dragons, tidak ada yang diposting atas namamu.", "Telur Trail-mu adalah {e}.", "Postinganmu menjangkau jauh.", "Postinganmu memulai percakapan.", "Postinganmu menyebar cepat.", "Postinganmu disukai banyak orang.", "{n} hari berturut-turut, dan apinya tak pernah padam.", "Trail-mu paling bersinar di {s}", "tayangan", "balasan", "repost", "suka", "Sejak kunjungan terakhirmu: {d}", "+{n} postingan", "+{n} tayangan", "+{n} suka", "+{n} balasan", "+{n} repost", "+{n} pengikut", "Vertikal untuk X", "Keeper No. {n} di Trail"],
+    ko: ['카드 불러오는 중', '이미지 저장', '카드 뒤집기', '영상 저장', 'X에 공유', '다시 공개', '카드를 탭하거나 밀어서 뒤집어 보세요.', '이미지 만드는 중', '영상 만드는 중 {n}%', '저장 중', '여기서는 영상을 만들 수 없어요', 'Keepers Trail', '카드가 준비됐어요', 'X에서의 여정을 카드 한 장에 담았어요.', '탭해서 공개하기', '내 알을 고르세요', 'Trail에 오신 걸 환영해요, Keeper', '클래식', '16가지 알', '내 Keepers Trail 카드가 나왔어요. 모든 게시물, 모든 답글, 함께한 모든 날. 🐉', '이미지를 저장했어요. X 게시물에 첨부하세요.', '소리 켜짐', '소리 꺼짐', '카드 디자인', 'X 열기', '길게 눌러 직접 깨뜨릴 수도 있어요', '건너뛰기', '카드만', '공개 장면 포함', '모든 게시물이 길 위에 한 걸음을 남겨요.', '길을 따라 걷기', "X를 연결하고 시작하기", "X에서 너의 여정을 읽는 중…", "로그인 계정", "변경", "오늘은 트레일이 붐벼요. 내일 다시 와 주세요.", "X 로그인이 취소되었어요.", "이 계정에는 아직 Pocket Dragons 게시물이 없어요.", "지금 X에 연결할 수 없어요. 다시 시도해 주세요.", "읽기 전용이에요. Pocket Dragons에 관한 내 게시물만 세고, 대신 게시하는 것은 없어요.", "당신의 Trail 알: {e}", "당신의 게시물은 많은 사람에게 닿아요.", "당신의 게시물은 대화를 열어요.", "당신의 게시물은 빠르게 퍼져요.", "당신의 게시물은 사랑받아요.", "{n}일 연속, 불꽃이 한 번도 꺼지지 않았어요.", "당신의 Trail은 {s}에서 가장 빛나요", "조회수", "답글", "재게시", "좋아요", "지난 방문 이후: {d}", "게시물 +{n}", "조회수 +{n}", "좋아요 +{n}", "답글 +{n}", "재게시 +{n}", "팔로워 +{n}", "X용 세로", "Trail의 {n}번째 Keeper"],
+    zh: ['正在加载卡片', '保存图片', '翻转卡片', '保存视频', '分享到 X', '再次揭晓', '点按卡片或滑动即可翻转。', '正在生成图片', '正在生成视频 {n}%', '正在保存', '这里无法生成视频', 'Keepers Trail', '你的卡片已就绪', '你在 X 上的旅程，封存在一张卡片里。', '点按揭晓', '选择你的蛋', '欢迎来到 Trail，Keeper', '经典', '16 枚蛋', '我的 Keepers Trail 卡片来了。每一条帖子，每一次回复，旅途中的每一天。🐉', '图片已保存。把它附加到你的 X 帖子里。', '声音开启', '声音关闭', '卡片设计', '打开 X', '或长按，亲手把它敲开', '跳过', '仅卡片', '包含揭晓动画', '每一条帖子，都是小径上的一步。', '踏上小径', "连接 X 开始", "正在读取你在 X 上的足迹…", "已登录", "切换", "今天的步道太拥挤了，请明天再来。", "已取消 X 登录。", "这个账号还没有关于 Pocket Dragons 的帖子。", "暂时无法连接 X，请重试。", "只读。我们只统计你关于 Pocket Dragons 的帖子，不会替你发布任何内容。", "你的 Trail 之蛋：{e}。", "你的帖子传得很远。", "你的帖子总能引发对话。", "你的帖子传播得很快。", "你的帖子很受喜爱。", "连续 {n} 天，火焰从未熄灭。", "你的 Trail 在{s}上最闪耀", "浏览量", "回复", "转发", "点赞", "自上次访问以来：{d}", "帖子 +{n}", "浏览 +{n}", "点赞 +{n}", "回复 +{n}", "转发 +{n}", "关注者 +{n}", "竖屏 · 适合 X", "Trail 第 {n} 位 Keeper"]
   };
   var NAMES = [['en', 'English'], ['es', 'Español'], ['fr', 'Français'], ['pt', 'Português'], ['tr', 'Türkçe'], ['ru', 'Русский'], ['vi', 'Tiếng Việt'], ['id', 'Indonesia'], ['ko', '한국어'], ['zh', '中文']];
   var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -2602,8 +2603,9 @@ const KTL = (() => {
 // is drawn exactly as before, so stills, saved images and the card after the reveal never change.
 const WI_MODE = { default: 0, lava: 1, ice: 2, speed: 3, space: 4, ghost: 5, tiger: 6, water: 7, tree: 8, jelly: 9, lightning: 10,
   panda: 11, pink: 12, light: 13, shadow: 14, acid: 15, twoface: 16, butter: 17, twilight: 18 };
+const WI_SH = { wiTilt: { value: 0 }, wiTime: { value: 0 } };          // shared by every tile: the card's tilt and the time
 const WI_GLSL = `
-uniform float wiP; uniform int wiM; uniform float wiT; uniform float wiS; uniform float wiA;
+uniform float wiP; uniform int wiM; uniform float wiT; uniform float wiS; uniform float wiA; uniform float wiTilt; uniform float wiTime;
 vec3 wiGlow; float wiHide; float wiME; float wiMS;
 float wiH(vec2 p) { p = fract(p * vec2(123.34, 456.21) + wiS * 0.013); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float wiN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
@@ -2761,11 +2763,34 @@ if (wiP < 0.999) {
   shown = mix(shown, over, clamp(overA, 0.0, 1.0)) * dim;
   diffuseColor.rgb = shown;
   wiGlow = tint * tm * r * fr * glowK * 0.9 + exC * ex * smoothstep(0.0, 0.04, p);
+} else {
+  // at rest: each species keeps a quiet shine of its own on the tile, and it moves as the card tilts under the finger
+  vec2 uv = vMapUv, q = vec2(uv.x * wiA, uv.y); float by = clamp(uv.y, 0.2, 0.8);
+  vec3 base = mix(texture2D(map, vec2(0.03, by)).rgb, texture2D(map, vec2(0.97, by)).rgb, smoothstep(0.1, 0.9, uv.x)) * diffuse;
+  float bg = 1.0 - smoothstep(0.018, 0.1, length(diffuseColor.rgb - base));      // only the tile's background shines, never the words
+  float k = wiTilt * 0.35, band = exp(-pow((uv.x * 0.75 + uv.y * 0.25 - 0.5 + k) / 0.09, 2.0)), t = wiTime;
+  vec3 sh = vec3(0.0);
+  if (wiM == 2) sh = vec3(0.9, 0.97, 1.0) * step(0.986, wiH(floor(q * 90.0) + floor(k * 30.0))) * (0.3 + 2.2 * band);                 // ice: frost glitter
+  else if (wiM == 1) sh = vec3(1.0, 0.4, 0.08) * (1.0 - smoothstep(0.0, 0.03, abs(wiF(q * 7.0 + 11.0) - 0.5))) * (0.1 + 0.08 * sin(t * 2.2)) + vec3(1.0, 0.6, 0.2) * band * 0.06;  // lava: embers under the surface
+  else if (wiM == 7) sh = vec3(0.7, 0.92, 1.0) * pow(0.5 + 0.5 * sin(q.x * 13.0 + t * 1.1 + k * 4.0) * sin(q.y * 11.0 - t * 1.4), 7.0) * 0.22;      // water: caustics
+  else if (wiM == 13 || wiM == 17) sh = vec3(1.0, 0.86, 0.5) * band * 0.22;                                                                        // light and Gilded Night: a gold glint
+  else if (wiM == 4 || wiM == 18) { vec2 c = floor(q * 26.0); float tw = pow(0.5 + 0.5 * sin(t * (1.0 + 2.0 * wiH(c)) + wiH(c + 3.0) * 20.0), 10.0);
+    sh = (wiM == 4 ? vec3(1.0, 0.7, 0.95) : vec3(1.0, 0.92, 0.6)) * step(0.93, wiH(c + 9.0)) * tw * exp(-dot(fract(q * 26.0) - 0.5, fract(q * 26.0) - 0.5) / 0.01) * 0.7; } // stars twinkle
+  else if (wiM == 8 || wiM == 15) { vec2 c = floor(q * 14.0 + vec2(0.0, -t * 0.25)); vec2 f = fract(q * 14.0 + vec2(0.0, -t * 0.25)) - 0.5;
+    sh = (wiM == 8 ? vec3(0.5, 1.0, 0.45) : vec3(0.45, 1.0, 0.5)) * step(0.9, wiH(c)) * exp(-dot(f, f) / 0.02) * 0.35; }                          // tree spores, acid bubbles rising
+  else if (wiM == 5 || wiM == 14) sh = vec3(0.85, 0.88, 1.0) * wiF(q * 3.0 + vec2(t * 0.12, 0.0)) * (0.05 + band * 0.08);                         // ghost and shadow: drifting mist
+  else if (wiM == 9) sh = vec3(1.0, 0.85, 0.4) * band * 0.3;                                                                                     // jelly: a honey gloss
+  else if (wiM == 16) sh = mix(vec3(0.42, 0.62, 1.0), vec3(1.0, 0.45, 0.38), step(0.5, uv.x)) * band * 0.16;                                       // 2Face: each side its own light
+  else if (wiM == 3 || wiM == 10) sh = vec3(1.0, 0.85, 0.4) * exp(-pow((uv.x - fract(t * 0.18 + k)) * wiA / 0.05, 2.0)) * 0.12;                  // speed and lightning: a streak running across
+  else sh = vec3(1.0) * band * 0.07;
+  wiGlow = sh * bg;
 }
 #endif
 `;
+// the patterns come from the Keeper's own handle, so no two Keepers' cards ever play quite the same, and theirs always does
+const wiSeed = () => { const h = ((typeof KTL !== 'undefined' && KTL.card && KTL.card.handle) || 'keeper').toLowerCase(); let s = 7; for (const ch of h) s = (s * 31 + ch.charCodeAt(0)) % 9973; return s / 97; };
 function writeIn(m, key, aspect) {
-  const U = { wiP: { value: 1 }, wiM: { value: WI_MODE[key] != null ? WI_MODE[key] : 0 }, wiT: { value: 0 }, wiS: { value: Math.random() * 100 }, wiA: { value: aspect } };
+  const U = { wiTilt: WI_SH.wiTilt, wiTime: WI_SH.wiTime, wiP: { value: 1 }, wiM: { value: WI_MODE[key] != null ? WI_MODE[key] : 0 }, wiT: { value: 0 }, wiS: { value: wiSeed() + aspect * 7.3 }, wiA: { value: aspect } };
   const prev = m.onBeforeCompile;
   m.onBeforeCompile = (sh, r) => {
     if (prev) prev(sh, r);
@@ -2948,6 +2973,7 @@ function polish(m, amt) {
 }
 function sheenAt(t) {
   SHEEN.uTilt.value = -Math.sin(card.rotation.y) * 2.2 + card.rotation.x * 1.6 - 0.55;
+  WI_SH.wiTilt.value = SHEEN.uTilt.value + 0.55; WI_SH.wiTime.value = t;
   const p = ((t + 5.8) % 7) / 1.7;                       // a sweep every 7 seconds, 1.7 s long
   SHEEN.uSweep.value = sweepForce != null ? sweepForce : p < 1 ? -1.1 + p * 2.2 : 9;
 }
@@ -3021,7 +3047,7 @@ function face(side, data, sign) {
     const mat = locked
       ? new THREE.MeshPhysicalMaterial({ map: tex(cT), metalness: 0.85, metalnessMap: tex(cM, false), roughness: 0.5, normalMap: dtex('egg-n.jpg', 1, 1), normalScale: new THREE.Vector2(0.3, 0.3), clearcoat: 0.2, envMapIntensity: 1.0 })
       : gold(tex(cT), tex(cM, false), { roughness: 0.2, envMapIntensity: 1.7, normalScale: new THREE.Vector2(0.08, 0.08) });
-    const coin = new THREE.Mesh(lathe(R, 0.016, 0.005, 0.0025, true), P.get('dbg') ? new THREE.MeshBasicMaterial({ map: tex(c.tex) }) : mat); cg.add(coin);
+    const coin = new THREE.Mesh(lathe(R, 0.016, 0.005, 0.0025, true), P.get('dbg') ? new THREE.MeshBasicMaterial({ map: tex(c.tex) }) : mat); cg.add(coin); c._g = cg; cg.userData.z = cg.position.z; cg.userData.locked = locked;
   }
   if (sign < 0) g.rotation.y = Math.PI;
   return g;
@@ -3064,6 +3090,7 @@ function buildTheme(k, data) {
   const ft = SC.front.tiles, av = SC.front.ava && SC.front.ava._g;
   CARDS[k].read = READ.map(c => ft.find(t => t.cls.split(' ').includes(c))).filter(t => t && t._g && t._top).map(t => ({ g: t._g, z: t._g.position.z, top: t._top,
     cls: t.cls, wi: t._top.userData.wi, e0: t._top.emissive.clone(), ei0: t._top.emissiveIntensity, ava: t.cls.split(' ').includes('profile') ? av : null, az: av ? av.position.z : 0 }));
+  CARDS[k].coins = (SC.back.coins || []).map(c => c._g).filter(Boolean);
   if (data.bgVideo && !SHOT) liveBackdrop(k, data.bgVideo);
   return CARDS[k];
 }
@@ -3162,7 +3189,7 @@ function showLogo(k) {
 // stamped on every frame of the saved film, top left, at the same place and size whatever the design
 function stampLogo(c, w, h) {
   if (typeof PDB === 'undefined' || !PDB.ready || !theme) return;
-  const bw = Math.round(w * 0.115), bh = Math.round(bw * 0.6), m = Math.round(w * 0.0125);   // clear of the card's corner
+  const bw = Math.round(w * (w < h ? 0.2 : 0.115)), bh = Math.round(bw * 0.6), m = Math.round(w * 0.0125);   // clear of the card's corner
   c.getContext('2d').drawImage(PDB.canvas(theme, 640), m, m, bw, bh);
 }
 const loadingTheme = {};
@@ -3291,7 +3318,18 @@ function askMotion() {
   else on();
 }
 const clock = new THREE.Clock();
-let homeFrames = 0;
+let homeFrames = 0, backAt = -1, coinHeard = 0;
+const coinsReset = () => { backAt = -1; coinHeard = 0; };
+// s: seconds since the back came into view (below 0: not yet, the coins wait out of sight; null: rest in place)
+function coinsAt(s, film) {
+  const c = theme && CARDS[theme]; if (!c || !c.coins) return;
+  c.coins.forEach((g, i) => {
+    if (s == null || s > 4) { g.scale.setScalar(1); g.rotation.z = 0; g.position.z = g.userData.z; return; }
+    const l = s - 0.35 - i * 0.3, e = l <= 0 ? 0 : Math.min(1, l / 0.6), b = e <= 0 ? 0 : 1 + 2.70158 * Math.pow(e - 1, 3) + 1.70158 * Math.pow(e - 1, 2);
+    g.scale.setScalar(Math.max(0.0001, b)); g.rotation.z = (1 - e) * Math.PI * 1.5; g.position.z = g.userData.z + (1 - e) * 0.05;
+    if (!film && l >= 0 && coinHeard <= i && window.KT_SND) { coinHeard = i + 1; KT_SND.play(theme, 'tick', 3 + i, g.userData.locked ? false : i === c.coins.length - 1); }
+  });
+}
 function frame() {
   if (exporting) { if (!SHOT) requestAnimationFrame(frame); return; }
   // while the homepage covers the card, draw only a few warm-up frames so the garden film gets the whole machine
@@ -3305,6 +3343,8 @@ function frame() {
   card.rotation.y = flipNow + Math.max(spin, blinky ? 0 : -9) + yaw + (SHOT ? +P.get('ry') || (blinky ? 0.02 : -0.1) : 0);
   card.position.y = baseY + Math.sin(t * 0.8) * 0.01 * idle;
   if (RV && RV.active) RV.pose(t);
+  // the first time the back comes round after a reveal, its trail markers drop into place one by one
+  if (!SHOT && window.KT_REVEAL === 'done') { if (flipNow > 2.2 && backAt < 0) backAt = t; coinsAt(backAt < 0 ? -1 : t - backAt); }
   // the light swings a little with the card so the gloss travels across it
   key.position.set(-2.5 + Math.sin(card.rotation.y) * 2, 3 - card.rotation.x * 4, 4);
   const cur = theme && CARDS[theme]; if (cur && cur.fx && cur.fx.grp.visible) cur.fx.update(SHOT ? 7 : t);
@@ -3327,11 +3367,32 @@ async function saveFile(name, blob) {
 function viewFor(w, h) {            // a clean 16:9 frame with the card centred, whatever the screen is
   renderer.setPixelRatio(1); renderer.setSize(w, h, false);
   camera.aspect = w / h; const vf = THREE.MathUtils.degToRad(camera.fov);
-  const needH = Math.max(H * 1.34, W * 1.2 / camera.aspect);
+  const needH = Math.max(H * 1.34, W * (camera.aspect < 1 ? 1.08 : 1.2) / camera.aspect); bgFit(camera.aspect);
   card.position.set(0, 0, 0); dropM.position.set(0.06, -0.14, -0.9);
   camera.position.set(0, 0, needH / 2 / Math.tan(vf / 2)); camera.lookAt(0, 0, 0); camera.updateProjectionMatrix();
 }
-function restoreView() { renderer.setPixelRatio(Math.min(devicePixelRatio || 1, PR_CAP)); fit(); }
+function restoreView() { renderer.setPixelRatio(Math.min(devicePixelRatio || 1, PR_CAP)); bgFit(0); fit(); }
+// an upright film crops the backdrop to fill the frame instead of squeezing it (0 puts it back as it was)
+function bgFit(a) {
+  for (const k in CARDS) { const c = CARDS[k]; for (const t of [c.bg, c.still]) { if (!t || !t.isTexture) continue;
+    const im = t.image, iw = im && (im.videoWidth || im.naturalWidth || im.width), ih = im && (im.videoHeight || im.naturalHeight || im.height);
+    if (!a || !iw || !ih || a >= 1) { t.repeat.set(1, 1); t.offset.set(0, 0); continue; }
+    const ia = iw / ih, r = Math.min(1, a / ia); t.repeat.set(r, 1); t.offset.set((1 - r) / 2, 0); } }
+}
+// the upright film for X and stories: the Keeper's name above the card, the site below it
+function vertWords(c, w, h) {
+  const x = c.getContext('2d'), L = window.KT_L || ((k) => k), card0 = (typeof KTL !== 'undefined' && KTL.card) || {}, K = w / 1080;
+  x.save(); x.textAlign = 'center'; x.shadowColor = 'rgba(0,0,0,.55)'; x.shadowBlur = 24 * K; x.fillStyle = '#ffffff';
+  x.font = `800 ${Math.round(30 * K)}px system-ui, sans-serif`; if ('letterSpacing' in x) x.letterSpacing = `${Math.round(9 * K)}px`;
+  x.globalAlpha = 0.85; x.fillText(String(L('kick')).toUpperCase(), w / 2, h * 0.2); x.globalAlpha = 1;
+  if ('letterSpacing' in x) x.letterSpacing = '0px'; x.font = `800 ${Math.round(68 * K)}px system-ui, sans-serif`;
+  x.fillText(card0.name || '', w / 2, h * 0.2 + 84 * K);
+  x.font = `700 ${Math.round(34 * K)}px system-ui, sans-serif`; x.globalAlpha = 0.8; x.fillText((card0.handle || '') + (card0.no ? '  ·  No. ' + card0.no : ''), w / 2, h * 0.2 + 136 * K); x.globalAlpha = 1;
+  const u = 'pdtools.xyz', fs = Math.round(40 * K); x.font = `800 ${fs}px system-ui, sans-serif`; const tw = x.measureText(u).width, bw = tw + 80 * K, bh = fs * 2, by = h * 0.8;
+  x.shadowBlur = 30 * K; x.fillStyle = 'rgba(255,255,255,.16)'; x.beginPath(); x.roundRect ? x.roundRect(w / 2 - bw / 2, by - bh / 2, bw, bh, bh / 2) : x.rect(w / 2 - bw / 2, by - bh / 2, bw, bh); x.fill();
+  x.shadowBlur = 0; x.fillStyle = '#ffffff'; x.textBaseline = 'middle'; x.fillText(u, w / 2, by + 2 * K);
+  x.restore();
+}
 // while a picture or film is being made, the screen keeps a still of the card as it was, so the 16:9 work frame never shows squashed
 let frozen = null;
 function freeze() {
@@ -3402,8 +3463,8 @@ const filmPlan = (withReveal) => { const FT = RV.filmTimes(), off = withReveal ?
   return { FT, off, reveal: withReveal, sec: Math.ceil(tc + BACK_S), turnStart: tc - TURN_S / 2 }; };
 async function saveVideo(o = {}) {
   if (exporting) return; exporting = true; busy(true, L('mkVid', 0)); freeze();
-  const plan = filmPlan(!!o.reveal);
-  const OW = 1920, OH = 1080, FPS = 30, SEC = plan.sec, N = window.KT_TEST_N || SEC * FPS, SS = window.KT_TEST_SS || 1.5;
+  const VERT = !!o.vertical, plan = filmPlan(!!o.reveal || VERT);
+  const OW = VERT ? 1080 : 1920, OH = VERT ? 1920 : 1080, FPS = 30, SEC = plan.sec, N = window.KT_TEST_N || SEC * FPS, SS = window.KT_TEST_SS || 1.5;
   try {
     const pick = await pickCodec(OW, OH);
     viewFor(Math.round(OW * SS), Math.round(OH * SS));
@@ -3413,9 +3474,9 @@ async function saveVideo(o = {}) {
     const poseFilm = (t) => {
       if (inReveal && !RV.filmPose(t)) { RV.filmEnd(); inReveal = false; }
       if (inReveal) { const cur = theme && CARDS[theme]; if (cur && cur.fx && cur.fx.grp.visible) cur.fx.update(t + 3); sheenAt(t); RV.drawOV(ovx2, OW, OH); }
-      else poseAt(t, sideAt(t));
+      else { poseAt(t, sideAt(t)); coinsAt(t > TS + TURN_S * 0.6 ? t - (TS + TURN_S * 0.6) : -1, true); }
     };
-    const frameAt = (w, h) => { const c = grab(renderer.domElement, w, h); if (inReveal) c.getContext('2d').drawImage(ovc, 0, 0, w, h); stampLogo(c, w, h); return c; };
+    const frameAt = (w, h) => { const c = grab(renderer.domElement, w, h); if (inReveal) c.getContext('2d').drawImage(ovc, 0, 0, w, h); stampLogo(c, w, h); if (VERT) vertWords(c, w, h); return c; };
     let blob, ext;
     if (pick) {
       const target = new Mp4Muxer.ArrayBufferTarget();
@@ -3467,7 +3528,7 @@ async function saveVideo(o = {}) {
     busy(true, L('saving'));
     if (window.KT_TEST) { window.KT_TEST_RESULT = blob; } else await saveFile(fileBase() + '.' + ext, blob);
   } catch (e) { console.warn(e); busy(true, L('noVid')); await new Promise(r => setTimeout(r, 2500)); }
-  finally { RV.filmEnd(); exporting = false; restoreView(); renderFrame(); thaw(); busy(false); const c = theme && CARDS[theme]; if (c && c.playVideo) c.playVideo(); }
+  finally { RV.filmEnd(); coinsAt(window.KT_REVEAL === 'done' && backAt >= 0 ? 9 : null); exporting = false; restoreView(); renderFrame(); thaw(); busy(false); const c = theme && CARDS[theme]; if (c && c.playVideo) c.playVideo(); }
 }
 // ---------- sound: real recordings (Mixkit, free licence) ----------
 // Eggshell cracks, bubbling lava, fire, thunder, electric hum, a heartbeat, glasses clinking, playing cards, a bell and a
@@ -3640,6 +3701,169 @@ const SND = (() => {
 })();
 window.KT_SND = SND;
 
+// ---------- the egg: a real 3D egg of the chosen species sits on the sealed card, cracks as it is held, and bursts ----------
+// Its shell is painted in the species' own pattern (lava veins, tiger stripes, panda patches, stars...). Holding the card spreads
+// glowing cracks over it; at the break it bursts into curved shell pieces that hang in the slow motion and fall away.
+function makeEgg(W, H, T) {
+  const A = 0.35, B = 0.265, DZ = 0.62;                     // half height, widest radius, how far it stands out from the seal
+  const prof = (y) => B * Math.sqrt(Math.max(0, 1 - (y / A) * (y / A))) * (1 - 0.13 * y / A);
+  const pts = []; for (let i = 0; i <= 64; i++) { const y = -A + (2 * A) * i / 64; pts.push(new THREE.Vector2(Math.max(0.0005, prof(y)), y)); }
+  const geo = new THREE.LatheGeometry(pts, 96);
+  const surf = (u, v) => { const y = -A + 2 * A * v, r = Math.max(0.0005, prof(y)), a = u * Math.PI * 2; return new THREE.Vector3(Math.sin(a) * r, y, Math.cos(a) * r); };
+
+  // ----- the shell's pattern, painted for each species -----
+  const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512;
+  const ev = document.createElement('canvas'); ev.width = 512; ev.height = 256;          // what glows: lava veins, stars, moss
+  const mapT = new THREE.CanvasTexture(cv); mapT.colorSpace = THREE.SRGBColorSpace; mapT.anisotropy = 8; mapT.wrapS = THREE.RepeatWrapping;
+  const emT = new THREE.CanvasTexture(ev); emT.colorSpace = THREE.SRGBColorSpace; emT.wrapS = THREE.RepeatWrapping;
+  const EU = { eH: { value: 0 }, eC: { value: new THREE.Color(1, 0.8, 0.5) }, eT: { value: 0 }, eS: { value: 3.1 }, eIn: { value: new THREE.Color(0.97, 0.94, 0.86) } };
+  const mat = new THREE.MeshPhysicalMaterial({ map: mapT, emissive: new THREE.Color(1, 1, 1), emissiveMap: emT, emissiveIntensity: 1, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1,
+    sheen: 0.35, sheenRoughness: 0.4, sheenColor: new THREE.Color(1, 1, 1), envMapIntensity: 1.1, transparent: true });   // drawn after the seal's glow, so the glow sits behind it
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, EU);
+    sh.fragmentShader = `uniform float eH; uniform vec3 eC; uniform float eT; uniform float eS; uniform vec3 eIn;
+float ehs(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7)) + eS) * 43758.5453); }
+float evor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) { vec2 g = vec2(float(i), float(j)); vec2 o = vec2(ehs(n + g), ehs(n + g + 17.3)); vec2 r = g + o - f; float d = dot(r, r);
+    if (d < m1) { m2 = m1; m1 = d; } else if (d < m2) m2 = d; }
+  return sqrt(m2) - sqrt(m1); }
+` + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+    if (!gl_FrontFacing) diffuseColor.rgb = eIn;          // the inside of a broken piece is pale shell`)
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+    {
+      vec2 ev = vec2(fract(vMapUv.x) * 10.0, vMapUv.y * 6.0);
+      float e1 = evor(ev + vec2(eS, 0.0)), e2 = evor(ev * 2.3 + 4.0);
+      float reach = eH * 1.35 - (1.0 - vMapUv.y) * 0.95 - ehs(floor(ev)) * 0.12;          // cracks start at the top and run down
+      float line = (1.0 - smoothstep(0.0, 0.014 + 0.026 * eH, e1)) + 0.5 * (1.0 - smoothstep(0.0, 0.012, e2)) * smoothstep(0.25, 0.6, reach);
+      float on = smoothstep(0.0, 0.06, reach) * step(0.001, eH);
+      totalEmissiveRadiance += eC * line * on * (1.3 + 2.2 * eH) * (0.85 + 0.15 * sin(eT * 9.0)) + eC * 0.1 * eH * eH;
+      if (!gl_FrontFacing) totalEmissiveRadiance = eC * 0.35;
+    }`);
+  };
+  mat.customProgramCacheKey = () => 'kt-egg';
+
+  const intact = new THREE.Mesh(geo, mat); intact.scale.z = DZ; intact.visible = false; intact.renderOrder = 10;
+  intact.position.set(0, 0.02, -T / 2 - 0.052 - B * DZ * 0.55); intact.rotation.y = Math.PI;
+  const holder = new THREE.Group(); holder.add(intact);
+
+  // ----- the shell pieces: the egg's surface cut along wobbly lines into curved pieces -----
+  const NU = 11, NV = 7, nodes = [];
+  const jit = (i, j, s) => { const h = Math.sin(i * 12.9898 + j * 78.233 + s) * 43758.5453; return h - Math.floor(h); };
+  for (let j = 0; j <= NV; j++) { nodes.push([]); for (let i = 0; i <= NU; i++) {
+    const ii = i % NU, edge = j === 0 || j === NV;
+    nodes[j].push([(i + (edge ? 0 : (jit(ii, j, 1) - 0.5) * 0.55)) / NU, (j + (edge ? 0 : (jit(ii, j, 2) - 0.5) * 0.5)) / NV]); } }
+  for (let j = 1; j < NV; j++) nodes[j][NU] = [nodes[j][0][0] + 1, nodes[j][0][1]];
+  const pieces = [], shards = new THREE.Group(); shards.visible = false;
+  const pmat = mat.clone(); pmat.onBeforeCompile = mat.onBeforeCompile; pmat.customProgramCacheKey = mat.customProgramCacheKey; pmat.transparent = true; pmat.side = THREE.DoubleSide;
+  for (let j = 0; j < NV; j++) for (let i = 0; i < NU; i++) {
+    const n00 = nodes[j][i], n10 = nodes[j][i + 1], n01 = nodes[j + 1][i], n11 = nodes[j + 1][i + 1], S = 5, pos = [], uv = [], idx = [];
+    for (let b = 0; b <= S; b++) for (let a = 0; a <= S; a++) {
+      const fa = a / S, fb = b / S;
+      const u = (n00[0] * (1 - fa) + n10[0] * fa) * (1 - fb) + (n01[0] * (1 - fa) + n11[0] * fa) * fb;
+      const v = (n00[1] * (1 - fa) + n10[1] * fa) * (1 - fb) + (n01[1] * (1 - fa) + n11[1] * fa) * fb;
+      const p = surf(u, v); pos.push(p.x, p.y, p.z * DZ); uv.push(u, v);
+    }
+    for (let b = 0; b < S; b++) for (let a = 0; a < S; a++) { const q = b * (S + 1) + a; idx.push(q, q + S + 1, q + 1, q + 1, q + S + 1, q + S + 2); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+    g.computeBoundingBox(); const c = new THREE.Vector3(); g.boundingBox.getCenter(c); g.translate(-c.x, -c.y, -c.z); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, pmat); m.renderOrder = 10; shards.add(m);
+    const out = c.clone().setZ(c.z / DZ).normalize();
+    pieces.push({ m, c, out, sp: 0.9 + jit(i, j, 5) * 1.5, ax: new THREE.Vector3(jit(i, j, 6) - 0.5, jit(i, j, 7) - 0.5, jit(i, j, 8) - 0.5).normalize(), rs: 3 + jit(i, j, 9) * 9 });
+  }
+
+  // ----- painting one species -----
+  const C = (h) => new THREE.Color(h);
+  function paint(k, cols, c1) {
+    const x = cv.getContext('2d'), w = cv.width, h = cv.height, e = ev.getContext('2d'), ew = ev.width, eh = ev.height;
+    const [base, spot] = cols, kind = PAT[k] || 'spots';
+    const rnd = (() => { let s = 0; for (const ch of k) s = (s * 31 + ch.charCodeAt(0)) >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; })();
+    const wrap = (fn) => { for (const dx of [-w, 0, w]) { x.save(); x.translate(dx, 0); fn(x); x.restore(); } };
+    const ewrap = (fn) => { for (const dx of [-ew, 0, ew]) { e.save(); e.translate(dx, 0); fn(e); e.restore(); } };
+    // the base: a soft gradient, lighter at the top where the light falls, with a little speckle
+    const g = x.createLinearGradient(0, 0, 0, h); const bc = C(base);
+    g.addColorStop(0, '#' + bc.clone().lerp(C('#ffffff'), 0.28).getHexString()); g.addColorStop(0.55, base); g.addColorStop(1, '#' + bc.clone().multiplyScalar(0.72).getHexString());
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    e.fillStyle = '#000'; e.fillRect(0, 0, ew, eh);
+    x.globalAlpha = 0.06; for (let i = 0; i < 1400; i++) { x.fillStyle = rnd() < 0.5 ? '#ffffff' : '#000000'; x.fillRect(rnd() * w, rnd() * h, 2, 2); } x.globalAlpha = 1;
+    const blob = (cx, cy, r, col, ctx = x) => { ctx.fillStyle = col; ctx.beginPath(); for (let a = 0; a <= 24; a++) { const t = a / 24 * Math.PI * 2, rr = r * (0.8 + 0.25 * Math.sin(t * 3 + cx) + 0.1 * Math.sin(t * 7 + cy)); ctx.lineTo(cx + Math.cos(t) * rr * 0.55, cy + Math.sin(t) * rr); } ctx.fill(); };
+    if (kind === 'spots' || kind === 'bubbles') {
+      for (let i = 0; i < 26; i++) { const cx = rnd() * w, cy = 40 + rnd() * (h - 80), r = 14 + rnd() * 34; wrap(() => blob(cx, cy, r, spot));
+        if (kind === 'bubbles') ewrap(() => { e.globalAlpha = 0.55; blob(cx / 2, cy / 2, r / 2, spot, e); e.globalAlpha = 1; }); }
+    } else if (kind === 'tiger') {
+      x.fillStyle = spot; for (let i = 0; i < 22; i++) { const cx = (i + rnd() * 0.4) / 22 * w, len = h * (0.25 + rnd() * 0.4), y0 = rnd() < 0.5 ? 0 : h - len;
+        wrap(() => { x.beginPath(); x.moveTo(cx - 6, y0); x.quadraticCurveTo(cx + 22 * (rnd() - 0.5) * 3, y0 + len / 2, cx + 3, y0 + len); x.quadraticCurveTo(cx + 14, y0 + len / 2, cx + 12, y0); x.fill(); }); }
+    } else if (kind === 'patch') {
+      for (let i = 0; i < 7; i++) { const cx = (i + 0.3 + rnd() * 0.4) / 7 * w, cy = h * (0.25 + rnd() * 0.5), r = 60 + rnd() * 60; wrap(() => blob(cx, cy, r, spot)); }
+    } else if (kind === 'bolt') {
+      x.fillStyle = spot; wrap(() => { x.beginPath(); const n = 10; for (let i = 0; i <= n; i++) x.lineTo(i / n * w, h * 0.5 + (i % 2 ? -36 : 36)); for (let i = n; i >= 0; i--) x.lineTo(i / n * w, h * 0.5 + (i % 2 ? -36 : 36) + 46); x.fill(); });
+      ewrap(() => { e.fillStyle = spot; e.globalAlpha = 0.4; e.beginPath(); const n = 10; for (let i = 0; i <= n; i++) e.lineTo(i / n * ew, eh * 0.5 + (i % 2 ? -18 : 18)); for (let i = n; i >= 0; i--) e.lineTo(i / n * ew, eh * 0.5 + (i % 2 ? -18 : 18) + 23); e.fill(); e.globalAlpha = 1; });
+    } else if (kind === 'split') {
+      x.fillStyle = spot; x.fillRect(w / 2, 0, w / 2, h);
+      const sg = x.createLinearGradient(w / 2 - 30, 0, w / 2 + 30, 0); sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.5, 'rgba(255,255,255,.7)'); sg.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = sg; x.fillRect(w / 2 - 30, 0, 60, h);
+    } else if (kind === 'stripes') {
+      x.strokeStyle = spot; x.lineCap = 'round'; for (let i = 0; i < 5; i++) { const y = h * (0.22 + i * 0.14), lw = 14 + (i % 2) * 10; x.lineWidth = lw; x.beginPath(); for (let a = 0; a <= 40; a++) x.lineTo(a / 40 * w, y + Math.sin(a / 40 * Math.PI * 4) * 10); x.stroke(); }
+    } else if (kind === 'stars' || kind === 'deco') {
+      const ng = x.createRadialGradient(w * 0.3, h * 0.45, 0, w * 0.3, h * 0.45, h * 0.6); ng.addColorStop(0, spot + 'aa'); ng.addColorStop(1, spot + '00');
+      if (kind === 'stars') { wrap(() => { x.fillStyle = ng; x.fillRect(0, 0, w, h); }); }
+      else { x.strokeStyle = spot; x.lineWidth = 3; for (let i = 0; i < 24; i++) { const a = i / 24 * w; wrap(() => { x.beginPath(); x.moveTo(a, h); x.lineTo(a + w / 48, h * 0.25); x.stroke(); }); }
+        for (let r = 1; r < 5; r++) { x.lineWidth = 2; x.beginPath(); x.moveTo(0, h * (1 - r * 0.17)); x.lineTo(w, h * (1 - r * 0.17)); x.stroke(); } }
+      for (let i = 0; i < 90; i++) { const sx = rnd() * w, sy = rnd() * h, r = 1 + rnd() * 3; x.fillStyle = kind === 'deco' ? spot : '#ffffff'; x.beginPath(); x.arc(sx, sy, r, 0, 7); x.fill();
+        e.fillStyle = kind === 'deco' ? spot : '#ffffff'; e.globalAlpha = 0.9; e.beginPath(); e.arc(sx / 2, sy / 2, r * 0.7, 0, 7); e.fill(); e.globalAlpha = 1; }
+    } else if (kind === 'veins' || kind === 'frost' || kind === 'bark') {
+      const col = kind === 'frost' ? '#ffffff' : spot, lw = kind === 'veins' ? 5 : kind === 'bark' ? 7 : 2.5;
+      for (let i = 0; i < (kind === 'frost' ? 60 : 26); i++) { let px = rnd() * w, py = rnd() * h; const pts2 = [[px, py]];
+        for (let s = 0; s < 9; s++) { px += (rnd() - 0.5) * (kind === 'bark' ? 30 : 90); py += (kind === 'bark' ? 50 : (rnd() - 0.5) * 90); pts2.push([px, py]); }
+        wrap(() => { x.strokeStyle = col; x.lineWidth = lw; x.lineJoin = 'round'; x.globalAlpha = kind === 'frost' ? 0.6 : 0.95; x.beginPath(); pts2.forEach(p => x.lineTo(p[0], p[1])); x.stroke(); x.globalAlpha = 1; });
+        if (kind === 'veins') ewrap(() => { e.strokeStyle = spot; e.lineWidth = lw * 0.9; e.beginPath(); pts2.forEach(p => e.lineTo(p[0] / 2, p[1] / 2)); e.stroke(); });
+      }
+      if (kind === 'bark') for (let i = 0; i < 30; i++) { const cx = rnd() * w, cy = rnd() * h, r = 6 + rnd() * 14; wrap(() => blob(cx, cy, r, '#3ccf4a')); ewrap(() => { e.globalAlpha = 0.6; blob(cx / 2, cy / 2, r / 2, '#3ccf4a', e); e.globalAlpha = 1; }); }
+    } else if (kind === 'waves') {
+      x.strokeStyle = spot; for (let i = 0; i < 9; i++) { x.lineWidth = 6 + (i % 3) * 3; x.globalAlpha = 0.75; x.beginPath(); const y = h * (0.12 + i * 0.1); for (let a = 0; a <= 60; a++) x.lineTo(a / 60 * w, y + Math.sin(a / 60 * Math.PI * 8 + i) * 12); x.stroke(); } x.globalAlpha = 1;
+    } else if (kind === 'drips') {
+      x.fillStyle = spot; x.fillRect(0, 0, w, h * 0.16); for (let i = 0; i < 16; i++) { const cx = (i + rnd() * 0.6) / 16 * w, len = h * (0.12 + rnd() * 0.3), bw = 18 + rnd() * 22;
+        wrap(() => { x.beginPath(); x.moveTo(cx - bw / 2, 0); x.lineTo(cx - bw / 2, h * 0.16 + len); x.arc(cx, h * 0.16 + len, bw / 2, Math.PI, 0, true); x.lineTo(cx + bw / 2, 0); x.fill(); }); }
+    } else if (kind === 'mist' || kind === 'smoke') {
+      for (let i = 0; i < 18; i++) { const cx = rnd() * w, cy = rnd() * h, r = 50 + rnd() * 90; wrap(() => { const mg = x.createRadialGradient(cx, cy, 0, cx, cy, r); mg.addColorStop(0, spot + '88'); mg.addColorStop(1, spot + '00'); x.fillStyle = mg; x.fillRect(cx - r, cy - r, 2 * r, 2 * r); }); }
+    } else if (kind === 'leaf') {
+      x.strokeStyle = spot; x.lineWidth = 10; for (let i = 0; i < 3; i++) { x.beginPath(); const y = h * (0.35 + i * 0.15); for (let a = 0; a <= 60; a++) x.lineTo(a / 60 * w, y + Math.sin(a / 60 * Math.PI * 6 + i * 2) * 26); x.stroke(); }
+      ewrap(() => { e.strokeStyle = spot; e.lineWidth = 4; e.globalAlpha = 0.5; for (let i = 0; i < 3; i++) { e.beginPath(); const y = eh * (0.35 + i * 0.15); for (let a = 0; a <= 60; a++) e.lineTo(a / 60 * ew, y + Math.sin(a / 60 * Math.PI * 6 + i * 2) * 13); e.stroke(); } e.globalAlpha = 1; });
+    }
+    mapT.needsUpdate = true; emT.needsUpdate = true;
+    EU.eC.value.copy(c1); EU.eS.value = 3 + k.length * 1.7 + (typeof wiSeed === 'function' ? wiSeed() : 0);
+    const lum = bc.r * 0.3 + bc.g * 0.55 + bc.b * 0.15;
+    mat.emissiveIntensity = pmat.emissiveIntensity = GLOW[k] || 0.0; EU.eIn.value.set(lum < 0.3 ? 0x9a9488 : 0xf6f0e2);
+  }
+  const PAT = { ghost: 'mist', lava: 'veins', space: 'stars', speed: 'stripes', tiger: 'tiger', pink: 'spots', panda: 'patch', lightning: 'bolt', light: 'leaf', ice: 'frost',
+    water: 'waves', tree: 'bark', jelly: 'drips', twoface: 'split', shadow: 'smoke', acid: 'bubbles', butter: 'deco', twilight: 'stars' };
+  const GLOW = { lava: 1.6, space: 1.2, twilight: 1.2, butter: 0.8, tree: 0.9, acid: 0.8, light: 0.6, lightning: 0.5 };
+
+  // ----- poses -----
+  let snap = null; const mw = new THREE.Matrix4(), tq = new THREE.Quaternion(), tp = new THREE.Vector3(), ts = new THREE.Vector3(), tmp = new THREE.Vector3();
+  const api = {
+    holder, shards, paint,
+    wait(t, a) { intact.visible = a > 0.01; shards.visible = false; snap = null; EU.eH.value = 0; EU.eT.value = t;
+      intact.rotation.set(Math.sin(t * 0.9) * 0.04, Math.PI + Math.sin(t * 0.6) * 0.22, Math.sin(t * 1.1) * 0.03); intact.scale.set(a, a, DZ * a); },
+    hatch(t, h, rm) { intact.visible = true; shards.visible = false; snap = null; EU.eH.value = h; EU.eT.value = t;
+      const wob = rm ? 0 : h * h; intact.rotation.set(Math.sin(t * 23) * 0.03 * wob, Math.PI + Math.sin(t * 0.6) * 0.18 * (1 - h), Math.sin(t * 17) * 0.09 * wob + Math.sin(t * 2.4) * 0.05 * h);
+      const s = 1 + h * 0.05 + Math.sin(t * 30) * 0.008 * wob; intact.scale.set(s, s, DZ * s); },
+    // u: the reveal's own seconds since the break; the pieces fly out from where the egg was, spinning, and fall
+    burst(u, rm) {
+      if (!snap) { intact.updateMatrixWorld(true); mw.copy(intact.matrixWorld); mw.decompose(tp, tq, ts); snap = { m: mw.clone(), p: tp.clone(), q: tq.clone(), s: ts.clone() }; }
+      intact.visible = false; shards.visible = u < 2.2; EU.eH.value = 1; if (!shards.visible) return;
+      const fade = rm ? Math.max(0, 1 - u / 0.4) : Math.max(0, 1 - Math.max(0, u - 1.1) / 1.0); pmat.opacity = fade;
+      for (const p of pieces) {
+        tmp.set(p.c.x, p.c.y, p.c.z / DZ).applyMatrix4(snap.m);     // where this piece sat on the egg, in the world
+        const dir = p.out.clone().applyQuaternion(snap.q), sp = p.sp * (rm ? 0.2 : 1);
+        p.m.position.set(tmp.x + dir.x * sp * u * 1.3, tmp.y + dir.y * sp * u * 1.1 + 0.35 * u - 1.6 * u * u, tmp.z + (dir.z * sp + 0.9) * u * 0.9);
+        p.m.quaternion.copy(snap.q); p.m.rotateOnAxis(p.ax, p.rs * u * (rm ? 0.1 : 1)); p.m.scale.setScalar(snap.s.x * (1 - Math.min(0.4, u * 0.15)));
+      }
+    },
+    hide() { intact.visible = false; shards.visible = false; snap = null; },
+  };
+  return api;
+}
+
+window.KT_EGGC = {"ghost": ["#cfd2d6", "#5a5d63"], "lava": ["#c8561e", "#f2c230"], "space": ["#4a2bd0", "#e0208f"], "speed": ["#e3a40e", "#1c2a4a"], "tiger": ["#d9822f", "#4a2a14"], "pink": ["#d58ac9", "#8a3a7a"], "panda": ["#e8e8ea", "#1d2240"], "lightning": ["#f0f0f2", "#f0a020"], "light": ["#efe9dd", "#e88c3a"], "ice": ["#cfe3ef", "#2f7fb0"], "water": ["#1f6fd0", "#c8d6e6"], "tree": ["#6a2a26", "#3ccf4a"], "jelly": ["#e8b020", "#f2e6c0"], "twoface": ["#1f74e0", "#e0352b"], "shadow": ["#1a1830", "#8a8aa0"], "acid": ["#2fa860", "#7a8a90"], "butter": ["#16120c", "#d6ad52"], "twilight": ["#2b2766", "#ffe9a8"]};
 // ---------- the reveal: every design opens in its own way ----------
 // Five steps: the sealed card arrives, you tap (or hold) and the seal cracks, the card turns, it lands, and your journey
 // lights up tile by tile. The timing is shared; each design brings its own seal, particles, turn, landing, light and sound.
@@ -3907,6 +4131,9 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
   };
   coverM.customProgramCacheKey = () => 'kt-seal';
   const cover = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.004, H - 0.004), coverM); cover.rotation.y = Math.PI; cover.position.z = -T / 2 - 0.052; cover.visible = false; card.add(cover);
+  // the species' own egg, in 3D, resting on the seal
+  const EGG = makeEgg(W, H, T); card.add(EGG.holder); grp.add(EGG.shards);
+  const EGGC = window.KT_EGGC || {};
   function drawCover(c) {
     const x = cvs.getContext('2d'), w = cvs.width, h = cvs.height, r = 72 / 2400 * w;
     const bodyC = new THREE.Color(c.cfg.body), edge = new THREE.Color(c.cfg.edge);
@@ -3926,10 +4153,8 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     const cx = w / 2, cy = h * 0.5, s = h * 0.27;
     const halo = x.createRadialGradient(cx, cy, s * 0.2, cx, cy, s * 2.1); halo.addColorStop(0, mixw(edge, 0.25) + 'aa'); halo.addColorStop(1, mixw(edge, 0.25) + '00');
     x.fillStyle = halo; x.fillRect(0, 0, w, h);
-    egg(cx, cy, s); const eg = x.createLinearGradient(cx - s, cy - s, cx + s, cy + s); eg.addColorStop(0, mixw(edge, 0.55)); eg.addColorStop(0.55, hex(edge)); eg.addColorStop(1, dk(edge, 0.55));
-    x.fillStyle = eg; x.shadowColor = mixw(edge, 0.4); x.shadowBlur = 60; x.fill(); x.shadowBlur = 0;
-    x.lineWidth = 6; x.strokeStyle = 'rgba(255,255,255,.55)'; x.stroke();
-    x.beginPath(); x.ellipse(cx - s * 0.24, cy - s * 0.22, s * 0.11, s * 0.2, 0.35, 0, 7); x.fillStyle = 'rgba(255,255,255,.55)'; x.fill();
+    const nest = x.createRadialGradient(cx, cy + s * 0.9, 0, cx, cy + s * 0.9, s * 1.1); nest.addColorStop(0, 'rgba(0,0,0,.5)'); nest.addColorStop(1, 'rgba(0,0,0,0)');   // a soft hollow the egg rests in
+    x.fillStyle = nest; x.fillRect(0, 0, w, h);
     x.fillStyle = 'rgba(255,255,255,.88)'; x.textAlign = 'center'; x.font = '800 40px system-ui, sans-serif';
     if ('letterSpacing' in x) x.letterSpacing = '14px'; x.fillText('KEEPERS TRAIL', cx + 7, h * 0.13);
     x.font = '700 28px system-ui, sans-serif'; if ('letterSpacing' in x) x.letterSpacing = '8px'; x.globalAlpha = 0.6; x.fillText('PDTOOLS.XYZ', cx + 4, h * 0.92); x.globalAlpha = 1;
@@ -3949,7 +4174,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     const tx = TEXS[R.tex] || sparkT, solid = !!SOLID[R.tex];
     PT.forEach((p, i) => { const m = p.m.material; m.color.copy(p.white && !solid ? WHITE : colList[i % colList.length]);
       if (m.map !== tx || m.userData.solid !== solid) { m.map = tx; m.blending = solid ? THREE.NormalBlending : THREE.AdditiveBlending; m.userData.solid = solid; m.needsUpdate = true; } p.big = R.tex ? (solid ? 1.25 : 1.5) : 1; });
-    drawCover(c); coverM.emissive.copy(accent);
+    drawCover(c); coverM.emissive.copy(accent); EGG.paint(theme, EGGC[theme] || ['#' + accent.getHexString(), '#ffffff'], new THREE.Color().setRGB(...R.c1));
     SU.uMode.value = R.seal; SU.uC1.value.setRGB(...R.c1); SU.uC2.value.setRGB(...R.c2); SU.uSeed.value = 3.7 + (theme || '').length * 1.3; SU.uBrk.value = R.brk || 0;
     SH.forEach((s, i) => s.m.material.color.copy(i % 3 ? new THREE.Color(c.cfg.body).lerp(accent, 0.4) : accent));
   }
@@ -4116,6 +4341,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
   }
   function shine() {                                // after the reveal: where the trail shines, and what grew since the last visit
     const box = $('rv-shine'); if (!box || typeof TRAIL === 'undefined') return; const L = window.KT_L || ((k) => k), out = [];
+    const no = typeof KTL !== 'undefined' && KTL.card && KTL.card.no; if (no) out.push(esc(L('trailNo')).replace('{n}', '<b>' + esc(String(no)) + '</b>'));
     const k = TRAIL.standout(); if (k) out.push(esc(L('shine')).replace('{s}', '<b>' + esc(L('s_' + k)) + '</b>'));
     if (sinceV === undefined) sinceV = TRAIL.since();
     if (sinceV) { out.push(esc(L('since')).replace('{d}', sinceV.map(([kk, v]) => '<b>' + esc(L('d_' + kk).replace('{n}', v)) + '</b>').join(' · '))); sinceV = null; }
@@ -4201,7 +4427,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     cover.visible = true; SU.uH.value = 0; SU.uBreak.value = 0; SU.uFlick.value = 1; coverM.emissiveIntensity = 0.42 + breathe * 0.14;
     aura.material.opacity = (0.16 + breathe * 0.12) * ar; aura.scale.setScalar(1 + breathe * 0.04); ring.material.opacity = 0;
     lights((R.arrive === 'fade' || R.arrive === 'emerge') && !film ? 0.42 * (0.25 + 0.75 * ar) : 0.42); sweepForce = 9; SH.forEach(s => s.m.visible = false); SU.uT.value = t;
-    parts(R.parts.wait, t, 0.15, 0); PT.forEach(p => p.m.material.opacity *= ar);
+    parts(R.parts.wait, t, 0.15, 0); PT.forEach(p => p.m.material.opacity *= ar); EGG.wait(t, ar);
     Object.assign(S, { veil: 0.82 * Math.min(1, film ? 1 : A / 0.6), flash: 0, under: R.under ? 0.25 * ar : 0, ov: 0.55 * ar, warp: 0, sheet: 0, strike: 0, seam: 0, t });
     hideTiles(); back(false);
   }
@@ -4227,7 +4453,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     SU.uFlick.value = fl; SU.uT.value = t; coverM.emissiveIntensity = (0.48 + e * e * 0.7) * (R.emi || 1);
     aura.material.opacity = 0.28 + e * 0.5; aura.scale.setScalar(1 + e * 0.15);
     lights(0.42 + e * 0.15); sweepForce = 9; SH.forEach(s => s.m.visible = false);
-    parts(R.parts.hatch, t, e, 0);
+    parts(R.parts.hatch, t, e, 0); EGG.hatch(t, e, RM);
     let sheet = 0; if (theme === 'lightning') { const q = Math.floor(t * 9); sheet = hash(q + 99) < 0.08 + e * 0.22 ? (0.05 + e * 0.12) * (1 - (t * 9 - q)) : 0; }
     Object.assign(S, { veil: 0.82 + e * 0.06, flash: 0, under: R.under ? 0.25 + e * 0.75 : 0, ov: 0.55 + 0.45 * e, warp: 0, sheet, strike: 0, seam: theme === 'twoface' ? e : 0, t });
     hideTiles(); back(false);
@@ -4259,7 +4485,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       SU.uT.value = t;
       const br = clamp01(x0 / 0.3); SU.uBreak.value = br; SU.uH.value = 1; cover.visible = br < 1; coverM.emissiveIntensity = 0.9;
       aura.material.opacity = 0.78 - e * 0.2; lights(0.6 + e * 0.2); sweepForce = 9; ring.material.opacity = 0;
-      parts('implode', t, 0, 0); shards(u);
+      parts('implode', t, 0, 0); shards(u); EGG.burst(u, RM);
       const strike = theme === 'lightning' ? Math.max(0, 1 - u / 0.35) * (u < 0.05 ? u / 0.05 : 1) : 0;
       Object.assign(S, { veil: 0.88 * (1 - clamp01((u - TU + 0.2) / 1.2)), flash: strike * 0.55, under: R.under ? 1 - e * 0.5 : 0, ov: 1, warp: R.warp && !RM ? Math.sin(x0 * Math.PI) : 0, sheet: 0, strike, seed: 7, seam: theme === 'twoface' ? 1 - e * 0.3 : 0, t });
       hideTiles(); back(false);
@@ -4268,7 +4494,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       fire('land', () => SND.play(theme, 'land'));
       card.rotation.y = (RM ? 2 : 1 + (R.spin || 3)) * Math.PI + Math.sin(u2 * 9) * 0.07 * k * (RM ? 0 : 1) + cy * (1 - k); card.rotation.x = 0.03 + Math.sin(u2 * 7) * 0.03 * k + cx * (1 - k); card.rotation.z = 0;
       card.position.set(0, baseY + (theme === 'lava' ? 0.03 * k * Math.sin(u2 * 10) : 0), 0.1 * k * Math.cos(u2 * 6)); card.scale.setScalar(1 + 0.02 * k);
-      cover.visible = false; SH.forEach(s => s.m.visible = false); back(true);
+      cover.visible = false; SH.forEach(s => s.m.visible = false); back(true); EGG.burst(u, RM);
       aura.material.opacity = Math.max(0, 0.9 * Math.exp(-u2 * 2.2)); aura.scale.setScalar(1.15 + u2 * 0.6);
       const r = clamp01(u2 / 0.9); ring.material.opacity = 0.85 * (1 - r) * (1 - r); ring.scale.setScalar(0.6 + r * 6.5); ring.position.y = baseY;
       lights(Math.min(1, 0.8 + u2 * 1.2)); sweepForce = u2 < 1.0 ? -1.1 + u2 * 2.4 : 9;
@@ -4291,6 +4517,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
   // ----- running a live reveal -----
   function ui(cls) { body.classList.toggle('rv-on', true); body.classList.toggle('rv-going', cls === 'going'); body.classList.toggle('rv-hold', holding); }
   function startWait(m) {
+    if (typeof coinsReset === 'function') coinsReset();
     mode = m; pace = PACE[m]; state = 'arrive'; film = false; grp.visible = true; colsFor = null; tint(); fired = {}; h = 0; holding = false; auto = false;
     body.classList.remove('rv-done'); ui('wait'); $('rv').hidden = false; flip = flipNow = Math.PI; a0 = clock.getElapsedTime(); lastT = a0; lay = -1;
     window.KT_REVEAL = 'wait'; hideTiles(); SND.arrive(theme); why(); const sb = $('rv-shine'); if (sb) sb.innerHTML = '';
@@ -4299,7 +4526,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     state = 'hatch'; SND.droneStart(theme); window.KT_REVEAL = 'hatch'; return true; }
   function beginTurn(t) { state = 'go'; tTurn = t; vg = 0; beats = slowBeats(pace, recipe()); so = standIdx(); holding = false; SND.droneStop(); SND.play(theme, 'turn'); window.KT_REVEAL = 'go'; ui('going'); }
   function finish() {
-    state = 'off'; SND.slow(0); grp.visible = false; cover.visible = false; split = null; showTiles(); back(true); card.scale.setScalar(1); card.position.set(0, baseY, 0); card.rotation.z = 0;
+    state = 'off'; SND.slow(0); grp.visible = false; cover.visible = false; EGG.hide(); split = null; showTiles(); back(true); card.scale.setScalar(1); card.position.set(0, baseY, 0); card.rotation.z = 0;
     flip = flipNow = 0; sweepForce = null; lights(1); Object.assign(S, { veil: 0, flash: 0, under: 0, ov: 0, warp: 0, sheet: 0, strike: 0, seam: 0 }); ovx.clearRect(0, 0, OV.width, OV.height);
     if (mode === 'full') { try { localStorage.setItem('kt-seen', '1'); } catch (e) {} }
     body.classList.remove('rv-on', 'rv-going', 'rv-hold'); body.classList.add('rv-done'); $('rv').hidden = true;
@@ -4334,7 +4561,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     if (tt < F.h0) poseWait(tt, 9); else if (tt < F.turn) poseHatch(tt, (tt - F.h0) / FP.hatch, tt - F.h0); else { const u = warp().uOf(tt - F.turn); beats = warp().B; so = standIdx(); poseGo(F.turn + u, u); }
     return tt < F.after;
   }
-  function filmEnd() { film = false; grp.visible = false; cover.visible = false; split = null; showTiles(); back(true); card.scale.setScalar(1); card.position.set(0, 0, 0); card.rotation.z = 0; sweepForce = null; lights(1); lay = -1; pace = PACE[mode];
+  function filmEnd() { film = false; grp.visible = false; cover.visible = false; EGG.hide(); split = null; showTiles(); back(true); card.scale.setScalar(1); card.position.set(0, 0, 0); card.rotation.z = 0; sweepForce = null; lights(1); lay = -1; pace = PACE[mode];
     Object.assign(S, { veil: 0, flash: 0, under: 0, ov: 0, warp: 0, sheet: 0, strike: 0, seam: 0 }); }
 
   // pages made for test pictures freeze the reveal at a moment of the film: ?shot=front&rvt=2.4 (rvt=-1 is the sealed card waiting)
@@ -4411,11 +4638,11 @@ document.querySelectorAll('[data-save="image"]').forEach(b => b.addEventListener
   const btn = document.getElementById('save-video');
   const show = (on) => { pickEl.hidden = !on; if (btn) btn.setAttribute('aria-expanded', on ? 'true' : 'false');
     if (on) { const s0 = document.getElementById('vid-s0'), s1 = document.getElementById('vid-s1');
-      if (s0) s0.textContent = filmPlan(false).sec + ' s'; if (s1) s1.textContent = filmPlan(true).sec + ' s';
+      if (s0) s0.textContent = filmPlan(false).sec + ' s'; if (s1) s1.textContent = filmPlan(true).sec + ' s'; const s2 = document.getElementById('vid-s2'); if (s2) s2.textContent = filmPlan(true).sec + ' s';
       const first = pickEl.querySelector('button'); if (first) first.focus(); } };
   if (btn) { btn.setAttribute('aria-haspopup', 'true'); btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', 'vidpick');
     btn.addEventListener('click', (e) => { e.stopPropagation(); show(pickEl.hidden); }); }
-  pickEl.querySelectorAll('[data-vid]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); show(false); saveVideo({ reveal: b.dataset.vid === '1' }); }));
+  pickEl.querySelectorAll('[data-vid]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); show(false); saveVideo({ reveal: b.dataset.vid !== '0', vertical: b.dataset.vid === '2' }); }));
   addEventListener('pointerdown', (e) => { if (!pickEl.hidden && !pickEl.contains(e.target) && e.target !== btn) show(false); });
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !pickEl.hidden) { show(false); if (btn) btn.focus(); } });
 })();

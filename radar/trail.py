@@ -63,6 +63,7 @@ class TrailCard(Base):
     partial: Mapped[bool] = mapped_column(Boolean, default=False)    # the day's money ran out part way
     cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
     fetched_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    no: Mapped[int | None] = mapped_column(Integer, nullable=True)   # the order Keepers first walked the trail: card No. 1, 2, 3...
 
 
 class XError(Exception):
@@ -332,6 +333,21 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
         return jsonify({"ok": True})
 
     # ---------- the card ----------
+    def number(s, uid: str) -> int | None:
+        """The Keeper's card number, given once, the first time their card is made, and never changed."""
+        row = s.get(TrailCard, uid)
+        if row is None:
+            return None
+        if row.no is None:
+            row.no = (s.scalar(select(func.max(TrailCard.no))) or 0) + 1
+            s.commit()
+        return row.no
+
+    def with_no(card: dict, uid: str) -> dict:
+        with Session() as s:
+            n = number(s, uid)
+        return dict(card, no=n) if n else card
+
     @app.get("/api/trail/me")
     def trail_me():
         if not allowed():
@@ -349,7 +365,7 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
             # others to compare with: Keepers who walked the trail, their counts also from X
             others = [] if fresh else list(s.scalars(select(TrailCard.posts).where(TrailCard.user_id != u["id"])))
         if fresh:
-            return jsonify({"card": saved, "cached": True})
+            return jsonify({"card": with_no(saved, u["id"]), "cached": True})
         if not cfg.x_bearer_token:
             return jsonify({"why": "x", "handle": "@" + u["username"]}), 503
         if left < 0.6:          # not enough left today for even a small trail
@@ -383,7 +399,7 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
                     s.add(TrailCard(user_id=u["id"], username=u["username"], card=blob, posts=card["n"], views=views,
                                     source=source, partial=partial, cost_usd=cost, fetched_at=now))
                 s.commit()
-            return jsonify({"card": card, "cached": False, "partial": partial})
+            return jsonify({"card": with_no(card, u["id"]), "cached": False, "partial": partial})
         finally:
             with lock:
                 inflight.discard(u["id"])
