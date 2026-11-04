@@ -454,6 +454,7 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
   <div class="vm-box">
     <canvas id="vm-cv" width="1920" height="1080"></canvas>
     <div class="vm-row">
+      <button class="btn go" type="button" id="vm-save4" hidden>Save in 4K</button>
       <button class="btn go" type="button" id="vm-save">Save video</button>
       <button class="btn" type="button" id="vm-x">Close</button>
     </div>
@@ -483,25 +484,32 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
     return muxing || (muxing = new Promise((res) => { const sc = document.createElement("script"); sc.src = "{{ asset('v21/mp4-muxer.min.js') }}";
       sc.onload = () => res(window.Mp4Muxer || null); sc.onerror = () => res(null); document.head.append(sc); }));
   }
+  // 4K where this device can encode it (the sharpest copy to keep), full HD always (the size X takes best)
+  let k4 = false;
   window.pdCircleVideo.ready().then((p) => { if (p) btn.hidden = false; });
+  if (window.pdCircleVideo.ready4k) window.pdCircleVideo.ready4k().then((p) => { if (!p) return; k4 = true; $("vm-save4").hidden = false;
+    $("vm-save").textContent = T("Save for X"); $("vm-save").classList.remove("go"); });
+  const note = () => k4 ? T("Made on your phone in 4K, the sharpest it can be. Save for X makes a full HD copy for posting.") : T("Made on your phone in full HD, ready for X.");
   function close() { $("vm").hidden = true; if (stop) stop(); stop = null; document.body.style.overflow = ""; btn.focus(); }
   btn.addEventListener("click", async () => {
-    $("vm").hidden = false; document.body.style.overflow = "hidden"; $("vm-msg").textContent = T("Made on your phone in full HD, ready for X.");
+    $("vm").hidden = false; document.body.style.overflow = "hidden"; $("vm-msg").textContent = note();
     stop = window.pdCircleVideo.play($("vm-cv"), await load()); $("vm-x").focus();
   });
   $("vm-x").addEventListener("click", close);
   $("vm").addEventListener("click", (e) => { if (e.target === $("vm")) close(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("vm").hidden) close(); });
-  $("vm-save").addEventListener("click", async () => {
-    const b = $("vm-save"); if (b.disabled) return; b.disabled = true;
+  async function save(big) {
+    const a = $("vm-save"), b4 = $("vm-save4"); if (a.disabled || b4.disabled) return; a.disabled = b4.disabled = true;
     try {
       const [o, muxer] = await Promise.all([load(), loadMuxer()]);
-      const blob = await window.pdCircleVideo.make({ ...o, muxer, onProgress: (k) => { $("vm-msg").textContent = T("Making your video…") + ` ${Math.round(k * 100)}%`; } });
-      const how = await window.pdSave(blob, `dragon-circle-${D.handle}.mp4`);
-      $("vm-msg").textContent = window.pdSaveToast(how, T("Video saved. Add it to your post on X.")) || T("Made on your phone in full HD, ready for X.");
+      const blob = await window.pdCircleVideo.make({ ...o, muxer, k4: big, onProgress: (k) => { $("vm-msg").textContent = T("Making your video…") + ` ${Math.round(k * 100)}%`; } });
+      const how = await window.pdSave(blob, `dragon-circle-${D.handle}${big ? "-4k" : ""}.mp4`);
+      $("vm-msg").textContent = window.pdSaveToast(how, T("Video saved. Add it to your post on X.")) || note();
     } catch (e) { $("vm-msg").textContent = T("Could not make the video. Try again."); }
-    b.disabled = false;
-  });
+    a.disabled = b4.disabled = false;
+  }
+  $("vm-save").addEventListener("click", () => save(false));
+  $("vm-save4").addEventListener("click", () => save(true));
 })();
 </script>
 {% endif %}

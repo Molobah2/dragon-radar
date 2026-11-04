@@ -2256,6 +2256,8 @@ def test_dragon_circle_counts_tags_both_ways_and_leaves_the_team_out(cfg, Sessio
     from pathlib import Path
     js = (Path(__file__).parent.parent / "radar" / "static" / "v21" / "circlevideo.js").read_text()
     assert "VideoEncoder" in js and "FPS = 60" in js and "1920" in js
+    # a 4K copy where the device can encode it, the full HD copy for X always
+    assert 'id="vm-save4"' in html and "ready4k" in js and "W * 2" in js and "k4: big" in html
     assert c.get("/api/circle/not a handle").status_code in (400, 404)
     assert "Draw my circle" in c.get("/circle").get_data(as_text=True)
     assert c.get("/circle?h=@Alice").headers["Location"].endswith("/circle/Alice")

@@ -1,4 +1,5 @@
-/* The Dragon Circle as a short video. Drawn on the Keeper's own device, 1920 by 1080 at 60 frames a second, and
+/* The Dragon Circle as a short video. Drawn on the Keeper's own device at 60 frames a second, in 4K (3840 by 2160)
+   where the device can encode it and always in full HD (1920 by 1080) for X, and
    encoded frame by frame (WebCodecs H.264 + mp4-muxer) so it is perfectly smooth on any phone: a slow phone only takes
    longer, it never drops a frame. Older Safari records the canvas live instead.
 
@@ -8,9 +9,10 @@
    turning.
 
    pdCircleVideo.ready()                 resolves to a plan when this browser can make an MP4 that X takes, or null
+   pdCircleVideo.ready4k()               resolves to a plan when this browser can also make it in 4K, or null
    pdCircleVideo.play(canvas, o)         plays the preview in a loop; returns a stop function
    pdCircleVideo.make(o)                 resolves to an MP4 Blob
-   o: { handle, me: { img, letter }, people: [{ user, img, letter }], count, onProgress, muxer } */
+   o: { handle, me: { img, letter }, people: [{ user, img, letter }], count, onProgress, muxer, k4 } */
 (() => {
   "use strict";
   const W = 1920, H = 1080, FPS = 60, DUR = 7600;
@@ -21,13 +23,24 @@
   const SAFARI = /Safari\//.test(UA) && !/Chrome|Chromium|CriOS|Edg|Android/.test(UA);
   const TYPES = ['video/mp4;codecs="avc1.42E01E"', "video/mp4;codecs=avc1.42E01E", "video/mp4;codecs=avc1"].concat(SAFARI ? ["video/mp4"] : []);
   const CODECS = ["avc1.640033", "avc1.640032", "avc1.4d0032", "avc1.42003e", "avc1.640028"];
-  let plan = null;
+  let plan = null, plan4 = undefined;
+  // 4K at 60 frames needs H.264 level 5.2; a high bitrate keeps the stardust and the faces crisp
+  async function ready4k() {
+    if (plan4 !== undefined) return plan4;
+    plan4 = null;
+    if (typeof VideoEncoder === "undefined" || typeof VideoFrame === "undefined") return plan4;
+    for (const codec of ["avc1.640034", "avc1.4d0034", "avc1.640033"]) {
+      const cfg = { codec, width: W * 2, height: H * 2, bitrate: 60_000_000, framerate: FPS, avc: { format: "avc" } };
+      try { const r = await VideoEncoder.isConfigSupported(cfg); if (r && r.supported) { plan4 = { kind: "codec", cfg, S: 2 }; break; } } catch (e) { /* next */ }
+    }
+    return plan4;
+  }
   async function ready() {
     if (plan) return plan;
     if (typeof VideoEncoder !== "undefined" && typeof VideoFrame !== "undefined") {
       for (const codec of CODECS) {
-        const cfg = { codec, width: W, height: H, bitrate: 16_000_000, framerate: FPS, avc: { format: "avc" } };
-        try { const r = await VideoEncoder.isConfigSupported(cfg); if (r && r.supported) return (plan = { kind: "codec", cfg }); } catch (e) { /* next */ }
+        const cfg = { codec, width: W, height: H, bitrate: 24_000_000, framerate: FPS, avc: { format: "avc" } };
+        try { const r = await VideoEncoder.isConfigSupported(cfg); if (r && r.supported) return (plan = { kind: "codec", cfg, S: 1 }); } catch (e) { /* next */ }
       }
     }
     if (typeof MediaRecorder !== "undefined" && HTMLCanvasElement.prototype.captureStream) {
@@ -41,11 +54,12 @@
   const out5 = (k) => 1 - Math.pow(1 - clamp(k), 5);
   const inout = (k) => { k = clamp(k); return k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; };
 
-  function scene(o) {
+  // S: how many device pixels per layout pixel (1 for full HD, 2 for 4K). Everything is laid out at 1920 by 1080.
+  function scene(o, S = 1) {
     const ppl = (o.people || []).slice(0, 20);
-    // the sky: drawn once
-    const sky = document.createElement("canvas"); sky.width = W; sky.height = H;
-    const s = sky.getContext("2d");
+    // the sky: drawn once, at the output size
+    const sky = document.createElement("canvas"); sky.width = W * S; sky.height = H * S;
+    const s = sky.getContext("2d"); s.scale(S, S);
     const g = s.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#130b29"); g.addColorStop(1, "#2a1640"); s.fillStyle = g; s.fillRect(0, 0, W, H);
     const rg = s.createRadialGradient(CX, CY, 40, CX, CY, 760); rg.addColorStop(0, "rgba(170, 80, 140, .55)"); rg.addColorStop(.55, "rgba(110, 50, 120, .22)"); rg.addColorStop(1, "rgba(40, 20, 70, 0)");
     s.fillStyle = rg; s.fillRect(0, 0, W, H);
@@ -53,12 +67,12 @@
     const stars = Array.from({ length: 220 }, () => ({ x: rnd() * W, y: rnd() * H, r: .5 + rnd() * 1.8, p: rnd() * 6.28, sp: .6 + rnd() * 1.6, d: .2 + rnd() * .8 }));
     // each Keeper's disc: drawn once
     function disc(img, letter, size, ring) {
-      const pad = 10, c = document.createElement("canvas"); c.width = c.height = size + pad * 2;
-      const x = c.getContext("2d"), r = size / 2, m = c.width / 2;
+      const pad = 10, w = size + pad * 2, c = document.createElement("canvas"); c.width = c.height = Math.round(w * S);
+      const x = c.getContext("2d"), r = size / 2, m = w / 2; x.scale(S, S); x.imageSmoothingQuality = "high";
       x.save(); x.beginPath(); x.arc(m, m, r, 0, 6.2832); x.closePath(); x.clip();
       if (img) { x.drawImage(img, m - r, m - r, size, size); }
       else { x.fillStyle = "#5c408c"; x.fillRect(0, 0, c.width, c.height); x.fillStyle = "#ffecd2"; x.font = `700 ${Math.round(size * .46)}px Fredoka, system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(letter || "?", m, m + 3); }
-      x.restore(); return { c, ring, size };
+      x.restore(); return { c, w, ring, size };
     }
     const meDisc = disc(o.me && o.me.img, o.me && o.me.letter, SME, "#ff9f6e");
     const spots = ppl.map((p, i) => {
@@ -72,8 +86,8 @@
 
     return function draw(x, ms) {
       const t = ms / 1000;
-      x.setTransform(1, 0, 0, 1, 0, 0);
-      x.drawImage(sky, 0, 0);
+      x.setTransform(S, 0, 0, S, 0, 0);
+      x.drawImage(sky, 0, 0, W, H);
       // stars twinkle and drift a little with the camera
       const cam = 1.08 - .08 * out3(t / 2.4), rot = -.25 + .25 * out5(t / 3.2) + t * .018;
       for (const st of stars) {
@@ -84,7 +98,7 @@
       }
       x.globalAlpha = 1;
       // the camera: a slow pull back that settles on the card's framing
-      x.setTransform(cam, 0, 0, cam, CX * (1 - cam), CY * (1 - cam));
+      x.setTransform(cam * S, 0, 0, cam * S, CX * (1 - cam) * S, CY * (1 - cam) * S);
       const pos = (sp) => [CX + sp.r * Math.cos(sp.ang + rot), CY + sp.r * Math.sin(sp.ang + rot)];
       // orbits trace themselves with a bright head
       for (const [r, a, t0] of [[R1, .3, .9], [R2, .2, 1.5]]) {
@@ -127,14 +141,14 @@
       const km = out3((t - .25) / .7);
       if (km > 0) {
         const breathe = 1 + .012 * Math.sin(t * 2.2);
-        haloDisc(x, meDisc, CX, CY, (.9 + .1 * km) * breathe, km, 1, 7);
+        haloDisc(x, meDisc, CX, CY, (.9 + .1 * km) * breathe, km, 1, 7, S);
       }
       // each Keeper arrives where their comet lands: the ring draws round, the picture fades in
       for (const sp of spots) {
         const k = clamp((t - sp.t0 - .42) / .38); if (k <= 0) continue;
         const [px, py] = pos(sp);
         if (k < .6) glowDot(x, px, py, sp.d.size * .9, "255, 236, 200", (1 - k / .6) * .7);
-        haloDisc(x, sp.d, px, py, .94 + .06 * out3(k), out3(k), out3(k * 1.4), sp.inner ? 6 : 5);
+        haloDisc(x, sp.d, px, py, .94 + .06 * out3(k), out3(k), out3(k * 1.4), sp.inner ? 6 : 5, S);
       }
       // the top three catch a golden glint and get their number
       for (const sp of spots) {
@@ -150,7 +164,7 @@
         x.globalAlpha = 1;
       }
       // the words, wiped in from the left
-      x.setTransform(1, 0, 0, 1, 0, 0);
+      x.setTransform(S, 0, 0, S, 0, 0);
       const kw = out5((t - 3.0) / .9);
       if (kw > 0) {
         x.save(); x.beginPath(); x.rect(0, 0, 96 + 820 * kw, H); x.clip();
@@ -158,7 +172,7 @@
         x.fillStyle = "#ffc45c"; rrect(x, 96, 342 + dy, 404, 74, 37); x.fill();
         x.fillStyle = "#281636"; x.font = "700 38px Fredoka, system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("DRAGON CIRCLE", 298, 380 + dy);
         let fs = 112; x.font = `700 ${fs}px Fredoka, system-ui, sans-serif`; while (x.measureText(handle).width > 760 && fs > 56) { fs -= 4; x.font = `700 ${fs}px Fredoka, system-ui, sans-serif`; }
-        x.textAlign = "left"; x.fillStyle = "#fff6e4"; x.shadowColor = "rgba(0, 0, 0, .35)"; x.shadowBlur = 18; x.fillText(handle, 96, 528 + dy);
+        x.textAlign = "left"; x.fillStyle = "#fff6e4"; x.shadowColor = "rgba(0, 0, 0, .35)"; x.shadowBlur = 18 * S; x.fillText(handle, 96, 528 + dy);
         x.shadowBlur = 0; x.fillStyle = "#ffd696"; x.font = "700 51px Fredoka, system-ui, sans-serif"; x.fillText(count, 96, 656 + dy);
         x.restore();
       }
@@ -174,11 +188,11 @@
     x.fillStyle = g; x.beginPath(); x.arc(X, Y, r, 0, 6.2832); x.fill();
   }
   // a disc with a soft shadow, its ring drawn round to `ring` (0 to 1) and the picture at `alpha`
-  function haloDisc(x, d, X, Y, scale, alpha, ring, width) {
+  function haloDisc(x, d, X, Y, scale, alpha, ring, width, S = 1) {
     const r = d.size / 2 * scale;
-    x.save(); x.globalAlpha = alpha * .5; x.fillStyle = "#000"; x.shadowColor = "rgba(0, 0, 0, .6)"; x.shadowBlur = 26; x.shadowOffsetY = 12;
+    x.save(); x.globalAlpha = alpha * .5; x.fillStyle = "#000"; x.shadowColor = "rgba(0, 0, 0, .6)"; x.shadowBlur = 26 * S; x.shadowOffsetY = 12 * S;
     x.beginPath(); x.arc(X, Y, r + width, 0, 6.2832); x.fill(); x.restore();
-    x.save(); x.globalAlpha = alpha; const w = d.c.width * scale; x.drawImage(d.c, X - w / 2, Y - w / 2, w, w); x.restore();
+    x.save(); x.globalAlpha = alpha; const w = d.w * scale; x.drawImage(d.c, X - w / 2, Y - w / 2, w, w); x.restore();
     if (ring > 0) { x.strokeStyle = d.ring; x.lineWidth = width * scale * 1.6; x.lineCap = "round"; x.beginPath(); x.arc(X, Y, r + width * .55, -Math.PI / 2, -Math.PI / 2 + ring * 6.2832); x.stroke(); x.lineCap = "butt"; }
   }
 
@@ -191,13 +205,14 @@
   }
 
   async function make(o) {
-    const how = await ready(); if (!how) throw new Error("no video");
-    const c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d", { alpha: false }); const draw = scene(o);
+    const how = (o.k4 && await ready4k()) || await ready(); if (!how) throw new Error("no video");
+    const S = how.S || 1, OW = W * S, OH = H * S;
+    const c = document.createElement("canvas"); c.width = OW; c.height = OH; const x = c.getContext("2d", { alpha: false }); const draw = scene(o, S);
     const frames = Math.round(DUR / 1000 * FPS);
     if (how.kind === "codec") {
       const M = o.muxer; if (!M) throw new Error("no muxer");
       const target = new M.ArrayBufferTarget();
-      const mux = new M.Muxer({ target, video: { codec: "avc", width: W, height: H, frameRate: FPS }, fastStart: "in-memory" });
+      const mux = new M.Muxer({ target, video: { codec: "avc", width: OW, height: OH, frameRate: FPS }, fastStart: "in-memory" });
       let failed = null;
       const enc = new VideoEncoder({ output: (chunk, meta) => mux.addVideoChunk(chunk, meta), error: (e) => { failed = e; } });
       enc.configure(how.cfg);
@@ -214,7 +229,7 @@
       return new Blob([target.buffer], { type: "video/mp4" });
     }
     draw(x, 0);
-    const stream = c.captureStream(FPS), rec = new MediaRecorder(stream, { mimeType: how.type, videoBitsPerSecond: 16_000_000 }), parts = [];
+    const stream = c.captureStream(FPS), rec = new MediaRecorder(stream, { mimeType: how.type, videoBitsPerSecond: 24_000_000 }), parts = [];
     rec.ondataavailable = (e) => { if (e.data && e.data.size) parts.push(e.data); };
     const done = new Promise((res, rej) => { rec.onstop = () => res(); rec.onerror = (e) => rej(e.error || e); });
     rec.start(250); const t0 = performance.now();
@@ -223,5 +238,5 @@
     const blob = new Blob(parts, { type: "video/mp4" }); if (!blob.size) throw new Error("empty"); return blob;
   }
 
-  window.pdCircleVideo = { ready, play, make, scene, W, H, FPS, DUR };
+  window.pdCircleVideo = { ready, ready4k, play, make, scene, W, H, FPS, DUR };
 })();
