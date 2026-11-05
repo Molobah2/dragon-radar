@@ -177,6 +177,7 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
         <h2 class="hot-title">{{ ico("flame", 30) }}Hot now <span>most opened by Keepers</span></h2>
         <div class="trail" id="hot-trail"></div>
       </section>
+      <div class="days-bar" id="love-note" style="margin:0 0 14px;background:var(--glass-hi);box-shadow:var(--rim),var(--lift)" hidden><span id="love-note-text"></span><button class="btn btn-soft" id="love-show" type="button" data-i18n="zLoveShow">Show all posts</button></div>
       <div class="trail" id="trail" aria-live="polite">{% for _ in range(6) %}<div class="post skel" aria-hidden="true"><i></i><i></i><i></i><i></i></div>{% endfor %}</div>
       <button id="more" class="btn btn-soft more" type="button" hidden>Load more</button>
       <div class="empty" id="empty" hidden>

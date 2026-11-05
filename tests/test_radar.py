@@ -1681,7 +1681,7 @@ def test_speed_budget(cfg, Session):
     c = v2_client(cfg)
     # /friends raised on purpose (120k to 124k): the song picker controls and the dragon book; the picker's
     # list itself (music.js) only loads when someone opens it
-    budgets = {"/friends": (135_000, 60_000),   # raised on purpose: the X app note, its move code button and the safe copy for signed Keepers, the audit fixes (dialog focus, phone layout), the v2.1 daily goal steps, the feed keeping its place (26 Oct), then swapping spare dragons (29 Oct), then the repeat button on the music player (31 Oct), then the keep your dragons safe card and follow marks in backups (31 Oct)
+    budgets = {"/friends": (135_500, 60_000),   # raised on purpose: the Needs love note in the feed (5 Nov), and before that the X app note, its move code button and the safe copy for signed Keepers, the audit fixes (dialog focus, phone layout), the v2.1 daily goal steps, the feed keeping its place (26 Oct), then swapping spare dragons (29 Oct), then the repeat button on the music player (31 Oct), then the keep your dragons safe card and follow marks in backups (31 Oct)
                 "/": (15_500, 40_000),   # raised on purpose (31 Oct): the music player repeat button lives in sound.js
                 "/friends/keepers": (60_500, 40_000)}   # keepers raised on purpose (29 Oct): the shared stylesheet gained the dragon swap box
     for path, (code_max, html_max) in budgets.items():

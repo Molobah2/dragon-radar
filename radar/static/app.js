@@ -894,7 +894,11 @@
       });
     }
     keepPlace(place);
-    $("empty").hidden = query ? list.length > 0 : list.length + hot.length + pinnedPosts.length > 0;
+    // Needs love hides posts other Keepers already opened: say so, so a day full of posts never looks empty
+    const loveHid = needsLove && !query ? pool().filter((p) => p.opens && (showOpened || !opened[p.id]) && !pinnedIds.has(p.id)).length : 0;
+    $("love-note").hidden = !loveHid;
+    if (loveHid) $("love-note-text").textContent = loveHid === 1 ? "1 post is hidden because Needs love is on." : `${loveHid} posts are hidden because Needs love is on.`;
+    $("empty").hidden = loveHid > 0 || (query ? list.length > 0 : list.length + hot.length > 0);
     $("empty-title").textContent = query ? "Nothing found" : "All caught up";
     $("empty-text").textContent = query ? "No posts match your search." : "No unopened posts here. Fresh ones land every 20 minutes.";
     $("more").hidden = rest.length <= shown;
@@ -918,6 +922,8 @@
   new IntersectionObserver((e) => { if (e[0].isIntersecting) maybeMore(); }, { rootMargin: "1400px 0px" }).observe($("more"));
   addEventListener("scroll", maybeMore, { passive: true });
   $("needsLove").addEventListener("change", (e) => { needsLove = e.target.checked; store.set("radar:needsLove", needsLove); render(); });
+  function loveOff() { needsLove = false; $("needsLove").checked = false; store.set("radar:needsLove", false); render(); }
+  $("love-show").addEventListener("click", loveOff);
   $("showOpened").addEventListener("change", (e) => { showOpened = e.target.checked; store.set("radar:showOpened", showOpened); render(); });
 
   // ---------- status line: when posts were last collected and when the next check runs (every 20 minutes) ----------
@@ -1120,6 +1126,8 @@
   }
   function openDay(day) {
     if (skipped && skipped.day !== day) skipped = null;
+    // the chip counts every unopened post of that day, so the list must show them all
+    if (needsLove) { loveOff(); toast("Needs love is off now, so every post from this day shows."); }
     if (dayList && day === dayList.today) go({ range: "today" });
     else go({ range: "custom", from: day, to: day });
   }
