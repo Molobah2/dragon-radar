@@ -379,7 +379,7 @@ async function quizView() {
   const timed = Q.mode !== "off";
   simN = 0;
   main.innerHTML = `<div class="q-top"><span class="count">${esc(T("qOf", "Question {a} of {b}", { a: Q.i + 1, b: Q.ids.length }))}</span>${timed ? `<button class="plus" type="button" id="plus" hidden>${esc(T("plus20", "+20 s"))}</button><div class="ring" id="ring" role="timer" aria-label="${esc(T("timeLeft", "Time left"))}"><svg viewBox="0 0 64 64" aria-hidden="true"><circle class="bg" cx="32" cy="32" r="28"/><circle class="fg" id="fg" cx="32" cy="32" r="28" stroke-dasharray="175.9" stroke-dashoffset="0"/></svg><b id="secs">${Math.ceil(Q.left)}</b></div>` : `<span class="chip" style="margin-left:auto">${esc(T("noTimer", "No timer"))}</span>`}</div>
-  <section class="parch stack" id="qcard"><p class="stem" id="stem">${esc(q.stem)}</p>${q.sim ? `<div id="qsim">${sim(q.sim, q.kind === "flag" ? "flag" : "show")}</div>` : ""}
+  <section class="parch stack" id="qcard">${!q.sim ? `<div class="q-art" aria-hidden="true" style="background-image:url(${art(qArt(q.id))})"></div>` : ""}<p class="stem" id="stem">${esc(q.stem)}</p>${q.sim ? `<div id="qsim">${sim(q.sim, q.kind === "flag" ? "flag" : "show")}</div>` : ""}
   ${q.kind === "choice" ? `<div class="opts" role="group" aria-labelledby="stem">${optOrder(q).map(([o, i], k) => `<button type="button" class="opt" data-i="${i}"><span class="k" aria-hidden="true">${"ABCD"[k]}</span><span>${esc(o)}</span></button>`).join("")}</div>` : `<button class="btn ink" type="button" id="qdone">${esc(T("doneFlag", "Done flagging"))}</button>`}
   <div id="qfb" aria-live="polite"></div></section>`;
   if (q.kind === "flag") { wireFlags($("#qsim")); $("#qdone").onclick = () => answer(q, null); }
@@ -391,6 +391,8 @@ async function quizView() {
   if (timed) { last = performance.now(); paint(total); tick = setInterval(() => step(q, total), 250); $("#plus").onclick = () => { if (plusUsed) return; plusUsed = true; Q.left += 20; $("#plus").hidden = true; paint(total); save(); }; }
 }
 let plusUsed = false;
+// each question without a scene gets one of its lesson's pictures, the same one every time
+function qArt(id) { const [, m, k] = id.match(/^m(\d+)q(\d+)/); const mt = meta(+m), a = mt.arts && mt.arts.length ? mt.arts : [mt.art]; return a[(+k) % a.length]; }
 function optOrder(q) { const r = rng(S.id + q.id); return shuffle(q.options.map((o, i) => [o, i]), r); }
 function step(q, total) {
   const Q = S.quiz; const t = performance.now(), dt = (t - last) / 1000; last = t;
