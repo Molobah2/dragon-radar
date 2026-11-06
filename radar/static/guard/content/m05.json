@@ -1,0 +1,378 @@
+{
+  "id": 5,
+  "slug": "hacked",
+  "title": "When official accounts get hacked",
+  "tag": "Hacked",
+  "minutes": 5,
+  "art": "torch",
+  "takeaway": "When an official account suddenly posts a rushed or too good link, wait and check it on another official channel first.",
+  "cards": [
+    {
+      "type": "scene",
+      "title": "It is the real account",
+      "body": "You open X and see a post from the real Pocket Dragons account. It says a surprise mint just opened and closes in 30 minutes. The link is new. You have never seen it before. The account is real. But is the link?",
+      "sim": {
+        "kind": "post",
+        "app": "x",
+        "account": {
+          "name": "Pocket Dragons",
+          "handle": "pocketdragons_example",
+          "badge": "verified"
+        },
+        "seg": [
+          {
+            "t": "Surprise stealth mint is live!",
+            "flag": true,
+            "label": "Surprise mint",
+            "why": "A mint that was never announced before."
+          },
+          " ",
+          {
+            "t": "Only 30 minutes left.",
+            "flag": true,
+            "label": "Rush",
+            "why": "A rush is there to stop you checking."
+          },
+          " ",
+          {
+            "t": "pd-stealth.example",
+            "flag": true,
+            "label": "New link",
+            "why": "A link never seen on other official channels."
+          },
+          " ",
+          {
+            "t": "Thank you Keepers.",
+            "flag": false,
+            "label": "Thanks",
+            "why": "Kind words are normal and prove nothing."
+          }
+        ],
+        "time": "2m"
+      }
+    },
+    {
+      "type": "teach",
+      "title": "It has happened before",
+      "body": "Real project accounts have been hacked to post fake mint links. In April 2022 the BAYC Discord was briefly taken over. In May 2022 the OpenSea Discord posted a fake mint pass link. In 2021 hackers took over the Discord of an Animoca Brands game and ran a fake mint, and Animoca pledged to repay 265 ETH.",
+      "art": "torch"
+    },
+    {
+      "type": "teach",
+      "title": "Signs of a hijacked post",
+      "body": "A hacked account still looks real. The post gives it away: a surprise mint, a rush, a link you never saw. The official mint post set the presale for Nov 16 to 19 and the auction for Nov 30, at 1 PM UTC. Any change is announced in advance.",
+      "art": "eye",
+      "points": [
+        "Know the plan. Anything off plan: wait and check."
+      ]
+    },
+    {
+      "type": "teach",
+      "title": "Fake addresses in replies",
+      "body": "Scammers also post in the replies under real posts. They paste a fake contract address or a \"backup link\" and push it up with fake likes. Never copy an address or a link from replies. Wait, then check the announcement on a second official channel before you click anything.",
+      "art": "chain"
+    },
+    {
+      "type": "sim",
+      "title": "Try it",
+      "body": "This appears in the official server's announcements. Tap every red flag, then tap Done flagging.",
+      "task": "flag",
+      "sim": {
+        "kind": "post",
+        "app": "chat",
+        "account": {
+          "name": "Pocket Dragons",
+          "handle": "pd_announcements_example",
+          "badge": "verified"
+        },
+        "seg": [
+          "Partner surprise! ",
+          {
+            "t": "Free mint for the first 500 Keepers.",
+            "flag": true,
+            "label": "Too good offer",
+            "why": "A free mint that no other channel mentions."
+          },
+          " ",
+          {
+            "t": "Contract: 0x9b2e…44d1",
+            "flag": true,
+            "label": "Contract in a post",
+            "why": "A surprise address you cannot check anywhere else."
+          },
+          " ",
+          {
+            "t": "Presale dates are unchanged.",
+            "flag": false,
+            "label": "Dates line",
+            "why": "Normal news that matches the plan."
+          }
+        ],
+        "time": "1m"
+      }
+    },
+    {
+      "type": "rule",
+      "title": "Remember this"
+    }
+  ],
+  "questions": [
+    {
+      "id": "m5q1",
+      "kind": "choice",
+      "stem": "The official X account posts a surprise mint link that closes in 20 minutes. What do you do?",
+      "sim": null,
+      "options": [
+        "Wait and check it on another official channel",
+        "Mint fast, the account is the real one",
+        "Ask in the replies if it is real",
+        "Mint with your vault to be careful"
+      ],
+      "answer": 0,
+      "why": "Real accounts get hacked. A surprise link with a rush is the pattern. Check the other official channels before you click.",
+      "source": "https://www.theblock.co/news/regulation/2022-05-06-opensea-discord-account-hacked-to-promote-scam-nft-pass-145432"
+    },
+    {
+      "id": "m5q2",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "post",
+        "app": "chat",
+        "account": {
+          "name": "Pocket Dragons",
+          "handle": "pd_announcements_example",
+          "badge": "verified"
+        },
+        "seg": [
+          {
+            "t": "We are live early!",
+            "flag": true,
+            "label": "Surprise early mint",
+            "why": "A change to the announced dates with no warning."
+          },
+          " ",
+          {
+            "t": "Mint now at pd-early.example",
+            "flag": true,
+            "label": "New link",
+            "why": "A link you never saw on other official channels."
+          },
+          " ",
+          {
+            "t": "before gas goes up.",
+            "flag": true,
+            "label": "Rush",
+            "why": "Pressure is there to stop you checking."
+          },
+          " ",
+          {
+            "t": "Thanks for your support.",
+            "flag": false,
+            "label": "Thanks",
+            "why": "Kind words are normal and prove nothing."
+          }
+        ],
+        "time": "3m"
+      },
+      "why": "A surprise change, a new link and a rush, even from the real server, means wait. Check X and the other official channels first.",
+      "source": "https://www.bloomberglinea.com/2022/04/01/bored-ape-yacht-club-warns-users-not-to-mint-nfts-after-discord-hack"
+    },
+    {
+      "id": "m5q3",
+      "kind": "choice",
+      "stem": "A reply under the official post shares the presale contract address. What do you do?",
+      "sim": null,
+      "options": [
+        "Ignore it, never copy addresses from replies",
+        "Copy it, it has many likes",
+        "Use it if the account has a badge",
+        "Use it if two replies show the same one"
+      ],
+      "answer": 0,
+      "why": "Scammers push fake addresses and links in reply threads under real posts. Likes and badges are easy to fake.",
+      "source": "https://blockaid.io/blog/how-wallet-drainers-use-fake-revoke-sites-and-twitter-phishing-to-exploit-victims"
+    },
+    {
+      "id": "m5q4",
+      "kind": "choice",
+      "stem": "A friend says: \"It came from the real account, so the link is fine.\" What do you tell them?",
+      "sim": null,
+      "options": [
+        "Real accounts get hacked, check another channel",
+        "True, a verified account cannot post scams",
+        "True, if the post also has many likes",
+        "True, hacks only happen to small projects"
+      ],
+      "answer": 0,
+      "why": "The BAYC and OpenSea Discords were both taken over in 2022 to post fake links. A real account can be hacked, so check another official channel.",
+      "source": "https://www.bloomberglinea.com/2022/04/01/bored-ape-yacht-club-warns-users-not-to-mint-nfts-after-discord-hack"
+    },
+    {
+      "id": "m5q5",
+      "kind": "choice",
+      "stem": "The official Discord posts a mint on a day that was never announced. What is the best move?",
+      "sim": null,
+      "options": [
+        "Treat it as a possible hack and check X",
+        "Mint fast, it may be a surprise bonus",
+        "DM a mod and ask for the real link",
+        "Share it so your friends do not miss it"
+      ],
+      "answer": 0,
+      "why": "The official dates are presale Nov 16 to 19 and auction Nov 30. A surprise date is a reason to check another official channel.",
+      "source": "https://x.com/Pocket_Dragons_/status/2118733893851566181"
+    },
+    {
+      "id": "m5q6",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "post",
+        "app": "x",
+        "account": {
+          "name": "Pocket Dragons",
+          "handle": "pocketdragons_example",
+          "badge": "verified"
+        },
+        "seg": [
+          {
+            "t": "Keepers only:",
+            "flag": false,
+            "label": "Audience",
+            "why": "Talking to Keepers is normal."
+          },
+          " ",
+          {
+            "t": "dragons at 0.001 ETH",
+            "flag": true,
+            "label": "Too good price",
+            "why": "Far below the announced 0.029 ETH presale price."
+          },
+          " ",
+          {
+            "t": "for the next 15 minutes",
+            "flag": true,
+            "label": "Rush",
+            "why": "A short timer is there to stop you checking."
+          },
+          " at pd-flash.example"
+        ],
+        "time": "1m"
+      },
+      "why": "A price far below the announced 0.029 ETH presale, with a short timer, is too good. Wait and check another official channel.",
+      "source": "https://x.com/Pocket_Dragons_/status/2118733893851566181"
+    },
+    {
+      "id": "m5q7",
+      "kind": "choice",
+      "stem": "The official Discord announcement channel posts a surprise mint pass link, and no mod has said anything. What do you do?",
+      "sim": null,
+      "options": [
+        "Wait, and check the official X account first",
+        "Mint now, only mods can post in announcements",
+        "Ask in general chat whether others have minted",
+        "Mint one pass first to test if it works"
+      ],
+      "answer": 0,
+      "why": "In May 2022 a hacked OpenSea Discord posted a fake mint pass. Announcement channels can be taken over, so check another official channel first.",
+      "source": "https://www.theblock.co/news/regulation/2022-05-06-opensea-discord-account-hacked-to-promote-scam-nft-pass-145432"
+    },
+    {
+      "id": "m5q8",
+      "kind": "choice",
+      "stem": "A post says only 10 minutes are left to mint. What should that rush tell you?",
+      "sim": null,
+      "options": [
+        "Slow down, urgency is a red flag",
+        "Hurry, real mints often sell out fast",
+        "Demand is high, so the project is real",
+        "Nothing, every mint has a countdown"
+      ],
+      "answer": 0,
+      "why": "A rush exists to stop you checking. In the 2021 Animoca game hack, a surprise stealth mint took fees from 1,571 transactions in about three hours.",
+      "source": "https://cointelegraph.com/news/animoca-to-repay-users-265-eth-stolen-in-fake-nft-drop-discord-hack"
+    },
+    {
+      "id": "m5q9",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "post",
+        "app": "x",
+        "account": {
+          "name": "Dragon Mod",
+          "handle": "dragon_mod_desk_test",
+          "badge": "fake_verified"
+        },
+        "seg": [
+          "Main site is down. ",
+          {
+            "t": "Backup link: pd-backup.example",
+            "flag": true,
+            "label": "Backup link",
+            "why": "A link from an unofficial account, not an official channel."
+          },
+          " ",
+          {
+            "t": "Contract: 0x4c1d…a7e9",
+            "flag": true,
+            "label": "Address from an unofficial account",
+            "why": "Never copy contract addresses from posts like this."
+          },
+          " ",
+          {
+            "t": "Stay safe Keepers.",
+            "flag": false,
+            "label": "Safety line",
+            "why": "A friendly line. Not the problem alone."
+          }
+        ],
+        "time": "6m"
+      },
+      "why": "Backup links and contract addresses posted by unofficial accounts are a classic trap. Check announcements only on the official channels themselves.",
+      "source": "https://blockaid.io/blog/how-wallet-drainers-use-fake-revoke-sites-and-twitter-phishing-to-exploit-victims"
+    },
+    {
+      "id": "m5q10",
+      "kind": "choice",
+      "stem": "The official account posts the mint link on the planned date. What do you do before tapping it?",
+      "sim": null,
+      "options": [
+        "Find the same link on another official channel",
+        "Tap at once, the date matches the plan",
+        "Check the post has many likes and reposts",
+        "Ask in the replies if others minted fine"
+      ],
+      "answer": 0,
+      "why": "Even on the right day, one channel can be hacked. A link that matches on two official channels is the one to bookmark.",
+      "source": "https://www.bloomberglinea.com/2022/04/01/bored-ape-yacht-club-warns-users-not-to-mint-nfts-after-discord-hack"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Bloomberg Línea: BAYC warns users not to mint after Discord hack (April 2022)",
+      "url": "https://www.bloomberglinea.com/2022/04/01/bored-ape-yacht-club-warns-users-not-to-mint-nfts-after-discord-hack"
+    },
+    {
+      "label": "The Block: OpenSea Discord hacked to promote scam NFT pass (May 2022)",
+      "url": "https://www.theblock.co/news/regulation/2022-05-06-opensea-discord-account-hacked-to-promote-scam-nft-pass-145432"
+    },
+    {
+      "label": "Cointelegraph: Animoca to repay 265 ETH stolen in fake NFT drop Discord hack (2021)",
+      "url": "https://cointelegraph.com/news/animoca-to-repay-users-265-eth-stolen-in-fake-nft-drop-discord-hack"
+    },
+    {
+      "label": "Blockaid: Fake links in reply threads",
+      "url": "https://blockaid.io/blog/how-wallet-drainers-use-fake-revoke-sites-and-twitter-phishing-to-exploit-victims"
+    },
+    {
+      "label": "ScamSniffer 2025 report: project X accounts compromised to post phishing links",
+      "url": "https://drops.scamsniffer.io/scam-sniffer-2025-crypto-phishing-losses-fall-83-to-84-million/"
+    },
+    {
+      "label": "Pocket Dragons: official mint details post (6 Nov 2026)",
+      "url": "https://x.com/Pocket_Dragons_/status/2118733893851566181"
+    }
+  ]
+}

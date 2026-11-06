@@ -1,0 +1,345 @@
+{
+  "id": 1,
+  "slug": "keys",
+  "title": "Your keys, your dragons",
+  "tag": "Keys",
+  "minutes": 5,
+  "art": "keys",
+  "takeaway": "Your seed phrase goes only into your own wallet, and nobody real will ever ask for it.",
+  "cards": [
+    {
+      "type": "scene",
+      "title": "A helper with a fix",
+      "body": "You post in the chat that your wallet shows the wrong balance. A minute later, a friendly account replies with a link to sync your wallet. The page looks clean and calm. It asks for your 12 words. Look at it closely before you do anything.",
+      "sim": {
+        "kind": "seedpage",
+        "site": "wallet-sync.example",
+        "title": "Validate your wallet",
+        "words": 12
+      }
+    },
+    {
+      "type": "teach",
+      "title": "What the seed phrase is",
+      "body": "Your seed phrase is 12 or 24 words. Whoever has those words owns your wallet, on any device. There is no password reset and no bank to call. You only type it when you restore your own wallet, in your own wallet app, on your own device.",
+      "art": "keys",
+      "points": [
+        "A private key is just as secret. Never share it."
+      ]
+    },
+    {
+      "type": "teach",
+      "title": "Where people lose it",
+      "body": "Scammers rarely guess your words. They trick you into giving them away, or find a copy. Fake support sends you to sync, validate or restore pages. Malware and hacked cloud accounts expose photos, screenshots and notes. Keep your phrase on paper or metal, offline, where only you can reach it.",
+      "art": "lantern",
+      "points": [
+        "Never photograph, screenshot or read them out on a call."
+      ]
+    },
+    {
+      "type": "sim",
+      "title": "Try it",
+      "body": "This support chat looks friendly. Tap every red flag, then tap Done flagging.",
+      "task": "flag",
+      "sim": {
+        "kind": "dm",
+        "app": "chat",
+        "from": {
+          "name": "Wallet Support",
+          "handle": "wallet_help_test",
+          "badge": "fake_verified"
+        },
+        "messages": [
+          {
+            "who": "me",
+            "seg": [
+              "My balance looks wrong today."
+            ]
+          },
+          {
+            "who": "them",
+            "seg": [
+              {
+                "t": "Hi, I saw your post.",
+                "flag": false,
+                "label": "Greeting",
+                "why": "A greeting is normal. It proves nothing either way."
+              },
+              " ",
+              {
+                "t": "Your wallet must be synced",
+                "flag": true,
+                "label": "Sync claim",
+                "why": "Wallets never need syncing through a stranger's link."
+              },
+              " at ",
+              {
+                "t": "wallet-sync.example",
+                "flag": true,
+                "label": "Sync site link",
+                "why": "A site sent by a stranger in a DM."
+              },
+              ". ",
+              {
+                "t": "Enter your 12 words there.",
+                "flag": true,
+                "label": "Request for seed phrase",
+                "why": "Nobody real ever asks for your seed phrase."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "rule",
+      "title": "Remember this"
+    }
+  ],
+  "questions": [
+    {
+      "id": "m1q1",
+      "kind": "choice",
+      "stem": "A mod DMs you: the raffle needs your seed phrase to confirm your wallet. What do you do?",
+      "sim": null,
+      "options": [
+        "Refuse, then block and report the account",
+        "Send only the first six words to confirm",
+        "Check their mod role in the server first",
+        "Type the words on the raffle site instead"
+      ],
+      "answer": 0,
+      "why": "No real mod, team or app ever asks for your seed phrase, or any part of it. Block and report the account.",
+      "source": "https://revoke.cash/learn/security/seed-phrase-compromise"
+    },
+    {
+      "id": "m1q2",
+      "kind": "choice",
+      "stem": "Your new wallet asks you to back up your seed phrase. Where do you keep it?",
+      "sim": null,
+      "options": [
+        "On paper, kept offline in a private place",
+        "In a password manager synced to the cloud",
+        "A photo in a hidden, locked phone album",
+        "In a note sent to your own email"
+      ],
+      "answer": 0,
+      "why": "Photos, cloud notes and chats can be reached by malware or a hacked account. Paper kept offline cannot be scanned.",
+      "source": "https://revoke.cash/learn/security/seed-phrase-compromise"
+    },
+    {
+      "id": "m1q3",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "dm",
+        "app": "chat",
+        "from": {
+          "name": "Dragon Helpdesk",
+          "handle": "dragon_helpdesk_test",
+          "badge": "fake_verified"
+        },
+        "messages": [
+          {
+            "who": "them",
+            "seg": [
+              {
+                "t": "Hello Keeper.",
+                "flag": false,
+                "label": "Greeting",
+                "why": "A greeting alone is not the problem."
+              },
+              " ",
+              {
+                "t": "Your wallet failed our safety check.",
+                "flag": true,
+                "label": "Fake problem",
+                "why": "An invented problem to scare you into acting."
+              },
+              " ",
+              {
+                "t": "Type your recovery words here to restore it.",
+                "flag": true,
+                "label": "Request for seed phrase",
+                "why": "Nobody real ever asks for your recovery words."
+              }
+            ]
+          }
+        ]
+      },
+      "why": "A stranger invented a problem, then asked for your recovery words. Real support never needs your seed phrase. Block and report.",
+      "source": "https://support.metamask.io/stay-safe/safety-in-web3/what-are-metamasks-official-support-channels/"
+    },
+    {
+      "id": "m1q4",
+      "kind": "choice",
+      "stem": "A site says your wallet is out of sync and asks you to restore it with your words. What is it?",
+      "sim": null,
+      "options": [
+        "A scam built to steal your wallet",
+        "A normal step after an update",
+        "A real check from your wallet's support team",
+        "A bug you can fix by trying again"
+      ],
+      "answer": 0,
+      "why": "Wallets do not sync or validate through websites. Any site that wants your words is built to take your wallet.",
+      "source": "https://revoke.cash/learn/security/seed-phrase-compromise"
+    },
+    {
+      "id": "m1q5",
+      "kind": "choice",
+      "stem": "On a video call, a support agent asks you to read your words aloud to check them. What do you do?",
+      "sim": null,
+      "options": [
+        "End the call, they never need your words",
+        "Read only the last few words to check",
+        "Share them only after they show a staff ID",
+        "Type them in the chat so nobody overhears"
+      ],
+      "answer": 0,
+      "why": "Saying your words aloud gives them away, just like typing them. Real support never needs your seed phrase.",
+      "source": "https://ethereum.org/en/community/support/scams/"
+    },
+    {
+      "id": "m1q6",
+      "kind": "choice",
+      "stem": "Who can take everything in your wallet?",
+      "sim": null,
+      "options": [
+        "Anyone who has your seed phrase",
+        "Anyone who knows your wallet address",
+        "Anyone who can see your NFTs",
+        "Only the company that made the app"
+      ],
+      "answer": 0,
+      "why": "Your address is public and fine to share. Your seed phrase is the master key: whoever has it controls the wallet.",
+      "source": "https://ethereum.org/en/community/support/scams/"
+    },
+    {
+      "id": "m1q7",
+      "kind": "flag",
+      "stem": "Tap the red flags in the web address, then Done.",
+      "sim": {
+        "kind": "browser",
+        "url": [
+          {
+            "t": "https://",
+            "flag": false,
+            "label": "Secure prefix",
+            "why": "https only means the link is encrypted, not honest."
+          },
+          {
+            "t": "pocketdragons-validate.example",
+            "flag": true,
+            "label": "Validate domain",
+            "why": "Wallets are never validated on a website."
+          }
+        ],
+        "page": {
+          "title": "Validate your wallet",
+          "lines": [
+            "Unusual activity found.",
+            "Enter your 12 words to keep your dragons."
+          ],
+          "button": "Validate"
+        }
+      },
+      "why": "No website can validate a wallet. A page that asks for your 12 words is a trap, even with https in the address.",
+      "source": "https://revoke.cash/learn/security/seed-phrase-compromise"
+    },
+    {
+      "id": "m1q8",
+      "kind": "choice",
+      "stem": "You find an old screenshot of your seed phrase in your gallery. What is the best move?",
+      "sim": null,
+      "options": [
+        "New wallet, move funds, then delete the photo",
+        "Delete the photo and empty the trash folder",
+        "Keep it, the phone has a strong lock",
+        "Move it to a hidden, locked cloud album"
+      ],
+      "answer": 0,
+      "why": "The photo may already sit in a cloud backup. A fresh wallet with a new phrase written on paper removes that risk.",
+      "source": "https://revoke.cash/learn/security/seed-phrase-compromise"
+    },
+    {
+      "id": "m1q9",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "dm",
+        "app": "chat",
+        "from": {
+          "name": "Pocket Dragons Team",
+          "handle": "pd_team_desk_example",
+          "badge": "fake_verified"
+        },
+        "messages": [
+          {
+            "who": "them",
+            "seg": [
+              {
+                "t": "Thanks for joining the raffle!",
+                "flag": false,
+                "label": "Thanks",
+                "why": "Friendly words are normal and prove nothing."
+              },
+              " ",
+              {
+                "t": "To add you to the list,",
+                "flag": false,
+                "label": "List mention",
+                "why": "Talking about a list is not the problem."
+              },
+              " ",
+              {
+                "t": "reply with your seed phrase",
+                "flag": true,
+                "label": "Request for seed phrase",
+                "why": "No list ever needs your seed phrase."
+              },
+              " ",
+              {
+                "t": "within 10 minutes.",
+                "flag": true,
+                "label": "Time pressure",
+                "why": "A rush is there to stop you checking."
+              }
+            ]
+          }
+        ]
+      },
+      "why": "A team name and badge are easy to copy. Asking for your seed phrase, with a rush, is always a scam.",
+      "source": "https://support.metamask.io/stay-safe/safety-in-web3/what-are-metamasks-official-support-channels/"
+    },
+    {
+      "id": "m1q10",
+      "kind": "choice",
+      "stem": "A help site says it needs your private key, not your words, to fix a stuck mint. What do you do?",
+      "sim": null,
+      "options": [
+        "Refuse, a private key also controls your wallet",
+        "Share it, since it is not the seed",
+        "Share it only if the site uses https",
+        "Share it only with the site's verified admin"
+      ],
+      "answer": 0,
+      "why": "A private key controls the account just like the seed phrase. Never share either one, in any form.",
+      "source": "https://ethereum.org/en/community/support/scams/"
+    }
+  ],
+  "sources": [
+    {
+      "label": "revoke.cash: Seed phrase compromise",
+      "url": "https://revoke.cash/learn/security/seed-phrase-compromise"
+    },
+    {
+      "label": "ethereum.org: Scams",
+      "url": "https://ethereum.org/en/community/support/scams/"
+    },
+    {
+      "label": "MetaMask Support: Official support channels",
+      "url": "https://support.metamask.io/stay-safe/safety-in-web3/what-are-metamasks-official-support-channels/"
+    }
+  ]
+}

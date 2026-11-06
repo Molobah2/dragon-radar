@@ -1,0 +1,386 @@
+{
+  "id": 11,
+  "slug": "deepfakes-jobs",
+  "title": "Deepfakes and fake jobs",
+  "tag": "Deepfakes",
+  "minutes": 5,
+  "art": "mask",
+  "takeaway": "If anyone on a call or in a job chat asks you to install something, leave and verify them another way.",
+  "cards": [
+    {
+      "type": "scene",
+      "title": "Faces, but no sound",
+      "body": "A contact you know invites you to a partnership call. You join. Familiar faces appear, smiling. But there is no sound. A box pops up asking you to install an update to fix your audio.",
+      "sim": {
+        "kind": "call",
+        "caller": {
+          "name": "\"Alex, Dragon Partners\"",
+          "note": "Video call"
+        },
+        "lines": [
+          {
+            "t": "Hi! Can you hear us?",
+            "flag": false,
+            "label": "Greeting",
+            "why": "A greeting is not the problem."
+          },
+          " ",
+          {
+            "t": "No audio? Install the fix below.",
+            "flag": true,
+            "label": "Install request on a call",
+            "why": "Real calls never need a file to fix audio."
+          },
+          " ",
+          {
+            "t": "Quick, we start in 2 minutes.",
+            "flag": true,
+            "label": "Time pressure",
+            "why": "Urgency stops you from thinking."
+          }
+        ],
+        "prompt": {
+          "title": "Audio update required",
+          "body": "Install AudioFix to continue.",
+          "button": "Install"
+        }
+      }
+    },
+    {
+      "type": "teach",
+      "title": "This happened to real founders",
+      "art": "mask",
+      "body": "In April 2025, Manta Network cofounder Kenny Li joined a call from a known contact. He saw real looking faces, heard nothing, and was asked to download a script to fix audio. He left. In May 2025, Polygon cofounder Sandeep Nailwal warned that fake calls using his face pushed people to install an SDK.",
+      "points": [
+        "Known contacts can be hacked accounts."
+      ]
+    },
+    {
+      "type": "teach",
+      "title": "Fake jobs, real malware",
+      "art": "eye",
+      "body": "Fake recruiters post crypto jobs, move fast, then ask you to download their meeting app or run a code test. The file installs malware that can steal saved logins, browser data and wallets. Researchers link many of these campaigns to North Korean groups.",
+      "points": [
+        "Never run a file or code a stranger sends.",
+        "Verify the company through channels you find yourself."
+      ]
+    },
+    {
+      "type": "teach",
+      "title": "If you already installed it",
+      "art": "torch",
+      "body": "Act fast, without shame. Disconnect that device from the internet. From a different, clean device, move your funds to a new wallet and change your passwords. Do not use the infected device for crypto until it is wiped.",
+      "points": []
+    },
+    {
+      "type": "sim",
+      "title": "Try it",
+      "task": "flag",
+      "body": "A recruiter messages you about a job. Tap each red flag, then Done.",
+      "sim": {
+        "kind": "dm",
+        "app": "chat",
+        "from": {
+          "name": "Dragon Labs HR",
+          "handle": "dragonlabs_hiring_test",
+          "badge": "none"
+        },
+        "messages": [
+          {
+            "who": "them",
+            "seg": [
+              {
+                "t": "Great profile!",
+                "flag": false,
+                "label": "Compliment",
+                "why": "A compliment is not the problem."
+              },
+              " ",
+              {
+                "t": "Interview in 1 hour.",
+                "flag": true,
+                "label": "Rushed hiring",
+                "why": "Fake jobs move unusually fast."
+              },
+              " ",
+              {
+                "t": "Download our meeting app",
+                "flag": true,
+                "label": "Install their own app",
+                "why": "Real interviews use common tools."
+              },
+              " at ",
+              {
+                "t": "meet-dragonlabs.example",
+                "flag": true,
+                "label": "Unknown download site",
+                "why": "Unknown installers can carry malware."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "rule",
+      "title": "Remember this"
+    }
+  ],
+  "questions": [
+    {
+      "id": "m11q1",
+      "kind": "choice",
+      "sim": null,
+      "stem": "On a call the faces look real, but the sound fails. They send an audio fix file. What do you do?",
+      "options": [
+        "Leave and verify them another way",
+        "Install it, the faces are real",
+        "Install it, then scan later",
+        "Ask them to resend it as a link"
+      ],
+      "answer": 0,
+      "why": "Kenny Li faced exactly this in 2025 and left. Real calls never need you to install a file.",
+      "source": "https://decrypt.co/315329/manta-co-founder-targeted-by-lazarus-group-in-zoom-phishing-attempt"
+    },
+    {
+      "id": "m11q2",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "call",
+        "caller": {
+          "name": "\"Team Lead\"",
+          "note": "Video call"
+        },
+        "lines": [
+          {
+            "t": "Nice to meet you.",
+            "flag": false,
+            "label": "Greeting",
+            "why": "A greeting is not the problem."
+          },
+          " ",
+          {
+            "t": "Your call app is outdated.",
+            "flag": true,
+            "label": "Fake update claim",
+            "why": "A caller cannot know your app needs updating."
+          },
+          " ",
+          {
+            "t": "Install the SDK to see our demo.",
+            "flag": true,
+            "label": "Install request",
+            "why": "Installing on a call is how malware spreads."
+          }
+        ],
+        "prompt": {
+          "title": "Update required",
+          "body": "Install CallKit to continue.",
+          "button": "Install"
+        }
+      },
+      "why": "A caller pushed an update and an SDK install. Leave the call and verify the person on a channel you find yourself.",
+      "source": "https://cryptoslate.com/polygons-co-founder-warns-of-sophisticated-deepfake-scam-using-his-likeness-targeting-startups/"
+    },
+    {
+      "id": "m11q3",
+      "kind": "choice",
+      "sim": null,
+      "stem": "A recruiter insists the interview happens on their own meeting app, not one you use. What do you do?",
+      "options": [
+        "Ask for a tool you use, or leave",
+        "Install their app, but on a spare laptop",
+        "Install it, real recruiters often have custom tools",
+        "Install it on your phone, not your laptop"
+      ],
+      "answer": 0,
+      "why": "A required download instead of common video tools is a known red flag in fake job scams.",
+      "source": "https://cointelegraph.com/learn/fake-crypto-job-interview-malware"
+    },
+    {
+      "id": "m11q4",
+      "kind": "choice",
+      "sim": null,
+      "stem": "During a partnership call, the host asks you to install an SDK to view the demo. What do you do?",
+      "options": [
+        "Refuse, leave and verify them separately",
+        "Install it, partners need demos",
+        "Install it, the host's face is familiar",
+        "Install it on a friend's device"
+      ],
+      "answer": 0,
+      "why": "Fake calls using a real founder's face pushed SDK installs in 2025. Never install software during an unexpected call.",
+      "source": "https://cryptoslate.com/polygons-co-founder-warns-of-sophisticated-deepfake-scam-using-his-likeness-targeting-startups/"
+    },
+    {
+      "id": "m11q5",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "dm",
+        "app": "chat",
+        "from": {
+          "name": "Web3 Talent Scout",
+          "handle": "talent_scout_test",
+          "badge": "none"
+        },
+        "messages": [
+          {
+            "who": "them",
+            "seg": [
+              {
+                "t": "Hi there.",
+                "flag": false,
+                "label": "Greeting",
+                "why": "A greeting is not the problem."
+              },
+              " ",
+              {
+                "t": "$9,000 a week, no interview.",
+                "flag": true,
+                "label": "Too good offer",
+                "why": "Real jobs do not skip every check."
+              },
+              " Just ",
+              {
+                "t": "run our code test",
+                "flag": true,
+                "label": "Run unknown code",
+                "why": "Unknown code can steal your wallets."
+              },
+              " from ",
+              {
+                "t": "devtest-hire.example",
+                "flag": true,
+                "label": "Unknown code site",
+                "why": "You cannot check what this code does."
+              }
+            ]
+          }
+        ]
+      },
+      "why": "A too good offer plus code to run from an unknown site is the fake job pattern. Do not run it.",
+      "source": "https://cointelegraph.com/learn/fake-crypto-job-interview-malware"
+    },
+    {
+      "id": "m11q6",
+      "kind": "choice",
+      "sim": null,
+      "stem": "Someone who looks like a famous founder messages you offering a private call. How do you check?",
+      "options": [
+        "Contact them through their official account you found",
+        "Trust them if the profile photo matches",
+        "Trust them if they know your name",
+        "Join the call, but keep your camera off"
+      ],
+      "answer": 0,
+      "why": "Faces and names can be faked. Verify through an official account you found yourself, not the one that messaged you.",
+      "source": "https://decrypt.co/315329/manta-co-founder-targeted-by-lazarus-group-in-zoom-phishing-attempt"
+    },
+    {
+      "id": "m11q7",
+      "kind": "choice",
+      "sim": null,
+      "stem": "You ran a stranger's update file an hour ago and now feel worried. What do you do first?",
+      "options": [
+        "Disconnect that computer from the internet right away",
+        "Wait an hour to see if anything goes missing",
+        "Move funds now, using that same computer",
+        "Run an antivirus scan, then carry on as normal"
+      ],
+      "answer": 0,
+      "why": "Disconnect that computer from the internet first. Then use a clean device to move funds to a new wallet and change passwords.",
+      "source": "https://revoke.cash/learn/security/malware-fake-downloads"
+    },
+    {
+      "id": "m11q8",
+      "kind": "choice",
+      "sim": null,
+      "stem": "A job test asks you to download their code project and run it on your laptop. You cannot verify the company. What do you do?",
+      "options": [
+        "Do not run it, verify the company first",
+        "Run it on the laptop with your wallet",
+        "Run it, code tests are normal in hiring",
+        "Run it but close your wallet app first"
+      ],
+      "answer": 0,
+      "why": "Running code from unknown recruiters is how many fake job attacks install malware. Verify the company first, or do not run it.",
+      "source": "https://cointelegraph.com/learn/fake-crypto-job-interview-malware"
+    },
+    {
+      "id": "m11q9",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "call",
+        "caller": {
+          "name": "\"Dragon Investor\"",
+          "note": "Video call"
+        },
+        "lines": [
+          {
+            "t": "Thanks for joining.",
+            "flag": false,
+            "label": "Greeting",
+            "why": "A greeting is not the problem."
+          },
+          " ",
+          {
+            "t": "We cannot hear you.",
+            "flag": true,
+            "label": "Staged audio problem",
+            "why": "Fake calls stage audio trouble on purpose."
+          },
+          " ",
+          {
+            "t": "Run this script to fix it.",
+            "flag": true,
+            "label": "Script to run",
+            "why": "A script from a caller can take your wallet."
+          }
+        ],
+        "prompt": {
+          "title": "Fix audio",
+          "body": "Download fix_audio script.",
+          "button": "Download"
+        }
+      },
+      "why": "A staged audio problem and a script to fix it is the same trick used on Kenny Li in 2025. Leave the call.",
+      "source": "https://revoke.cash/learn/security/malware-fake-downloads"
+    },
+    {
+      "id": "m11q10",
+      "kind": "choice",
+      "sim": null,
+      "stem": "A contact you have chatted with for months sends a call invite on Telegram. Can you install whatever the call asks?",
+      "options": [
+        "No, never install anything on a call",
+        "Yes, you know this person",
+        "Yes, if the faces look right",
+        "Yes, if it is a short file"
+      ],
+      "answer": 0,
+      "why": "In the Manta case the invite came from a known contact. Accounts get hacked, so never install anything a call asks for.",
+      "source": "https://decrypt.co/315329/manta-co-founder-targeted-by-lazarus-group-in-zoom-phishing-attempt"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Decrypt: Manta cofounder targeted in fake call (April 2025)",
+      "url": "https://decrypt.co/315329/manta-co-founder-targeted-by-lazarus-group-in-zoom-phishing-attempt"
+    },
+    {
+      "label": "CryptoSlate: Polygon cofounder warns of deepfake calls (May 2025)",
+      "url": "https://cryptoslate.com/polygons-co-founder-warns-of-sophisticated-deepfake-scam-using-his-likeness-targeting-startups/"
+    },
+    {
+      "label": "Cointelegraph: Fake crypto job interview malware",
+      "url": "https://cointelegraph.com/learn/fake-crypto-job-interview-malware"
+    },
+    {
+      "label": "revoke.cash: Malware and fake downloads",
+      "url": "https://revoke.cash/learn/security/malware-fake-downloads"
+    }
+  ]
+}

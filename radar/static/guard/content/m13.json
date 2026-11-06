@@ -1,0 +1,402 @@
+{
+  "id": 13,
+  "slug": "poisoning-gifts",
+  "title": "Address poisoning and strange gifts",
+  "tag": "Poisoning",
+  "minutes": 5,
+  "art": "owl",
+  "takeaway": "Copy addresses only from your own saved source, never from your history, and ignore offers you did not expect.",
+  "cards": [
+    {
+      "type": "scene",
+      "title": "Your history has a twin",
+      "body": "You send USDC to your exchange every week. Today your history shows a new transfer from an address that starts and ends just like your exchange. Next to it is a free token with a link. Neither is a gift.",
+      "sim": {
+        "kind": "wallet",
+        "site": "wallet.test",
+        "title": "Recent activity",
+        "rows": [
+          {
+            "label": "Sent",
+            "value": [
+              {
+                "t": "100 USDC to 0x4c1d 8a72 … e93f",
+                "flag": false,
+                "label": "Your real exchange deposit",
+                "why": "This is the transfer you made."
+              }
+            ]
+          },
+          {
+            "label": "Received",
+            "value": [
+              {
+                "t": "0 USDC from 0x4c1d 2bb0 … e93f",
+                "flag": true,
+                "label": "Zero value lookalike transfer",
+                "why": "A lookalike address planted in your history."
+              }
+            ]
+          },
+          {
+            "label": "Received",
+            "value": [
+              {
+                "t": "Claim at dragon-airdrop.example",
+                "flag": true,
+                "label": "Token with a link",
+                "why": "The claim site is the trap."
+              }
+            ]
+          }
+        ],
+        "buttons": [
+          "Close"
+        ]
+      }
+    },
+    {
+      "type": "teach",
+      "title": "Address poisoning",
+      "art": "owl",
+      "body": "Scammers make an address that starts and ends like one you use. They drop it into your history with a zero value transfer or fake token. If you copy from history, you pay them. Copy from your own saved source: the exchange's deposit page each time, or your address book.",
+      "points": [
+        "A zero transfer does not mean you were hacked."
+      ]
+    },
+    {
+      "type": "teach",
+      "title": "Gifts you did not ask for",
+      "art": "coin",
+      "body": "Strange NFTs or tokens can appear with a link in their name. Holding them is not the danger. The claim site is the trap: it asks for an approval that lets scammers move your assets. You can hide it in your wallet.",
+      "points": [
+        "Unexpected airdrop: do not visit the link.",
+        "Do not swap or sell unknown tokens."
+      ]
+    },
+    {
+      "type": "teach",
+      "title": "Lookalike names and fake offers",
+      "art": "eye",
+      "body": "Wallet names that end in .eth can use lookalike letters, like a Cyrillic е in place of an English e. Type the name yourself and check its address matches what your friend gave you. A stranger offering a high price for your dragon by DM is a lure. Accept offers only on the marketplace you opened.",
+      "points": []
+    },
+    {
+      "type": "sim",
+      "title": "Try it",
+      "task": "flag",
+      "body": "A collector messages you about your dragon. Tap each red flag, then Done.",
+      "sim": {
+        "kind": "dm",
+        "app": "chat",
+        "from": {
+          "name": "Whale Collector",
+          "handle": "whale_buys_dragons_test",
+          "badge": "none"
+        },
+        "messages": [
+          {
+            "who": "them",
+            "seg": [
+              {
+                "t": "Hey!",
+                "flag": false,
+                "label": "Greeting",
+                "why": "A greeting is not the problem."
+              },
+              " ",
+              {
+                "t": "I will pay 3 ETH for your dragon.",
+                "flag": true,
+                "label": "Unexpected high offer",
+                "why": "Offers you did not expect are bait."
+              },
+              " Accept on ",
+              {
+                "t": "otc-dragons.example",
+                "flag": true,
+                "label": "Unknown trade site",
+                "why": "Not a marketplace you opened yourself."
+              },
+              ", ",
+              {
+                "t": "just sign the listing.",
+                "flag": true,
+                "label": "Listing signature",
+                "why": "A listing signature can sell your dragon for nothing."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "rule",
+      "title": "Remember this"
+    }
+  ],
+  "questions": [
+    {
+      "id": "m13q1",
+      "kind": "choice",
+      "sim": null,
+      "stem": "You need to send ETH to your exchange. Where do you copy the deposit address?",
+      "options": [
+        "The exchange's deposit page, fresh each time",
+        "Your wallet's recent activity, the last send",
+        "The block explorer page of your last deposit",
+        "A message from exchange support with it"
+      ],
+      "answer": 0,
+      "why": "Scammers plant lookalike addresses in your history. Copy from the exchange's own deposit page every time.",
+      "source": "https://revoke.cash/learn/security/what-is-address-poisoning"
+    },
+    {
+      "id": "m13q2",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "wallet",
+        "site": "wallet.test",
+        "title": "Recent activity",
+        "rows": [
+          {
+            "label": "Sent",
+            "value": [
+              {
+                "t": "100 USDC to 0x4c1d 8a72 … e93f",
+                "flag": false,
+                "label": "Your real exchange deposit",
+                "why": "This is the transfer you made."
+              }
+            ]
+          },
+          {
+            "label": "Received",
+            "value": [
+              {
+                "t": "0 USDC from 0x4c1d 2bb0 … e93f",
+                "flag": true,
+                "label": "Zero value lookalike transfer",
+                "why": "A lookalike address planted in your history."
+              }
+            ]
+          },
+          {
+            "label": "Received",
+            "value": [
+              {
+                "t": "Claim at dragon-airdrop.example",
+                "flag": true,
+                "label": "Token with a link",
+                "why": "The claim site is the trap."
+              }
+            ]
+          }
+        ],
+        "buttons": [
+          "Close"
+        ]
+      },
+      "why": "The zero value transfer plants a lookalike address, and the token's claim site is a trap. Your own transfer is fine.",
+      "source": "https://revoke.cash/learn/security/what-is-address-poisoning"
+    },
+    {
+      "id": "m13q3",
+      "kind": "choice",
+      "sim": null,
+      "stem": "A Dragon Pass NFT you never bought appears in your wallet with claim at a site. What do you do?",
+      "options": [
+        "Ignore it, skip the link, hide it",
+        "Visit the link to see what it is",
+        "Sell it fast before it is gone",
+        "Send it back to the sender"
+      ],
+      "answer": 0,
+      "why": "The gift is bait. The claim site asks for an approval that lets scammers take your assets.",
+      "source": "https://support.uniswap.org/hc/en-us/articles/17523020772365-Airdropped-NFT-or-Token-scams"
+    },
+    {
+      "id": "m13q4",
+      "kind": "choice",
+      "sim": null,
+      "stem": "Your friend's address and one in your history share the first and last four characters. What do you do?",
+      "options": [
+        "Use your saved contact, or ask your friend",
+        "Send, four characters on each end match",
+        "Copy the newest one, it must be theirs",
+        "Send a small test amount to both first"
+      ],
+      "answer": 0,
+      "why": "Lookalike addresses copy the start and end. Use your saved contact or ask your friend directly.",
+      "source": "https://revoke.cash/learn/security/what-is-address-poisoning"
+    },
+    {
+      "id": "m13q5",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "dm",
+        "app": "chat",
+        "from": {
+          "name": "NFT Buyer",
+          "handle": "nft_buyer_otc_test",
+          "badge": "none"
+        },
+        "messages": [
+          {
+            "who": "them",
+            "seg": [
+              {
+                "t": "Love your dragon.",
+                "flag": false,
+                "label": "Compliment",
+                "why": "A compliment is not the problem."
+              },
+              " ",
+              {
+                "t": "Offer: 5 ETH, today only.",
+                "flag": true,
+                "label": "Too good, too urgent",
+                "why": "Unexpected offers with deadlines are bait."
+              },
+              " Accept at ",
+              {
+                "t": "dragon-otc.example",
+                "flag": true,
+                "label": "Unknown trade site",
+                "why": "Use only the marketplace you open yourself."
+              }
+            ]
+          }
+        ]
+      },
+      "why": "An unexpected offer with a deadline and its own site is a lure. Check offers only on the marketplace you opened yourself.",
+      "source": "https://revoke.cash/learn/security/what-to-do-when-scammed"
+    },
+    {
+      "id": "m13q6",
+      "kind": "choice",
+      "sim": null,
+      "stem": "A friend's wallet name ending in .eth arrives in a DM. It looks right. What do you do?",
+      "options": [
+        "Check its address matches the one your friend gave you",
+        "Paste it, the letters look exactly the same",
+        "Send it, ENS names are unique and cannot be copied",
+        "Trust it if your friend's avatar shows next to it"
+      ],
+      "answer": 0,
+      "why": "Lookalike letters can make two names look the same. Type the name yourself and check the address matches the one your friend gave you.",
+      "source": "https://support.ens.domains/en/articles/7901658-what-are-homoglyphs-and-lookalike-ens-names"
+    },
+    {
+      "id": "m13q7",
+      "kind": "choice",
+      "sim": null,
+      "stem": "You received 5,000 free tokens. A site says you can swap them for ETH. What do you do?",
+      "options": [
+        "Leave them alone, do not swap or sell",
+        "Swap them on that site before the price drops",
+        "Approve them first, then swap on that site",
+        "Send a few to a friend to test them"
+      ],
+      "answer": 0,
+      "why": "Do not swap or sell unknown tokens. The swap site can ask for an approval that drains you.",
+      "source": "https://support.uniswap.org/hc/en-us/articles/17523020772365-Airdropped-NFT-or-Token-scams"
+    },
+    {
+      "id": "m13q8",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "post",
+        "app": "x",
+        "account": {
+          "name": "Pocket Dragons Drops",
+          "handle": "pd_drops_live_test",
+          "badge": "verified"
+        },
+        "seg": [
+          {
+            "t": "Happy Friday, Keepers!",
+            "flag": false,
+            "label": "Greeting",
+            "why": "A greeting is not the problem."
+          },
+          " ",
+          {
+            "t": "Surprise golden egg for holders",
+            "flag": true,
+            "label": "Unexpected gift",
+            "why": "Gifts you did not expect are bait."
+          },
+          " at ",
+          {
+            "t": "golden-egg.example",
+            "flag": true,
+            "label": "Unannounced claim site",
+            "why": "Not announced on official channels."
+          },
+          " ",
+          {
+            "t": "before midnight.",
+            "flag": true,
+            "label": "Deadline",
+            "why": "Urgency is the red flag."
+          }
+        ],
+        "time": "1h"
+      },
+      "why": "A surprise gift, an unknown site and a deadline. Trust only links checked on two official channels.",
+      "source": "https://support.uniswap.org/hc/en-us/articles/17523020772365-Airdropped-NFT-or-Token-scams"
+    },
+    {
+      "id": "m13q9",
+      "kind": "choice",
+      "sim": null,
+      "stem": "Your history shows a 0 USDC transfer from your address that you did not make. What does it mean?",
+      "options": [
+        "Someone planted a lookalike address in your history",
+        "Your seed phrase leaked, so move everything now",
+        "Your exchange sent a test transfer to check you",
+        "A refund arrived, but the amount shows wrong"
+      ],
+      "answer": 0,
+      "why": "Zero value transfers need no approval from you. They plant a lookalike address so you copy it later.",
+      "source": "https://revoke.cash/learn/security/what-is-address-poisoning"
+    },
+    {
+      "id": "m13q10",
+      "kind": "choice",
+      "sim": null,
+      "stem": "A buyer DMs you a high offer and a link to accept it. What do you do?",
+      "options": [
+        "Ignore it, check offers on your own marketplace",
+        "Accept it fast, high offers do not last",
+        "Open the link, but only to read it",
+        "Reply asking for proof of funds first"
+      ],
+      "answer": 0,
+      "why": "Offers you did not expect are lures. Fake offer links can ask for a listing signature that sells your dragon.",
+      "source": "https://revoke.cash/learn/security/what-to-do-when-scammed"
+    }
+  ],
+  "sources": [
+    {
+      "label": "revoke.cash: What is address poisoning",
+      "url": "https://revoke.cash/learn/security/what-is-address-poisoning"
+    },
+    {
+      "label": "Uniswap Support: Airdropped NFT or token scams",
+      "url": "https://support.uniswap.org/hc/en-us/articles/17523020772365-Airdropped-NFT-or-Token-scams"
+    },
+    {
+      "label": "ENS Support: Homoglyphs and lookalike names",
+      "url": "https://support.ens.domains/en/articles/7901658-what-are-homoglyphs-and-lookalike-ens-names"
+    },
+    {
+      "label": "revoke.cash: What to do when scammed",
+      "url": "https://revoke.cash/learn/security/what-to-do-when-scammed"
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "id": 6,
+  "slug": "sign",
+  "title": "Connect, sign, send",
+  "tag": "Signing",
+  "minutes": 5,
+  "art": "seal",
+  "takeaway": "Connecting shows your address, signing can give permission, and sending moves money, so stop and read before the last two.",
+  "cards": [
+    {
+      "type": "scene",
+      "title": "Just a login?",
+      "body": "You open a site and tap Sign in. Your wallet shows a popup. The top line says Sign in to Dragon Hatch, and there is no gas fee. It looks like nothing. But there are more rows below the welcome line. Read every row before you decide.",
+      "sim": {
+        "kind": "wallet",
+        "site": "dragon-hatch.example",
+        "title": "Signature request",
+        "rows": [
+          {"label": "Message", "value": [{"t": "Sign in to Dragon Hatch", "flag": false, "label": "Welcome line", "why": "The welcome line itself is normal."}]},
+          {"label": "Spender", "value": [{"t": "0x7a3f…91c2", "flag": true, "label": "Spender", "why": "A login never names a spender."}]},
+          {"label": "Value", "value": [{"t": "Unlimited", "flag": true, "label": "Unlimited value", "why": "A login never sets an amount."}]},
+          {"label": "Deadline", "value": [{"t": "Dec 2027", "flag": true, "label": "Deadline", "why": "A login has no spending deadline."}]}
+        ],
+        "note": "No gas fee",
+        "buttons": ["Reject", "Sign"]
+      }
+    },
+    {
+      "type": "teach",
+      "title": "Connect: the door",
+      "body": "Connecting lets a site see your wallet address and what it holds. It cannot move anything by itself. But it opens the door to the next two steps, so connect only to sites you reached from your checked bookmark. Disconnecting later only hides your address again. It does not cancel any permission you already gave.",
+      "art": "bridge"
+    },
+    {
+      "type": "teach",
+      "title": "Sign: words with power",
+      "body": "Signing costs no gas, but some signatures hand over your tokens. A plain, readable sign in message with no token, amount, spender or deadline cannot move funds. Typed data that names a spender, value or deadline, a marketplace order, or unreadable hex is not a login. Reject it.",
+      "art": "seal",
+      "points": [
+        "Spender, value, deadline or order: reject unless you started it."
+      ]
+    },
+    {
+      "type": "teach",
+      "title": "Send: money moves",
+      "body": "Sending is a transaction. It moves ETH or NFTs, or calls a contract, and costs gas. Once confirmed, it cannot be undone. Read the action, the amount and the site. If anything differs from what you started, like a higher price or an approval you never asked for, press Reject.",
+      "art": "coin",
+      "points": [
+        "A hardware wallet confirms whatever you approve. Read its screen."
+      ]
+    },
+    {
+      "type": "sim",
+      "title": "Try it",
+      "body": "You tapped Mint for one dragon at the 0.029 ETH presale price. Tap every red flag, then tap Done flagging.",
+      "task": "flag",
+      "sim": {
+        "kind": "wallet",
+        "site": "pocketdragons.example",
+        "title": "Transaction request",
+        "rows": [
+          {"label": "Action 1", "value": [{"t": "Mint 1 dragon", "flag": false, "label": "Mint action", "why": "This is the step you started."}]},
+          {"label": "Price", "value": [{"t": "2.40 ETH", "flag": true, "label": "Price", "why": "Far above the 0.029 ETH you expected."}]},
+          {"label": "Action 2", "value": [{"t": "Approve all your NFTs", "flag": true, "label": "Extra approval", "why": "You never asked to approve your NFTs."}]},
+          {"label": "Network fee", "value": [{"t": "0.0004 ETH", "flag": false, "label": "Network fee", "why": "A small gas fee is normal for a transaction."}]}
+        ],
+        "buttons": ["Reject", "Confirm"]
+      }
+    },
+    {"type": "rule", "title": "Remember this"}
+  ],
+  "questions": [
+    {
+      "id": "m6q1",
+      "kind": "choice",
+      "stem": "You connect your mint wallet to a new site. What can the site now do on its own?",
+      "sim": null,
+      "options": ["See your address and what it holds", "Move small amounts of your tokens", "Read your seed phrase from the browser", "List your NFTs for sale on its market"],
+      "answer": 0,
+      "why": "Connecting only shares your address. Anything that moves assets needs a signature or a transaction that you approve.",
+      "source": "https://revoke.cash/learn/faq"
+    },
+    {
+      "id": "m6q2",
+      "kind": "choice",
+      "stem": "A \"Sign in\" popup shows a spender, an amount and a deadline. What do you do?",
+      "sim": null,
+      "options": ["Reject it, a login never names those", "Sign it, there is no gas fee", "Sign it, the title says sign in", "Sign it, then disconnect after"],
+      "answer": 0,
+      "why": "A spender, value and deadline make it a Permit style approval, not a login. Disconnecting afterwards would not cancel it.",
+      "source": "https://eips.ethereum.org/EIPS/eip-2612"
+    },
+    {
+      "id": "m6q3",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "wallet",
+        "site": "dragon-login.example",
+        "title": "Sign in request",
+        "rows": [
+          {"label": "Message", "value": [{"t": "Welcome back, Keeper.", "flag": false, "label": "Welcome text", "why": "Readable welcome words are not the problem."}]},
+          {"label": "Spender", "value": [{"t": "0x5e8b…0f3a", "flag": true, "label": "Spender", "why": "A login never names a spender."}]},
+          {"label": "Amount", "value": [{"t": "Unlimited", "flag": true, "label": "Unlimited amount", "why": "A login never sets an amount."}]}
+        ],
+        "note": "No gas fee",
+        "buttons": ["Reject", "Sign"]
+      },
+      "why": "The welcome line is only cover. A spender and an amount turn this into a permission to spend your tokens. Reject.",
+      "source": "https://revoke.cash/learn/approvals/what-are-eip2612-permit-signatures"
+    },
+    {
+      "id": "m6q4",
+      "kind": "choice",
+      "stem": "Which of these signature requests cannot move your funds?",
+      "sim": null,
+      "options": ["Readable text, no token, amount, spender or deadline", "Typed data naming a spender and a value", "A marketplace order to list your NFTs", "A long block of hex you cannot read"],
+      "answer": 0,
+      "why": "A plain readable message with no token, amount, spender or deadline cannot move funds. Each of the others can hand over assets.",
+      "source": "https://revoke.cash/learn/approvals/what-are-eip2612-permit-signatures"
+    },
+    {
+      "id": "m6q5",
+      "kind": "choice",
+      "stem": "You disconnected a site yesterday. Can it still use the approval you gave it?",
+      "sim": null,
+      "options": ["Yes, disconnecting does not cancel approvals", "No, disconnecting cancels all its permissions", "Only if you connect again", "Only if you sign in again"],
+      "answer": 0,
+      "why": "Disconnecting only hides your address from the site. Approvals stay active until you revoke them.",
+      "source": "https://revoke.cash/learn/faq"
+    },
+    {
+      "id": "m6q6",
+      "kind": "choice",
+      "stem": "Your wallet asks you to sign a long string of unreadable hex. What do you do?",
+      "sim": null,
+      "options": ["Reject it, you cannot know what it does", "Sign it, hex is normal for many logins", "Sign it if the site looks official", "Sign it, but use your hardware wallet"],
+      "answer": 0,
+      "why": "If you cannot read it, you cannot know what it allows. Reject, and use only sites that show readable requests.",
+      "source": "https://revoke.cash/learn/approvals/what-are-eip2612-permit-signatures"
+    },
+    {
+      "id": "m6q7",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "wallet",
+        "site": "pocketdragons.example",
+        "title": "Transaction request",
+        "rows": [
+          {"label": "Action", "value": [{"t": "Mint 1 dragon", "flag": false, "label": "Mint action", "why": "This is the step you started."}]},
+          {"label": "Send to", "value": [{"t": "Unknown wallet", "flag": true, "label": "Unknown receiver", "why": "A mint pays a contract, not an unknown wallet."}]},
+          {"label": "Amount", "value": [{"t": "All your ETH", "flag": true, "label": "All your ETH", "why": "Far more than one dragon costs."}]},
+          {"label": "Network fee", "value": [{"t": "0.0004 ETH", "flag": false, "label": "Network fee", "why": "A small gas fee is normal."}]}
+        ],
+        "buttons": ["Reject", "Confirm"]
+      },
+      "why": "A send cannot be undone. When the receiver or amount does not match what you started, press Reject.",
+      "source": "https://ethereum.org/en/community/support/scams/"
+    },
+    {
+      "id": "m6q8",
+      "kind": "choice",
+      "stem": "A friend says: \"It is only a signature, no gas, so it cannot hurt.\" What do you reply?",
+      "sim": null,
+      "options": ["Wrong, some signatures give away tokens", "Right, no gas means no risk", "Right, only sends move funds", "Only hardware wallets make it risky"],
+      "answer": 0,
+      "why": "Permit signatures cost no gas and still grant a spender your tokens. In 2025, the largest single phishing theft ScamSniffer recorded, $6.5M, came from one Permit signature.",
+      "source": "https://drops.scamsniffer.io/scam-sniffer-2025-crypto-phishing-losses-fall-83-to-84-million/"
+    },
+    {
+      "id": "m6q9",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "wallet",
+        "site": "dragon-verify.example",
+        "title": "Verify you own a dragon",
+        "rows": [
+          {"label": "Type", "value": [{"t": "Marketplace order", "flag": true, "label": "Marketplace order", "why": "A verify step should never be a sale order."}]},
+          {"label": "Items", "value": [{"t": "All your Pocket Dragons", "flag": true, "label": "All your dragons", "why": "Every dragon you hold would be listed."}]},
+          {"label": "Price", "value": [{"t": "0 ETH", "flag": true, "label": "Zero price", "why": "Your dragons would sell for nothing."}]},
+          {"label": "Network", "value": [{"t": "Ethereum", "flag": false, "label": "Network", "why": "The network is normal here."}]}
+        ],
+        "buttons": ["Reject", "Sign"]
+      },
+      "why": "Called verify, it is really a sale order for 0 ETH. Signing lets the scammer buy every dragon for nothing.",
+      "source": "https://cointelegraph.com/news/moonbirds-creator-kevin-rose-loses-1-1m-in-nfts-after-1-wrong-move"
+    },
+    {
+      "id": "m6q10",
+      "kind": "choice",
+      "stem": "Mint day: you used your checked bookmark and tapped Mint. What do you check in the popup?",
+      "sim": null,
+      "options": ["Action, amount and site match what you started", "Nothing, the bookmark means it is real", "Only that the gas fee looks low enough", "That the wallet shows no red warning"],
+      "answer": 0,
+      "why": "Even on the right site, read the action, the amount and the site before you confirm. A send cannot be undone.",
+      "source": "https://support.metamask.io/configure/wallet/security-alerts/"
+    }
+  ],
+  "sources": [
+    {"label": "revoke.cash FAQ: Disconnecting does not revoke approvals", "url": "https://revoke.cash/learn/faq"},
+    {"label": "revoke.cash: What are EIP 2612 Permit signatures", "url": "https://revoke.cash/learn/approvals/what-are-eip2612-permit-signatures"},
+    {"label": "EIP 2612: permit with spender, value and deadline", "url": "https://eips.ethereum.org/EIPS/eip-2612"},
+    {"label": "ScamSniffer: 2025 phishing report", "url": "https://drops.scamsniffer.io/scam-sniffer-2025-crypto-phishing-losses-fall-83-to-84-million/"},
+    {"label": "Cointelegraph: A signed marketplace order drained over $1M of NFTs from a founder (2023)", "url": "https://cointelegraph.com/news/moonbirds-creator-kevin-rose-loses-1-1m-in-nfts-after-1-wrong-move"}
+  ]
+}

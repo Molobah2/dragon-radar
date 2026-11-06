@@ -1,0 +1,346 @@
+{
+  "id": 4,
+  "slug": "address",
+  "title": "Type the address yourself",
+  "tag": "Links",
+  "minutes": 5,
+  "art": "map",
+  "takeaway": "Open mint sites only from links you have checked on two official channels, then bookmark them.",
+  "cards": [
+    {
+      "type": "scene",
+      "title": "One letter off",
+      "body": "Presale is close. You search for the mint site and tap the first result. It has the dragons, the colors and a countdown. In this practice, the real site is pocketdragons.example. The address looks right at a glance. Look again, letter by letter.",
+      "sim": {
+        "kind": "browser",
+        "url": [
+          {
+            "t": "https://",
+            "flag": false,
+            "label": "Secure prefix",
+            "why": "https only means encrypted, not honest."
+          },
+          {
+            "t": "pocketdragoms.example",
+            "flag": true,
+            "label": "Lookalike domain",
+            "why": "An m where the n should be."
+          },
+          "/presale"
+        ],
+        "page": {
+          "title": "Pocket Dragons presale",
+          "lines": [
+            "Sponsored result",
+            "Presale is live. Connect to join."
+          ],
+          "button": "Connect wallet"
+        }
+      }
+    },
+    {
+      "type": "teach",
+      "title": "How fakes look real",
+      "body": "Fake sites copy the art, the words and the countdown. The one thing they cannot copy is the exact domain. Watch for a swapped letter, an extra word like claim or mint, or a different ending. Search ads can be fake too. Never reach a mint site through search.",
+      "art": "eye",
+      "points": [
+        "Swapped letter: pocketdragoms.example",
+        "Extra word: pocketdragons-claim.example",
+        "Other ending: pocketdragons.test"
+      ]
+    },
+    {
+      "type": "teach",
+      "title": "Two channels, then a bookmark",
+      "body": "When a mint link is announced, trust only the official accounts. Find the same link on two official channels, such as the X account and the Discord announcements. Then bookmark it, and use only that bookmark on mint day. pdtools will never show a mint link, so no copy of this page can trick you with one.",
+      "art": "map"
+    },
+    {
+      "type": "teach",
+      "title": "Fake safety tools",
+      "body": "Scammers copy safety tools too. After a hack, fake revoke sites can appear within hours, often posted in replies under real alerts. You connect to cancel approvals, and sign away your tokens instead. Type revoke.cash yourself or use your bookmark. Never use a revoke link from replies, ads or DMs.",
+      "art": "torch"
+    },
+    {
+      "type": "sim",
+      "title": "Try it",
+      "body": "In this practice, your checked bookmark is pocketdragons.example. Tap every red flag, then tap Done flagging.",
+      "task": "flag",
+      "sim": {
+        "kind": "compare",
+        "ask": "Which one is real?",
+        "left": {
+          "kind": "browser",
+          "url": [
+            "https://",
+            {
+              "t": "pocketdragons.example",
+              "flag": false,
+              "label": "Bookmarked domain",
+              "why": "Exact match with your checked bookmark."
+            },
+            "/presale"
+          ],
+          "page": {
+            "title": "Pocket Dragons",
+            "lines": [
+              "Presale"
+            ],
+            "button": "Connect wallet"
+          }
+        },
+        "right": {
+          "kind": "browser",
+          "url": [
+            "https://",
+            {
+              "t": "pocket-dragons-presale.example",
+              "flag": true,
+              "label": "Extra words domain",
+              "why": "Extra words and dashes make a different domain."
+            }
+          ],
+          "page": {
+            "title": "Pocket Dragons",
+            "lines": [
+              "Presale"
+            ],
+            "button": "Connect wallet"
+          }
+        }
+      }
+    },
+    {
+      "type": "rule",
+      "title": "Remember this"
+    }
+  ],
+  "questions": [
+    {
+      "id": "m4q1",
+      "kind": "choice",
+      "stem": "You search \"Pocket Dragons mint\" and the top result is an ad. What do you do?",
+      "sim": null,
+      "options": [
+        "Skip it and use your checked bookmark",
+        "Tap it, ads are checked by search engines",
+        "Tap it but connect only your vault",
+        "Tap the first result that is not an ad"
+      ],
+      "answer": 0,
+      "why": "Scammers have bought search ads that led to wallet draining sites. Search results are not a safe way to reach a mint site.",
+      "source": "https://drops.scamsniffer.io/post/from-google-to-x-ads-tracing-the-crypto-wallet-drainers-58-million-trail/"
+    },
+    {
+      "id": "m4q2",
+      "kind": "flag",
+      "stem": "Tap the red flags in the web address, then Done.",
+      "sim": {
+        "kind": "browser",
+        "url": [
+          {
+            "t": "https://",
+            "flag": false,
+            "label": "Secure prefix",
+            "why": "https only means encrypted, not honest."
+          },
+          {
+            "t": "pocketdragons-claim.example",
+            "flag": true,
+            "label": "Extra word domain",
+            "why": "An extra word makes it a different site."
+          }
+        ],
+        "page": {
+          "title": "Claim your presale spot",
+          "lines": [
+            "Sponsored result",
+            "Spots are going fast."
+          ],
+          "button": "Connect wallet"
+        }
+      },
+      "why": "Adding a word like claim makes a whole new domain that anyone can buy. Only an exact match with your checked bookmark counts.",
+      "source": "https://ethereum.org/en/community/support/scams/"
+    },
+    {
+      "id": "m4q3",
+      "kind": "choice",
+      "stem": "A reply under a hack alert says \"Revoke now at revoke-cash-help.example\". What do you do?",
+      "sim": null,
+      "options": [
+        "Ignore it and type revoke.cash yourself",
+        "Use it, it is about safety",
+        "Use it only from the mint wallet",
+        "Repost it to warn friends"
+      ],
+      "answer": 0,
+      "why": "Fake revoke sites are posted in replies under real alerts, often within hours of a hack. Type revoke.cash yourself or use your bookmark.",
+      "source": "https://blockaid.io/blog/how-wallet-drainers-use-fake-revoke-sites-and-twitter-phishing-to-exploit-victims"
+    },
+    {
+      "id": "m4q4",
+      "kind": "choice",
+      "stem": "It is mint day. Which link should you open?",
+      "sim": null,
+      "options": [
+        "Your bookmark, checked on two official channels",
+        "The newest link posted in replies",
+        "A link a friend sends in a DM",
+        "The top search result for the mint"
+      ],
+      "answer": 0,
+      "why": "A link that matches on two official channels, saved as a bookmark, is the one you can trust. Replies, DMs and search can all be fakes.",
+      "source": "https://ethereum.org/en/community/support/scams/"
+    },
+    {
+      "id": "m4q5",
+      "kind": "choice",
+      "stem": "In practice, the real site is pocketdragons.example. Which address leads somewhere else?",
+      "sim": null,
+      "options": [
+        "pocketdragons.claimnow.example/presale",
+        "pocketdragons.example/presale",
+        "pocketdragons.example/faq",
+        "pocketdragons.example/presale/claim"
+      ],
+      "answer": 0,
+      "why": "Read the domain just before the first single slash. Here it is claimnow.example, so pocketdragons at the front is only a disguise.",
+      "source": "https://ethereum.org/en/community/support/scams/"
+    },
+    {
+      "id": "m4q6",
+      "kind": "flag",
+      "stem": "Tap the red flags in the web address, then Done.",
+      "sim": {
+        "kind": "browser",
+        "url": [
+          {
+            "t": "https://",
+            "flag": false,
+            "label": "Secure prefix",
+            "why": "https only means encrypted, not honest."
+          },
+          {
+            "t": "revoke-cash-safety.example",
+            "flag": true,
+            "label": "Fake revoke domain",
+            "why": "Not revoke.cash. A copy of a safety tool."
+          }
+        ],
+        "page": {
+          "title": "Revoke all approvals",
+          "lines": [
+            "Hack alert! Clean your wallet now."
+          ],
+          "button": "Connect wallet"
+        }
+      },
+      "why": "Fake revoke pages trick you into signing a drain. The real tool lives only at revoke.cash, typed yourself or bookmarked.",
+      "source": "https://blockaid.io/blog/how-wallet-drainers-use-fake-revoke-sites-and-twitter-phishing-to-exploit-victims"
+    },
+    {
+      "id": "m4q7",
+      "kind": "choice",
+      "stem": "You saved the mint bookmark last week. Today a post shows a \"new\" link. What do you do?",
+      "sim": null,
+      "options": [
+        "Check it on a second official channel first",
+        "Switch to the new link right away",
+        "Ask in a DM which link is right",
+        "Use it, the post has the official art"
+      ],
+      "answer": 0,
+      "why": "A changed link is a reason to slow down. Only switch once the same link appears on a second official channel.",
+      "source": "https://ethereum.org/en/community/support/scams/"
+    },
+    {
+      "id": "m4q8",
+      "kind": "choice",
+      "stem": "A site has perfect art and a live countdown. What proves it is the real one?",
+      "sim": null,
+      "options": [
+        "An exact match with your checked bookmark",
+        "The padlock icon next to the address",
+        "Art and countdown that match the official posts",
+        "A top spot in the search results"
+      ],
+      "answer": 0,
+      "why": "Art, padlocks and countdowns are easy to copy. Only the exact domain from your checked bookmark tells you where you are.",
+      "source": "https://ethereum.org/en/community/support/scams/"
+    },
+    {
+      "id": "m4q9",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "post",
+        "app": "x",
+        "account": {
+          "name": "Dragon Alpha",
+          "handle": "dragon_alpha_test",
+          "badge": "none"
+        },
+        "seg": [
+          "Presale link for anyone asking: ",
+          {
+            "t": "pocketdragons-presale.example",
+            "flag": true,
+            "label": "Link in a reply",
+            "why": "A link from a stranger's reply, not an official account."
+          },
+          " ",
+          {
+            "t": "Go fast, it is filling up!",
+            "flag": true,
+            "label": "Rush",
+            "why": "Pressure is there to stop you checking."
+          },
+          " ",
+          {
+            "t": "See you in the hatchery.",
+            "flag": false,
+            "label": "Friendly line",
+            "why": "Kind words are normal and prove nothing."
+          }
+        ],
+        "time": "4m"
+      },
+      "why": "A stranger's link plus a rush. Use only the link you checked on two official channels and bookmarked.",
+      "source": "https://blockaid.io/blog/how-wallet-drainers-use-fake-revoke-sites-and-twitter-phishing-to-exploit-victims"
+    },
+    {
+      "id": "m4q10",
+      "kind": "choice",
+      "stem": "It is Check Day and you want revoke.cash. How do you open it?",
+      "sim": null,
+      "options": [
+        "Type it yourself or use your bookmark",
+        "Search for it and tap the top ad",
+        "Use the link in the hack alert replies",
+        "Use the link a mod sends you"
+      ],
+      "answer": 0,
+      "why": "Safety tools get copied too. Typing the address or using your bookmark is the only way to be sure you reached the real site.",
+      "source": "https://blockaid.io/blog/how-wallet-drainers-use-fake-revoke-sites-and-twitter-phishing-to-exploit-victims"
+    }
+  ],
+  "sources": [
+    {
+      "label": "ethereum.org: Scams (phishing, bookmarks)",
+      "url": "https://ethereum.org/en/community/support/scams/"
+    },
+    {
+      "label": "ScamSniffer: Drainer sites spread through Google and X ads (2023)",
+      "url": "https://drops.scamsniffer.io/post/from-google-to-x-ads-tracing-the-crypto-wallet-drainers-58-million-trail/"
+    },
+    {
+      "label": "Blockaid: Fake revoke sites after hacks (April 2026)",
+      "url": "https://blockaid.io/blog/how-wallet-drainers-use-fake-revoke-sites-and-twitter-phishing-to-exploit-victims"
+    },
+    {
+      "label": "revoke.cash",
+      "url": "https://revoke.cash/"
+    }
+  ]
+}

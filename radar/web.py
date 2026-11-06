@@ -2797,4 +2797,6 @@ def create_app(cfg: Config | None = None) -> Flask:
         cookie = request.cookies.get(PREVIEW_COOKIE, "")
         return bool(cfg.preview_key and cookie and hmac.compare_digest(cookie, preview_token()))
     trail_mod.register(app, cfg, Session, tz, has_preview)
+    from . import guard as guard_mod
+    guard_mod.register(app, cfg, Session, tz, has_preview)
     return app

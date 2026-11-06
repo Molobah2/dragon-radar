@@ -79,8 +79,16 @@ class Config:
     x_client_secret: str = field(default_factory=lambda: os.environ.get("X_CLIENT_SECRET", "").strip())
     trail_callback: str = field(default_factory=lambda: os.environ.get("TRAIL_CALLBACK_URL", "").strip())
     trail_public: bool = field(default_factory=lambda: _bool("TRAIL_PUBLIC", "0"))
+    # Dragon Guard, the daily safety course at /guard: hidden behind the preview until GUARD_PUBLIC=1
+    guard_public: bool = field(default_factory=lambda: _bool("GUARD_PUBLIC", "0"))
+    guard_dates: str = field(default_factory=lambda: os.environ.get("GUARD_DATES", "").strip())
+    guard_official: str = field(default_factory=lambda: os.environ.get("GUARD_OFFICIAL", "").strip())
     trail_daily_cap_usd: float = field(default_factory=lambda: float(os.environ.get("TRAIL_DAILY_CAP_USD", "10")))
     trail_cache_hours: int = field(default_factory=lambda: int(os.environ.get("TRAIL_CACHE_HOURS", "24")))
+    # the one day the Trail is open: TRAIL_OPENS_AT (UTC, e.g. 2026-11-07T15:00:00Z). It closes 24 hours later unless
+    # TRAIL_CLOSES_AT says otherwise. Neither set: always open, as before.
+    trail_opens: str = field(default_factory=lambda: os.environ.get("TRAIL_OPENS_AT", "").strip())
+    trail_closes: str = field(default_factory=lambda: os.environ.get("TRAIL_CLOSES_AT", "").strip())
     database_url: str = field(default_factory=lambda: _db_url(os.environ.get("DATABASE_URL", "sqlite:///radar.db")))
     search_query: str = field(default_factory=lambda: os.environ.get("SEARCH_QUERY", DEFAULT_QUERY))
     team_handle: str = field(default_factory=lambda: os.environ.get("TEAM_HANDLE", "Pocket_Dragons_"))

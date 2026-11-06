@@ -1,0 +1,456 @@
+{
+  "id": 7,
+  "slug": "permits",
+  "title": "Permits and approvals",
+  "tag": "Permits",
+  "minutes": 5,
+  "art": "chain",
+  "takeaway": "Reject any request that mentions Permit, approval, spender or \"all\", unless you started that exact action on the official site.",
+  "cards": [
+    {
+      "type": "scene",
+      "title": "The free egg",
+      "body": "A site offers a free dragon egg to early Keepers. You connect your mint wallet. A popup asks for a quick signature with no gas fee. It feels like nothing. Read the rows before you decide.",
+      "sim": {
+        "kind": "wallet",
+        "site": "free-dragon-egg.example",
+        "title": "Signature request",
+        "rows": [
+          {
+            "label": "Type",
+            "value": [
+              {
+                "t": "Permit",
+                "flag": true,
+                "label": "Permit",
+                "why": "A Permit lets a spender move your tokens."
+              }
+            ]
+          },
+          {
+            "label": "Spender",
+            "value": [
+              {
+                "t": "0x7a3f…91c2",
+                "flag": true,
+                "label": "Unknown spender",
+                "why": "An address you do not know would get your tokens."
+              }
+            ]
+          },
+          {
+            "label": "Amount",
+            "value": [
+              {
+                "t": "Unlimited",
+                "flag": true,
+                "label": "Unlimited amount",
+                "why": "No limit on what can be taken."
+              }
+            ]
+          },
+          {
+            "label": "Network",
+            "value": [
+              {
+                "t": "Ethereum",
+                "flag": false,
+                "label": "Network",
+                "why": "The network is normal here."
+              }
+            ]
+          }
+        ],
+        "note": "No gas fee",
+        "buttons": [
+          "Reject",
+          "Sign"
+        ]
+      }
+    },
+    {
+      "type": "teach",
+      "title": "Permit: a signature that spends",
+      "body": "A Permit is a signature that lets a spender move your tokens. It costs no gas, so it feels like a login. Permit2 does the same for many tokens at once. In ScamSniffer's 2025 report, Permit and Permit2 made up about 38% of losses in the 11 cases of $1M or more.",
+      "art": "chain",
+      "points": [
+        "Revoking later is often too late."
+      ]
+    },
+    {
+      "type": "teach",
+      "title": "Approve all",
+      "body": "setApprovalForAll lets one address move every NFT you hold in that collection, until you revoke it. Marketplaces use it for real listings, so approve it only when you started a listing yourself on the official marketplace. A signed listing can also sell your NFTs for 0 ETH. In 2023 one drained over $1M of NFTs from a founder's wallet.",
+      "art": "chain"
+    },
+    {
+      "type": "teach",
+      "title": "Warnings can miss",
+      "body": "Your wallet may show a red warning on known scams. Take it seriously, and never let a site talk you past it. But do not wait for one. Wallet alerts are advisory: they can miss threats, and you can still press confirm. No warning is not a green light. You read the rows. You decide.",
+      "art": "owl"
+    },
+    {
+      "type": "sim",
+      "title": "Try it",
+      "body": "A rarity checker site asks for this to rank your dragons. Tap every red flag, then tap Done flagging.",
+      "task": "flag",
+      "sim": {
+        "kind": "wallet",
+        "site": "dragon-rarity-check.example",
+        "title": "Transaction request",
+        "rows": [
+          {
+            "label": "Function",
+            "value": [
+              {
+                "t": "setApprovalForAll",
+                "flag": true,
+                "label": "Approve all",
+                "why": "Hands over every NFT in the collection."
+              }
+            ]
+          },
+          {
+            "label": "Operator",
+            "value": [
+              {
+                "t": "0x5e8b…0f3a",
+                "flag": true,
+                "label": "Unknown operator",
+                "why": "An unknown address would control all your dragons."
+              }
+            ]
+          },
+          {
+            "label": "Network fee",
+            "value": [
+              {
+                "t": "0.0003 ETH",
+                "flag": false,
+                "label": "Network fee",
+                "why": "A small gas fee is normal for a transaction."
+              }
+            ]
+          }
+        ],
+        "buttons": [
+          "Reject",
+          "Confirm"
+        ]
+      }
+    },
+    {
+      "type": "rule",
+      "title": "Remember this"
+    }
+  ],
+  "questions": [
+    {
+      "id": "m7q1",
+      "kind": "choice",
+      "stem": "A free egg site asks for a gasless signature labeled Permit. What do you do?",
+      "sim": null,
+      "options": [
+        "Reject it, a Permit can hand over tokens",
+        "Sign it, a gasless signature cannot move funds",
+        "Sign it, then revoke it on revoke.cash later",
+        "Sign it with your hardware wallet for protection"
+      ],
+      "answer": 0,
+      "why": "A Permit grants a spender your tokens. Scammers usually use it quickly, so revoking afterwards is often too late.",
+      "source": "https://revoke.cash/learn/approvals/what-are-eip2612-permit-signatures"
+    },
+    {
+      "id": "m7q2",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "wallet",
+        "site": "dragon-airdrop.example",
+        "title": "Signature request",
+        "rows": [
+          {
+            "label": "Type",
+            "value": [
+              {
+                "t": "Permit2",
+                "flag": true,
+                "label": "Permit2",
+                "why": "Grants spending rights, possibly over many tokens."
+              }
+            ]
+          },
+          {
+            "label": "Tokens",
+            "value": [
+              {
+                "t": "All tokens",
+                "flag": true,
+                "label": "All tokens",
+                "why": "One signature would cover every token."
+              }
+            ]
+          },
+          {
+            "label": "Spender",
+            "value": [
+              {
+                "t": "0x3d9c…b81e",
+                "flag": true,
+                "label": "Unknown spender",
+                "why": "An address you do not know."
+              }
+            ]
+          },
+          {
+            "label": "Network",
+            "value": [
+              {
+                "t": "Ethereum",
+                "flag": false,
+                "label": "Network",
+                "why": "The network is normal here."
+              }
+            ]
+          }
+        ],
+        "note": "No gas fee",
+        "buttons": [
+          "Reject",
+          "Sign"
+        ]
+      },
+      "why": "Permit2, all tokens and an unknown spender on a site you did not choose. Reject: you never started that action.",
+      "source": "https://revoke.cash/learn/approvals/what-is-permit2"
+    },
+    {
+      "id": "m7q3",
+      "kind": "choice",
+      "stem": "You start a listing on the official marketplace and it asks to approve the collection. Is that expected?",
+      "sim": null,
+      "options": [
+        "Yes, if you started that exact listing there",
+        "No, reject every approval, even on real sites",
+        "Yes, on any site that has a market",
+        "Yes, if the site looks like the marketplace"
+      ],
+      "answer": 0,
+      "why": "Marketplaces need setApprovalForAll for real listings. It belongs only to an action you started yourself on the official site.",
+      "source": "https://revoke.cash/learn/approvals/what-are-token-approvals"
+    },
+    {
+      "id": "m7q4",
+      "kind": "choice",
+      "stem": "Your wallet shows no warning on a request to approve all your NFTs. What does that mean?",
+      "sim": null,
+      "options": [
+        "Nothing, alerts can miss threats",
+        "You can go ahead and confirm",
+        "The site has been verified",
+        "The wallet checked the operator"
+      ],
+      "answer": 0,
+      "why": "Wallet alerts are advisory and do not catch every threat. Judge the request yourself: approve all on a site you did not start from is a reject.",
+      "source": "https://support.metamask.io/configure/wallet/security-alerts/"
+    },
+    {
+      "id": "m7q5",
+      "kind": "choice",
+      "stem": "You opened the official swap site yourself and started a swap. It asks for a Permit2 signature. What do you do?",
+      "sim": null,
+      "options": [
+        "Check token and amount match your swap, then sign",
+        "Reject it, every Permit2 request is always a scam",
+        "Sign without reading, the site came from your bookmark",
+        "Sign for an unlimited amount to save gas later"
+      ],
+      "answer": 0,
+      "why": "Permit2 is normal for a swap you started on the real site. Still read the token, amount and spender, and reject anything you did not ask for.",
+      "source": "https://revoke.cash/learn/approvals/what-is-permit2"
+    },
+    {
+      "id": "m7q6",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "wallet",
+        "site": "keeper-rank.example",
+        "title": "Transaction request",
+        "rows": [
+          {
+            "label": "Function",
+            "value": [
+              {
+                "t": "setApprovalForAll",
+                "flag": true,
+                "label": "Approve all",
+                "why": "Hands over every NFT in the collection."
+              }
+            ]
+          },
+          {
+            "label": "Collection",
+            "value": [
+              {
+                "t": "Pocket Dragons",
+                "flag": false,
+                "label": "Collection name",
+                "why": "Naming your collection is normal. The function is the issue."
+              }
+            ]
+          },
+          {
+            "label": "Operator",
+            "value": [
+              {
+                "t": "0x8f21…c5d0",
+                "flag": true,
+                "label": "Unknown operator",
+                "why": "An unknown address would control your dragons."
+              }
+            ]
+          }
+        ],
+        "buttons": [
+          "Reject",
+          "Confirm"
+        ]
+      },
+      "why": "A ranking site has no reason to control your NFTs. setApprovalForAll to an unknown operator lets it move every dragon. Reject.",
+      "source": "https://revoke.cash/learn/approvals/what-are-token-approvals"
+    },
+    {
+      "id": "m7q7",
+      "kind": "choice",
+      "stem": "A \"verify your dragon\" site asks you to sign a marketplace order priced at 0 ETH. What happens if you sign?",
+      "sim": null,
+      "options": [
+        "The scammer can buy your NFTs for nothing",
+        "Nothing, an order needs gas to go through",
+        "Your dragon gets a verified badge on the site",
+        "It only lists your dragon at floor price"
+      ],
+      "answer": 0,
+      "why": "A signed order lets the buyer take your NFTs at that price. In 2023 one signed order drained over $1M of NFTs from a founder's wallet.",
+      "source": "https://cointelegraph.com/news/moonbirds-creator-kevin-rose-loses-1-1m-in-nfts-after-1-wrong-move"
+    },
+    {
+      "id": "m7q8",
+      "kind": "choice",
+      "stem": "Your wallet shows a red warning, but the site says \"ignore it, it is a bug\". What do you do?",
+      "sim": null,
+      "options": [
+        "Reject and leave the site",
+        "Ignore the warning as told",
+        "Sign quickly before it changes",
+        "Turn off alerts and retry"
+      ],
+      "answer": 0,
+      "why": "A site that asks you to ignore a warning is a red flag on its own. Reject and leave.",
+      "source": "https://support.metamask.io/configure/wallet/security-alerts/"
+    },
+    {
+      "id": "m7q9",
+      "kind": "flag",
+      "stem": "Tap every red flag, then Done.",
+      "sim": {
+        "kind": "wallet",
+        "site": "dragon-gift.example",
+        "title": "Claim your gift",
+        "rows": [
+          {
+            "label": "Type",
+            "value": [
+              {
+                "t": "Listing order",
+                "flag": true,
+                "label": "Listing order",
+                "why": "A gift claim should never be a sale order."
+              }
+            ]
+          },
+          {
+            "label": "Items",
+            "value": [
+              {
+                "t": "All your NFTs",
+                "flag": true,
+                "label": "All your NFTs",
+                "why": "Every NFT you hold would be listed."
+              }
+            ]
+          },
+          {
+            "label": "Price",
+            "value": [
+              {
+                "t": "0 ETH",
+                "flag": true,
+                "label": "Zero price",
+                "why": "Your NFTs would sell for nothing."
+              }
+            ]
+          },
+          {
+            "label": "Network",
+            "value": [
+              {
+                "t": "Ethereum",
+                "flag": false,
+                "label": "Network",
+                "why": "The network is normal here."
+              }
+            ]
+          }
+        ],
+        "buttons": [
+          "Reject",
+          "Sign"
+        ]
+      },
+      "why": "The title says gift, the rows say sale of all your NFTs for 0 ETH. Read the rows, not the title.",
+      "source": "https://cointelegraph.com/news/moonbirds-creator-kevin-rose-loses-1-1m-in-nfts-after-1-wrong-move"
+    },
+    {
+      "id": "m7q10",
+      "kind": "choice",
+      "stem": "A site you never used asks you to approve all tokens through Permit2. What do you do?",
+      "sim": null,
+      "options": [
+        "Reject it, you did not start that action",
+        "Approve, Permit2 was built by a known team",
+        "Approve, Permit2 approvals expire on their own",
+        "Approve, then revoke it on revoke.cash tonight"
+      ],
+      "answer": 0,
+      "why": "Permit2 can approve several tokens at once, and phishing sites abuse that. Who built it does not matter if the request is a trap.",
+      "source": "https://revoke.cash/learn/approvals/what-is-permit2"
+    }
+  ],
+  "sources": [
+    {
+      "label": "ScamSniffer: 2025 phishing report (Permit share of the 11 cases of $1M or more)",
+      "url": "https://drops.scamsniffer.io/scam-sniffer-2025-crypto-phishing-losses-fall-83-to-84-million/"
+    },
+    {
+      "label": "revoke.cash: What are EIP 2612 Permit signatures",
+      "url": "https://revoke.cash/learn/approvals/what-are-eip2612-permit-signatures"
+    },
+    {
+      "label": "revoke.cash: What is Permit2",
+      "url": "https://revoke.cash/learn/approvals/what-is-permit2"
+    },
+    {
+      "label": "revoke.cash: What are token approvals",
+      "url": "https://revoke.cash/learn/approvals/what-are-token-approvals"
+    },
+    {
+      "label": "MetaMask Support: Security alerts are advisory",
+      "url": "https://support.metamask.io/configure/wallet/security-alerts/"
+    },
+    {
+      "label": "Cointelegraph: A signed marketplace order drained over $1M of NFTs from a founder (2023)",
+      "url": "https://cointelegraph.com/news/moonbirds-creator-kevin-rose-loses-1-1m-in-nfts-after-1-wrong-move"
+    }
+  ]
+}
