@@ -496,10 +496,13 @@ window.SKY_L = (() => {
   const PX = 0.00045;   // 100 px of wheel moves 0.045 of the journey, about half a stop's hold
   // the journey flies itself (Jon, 7 Nov): no wheel, keys or swipes. It waits on the title, then glides island to island,
   // resting at each so its line can be read, and stays at the Hatchery. Pause holds it; Skip flies straight there.
-  const AP = { START: 3.5, MOVE: 6.5, DWELL: 2.8, s: 0, last: null }, AP_END = AP.START + STOPS * AP.MOVE + (STOPS - 1) * AP.DWELL;
+  const AP = { START: 2.5, MOVE: 5, DWELL: 2.2, s: 0, last: null, wait: 0 }, AP_END = AP.START + STOPS * AP.MOVE + (STOPS - 1) * AP.DWELL;
   const apAt = (x) => { if (x <= AP.START) return 0; x -= AP.START; for (let i = 0; i < STOPS; i++) { if (x < AP.MOVE) return (i + x / AP.MOVE) / STOPS; x -= AP.MOVE; if (i < STOPS - 1) { if (x < AP.DWELL) return (i + 1) / STOPS; x -= AP.DWELL; } } return 1; };
   const apTick = (now) => { const dt = AP.last == null ? 0 : Math.min(.5, now - AP.last); AP.last = now; AP.dt = dt; if (SHOT || DOOR.t0 || !window.SKY_READY) return;
     if (RM.matches) { if (AP.s < AP.START + 1) { AP.s += dt; if (AP.s >= AP.START + 1) window.SKY_AT_HATCH(); } return; }   // reduced motion: no flight, the Hatchery after the title
+    // the card builds behind the sky (a heavy moment for the device): the flight waits on the title until it is built,
+    // at most 6 seconds, so the first leg never stutters
+    if (AP.s >= AP.START && !AP.go) { AP.wait += dt; AP.go = !window.KT_TRAIL || document.body.classList.contains('ready') || AP.wait > 6 || AP.fast; if (!AP.go) return; }
     // Skip: the rest of the flight at four times the pace
     if (!still.user || AP.fast) AP.s = Math.min(AP_END, AP.s + dt * (AP.fast ? 4 : 1));
     target = Math.max(target, apAt(AP.s));
