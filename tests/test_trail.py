@@ -234,3 +234,34 @@ def test_each_keeper_gets_a_card_number_that_never_changes(cfg, monkeypatch):
     fake.me = {"id": "77", "username": "keeper_two", "name": "Keeper Two", "public_metrics": {"followers_count": 9}, "profile_image_url": ""}
     c2 = app.test_client(); sign_in(c2)
     assert c2.get("/api/trail/me").get_json()["card"]["no"] == 2
+
+
+def test_the_trail_is_open_for_one_day_only(cfg, monkeypatch):
+    page = lambda: {"data": [tw("1", "2026-09-08")], "meta": {}}
+    fake = FakeX(pages=[page(), page()])
+    cfg.trail_opens = "2026-11-07T15:00:00Z"
+    app, c = make(cfg, fake, monkeypatch)
+    clock = {"now": datetime(2026, 11, 7, 14, 0)}
+    monkeypatch.setattr(trail, "utcnow", lambda: clock["now"])
+    # before it opens: a countdown, and no way in yet
+    r = c.get("/api/trail/me")
+    assert r.status_code == 403 and r.get_json() == {"why": "soon", "event": {"opens": "2026-11-07T15:00:00Z", "closes": "2026-11-08T15:00:00Z"}}
+    assert c.get("/trail/x/connect").headers["Location"].endswith("/trail/")
+    # open: the card carries the day it was opened and the window, so the page can say how long is left
+    clock["now"] = datetime(2026, 11, 7, 16, 30)
+    assert c.get("/api/trail/me").get_json()["event"]["closes"] == "2026-11-08T15:00:00Z"   # not signed in yet
+    sign_in(c)
+    card = c.get("/api/trail/me").get_json()["card"]
+    assert card["opened"] == "2026-11-07T16:30:00Z" and card["event"]["opens"] == "2026-11-07T15:00:00Z"
+    clock["now"] = datetime(2026, 11, 8, 9, 0)
+    assert c.get("/api/trail/me").get_json()["card"]["opened"] == "2026-11-07T16:30:00Z"     # the stamp never moves
+    # 24 hours later it is closed for everyone
+    clock["now"] = datetime(2026, 11, 8, 15, 0)
+    r = c.get("/api/trail/me")
+    assert r.status_code == 410 and r.get_json()["why"] == "closed"
+
+
+def test_without_a_window_the_trail_stays_open(cfg, monkeypatch):
+    assert trail.event_phase(cfg, datetime(2030, 1, 1)) is None and trail.event_json(cfg) is None
+    cfg.trail_opens, cfg.trail_closes = "2026-11-07T15:00:00+01:00", "2026-11-07T20:00:00Z"
+    assert trail.event_window(cfg) == (datetime(2026, 11, 7, 14, 0), datetime(2026, 11, 7, 20, 0))

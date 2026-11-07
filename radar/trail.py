@@ -14,6 +14,11 @@ Money
 
 Hidden until launch
   The page and its API answer only on devices with the pdtools preview turned on, until TRAIL_PUBLIC=1.
+
+One day only
+  With TRAIL_OPENS_AT set, the Trail is a one day event: before it opens the page counts down, for 24 hours
+  (or until TRAIL_CLOSES_AT) Keepers open their cards, and after that it is closed for everyone. Each card is
+  stamped with the day it was opened.
 """
 import base64
 import hashlib
@@ -64,6 +69,46 @@ class TrailCard(Base):
     cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
     fetched_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
     no: Mapped[int | None] = mapped_column(Integer, nullable=True)   # the order Keepers first walked the trail: card No. 1, 2, 3...
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)   # when they first opened it: the date stamped on the card
+
+
+# ---------- the one day the Trail is open ----------
+def _at(v: str) -> datetime | None:
+    """A UTC time from the settings, as the naive UTC every column here uses."""
+    if not v:
+        return None
+    try:
+        d = datetime.fromisoformat(v.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return d.astimezone(timezone.utc).replace(tzinfo=None) if d.tzinfo else d
+
+
+def event_window(cfg) -> tuple[datetime | None, datetime | None]:
+    opens, closes = _at(cfg.trail_opens), _at(cfg.trail_closes)
+    if opens and not closes:
+        closes = opens + timedelta(hours=24)
+    return opens, closes
+
+
+def event_phase(cfg, now: datetime) -> str | None:
+    """"soon", "open" or "closed"; None when no window is set (always open)."""
+    opens, closes = event_window(cfg)
+    if not opens and not closes:
+        return None
+    if opens and now < opens:
+        return "soon"
+    if closes and now >= closes:
+        return "closed"
+    return "open"
+
+
+def event_json(cfg) -> dict | None:
+    opens, closes = event_window(cfg)
+    if not opens and not closes:
+        return None
+    z = lambda d: d.strftime("%Y-%m-%dT%H:%M:%SZ") if d else None
+    return {"opens": z(opens), "closes": z(closes)}
 
 
 class XError(Exception):
@@ -275,6 +320,8 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
     def trail_connect():
         if not allowed():
             abort(404)
+        if event_phase(cfg, utcnow()) in ("soon", "closed"):
+            return redirect("/trail/")
         if not (cfg.x_client_id and cfg.x_client_secret):
             return redirect("/trail/?x=off")
         verifier = secrets.token_urlsafe(64)[:96]
@@ -333,29 +380,46 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
         return jsonify({"ok": True})
 
     # ---------- the card ----------
-    def number(s, uid: str) -> int | None:
-        """The Keeper's card number, given once, the first time their card is made, and never changed."""
+    def number(s, uid: str) -> tuple[int | None, datetime | None]:
+        """The Keeper's card number and the day they opened it, given once, the first time their card is made, and never changed."""
         row = s.get(TrailCard, uid)
         if row is None:
-            return None
-        if row.no is None:
-            row.no = (s.scalar(select(func.max(TrailCard.no))) or 0) + 1
+            return None, None
+        if row.no is None or row.opened_at is None:
+            if row.no is None:
+                row.no = (s.scalar(select(func.max(TrailCard.no))) or 0) + 1
+            if row.opened_at is None:
+                row.opened_at = utcnow()
             s.commit()
-        return row.no
+        return row.no, row.opened_at
 
     def with_no(card: dict, uid: str) -> dict:
         with Session() as s:
-            n = number(s, uid)
-        return dict(card, no=n) if n else card
+            n, at = number(s, uid)
+        out = dict(card)
+        if n:
+            out["no"] = n
+        if at:
+            out["opened"] = at.strftime("%Y-%m-%dT%H:%M:%SZ")
+        ev = event_json(cfg)
+        if ev:
+            out["event"] = ev
+        return out
 
     @app.get("/api/trail/me")
     def trail_me():
         if not allowed():
             abort(404)
+        now = utcnow()
+        ph = event_phase(cfg, now)
+        if ph == "soon":
+            return jsonify({"why": "soon", "event": event_json(cfg)}), 403
+        if ph == "closed":
+            return jsonify({"why": "closed", "event": event_json(cfg)}), 410
         u = session.get("trail_user")
         if not u:
-            return jsonify({"connected": False}), 401
-        now = utcnow()
+            ev = event_json(cfg)
+            return jsonify({"connected": False, **({"event": ev} if ev else {})}), 401
         with Session() as s:
             row = s.get(TrailCard, u["id"])
             saved = json.loads(row.card) if row else None
@@ -370,7 +434,7 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
             return jsonify({"why": "x", "handle": "@" + u["username"]}), 503
         if left < 0.6:          # not enough left today for even a small trail
             if saved:
-                return jsonify({"card": saved, "cached": True, "stale": True})
+                return jsonify({"card": with_no(saved, u["id"]), "cached": True, "stale": True})
             return jsonify({"why": "cap", "handle": "@" + u["username"]}), 429
         with lock:
             if u["id"] in inflight:
@@ -383,7 +447,7 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
             except (XError, requests.RequestException, ValueError) as e:
                 app.logger.warning("trail search failed for %s: %s", u["username"], e)
                 if saved:
-                    return jsonify({"card": saved, "cached": True, "stale": True})
+                    return jsonify({"card": with_no(saved, u["id"]), "cached": True, "stale": True})
                 return jsonify({"why": "x", "handle": "@" + u["username"]}), 503
             with Session() as s:
                 add_spend(s, today(), cost)
