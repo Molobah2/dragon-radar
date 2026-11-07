@@ -2591,14 +2591,15 @@ if (wiP < 0.999) {
     tint = mix(vec3(1.0, 0.3, 0.04), vec3(1.0, 0.78, 0.36), smoothstep(0.35, 0.7, hh)); tint = mix(tint, vec3(1.0, 0.97, 0.9), smoothstep(0.75, 1.0, hh)); glowK = 2.6;
     float d = length(q - ctr) / maxd, ring = exp(-pow((d - (p - hit) * 3.2) / 0.05, 2.0)) * (1.0 - smoothstep(hit, hit + 0.3, p)) * on;
     ex = exp(-pow((p - hit) / 0.03, 2.0)) * 0.3 + ring * 1.3; exC = vec3(1.0, 0.6, 0.25);
-  } else if (wiM == 2) {                            // ice: frost creeps in from the edges, the number forms inside it, then the frost clears
-    float n = wiF(q * 9.0 + 7.0);
-    float d = min(min(q.x, wiA - q.x), min(uv.y, 1.0 - uv.y)) / (0.5 * min(wiA, 1.0));
-    float cover = smoothstep(d - 0.12, d + 0.02, p * 2.4 - n * 0.6), melt = smoothstep(0.45, 0.85, p);
-    r = smoothstep(n - 0.12, n + 0.04, (p - 0.32) * 1.9);
-    overA = cover * (1.0 - melt) * (0.32 + 0.38 * smoothstep(0.42, 0.78, wiF(q * 24.0 + 1.0))); over = vec3(0.88, 0.96, 1.0);
-    ex = step(0.982, wiH(floor(q * 70.0) + floor(wiT * 7.0))) * overA * 2.2; exC = vec3(0.9, 0.97, 1.0);
-    fr = r * (1.0 - melt); tint = vec3(0.62, 0.9, 1.0); glowK = 0.9;
+  } else if (wiM == 2) {                            // ice: a beam of light passes through the ice across the tile, split into a rainbow at its edge,
+                                                    // and the number is there behind it, cut clean in the ice, with glints left sparkling in its wake
+    float f = uv.x * 0.82 + (1.0 - uv.y) * 0.18, b = p * 1.5 - 0.25, dd = b - f;
+    r = smoothstep(-0.015, 0.02, dd);
+    float beam = exp(-pow(dd / 0.035, 2.0)), k = clamp(dd / 0.09 + 0.5, 0.0, 1.0);
+    vec3 rb = 0.55 + 0.45 * cos(6.2832 * (k * 0.9 + vec3(0.0, 0.33, 0.67)));
+    float gl = step(0.986, wiH(floor(q * 46.0))) * exp(-pow((dd - 0.08) / 0.07, 2.0)) * (0.6 + 0.4 * sin(wiT * 30.0 + wiH(floor(q * 46.0) + 2.0) * 20.0));
+    ex = (beam * 1.15 + gl * 2.2) * (1.0 - smoothstep(0.9, 1.0, p)); exC = mix(vec3(0.85, 0.97, 1.0), rb, 0.75 * (1.0 - gl));
+    fr = r * exp(-max(dd, 0.0) / 0.2) * (1.0 - p); tint = vec3(0.7, 0.92, 1.0); glowK = 1.0;
   } else if (wiM == 3) {                            // speed: the number races in from the left with a motion blur, then locks
     float e = 1.0 - pow(1.0 - p, 3.0), off = (1.0 - e) * 0.6;
     su.x = uv.x + off; blur = vec2(off * 0.45, 0.0);
@@ -3673,8 +3674,8 @@ const SND = (() => {
       fin: [['pa_fin', 0.55]], tk: 'pa_wood', tick: 1, arrive: 'pa_arrive' },
     light: { loops: [['lt_loop', 0.22, 0.65]], cracks: ['crack1', 'lt_bowl', 'crack3'], turn: [['shell', 0.45], ['lt_choir', 0.8]], land: [['lt_bell', 0.65]],
       fin: [['lt_fin', 0.55]], tick: 1, arrive: 'lt_arrive' },
-    ice: { loops: [['ic_loop', 0.15, 0.5]], cracks: ['ic_cube', 'ic_icicle', 'ic_clink'], turn: [['ic_whoosh', 0.85], ['shell', 0.4]], land: [['ic_shatter', 0.75]],
-      fin: [['ic_fin', 0.5]], tk: 'ic_clink', tick: 1, arrive: 'ic_arrive' },
+    ice: { loops: [['ic_loop', 0.15, 0.5]], cracks: ['ic_icicle', 'ic_aurora', 'ic_cube'], turn: [['ic_impact', 0.75], ['ic_shatter', 0.55]], land: [['ic_whoosh', 0.5], ['ic_sparkle', 0.4]],
+      fin: [['ic_fin', 0.45]], tk: 'ic_chime', tick: 1, arrive: 'ic_arrive' },
     water: { loops: [['wa_loop', 0.15, 0.5]], cracks: ['wa_bub', 'wa_liq', 'wa_drop'], turn: [['wa_jump', 0.85]], land: [['wa_splash', 0.75], ['wa_wave', 0.45]],
       fin: [['wa_fin', 0.55]], tk: 'wa_bub', tick: 1, rnd: [['wa_bub', 'wa_liq'], 0.2, 0.4], arrive: 'wa_arrive' },
     tree: { loops: [['tr_loop', 0.25, 0.6]], cracks: ['tr_creak', 'tr_twig', 'tr_branch'], turn: [['tr_leaves', 0.7], ['tr_rustle', 0.6]], land: [['tr_grow', 0.7], ['impact', 0.3]],
@@ -3964,8 +3965,11 @@ const RECIPES = {
     parts: { wait: 'falling', hatch: 'converge', land: 'leafburst' }, tex: 'leaf', cols: ['#e8f0e0', '#9fc49a', '#ffffff', '#6d8a6a'], flash: '240,245,255', ring: '#ffffff', flick: 'still', ovc: '170,200,160' },
   light: { emi: 0.6, seal: 14, brk: 1, c1: [1.0, 0.9, 0.62], c2: [1.0, 0.98, 0.9], veil: '26,18,6', dark: 0.72, arrive: 'descend', turn: 'spin', spin: 1, shake: 'pulse', ov: 'rays',
     parts: { wait: 'motes', hatch: 'converge', land: 'ring' }, tex: 'star', cols: ['#fff2c8', '#ffd98a', '#ffffff', '#e8b84a'], flash: '255,244,214', ring: '#fff0c0', flick: 'glow' },
-  ice: { emi: 0.45, seal: 2, brk: 4, c1: [0.6, 0.9, 1.0], c2: [1.0, 1.0, 1.0], veil: '2,10,20', arrive: 'slide', turn: 'glide', shake: 'shiver', ov: 'snow',
-    parts: { wait: 'snowfall', hatch: 'snowfall', land: 'snowburst' }, tex: 'flake', cols: ['#ffffff', '#cfefff', '#9fdcff', '#e8f8ff'], flash: '220,245,255', ring: '#d8f4ff', flick: 'still' },
+  // Ice, The Aurora (Jon, 7 Nov): the card skates in spinning, the northern lights wake as you hold while deep blue fractures run
+  // through the ice, the egg bursts into chunks of crystal that hang in the slow motion, a ring of frost freezes the screen's edges,
+  // the card pirouettes, and each number is lit by a beam of light passing through ice, split into a rainbow
+  ice: { emi: 0.3, seal: 18, brk: 4, c1: [0.35, 0.78, 1.0], c2: [0.9, 0.98, 1.0], veil: '2,10,22', arrive: 'skate', turn: 'pirouette', shake: 'shiver', ov: 'snow', aurora: true,
+    parts: { wait: 'snowfall', hatch: 'snowfall', land: 'powder' }, burst: 'crystals', tex: 'crystal', cols: ['#ffffff', '#d6f1ff', '#9fd8ff', '#eefaff'], flash: '150,220,255', ring: '#9fe4ff', flick: 'still' },
   water: { seal: 3, brk: 1, c1: [0.4, 0.8, 1.0], c2: [0.8, 0.95, 1.0], veil: '0,8,22', arrive: 'float', turn: 'dive', shake: 'float', ov: 'bubbles',
     parts: { wait: 'bubbles', hatch: 'bubbles', land: 'bubbleburst' }, tex: 'bubble', cols: ['#bfe4ff', '#ffffff', '#6ab8ff', '#dff2ff'], flash: '190,230,255', ring: '#bfe4ff', flick: 'still', ovc: '190,228,255' },
   tree: { seal: 5, c1: [0.45, 1.0, 0.42], c2: [0.85, 1.0, 0.6], veil: '4,10,4', arrive: 'grow', turn: 'grow', shake: 'creak', ov: 'spores',
@@ -4042,7 +4046,12 @@ RV = (() => {
   };
   TEXS.smoke = spriteTex((x, S) => { for (let i = 0; i < 5; i++) { const cx = S * (0.35 + 0.3 * hash(i + 91)), cy = S * (0.35 + 0.3 * hash(i + 92)), r = S * (0.2 + 0.14 * hash(i + 93));
       const g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, 'rgba(255,255,255,.5)'); g.addColorStop(0.6, 'rgba(255,255,255,.22)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, S, S); } }, 96);
-  const SOLID = { petal: 1, leaf: 1, coin: 1, smoke: 1 };                  // shapes that sit on top, rather than glowing
+  TEXS.crystal = spriteTex((x, S) => { x.translate(S / 2, S / 2); const P = [[0, -0.46], [0.2, -0.12], [0.16, 0.34], [-0.05, 0.46], [-0.2, 0.1], [-0.14, -0.26]].map(([a, b]) => [a * S, b * S]);
+      x.beginPath(); P.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.closePath(); const g = x.createLinearGradient(-S * 0.2, -S * 0.46, S * 0.2, S * 0.46);
+      g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(0.45, 'rgba(205,236,255,.55)'); g.addColorStop(1, 'rgba(160,215,255,.8)'); x.fillStyle = g; x.fill();
+      x.fillStyle = 'rgba(255,255,255,.55)'; x.beginPath(); x.moveTo(P[0][0], P[0][1]); x.lineTo(P[1][0], P[1][1]); x.lineTo(0, 0); x.lineTo(P[5][0], P[5][1]); x.closePath(); x.fill();   // the lit facet
+      x.strokeStyle = 'rgba(255,255,255,.95)'; x.lineWidth = S * 0.025; x.beginPath(); P.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.closePath(); x.stroke(); }, 96);
+  const SOLID = { petal: 1, leaf: 1, coin: 1, smoke: 1, crystal: 1 };                  // shapes that sit on top, rather than glowing
   const grp = new THREE.Group(); grp.visible = false; scene.add(grp);
   const aura = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.4), new THREE.MeshBasicMaterial({ map: glowT, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, opacity: 0 }));
   aura.position.z = -0.35; aura.renderOrder = -1; grp.add(aura);
@@ -4184,6 +4193,15 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       vec2 g = sv * vec2(15.0, 8.4), id = floor(g), f = fract(g) - 0.5 - (vec2(shs(id), shs(id + 3.1)) - 0.5) * 0.4;
       float on = step(shs(id + 5.5), uH * 0.95), rad = on * (0.08 + 0.32 * uH * shs(id + 2.2)), d = length(f);
       glow += uC1 * (exp(-abs(d - rad) / 0.025) * 1.8 + smoothstep(rad, rad - 0.06, d) * 0.6) * on * (0.6 + 1.2 * uH) * uFlick + uC1 * 0.08 * uH;
+    } else if (uMode > 17.5) {                  // fracture: jagged deep blue cracks run out from the egg through thick ice, a frost web spreading behind them
+      float rr = length(q), a2 = atan(q.y, q.x) / 6.2832 + 0.5, best = 1.0;
+      for (int i = 0; i < 9; i++) { float fi = float(i), a0 = (fi + 0.5 + (shs(vec2(fi, uSeed)) - 0.5) * 0.6) / 9.0;
+        float jag = (snz(vec2(rr * 34.0, fi * 7.0 + uSeed)) - 0.5) * 0.022 + (snz(vec2(rr * 9.0, fi * 3.0 + uSeed)) - 0.5) * 0.05;
+        float da = abs(fract(a2 - a0 - jag + 0.5) - 0.5) * 6.2832 * rr; float lenI = 0.55 + 0.5 * shs(vec2(fi, uSeed + 2.0));
+        best = min(best, da + step(uH * 1.2 * lenI, rr) * 9.0); }
+      float line = (1.0 - smoothstep(0.0, 0.0035 + 0.006 * uH, best)) * step(0.08, rr), halo = exp(-best / (0.01 + 0.02 * uH)) * step(0.08, rr) * 0.35;
+      float web = (1.0 - smoothstep(0.0, 0.01, svor(sv * vec2(24.0, 13.5) + uSeed))) * smoothstep(0.0, 0.3, uH * 0.9 - rr) * 0.35;
+      glow += uC1 * (line * (0.8 + 1.2 * uH) + halo * uH + web * uH) + uC2 * line * 0.4 * uH;
     } else {                                    // heat: the seal glows like metal in the forge, dark red, then orange, then white hot, from the edges in
       float reach = uH * 0.95 - ed * 1.9 + (n - 0.5) * 0.4, T = clamp(reach * 1.5, 0.0, 0.9) * (0.35 + 0.65 * uH) * uH;
       vec3 hot = mix(vec3(0.55, 0.03, 0.0), vec3(1.0, 0.2, 0.01), smoothstep(0.0, 0.5, T)); hot = mix(hot, vec3(1.0, 0.45, 0.05), smoothstep(0.5, 0.85, T)); hot = mix(hot, vec3(1.0, 0.85, 0.55), smoothstep(0.93, 1.0, T));
@@ -4289,6 +4307,31 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       c.restore(); }
     c.restore();
   }
+  // the northern lights: soft curtains of green, teal and violet that wave across the top of the sky (Ice)
+  let auroraCv = null;
+  function auroraFx(c, w, h, t, a) {
+    if (!auroraCv) { auroraCv = document.createElement('canvas'); auroraCv.width = 192; auroraCv.height = 108; }
+    const x = auroraCv.getContext('2d'), W = 192, H = 108; x.clearRect(0, 0, W, H); x.globalCompositeOperation = 'lighter';     // drawn small, then stretched: soft as real aurora
+    const bands = [['60,255,170', 0.0, 0.1], ['40,200,255', 1.7, 0.17], ['170,110,255', 3.1, 0.06]];
+    for (const [col, ph, yy] of bands) for (let i = 0; i < W; i += 2) { const f = i / W, y = H * (yy + 0.06 * Math.sin(f * 5.5 + t * 0.35 + ph) + 0.03 * Math.sin(f * 13 + t * 0.6 + ph * 2)),
+        hgt = H * (0.1 + 0.09 * (0.5 + 0.5 * Math.sin(f * 9 + t * 0.8 + ph))), al = (0.18 + 0.3 * Math.pow(0.5 + 0.5 * Math.sin(f * 17 - t * 1.2 + ph), 2)) * Math.sin(f * Math.PI);
+      const g = x.createLinearGradient(0, y - hgt * 0.15, 0, y + hgt); g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(0.25, `rgba(${col},${al})`); g.addColorStop(1, `rgba(${col},0)`);
+      x.fillStyle = g; x.fillRect(i, y - hgt * 0.15, 2, hgt * 1.15); }
+    c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, a) * 0.85; c.imageSmoothingEnabled = true; c.drawImage(auroraCv, 0, 0, w, h); c.restore(); }
+  // the freeze ring: a band of frost light that races out from the egg as it bursts (Ice). s is reveal time, so it slows with the burst
+  function shockFx(c, w, h, s) { const M = Math.hypot(w, h), r = M * (0.04 + s * 0.75), al = Math.max(0, 1 - s / 1.2); c.save();
+    const g = c.createRadialGradient(w / 2, h * 0.48, Math.max(0, r - M * 0.05), w / 2, h * 0.48, r + M * 0.02); g.addColorStop(0, 'rgba(170,230,255,0)'); g.addColorStop(0.7, `rgba(210,242,255,${0.45 * al})`); g.addColorStop(1, 'rgba(170,230,255,0)');
+    c.fillStyle = g; c.fillRect(0, 0, w, h); c.restore(); }
+  // frost that grows in from the screen's corners when the egg bursts, then melts away (Ice): feathery ice drawn once, shown at any strength
+  let rimeCv = null;
+  function rimeFx(c, w, h, a) {
+    if (!rimeCv || rimeCv.width !== w || rimeCv.height !== h) { rimeCv = document.createElement('canvas'); rimeCv.width = w; rimeCv.height = h; const x = rimeCv.getContext('2d'), K = Math.max(w, h) / 1600;
+      const v = x.createRadialGradient(w / 2, h / 2, Math.hypot(w, h) * 0.36, w / 2, h / 2, Math.hypot(w, h) * 0.56); v.addColorStop(0, 'rgba(225,245,255,0)'); v.addColorStop(1, 'rgba(225,245,255,.4)'); x.fillStyle = v; x.fillRect(0, 0, w, h);
+      x.strokeStyle = 'rgba(245,252,255,.55)'; x.lineCap = 'round';
+      const branch = (x0, y0, ang, len, d, s) => { if (d > 4 || len < 4 * K) return; const x1 = x0 + Math.cos(ang) * len, y1 = y0 + Math.sin(ang) * len; x.lineWidth = Math.max(0.6, (5 - d) * 0.6 * K); x.beginPath(); x.moveTo(x0, y0); x.lineTo(x1, y1); x.stroke();
+        for (let k = 1; k <= 3; k++) { const f = k / 4, bx = x0 + (x1 - x0) * f, by = y0 + (y1 - y0) * f; branch(bx, by, ang + 1.05 * (hash(s + k) < 0.5 ? 1 : -1), len * 0.42, d + 1, s * 3.1 + k); } branch(x1, y1, ang + (hash(s + 9) - 0.5) * 0.5, len * 0.62, d + 1, s * 1.7 + 4); };
+      [[0, 0, 0.8], [w, 0, 2.35], [0, h, -0.8], [w, h, -2.35]].forEach(([cx, cy, base], ci) => { for (let i = 0; i < 6; i++) branch(cx, cy, base + (i - 2.5) * 0.22 + (hash(ci * 20 + i) - 0.5) * 0.1, (70 + hash(ci * 20 + i + 7) * 110) * K, 0, ci * 13 + i); }); }
+    c.save(); c.globalAlpha = Math.min(1, a); c.drawImage(rimeCv, 0, 0); c.restore(); }
   // lava bubbles swelling and popping along the bottom of the screen (Lava)
   function magma(c, w, h, t, a) { const K = Math.max(w, h) / 1600; c.save();
     for (let i = 0; i < 14; i++) { const per = 1.6 + hash(i + 601) * 2.2, q = ((t + hash(i + 602) * per) / per) % 1, x = (0.04 + 0.92 * hash(i + 603)) * w, y = h * (0.9 + 0.08 * hash(i + 604)), r = (6 + 18 * hash(i + 605)) * K * Math.min(1, q * 1.3);
@@ -4375,6 +4418,9 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       const g = ctx.createLinearGradient(0, h, 0, h * 0.45); g.addColorStop(0, `rgba(${U},${0.6 * st.under * fl})`); g.addColorStop(0.5, `rgba(${U},${0.2 * st.under * fl})`); g.addColorStop(1, `rgba(${U},0)`);
       ctx.fillStyle = g; ctx.fillRect(0, h * 0.45, w, h * 0.55);
     }
+    if (st.aur > 0.002) auroraFx(ctx, w, h, st.t, st.aur);
+    if (st.shock >= 0 && st.shock < 1.2) shockFx(ctx, w, h, st.shock);
+    if (st.rime > 0.002) rimeFx(ctx, w, h, st.rime);
     if (st.bub > 0.002) magma(ctx, w, h, st.t, st.bub);
     if (st.steam > 0.002) steam(ctx, w, h, st.su || 0, st.steam);
     if (st.sheet > 0.002) { ctx.fillStyle = `rgba(170,200,255,${st.sheet})`; ctx.fillRect(0, 0, w, h); }
@@ -4530,6 +4576,11 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         op = (i % 2 ? 0 : 0.22 + 0.3 * k) * (0.7 + 0.3 * Math.sin(t * 1.3 + p.ph)); sc = p.s * 4 * (1.2 - 0.5 * k); rot = a * 0.5; }                     // shadow: smoke drawn in toward the egg
       else if (role === 'inkcurl') { const tt = u, life = 1.7; x0 = p.v.x * 0.55 * tt * (1 - tt * 0.15); y0 = baseY + p.v.y * 0.4 * tt + 0.3 * tt * tt; z0 = -0.25 + p.v.z * tt * 0.12;
         op = Math.min(1, tt * 6) * Math.pow(Math.max(0, 1 - tt / life), 1.6) * (i % 3 ? 0 : 0.7); sc = p.s * (2.2 + tt * 2.6); rot = tt * (0.6 + p.sp * 2) + p.ph; }       // shadow: the egg's smoke curls away and thins
+      else if (role === 'crystals') { const tt = u, vx = p.v.x * 0.75, vy = p.v.y * 0.6, g = 3.4;      // ice: chunks of crystal flung out from the egg, tumbling and glinting
+        x0 = vx * tt; y0 = WY + vy * tt - 0.5 * g * tt * tt; z0 = 0.2 + p.v.z * tt * 0.35; rot = tt * (3 + p.sp * 9) + p.ph;
+        op = Math.min(1, tt * 10) * Math.max(0, 1 - tt / 1.9) * (0.7 + 0.3 * Math.sin(t * 23 + p.ph)); sc = p.s * (i % 4 ? 2.4 : 4.6); }
+      else if (role === 'powder') { const tt = u, sd = i % 2 ? 1 : -1, vx = sd * (0.6 + hash(i + 801) * 2.4), vy = 0.2 + hash(i + 802) * 0.9;     // ice dust thrown up as it lands
+        x0 = vx * tt * (1 - tt * 0.25); y0 = baseY - 0.55 + vy * tt - 0.4 * tt * tt; z0 = 0.25 + hash(i + 803) * 0.3; op = Math.min(1, tt * 6) * Math.max(0, 1 - tt / 1.5) * 0.8; sc = p.s * (0.8 + tt * 1.2); rot = tt * 2 + p.ph; }
       else if (role === 'erupt') { const tt = u, g = 5.2, vx = p.v.x * 0.55, vy = 2.3 + hash(i + 9) * 2.9;      // lava: blobs thrown up from the egg, arcing back down
         x0 = vx * tt; y0 = WY + vy * tt - 0.5 * g * tt * tt; z0 = 0.15 + p.v.z * tt * 0.3; const fell = y0 < WY - 1.6;
         op = (i % 2 ? 0.95 : 0.6) * Math.min(1, tt * 8) * (fell ? 0 : 1) * Math.max(0, 1 - tt / 2.2); sc = p.s * (i % 3 ? 1.6 : 3.2) * (1 - tt * 0.15); }
@@ -4594,6 +4645,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       else if (R.arrive === 'squash') { const x = clamp01(A / pace.arrive), y = x < 0.6 ? 1 - Math.pow(x / 0.6, 2) : 0, sq = x < 0.6 ? 0 : Math.sin((x - 0.6) / 0.4 * Math.PI * 3) * Math.exp(-(x - 0.6) * 6) * 0.16;
         card.position.y = WY + 2.2 * y; card.scale.set(WS * (1 + sq), WS * (1 - sq), WS); }
       else if (R.arrive === 'slide') { card.position.x = 5 * k * k; card.rotation.y += k * 0.5; card.rotation.z = Math.sin(A * 9) * 0.03 * k; }
+      else if (R.arrive === 'skate') { const e = easeOut(clamp01(A / pace.arrive)); card.position.x = -5.2 * (1 - e) * (1 - e); card.position.y = WY - 0.25 * k; card.rotation.y += (1 - e) * Math.PI * 4; card.rotation.z = -0.06 * k; }   // skates in across the ice, spinning to a stop
       else if (R.arrive === 'magma') { card.position.y = WY - 2.5 * k * k; card.rotation.x += 0.22 * k; card.rotation.z = Math.sin(A * 4) * 0.02 * k; }   // rises out of the lava pool
       else if (R.arrive === 'descend') { card.position.y = WY + 1.8 * k; card.rotation.x -= 0.45 * k; }
       else { card.position.z = -0.2 - 3.2 * k; card.rotation.y += k * 1.4; }
@@ -4604,7 +4656,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     lights((R.arrive === 'fade' || R.arrive === 'emerge') && !film ? 0.42 * (0.25 + 0.75 * ar) : 0.42); sweepForce = 9; SH.forEach(s => s.m.visible = false); SU.uT.value = t;
     parts(R.parts.wait, t, 0.15, 0); PT.forEach(p => p.m.material.opacity *= ar); EGG.wait(t, ar);
     Object.assign(S, { veil: 0.82 * Math.min(1, film ? 1 : A / 0.6), flash: 0, under: R.under ? 0.25 * ar : 0, ov: 0.55 * ar, warp: 0, sheet: 0, strike: 0, seam: 0, t });
-    eclipse('wait', t, ar, A); forge('wait', t, ar);
+    eclipse('wait', t, ar, A); forge('wait', t, ar); aurora('wait', t, ar);
     hideTiles(); back(false);
   }
   function poseHatch(t, e, ht) {
@@ -4632,7 +4684,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     parts(R.parts.hatch, t, e, 0); EGG.hatch(t, e, RM);
     let sheet = 0; if (theme === 'lightning') { const q = Math.floor(t * 9); sheet = hash(q + 99) < 0.08 + e * 0.22 ? (0.05 + e * 0.12) * (1 - (t * 9 - q)) : 0; }
     Object.assign(S, { veil: 0.82 + e * 0.06, flash: 0, under: R.under ? 0.25 + e * 0.75 : 0, ov: 0.55 + 0.45 * e, warp: 0, sheet, strike: 0, seam: theme === 'twoface' ? e : 0, t });
-    eclipse('hatch', t, e); forge('hatch', t, e);
+    eclipse('hatch', t, e); forge('hatch', t, e); aurora('hatch', t, e);
     hideTiles(); back(false);
   }
   function poseGo(t, u) {
@@ -4658,16 +4710,17 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         else if (R.turn === 'glide') { card.position.x += sw * 0.75; card.rotation.z = -sw * 0.08; }
         else if (R.turn === 'dive') card.position.y -= sw * 0.45;
         else if (R.turn === 'grow') card.scale.multiplyScalar(1 + sw * 0.18);
+        else if (R.turn === 'pirouette') { card.position.y += sw * 0.22; card.rotation.z = Math.sin(e * Math.PI * 2) * 0.05 * (1 - e); card.scale.multiplyScalar(1 - sw * 0.08); }   // spins on the spot, lifted a little, like a skater
         else if (R.turn === 'quench') { card.position.y -= sw * 0.28; card.rotation.z = Math.sin(e * Math.PI * 4) * 0.03 * (1 - e); }    // plunged into the steam and lifted out
         else if (R.turn === 'eclipse') { card.position.z -= sw * 0.4; card.rotation.x += sw * 0.1; }     // turns slowly in the dark, set back, before it steps out
       }
       SU.uT.value = t;
       const br = clamp01(x0 / 0.3); SU.uBreak.value = br; SU.uH.value = 1; cover.visible = br < 1; coverM.emissiveIntensity = 0.9;
       aura.material.opacity = 0.78 - e * 0.2; lights(0.6 + e * 0.2); sweepForce = 9; ring.material.opacity = 0;
-      parts(R.forge ? 'erupt' : 'implode', t, 0, u); shards(u); EGG.burst(u, RM);
+      parts(R.burst || (R.forge ? 'erupt' : 'implode'), t, 0, u); shards(u); EGG.burst(u, RM);
       const strike = theme === 'lightning' ? Math.max(0, 1 - u / 0.35) * (u < 0.05 ? u / 0.05 : 1) : 0;
       Object.assign(S, { veil: 0.88 * (1 - clamp01((u - TU + 0.2) / 1.2)), flash: strike * 0.55, under: R.under ? 1 - e * 0.5 : 0, ov: 1, warp: R.warp && !RM ? Math.sin(x0 * Math.PI) : 0, sheet: 0, strike, seed: 7, seam: theme === 'twoface' ? 1 - e * 0.3 : 0, t });
-      eclipse('turn', t, x0, e); forge('turn', t, x0, u);
+      eclipse('turn', t, x0, e); forge('turn', t, x0, u); aurora('turn', t, x0, u);
       hideTiles(); back(false);
     } else {                                       // the landing and the journey lighting up
       const u2 = u - TU, k = Math.exp(-u2 * 4.2);
@@ -4687,7 +4740,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         let flash = ui < 0 ? 0 : Math.max(0, 1 - ui / (last ? 1.1 : 0.7)) * (last ? 0.12 : 0.05), lift = (1 - clamp01(ui / 0.5)) * 0.03 * (ui >= 0 ? 1 : 0);
         let pu = 0; if (i === so) { const x = clamp01((u2 - tDone) / 1.3), pe = Math.sin(Math.PI * x); lift += pe * 0.05; pu = x > 0 && x < 1 ? x : 0; }   // the stat this trail shines brightest in
         return [s, flash, lift, wp, pu]; }, t);
-      eclipse('land', t, u2, tDone); forge('land', t, u2, TU);
+      eclipse('land', t, u2, tDone); forge('land', t, u2, TU); aurora('land', t, u2, TU);
       if (so >= 0 && u2 >= tDone) fire('shine', () => SND.play(theme, 'tick', 7, true));
       if (u2 > 0.35 + (n - 1) * pace.gap + pace.write * 1.3 * 0.8) fire('fin', () => SND.play(theme, 'fin'));
       if (u > end && !film) finish();
@@ -4720,6 +4773,17 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       aura.material.color.setRGB(1, 0.4, 0.1); aura.material.opacity = 0.8 * (1 - S.steam * 0.8); }
     else { const u2 = a, TU = b; S.flash = 0; ring.material.opacity = 0; S.su = TU + u2;
       S.steam = Math.max(0, 1 - u2 / 0.9); S.under = 0.25 * Math.exp(-u2); aura.material.opacity = 0; lights(Math.min(1, 0.55 + u2 * 0.6)); }
+  }
+
+  // ----- Ice's aurora, laid over each step: the northern lights, the freeze ring, frost on the screen's edges -----
+  function aurora(step, t, a, b) {
+    const R = recipe(); S.aur = 0; S.shock = -1; S.rime = 0; if (!R.aurora) return;
+    if (step === 'wait') { S.aur = 0.25 * a; S.ov = 0.35 * a; }
+    else if (step === 'hatch') { const e = a; S.aur = 0.25 + 0.75 * e; S.ov = 0.35 + 0.3 * e; lights(0.42 - 0.12 * e); aura.material.color.set('#7fd6ff'); aura.material.opacity = 0.15 + 0.35 * e; }
+    else if (step === 'turn') { const u = b; S.aur = 1; S.shock = u; S.rime = Math.min(1, u / 0.5); S.flash = 0.18 * Math.exp(-Math.pow(u / 0.12, 2)); S.ov = 0.7;
+      aura.material.color.set('#7fd6ff'); aura.material.opacity = 0.5 * (1 - a); }
+    else { const u2 = a; S.aur = Math.max(0.3, 1 - u2 / 3); S.rime = Math.max(0, 1 - u2 / 2.2); S.flash = 0.14 * Math.exp(-u2 * 6); S.ov = Math.max(0.2, 0.7 - u2 * 0.3);
+      ring.material.opacity *= 0.5; aura.material.opacity = 0; }
   }
 
   // ----- running a live reveal -----
