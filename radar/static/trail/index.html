@@ -2570,6 +2570,8 @@ float wiH(vec2 p) { p = fract(p * vec2(123.34, 456.21) + wiS * 0.013); p += dot(
 float wiN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(wiH(i), wiH(i + vec2(1.0, 0.0)), f.x), mix(wiH(i + vec2(0.0, 1.0)), wiH(i + vec2(1.0, 1.0)), f.x), f.y); }
 float wiF(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { s += a * wiN(p); p = p * 2.03 + 1.7; a *= 0.5; } return s; }
+float wiHeart(vec2 p) { p.x = abs(p.x); if (p.y + p.x > 1.0) return length(p - vec2(0.25, 0.75)) - 0.35355;
+  vec2 a = p - vec2(0.0, 1.0), b = p - 0.5 * max(p.x + p.y, 0.0); return sqrt(min(dot(a, a), dot(b, b))) * sign(p.x - p.y); }
 float wiSeg(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0); return length(pa - ba * h); }
 `;
 const WI_MAIN = `
@@ -2628,17 +2630,19 @@ if (wiP < 0.999) {
     su = uv + vec2(jit, sin(p * 9.0) * 0.012 * (1.0 - p));
     fr = r * (0.5 + 0.5 * (1.0 - p)); tint = vec3(0.5, 1.0, 0.84); glowK = 1.6;
     ex = (f1 + f2 + f3) * 0.25 + exp(-pow((p - 0.6) / 0.05, 2.0)) * 0.35; exC = vec3(0.5, 1.0, 0.84);
-  } else if (wiM == 6) {                            // tiger: three claw marks tear across and the number is underneath
-    vec2 dir = normalize(vec2(-0.42, 1.0)), nrm = vec2(dir.y, -dir.x); float band = 0.0, rim = 0.0;
-    for (int i = 0; i < 3; i++) {
-      float fi = float(i), o = clamp((p - fi * 0.13) / 0.24, 0.0, 1.0), eo = 1.0 - pow(1.0 - o, 3.0);
-      vec2 c0 = vec2((0.3 + fi * 0.2) * wiA, 0.5); float perp = abs(dot(q - c0, nrm)), along = dot(q - c0, dir);
-      float wdt = 0.07 * min(wiA, 1.6) * (0.35 + 0.65 * eo) * (1.0 - abs(along) * 0.55), cut = smoothstep(0.75 - 1.6 * eo - 0.02, 0.75 - 1.6 * eo, along);
-      band = max(band, (1.0 - smoothstep(wdt, wdt + 0.012, perp)) * cut);
-      rim = max(rim, exp(-pow((perp - wdt) / 0.007, 2.0)) * cut * step(0.001, o));
-    }
-    r = max(band, smoothstep(0.62, 0.95, p)); fr = band * (1.0 - smoothstep(0.5, 1.0, p)); tint = vec3(1.0, 0.6, 0.2); glowK = 1.4;
-    ex = rim * (1.0 - smoothstep(0.6, 1.0, p)) * 1.8; exC = vec3(1.0, 0.55, 0.15); dim = 1.0 - band * (1.0 - smoothstep(0.3, 0.9, p)) * 0.18;
+  } else if (wiM == 6) {                            // tiger: a paw comes down on the tile, its shadow growing smaller as it nears, stamps with a thud,
+                                                    // and lifts away leaving the number, the paw print fading off it
+    float st = 0.22, sc = mix(2.4, 1.0, smoothstep(0.0, st, p)), hu = 0.36 / sc;
+    vec2 d = (q - ctr - vec2(0.0, 0.02)) / hu;
+    float pad = length(d / vec2(1.0, 0.8) - vec2(0.0, -0.18)) - 0.5, toe = 9.0;
+    toe = min(toe, length(d - vec2(-0.56, 0.36)) - 0.19); toe = min(toe, length(d - vec2(-0.2, 0.62)) - 0.2);
+    toe = min(toe, length(d - vec2(0.2, 0.62)) - 0.2); toe = min(toe, length(d - vec2(0.56, 0.36)) - 0.19);
+    float paw = 1.0 - smoothstep(-0.02, 0.03, min(pad, toe)), on = step(st, p);
+    float imp = 1.0 - smoothstep(st, 0.78, p);
+    r = on; overA = paw * mix(0.55 * smoothstep(0.0, st, p), 0.75 * imp, on); over = mix(vec3(0.04, 0.015, 0.0), vec3(0.32, 0.11, 0.02), on);
+    float ring = exp(-pow((length(q - ctr) / maxd - (p - st) * 2.6) / 0.05, 2.0)) * on * (1.0 - smoothstep(st, st + 0.3, p));
+    ex = ring * 1.1 + exp(-pow((p - st) / 0.025, 2.0)) * 0.25; exC = vec3(1.0, 0.6, 0.2);
+    fr = on * (1.0 - smoothstep(st, 0.85, p)); tint = vec3(1.0, 0.6, 0.2); glowK = 1.2; dim = 1.0 - paw * 0.2 * imp * on;
   } else if (wiM == 7) {                            // water: the number rises through ripples, wavy first, then sharp
     float d = length(q - ctr), f0 = p * 1.3 * maxd; vec2 dir = (q - ctr) / max(d, 1e-4);
     su = uv + vec2(dir.x / wiA, dir.y) * sin(d * 60.0 - wiT * 10.0) * 0.011 * (1.0 - p);
@@ -2653,13 +2657,16 @@ if (wiP < 0.999) {
     float drop = 1.0 - smoothstep(0.0, 0.32, p); drop *= drop; float k = max(0.0, p - 0.32), sq = sin(k * 24.0) * exp(-k * 7.5) * 0.24;
     su.y = uv.y - drop * 0.55; su = vec2((su.x - 0.5) / (1.0 + sq * 0.6) + 0.5, (su.y - 0.15) / (1.0 - sq) + 0.15);
     r = smoothstep(0.0, 0.12, p); fr = 1.0 - smoothstep(0.3, 1.0, p); tint = vec3(1.0, 0.82, 0.25); glowK = 1.2;
-  } else if (wiM == 10) {                           // lightning: a strike flashes across, the number flickers on like a neon sign
-    float on = step(0.42, wiH(vec2(floor(wiT * 26.0), 3.0)));
-    r = step(0.12, p) * mix(on, 1.0, smoothstep(0.55, 0.78, p));
-    float by = 0.5 + (wiN(vec2(uv.x * 9.0, floor(wiT * 22.0))) - 0.5) * 0.4;
-    float bolt = exp(-pow((uv.y - by) / 0.012, 2.0)) * smoothstep(0.06, 0.1, p) * (1.0 - smoothstep(0.14, 0.28, p));
-    ex = bolt * 3.0; exC = vec3(0.85, 0.93, 1.0);
-    fr = r * (1.0 - smoothstep(0.62, 1.0, p)); tint = vec3(0.75, 0.88, 1.0); glowK = 2.0;
+  } else if (wiM == 10) {                           // lightning: a spark runs round the tile's border, leaving a crackling trail, and when it gets back
+                                                    // to where it began the number flashes on like a charged sign
+    float per = 2.0 * (wiA + 1.0), bx = min(q.x, wiA - q.x), byy = min(q.y, 1.0 - q.y), bd = min(bx, byy), pc;
+    if (bd == q.y) pc = q.x; else if (bd == wiA - q.x) pc = wiA + q.y; else if (bd == 1.0 - q.y) pc = wiA + 1.0 + (wiA - q.x); else pc = 2.0 * wiA + 1.0 + (1.0 - q.y);
+    float run = clamp(p / 0.55, 0.0, 1.0), hd = run * per, dt = hd - pc, near = exp(-abs(bd - 0.075) / 0.022), jit = wiN(vec2(pc * 30.0, floor(wiT * 24.0))) * 0.8 + 0.2;
+    float trail = step(0.0, dt) * exp(-dt / 0.8) * near * jit * (1.0 - smoothstep(0.55, 0.7, p)), head = exp(-pow(dt / 0.05, 2.0)) * near * 2.5 * step(p, 0.56);
+    float on = step(0.55, p) * mix(step(0.4, wiH(vec2(floor(wiT * 26.0), 5.0))), 1.0, smoothstep(0.62, 0.72, p));
+    r = on; ex = trail * 0.45 + head * 0.7 + exp(-pow((p - 0.56) / 0.02, 2.0)) * 0.5; exC = vec3(0.4, 0.65, 1.0);
+    overA = clamp(trail * 1.4 + head * 0.6, 0.0, 0.95); over = mix(vec3(0.12, 0.38, 1.0), vec3(0.85, 0.95, 1.0), clamp(head, 0.0, 1.0));
+    fr = r * (1.0 - smoothstep(0.6, 1.0, p)); tint = vec3(0.75, 0.88, 1.0); glowK = 2.0;
   } else if (wiM == 11) {                           // panda: calligraphy. A loaded brush sweeps across the tile and paints the number in,
                                                     // its wet head passing over, dry streaks trailing behind, the ink bleeding a little before it settles
     float streak = wiF(vec2(uv.y * 42.0, uv.x * 1.5 + 3.0)), f0 = p * 1.3 - 0.15, edge = f0 + (streak - 0.5) * 0.14 + sin(uv.y * 7.0) * 0.015 - uv.x;
@@ -2668,7 +2675,15 @@ if (wiP < 0.999) {
     vec3 ink = dot(base, vec3(0.3, 0.55, 0.15)) < 0.35 ? vec3(0.96, 0.92, 0.84) : vec3(0.06, 0.05, 0.045);
     overA = head * band * 0.5 * (0.55 + 0.45 * streak); over = ink;
     fr = clamp(1.0 - edge / 0.28, 0.0, 1.0) * r; tint = ink; glowK = 0.0;
-  } else if (wiM == 12 || wiM == 18) {              // pink: petals swirl together into the number. twilight: fireflies gather and glow it on
+  } else if (wiM == 12) {                           // pink: a heart grows out of the middle of the tile with a pink glowing rim, beating once as it
+                                                    // opens, and the number is inside it; tiny hearts twinkle where its rim has passed
+    float g = smoothstep(0.0, 0.75, p), gs = g * (1.0 + 0.08 * sin(p * 18.0) * (1.0 - g)), sz = 0.02 + gs * maxd * 3.1;
+    vec2 hp = (q - ctr + vec2(0.0, sz * 0.5)) / sz; float d = wiHeart(hp) * sz;
+    r = step(d, 0.0) + step(0.999, p); r = clamp(r, 0.0, 1.0);
+    float rim = exp(-pow(d / 0.012, 2.0)) * (1.0 - smoothstep(0.8, 1.0, p)), sp = step(0.985, wiH(floor(q * 40.0))) * exp(-pow((d + 0.06) / 0.05, 2.0)) * (0.6 + 0.4 * sin(wiT * 20.0 + wiH(floor(q * 40.0)) * 9.0));
+    ex = rim * 1.5 + sp * 1.6 * (1.0 - smoothstep(0.85, 1.0, p)); exC = vec3(1.0, 0.5, 0.78);
+    fr = r * (1.0 - smoothstep(0.3, 1.0, p)); tint = vec3(1.0, 0.45, 0.75); glowK = 1.3;
+  } else if (wiM == 18) {                           // twilight: fireflies gather and glow it on
     float cs = wiM == 12 ? 0.16 : 0.19; vec2 c = floor(q / cs); float g = 0.0;
     r = 0.0;
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) {
@@ -3667,8 +3682,8 @@ const SND = (() => {
     default: { loops: [['rumble', 0.05, 0.4]], cracks: ['crack1', 'crack2', 'crack3'], turn: [['shell', 0.9], ['whoosh', 0.8]], land: [['impact', 0.55]], fin: [['fin', 0.6]], tick: 1, arrive: 'arrive' },
     lava: { mu: 'mu_lava', loops: [['lavaloop', 0.18, 0.55], ['rumble', 0.08, 0.55]], cracks: ['bubble1', 'crack2', 'bubble2'], turn: [['fireboom', 0.75], ['lv_steam', 0.85]],
       land: [['hiss', 0.6], ['ash', 0.3]], fin: [['lv_hit', 0.45]], tk: 'lv_anvil', tick: 1, arrive: 'firewhoosh' },
-    lightning: { mu: 'mu_lightning', loops: [['hum', 0.12, 0.5]], cracks: ['crack1', 'crackle', 'crack3'], turn: [['shell', 0.7], ['thunder', 1]], land: [['blast', 0.8]], fin: [['sparks', 0.55]],
-      tick: 1.26, rnd: [['crackle'], 0.3, 0.6], arrive: 'whoosh' },
+    lightning: { mu: 'mu_lightning', loops: [['hum', 0.12, 0.5]], cracks: ['li_crack', 'li_crack', 'li_crack'], turn: [['li_strike', 1], ['thunder', 0.5]], land: [['li_thunder', 0.8], ['li_crack', 0.5]], fin: [['sparks', 0.55]],
+      tk: 'li_zap', tick: 1, rnd: [['crackle', 'li_crack'], 0.25, 0.5], arrive: 'li_arrive' },
     twoface: { mu: 'mu_twoface', loops: [], heart: true, cracks: ['crack1', 'crack2', 'crack3'], turn: [['shell', 0.7], ['swirl', 0.8, -0.9, 0.7], ['swirl', 0.8, 0.9, -0.7]],
       land: [['clink', 0.9], ['ring', 0.55]], fin: [['crystal', 0.6]], tick: 1, alt: true, arrive: 'whoosh', join: [['place', 0.9]] },
     // Gilded Night: a vault clock ticking, the dial and locks giving way, the vault door swinging, gold coins and a clock chime
@@ -3682,10 +3697,10 @@ const SND = (() => {
       fin: [['sp_fin', 0.55]], tk: 'sp_bleep', tick: 1, rnd: [['sp_btn', 'sp_bleep2'], 0.12, 0.25], arrive: 'sp_whizz' },
     speed: { mu: 'mu_speed', loops: [['sd_loop', 0.12, 0.55]], rev: 0.4, cracks: ['sd_beep', 'sd_beep', 'sd_beep'], turn: [['sd_go', 0.8], ['sd_boom', 0.95], ['sd_swoosh', 0.45]], land: [['sd_shutter', 0.9], ['sd_hit', 0.35]],
       fin: [['sd_fin', 0.5]], tk: 'sd_tick', tick: 1, arrive: 'sd_car' },
-    tiger: { mu: 'mu_tiger', loops: [['tg_loop', 0.22, 0.45], ['tg_purr', 0.1, 0.85]], cracks: ['tg_leaves', 'crack2', 'tg_step'], turn: [['shell', 0.45], ['tg_growl', 0.85]],
-      land: [['tg_roar', 0.7], ['impact', 0.35]], fin: [['tg_fin', 0.5]], tick: 0.95, arrive: 'tg_arrive' },
-    pink: { mu: 'mu_pink', loops: [['pk_loop', 0.2, 0.5]], cracks: ['crack1', 'pk_kiss', 'crack3'], turn: [['shell', 0.45], ['pk_harp', 0.8]], land: [['pk_bless', 0.8]],
-      fin: [['pk_fin', 0.4]], tick: 1.06, arrive: 'pk_arrive' },
+    tiger: { mu: 'mu_tiger', loops: [['tg_loop', 0.22, 0.45], ['tg_purr', 0.1, 0.85]], cracks: ['tg_growl', 'tg_leaves', 'tg_growl'], turn: [['tg_slash', 0.95], ['tg_roar', 0.5]],
+      land: [['tg_thud', 0.8], ['tg_bigroar', 0.85]], fin: [['tg_fin', 0.5]], tk: 'tg_paw', tick: 1, arrive: 'tg_leaves' },
+    pink: { mu: 'mu_pink', loops: [['pk_loop', 0.2, 0.5]], heart: true, cracks: ['pk_kiss', 'pk_kiss', 'pk_kiss'], turn: [['pk_pops', 0.8], ['pk_whoosh', 0.6], ['pk_harp', 0.55]], land: [['pk_bless', 0.85], ['pk_kiss', 0.5]],
+      fin: [['pk_fin', 0.4]], tk: 'pk_spark', tick: 1, arrive: 'pk_arrive' },
     panda: { mu: 'mu_panda', loops: [['pa_loop', 0.22, 0.6]], cracks: ['pa_harp', 'pa_wood', 'pa_harp'], turn: [['pa_gong', 0.8], ['pa_flute', 0.45]], land: [['pa_drop', 0.7], ['pa_chimes', 0.35]],
       fin: [['pa_fin', 0.5]], tk: 'pa_brush', tick: 1, arrive: 'pa_arrive' },
     light: { mu: 'mu_light', loops: [['lt_loop', 0.22, 0.65]], cracks: ['crack1', 'lt_bowl', 'crack3'], turn: [['shell', 0.45], ['lt_choir', 0.8]], land: [['lt_bell', 0.65]],
@@ -3958,8 +3973,14 @@ const RECIPES = {
   // that arcs and falls, the card is quenched in a burst of steam, and each number is struck on the anvil with a spray of sparks
   lava: { emi: 0.3, seal: 17, c1: [1.0, 0.42, 0.06], c2: [1.0, 0.85, 0.3], veil: '22,4,0', arrive: 'magma', turn: 'quench', under: '255,90,20', forge: true,
     parts: { wait: 'rise', hatch: 'rise', land: 'hammer' }, cols: ['#ffd27a', '#ff8a2a', '#ff4a10', '#fff2c8'], flash: '255,96,24', ring: null, flick: 'glow', shake: 'rumble' },
-  lightning: { seal: 0, c1: [0.62, 0.8, 1.0], c2: [1.0, 0.92, 0.45], veil: '2,6,22', arrive: 'drop', turn: 'snap',
-    parts: { wait: 'orbit', hatch: 'jitter', land: 'sparks' }, cols: ['#ffffff', '#bfe2ff', '#ffe27a', '#8fc4ff'], flash: '220,235,255', ring: '#cfe6ff', flick: 'storm', shake: 'twitch', dark: 1.12, vc: 0.62 },
+  // Lightning, The Storm (Jon, 7 Nov): lightning strikes and the card is there in the flash, arcs of electricity crawl in from the card's
+  // edges toward the egg as you hold, a giant bolt strikes the egg from the sky and freezes in the slow motion, the card turns in jolts
+  // like a strobe, electricity crackles round its edges as it lands, and on each tile a spark runs round the border before the number
+  // flashes on
+  lightning: { emi: 0.35, seal: 25, c1: [0.62, 0.82, 1.0], c2: [1.0, 0.92, 0.45], veil: '2,6,22', arrive: 'strike', turn: 'jolt', spin: 3, storm: true,
+    pace: { full: { arrive: 1.0, hatch: 2.4, turn: 1.4, settle: 1.2 } },
+    beats: (TU, k) => [{ c: 0.06 * TU, d: 0.94 * k, s: 0.12 }, { c: TU + 0.04, d: 0.6 * k, s: 0.07 }],
+    parts: { wait: 'jitter', hatch: 'jitter', land: 'sparks' }, burst: 'zap', cols: ['#ffffff', '#bfe2ff', '#ffe27a', '#8fc4ff'], flash: '220,235,255', ring: '#cfe6ff', flick: 'storm', shake: 'twitch', dark: 1.12, vc: 0.62 },
   twoface: { seal: 1, c1: [1.0, 0.45, 0.38], c2: [0.42, 0.62, 1.0], veil: '10,6,16', arrive: 'halves', turn: 'split',
     parts: { wait: 'orbit2', hatch: 'converge2', land: 'duo' }, cols: ['#ff7a6a', '#ffc2b8', '#6a9cff', '#c4d6ff'], flash: '255,255,255', ring: '#ffffff', flick: 'still', shake: 'sway' },
   // Gilded Night: the card rises like a vault lift, gold deco rays spread across the seal, the clock jolts, it opens from the middle and gold rains down
@@ -3987,10 +4008,22 @@ const RECIPES = {
     pace: { full: { arrive: 1.2, hatch: 2.0, turn: 1.15, settle: 1.0, gap: 0.18, write: 0.85 } },
     beats: (TU, k) => [{ c: 0.1 * TU, d: 0.93 * k, s: 0.16 }, { c: TU + 0.03, d: 0.7 * k, s: 0.07 }],
     parts: { wait: 'none', hatch: 'none', land: 'sparks' }, burst: 'sonic', cols: ['#ffd8a0', '#e8b878', '#fff2d8', '#c89858'], flash: '255,250,240', ring: '#ffd25a', flick: 'still' },
-  tiger: { seal: 6, brk: 4, c1: [1.0, 0.55, 0.14], c2: [1.0, 0.85, 0.5], veil: '14,6,2', arrive: 'pounce', turn: 'pounce', shake: 'growl', ov: 'leaves',
-    parts: { wait: 'falling', hatch: 'falling', land: 'leafburst' }, tex: 'leaf', cols: ['#ff9a3a', '#d9622a', '#ffcf7a', '#8a3a12'], flash: '255,190,120', ring: '#ffb060', flick: 'glow', ovc: '230,120,40' },
-  pink: { seal: 12, brk: 1, c1: [1.0, 0.55, 0.82], c2: [1.0, 0.85, 0.95], veil: '16,4,14', arrive: 'fall', turn: 'sway', shake: 'float', ov: 'petals',
-    parts: { wait: 'falling', hatch: 'spiral', land: 'petalrain' }, tex: 'petal', cols: ['#ffb3dc', '#ff7ac0', '#ffe0f0', '#e05aa8'], flash: '255,200,235', ring: '#ffc4e6', flick: 'still' },
+  // Tiger, The Hunt (Jon, 7 Nov): the card stalks in low through the jungle, stopping and creeping like a cat, a pair of tiger eyes
+  // opens in the dark as you hold while stripes burn in from the edges, the egg is torn open by three giant claw marks that rip across
+  // the whole screen and hang in the slow motion with shredded leaves, the card leaps at you, lands with a roar that shakes the jungle,
+  // and each number is stamped on with a paw print
+  tiger: { emi: 0.3, seal: 23, brk: 4, c1: [1.0, 0.5, 0.1], c2: [1.0, 0.85, 0.5], veil: '10,4,0', dark: 1.05, arrive: 'stalk', turn: 'leap', spin: 1, shake: 'prowl', ov: 'leaves', hunt: true,
+    pace: { full: { arrive: 2.3, hatch: 2.6, turn: 1.3, settle: 1.3 } },
+    beats: (TU, k) => [{ c: 0.13 * TU, d: 0.9 * k, s: 0.13 }, { c: TU + 0.05, d: 0.6 * k, s: 0.08 }],
+    parts: { wait: 'falling', hatch: 'none', land: 'falling' }, burst: 'shred', tex: 'leaf', cols: ['#ff9a3a', '#d9622a', '#ffcf7a', '#6a8a2a'], flash: '255,150,60', ring: '#ff9a3a', flick: 'still', ovc: '200,110,40' },
+  // Pink, The Heartbeat (Jon, 7 Nov): the card floats down the orchid path held by two heart balloons that drift away, a heart draws
+  // itself round the egg as you hold and beats faster and faster with your heartbeat, the egg bursts into a cloud of little hearts that
+  // hang in the slow motion then float up, the card twirls with a ribbon round it, a heart of light ripples out as it lands, and each
+  // number blooms out of a heart
+  pink: { emi: 0.35, seal: 24, brk: 1, c1: [1.0, 0.42, 0.72], c2: [1.0, 0.85, 0.95], veil: '24,4,18', dark: 0.8, arrive: 'balloon', turn: 'twirl', spin: 1, shake: 'beat', ov: 'petals', love: true,
+    pace: { full: { arrive: 2.4, hatch: 2.6, turn: 1.6, settle: 1.4 } },
+    beats: (TU, k) => [{ c: 0.12 * TU, d: 0.9 * k, s: 0.14 }, { c: TU + 0.05, d: 0.7 * k, s: 0.1 }],
+    parts: { wait: 'none', hatch: 'none', land: 'heartrise' }, burst: 'hearts', tex: 'heart', cols: ['#ff5fa8', '#ff9ccb', '#ffffff', '#e0307e'], flash: '255,190,225', ring: '#ff8cc6', flick: 'still' },
   // Panda, The Ink Scroll (Jon, 7 Nov): a living ink painting. The card unrolls like a scroll, a brush paints an enso round the egg as
   // you hold, the egg bursts into a splash of ink that hangs in the slow motion, the card turns like a page, a ring of ink spreads like a
   // drop in water, a little brush painted panda appears in the corner munching bamboo, and each number is brushed in by calligraphy
@@ -4097,7 +4130,10 @@ RV = (() => {
   TEXS.inkdrop = spriteTex((x, S) => { x.translate(S / 2, S / 2); x.fillStyle = '#ffffff';
       x.beginPath(); x.arc(0, 0, S * 0.26, 0, 7); x.fill();
       for (let k = 0; k < 7; k++) { const a = hash(k + 41) * 6.283, d = S * (0.24 + hash(k + 42) * 0.16), r = S * (0.03 + hash(k + 43) * 0.06); x.beginPath(); x.arc(Math.cos(a) * d, Math.sin(a) * d, r, 0, 7); x.fill(); } }, 96);
-  const SOLID = { petal: 1, leaf: 1, coin: 1, smoke: 1, crystal: 1, ghost: 1, inkdrop: 1 };                  // shapes that sit on top, rather than glowing
+  TEXS.heart = spriteTex((x, S) => { x.translate(S / 2, S / 2 + S * 0.04); const s = S * 0.42; x.beginPath(); x.moveTo(0, s * 0.62);
+      x.bezierCurveTo(-s * 1.25, -s * 0.15, -s * 0.6, -s * 1.05, 0, -s * 0.45); x.bezierCurveTo(s * 0.6, -s * 1.05, s * 1.25, -s * 0.15, 0, s * 0.62); x.closePath();
+      x.fillStyle = '#ffffff'; x.fill(); x.fillStyle = 'rgba(255,255,255,0.55)'; x.beginPath(); x.ellipse(-s * 0.38, -s * 0.38, s * 0.16, s * 0.1, -0.6, 0, 7); x.fill(); }, 96);
+  const SOLID = { petal: 1, leaf: 1, coin: 1, smoke: 1, crystal: 1, ghost: 1, inkdrop: 1, heart: 1 };                  // shapes that sit on top, rather than glowing
   const grp = new THREE.Group(); grp.visible = false; scene.add(grp);
   const aura = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.4), new THREE.MeshBasicMaterial({ map: glowT, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, opacity: 0 }));
   aura.position.z = -0.35; aura.renderOrder = -1; grp.add(aura);
@@ -4131,6 +4167,9 @@ float shs(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); 
 float snz(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(shs(i), shs(i + vec2(1.0, 0.0)), f.x), mix(shs(i + vec2(0.0, 1.0)), shs(i + vec2(1.0, 1.0)), f.x), f.y); }
 float sfb(vec2 p) { float a = 0.5, s = 0.0; for (int i = 0; i < 4; i++) { s += a * snz(p); p *= 2.03; a *= 0.5; } return s; }
+float dot2h(vec2 v) { return dot(v, v); }
+float sHeart(vec2 p) { p.x = abs(p.x); if (p.y + p.x > 1.0) return sqrt(dot2h(p - vec2(0.25, 0.75))) - 0.35355;
+  return sqrt(min(dot2h(p - vec2(0.0, 1.0)), dot2h(p - 0.5 * max(p.x + p.y, 0.0)))) * sign(p.x - p.y); }
 float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) { vec2 g = vec2(float(i), float(j)); vec2 o = vec2(shs(n + g), shs(n + g + 17.3)); vec2 r = g + o - f; float d = dot(r, r);
     if (d < m1) { m2 = m1; m1 = d; } else if (d < m2) m2 = d; }
@@ -4239,6 +4278,30 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       vec2 g = sv * vec2(15.0, 8.4), id = floor(g), f = fract(g) - 0.5 - (vec2(shs(id), shs(id + 3.1)) - 0.5) * 0.4;
       float on = step(shs(id + 5.5), uH * 0.95), rad = on * (0.08 + 0.32 * uH * shs(id + 2.2)), d = length(f);
       glow += uC1 * (exp(-abs(d - rad) / 0.025) * 1.8 + smoothstep(rad, rad - 0.06, d) * 0.6) * on * (0.6 + 1.2 * uH) * uFlick + uC1 * 0.08 * uH;
+    } else if (uMode > 24.5) {                  // arcs of electricity crawl in from the card's edges toward the egg as it is held, flickering
+      for (int i = 0; i < 7; i++) { float fi = float(i), a = fi * 0.8976 + uSeed, ca = cos(a), sa = sin(a); vec2 lq = vec2(ca * q.x + sa * q.y, -sa * q.x + ca * q.y);
+        float fr = floor(uT * 13.0 + fi * 3.0), jag = (snz(vec2(lq.x * 15.0, fr + fi * 7.0)) - 0.5) * 0.1 * (lq.x - 0.18) + (snz(vec2(lq.x * 40.0, fr * 1.7)) - 0.5) * 0.025;
+        float dd = abs(lq.y - jag), vis = step(0.2, lq.x) * step(0.95 - uH * 0.78, lq.x) * step(lq.x, 1.0) * step(0.55 - uH * 0.45, shs(vec2(fr, fi)));
+        glow += (uC1 * exp(-dd / (0.003 + 0.004 * uH)) * 2.2 + uC1 * exp(-dd / 0.03) * 0.3) * vis * (0.6 + uH); }
+      glow += uC1 * exp(-max(r - 0.2, 0.0) / 0.05) * uH * uH * 0.6;
+    } else if (uMode > 23.5) {                  // a heart draws itself round the egg from its tip as it is held, then beats, faster and faster
+      float bp = 1.0 - 0.6 * uH, bt = fract(uT / bp), pu = exp(-bt * 12.0) + 0.6 * exp(-max(bt - 0.2, 0.0) * 12.0) * step(0.2, bt);
+      float sc = 0.6 * (1.0 + 0.045 * pu * smoothstep(0.3, 1.0, uH));
+      vec2 hp = (q - vec2(0.0, -0.3)) / sc; float d = sHeart(hp) * sc, vis = step(hp.y, uH * 1.55 - 0.05);
+      glow += uC1 * exp(-abs(d) / (0.006 + 0.008 * uH)) * vis * (0.9 + 1.8 * uH) * (0.85 + 0.3 * pu) + uC2 * exp(-abs(d) / 0.002) * vis * 0.6;
+      glow += uC1 * step(d, 0.0) * smoothstep(0.55, 1.0, uH) * 0.32 * (0.6 + 0.6 * pu);
+    } else if (uMode > 22.5) {                  // tiger eyes: in the dark a pair of amber eyes opens as it is held, the slit pupils narrowing,
+                                                //   while glowing stripes burn in from the left and right edges
+      float sx = abs(q.x), wv = sin(q.y * 9.0 + sin(q.y * 3.0 + uSeed) * 1.5) * 0.04;
+      float st = pow(0.5 + 0.5 * sin((sx + wv) * 34.0 + n * 3.0), 6.0), reach = sx - (0.92 - uH * 0.5);
+      glow += uC1 * st * smoothstep(0.0, 0.1, reach) * (0.5 + 1.3 * uH);
+      for (int j = 0; j < 2; j++) { vec2 e = q - vec2(float(j) * 0.86 - 0.43, 0.04); e.x *= float(j) * 2.0 - 1.0;
+        float ew = 0.14, op = smoothstep(0.04, 0.85, uH) * 0.07 + 0.003, lid = op * max(0.0, 1.0 - pow(e.x / ew, 2.0)) * (1.0 - 0.25 * e.x / ew);
+        float inEye = 1.0 - smoothstep(lid - 0.004, lid + 0.002, abs(e.y)), ir = length(e), iris = 1.0 - smoothstep(0.062, 0.068, ir);
+        float sw = 0.004 + 0.016 * (1.0 - uH), slit = 1.0 - smoothstep(sw, sw + 0.005, abs(e.x) + e.y * e.y * 0.6);
+        vec3 ic = mix(vec3(1.0, 0.66, 0.1), vec3(0.95, 0.28, 0.02), ir / 0.068);
+        glow += inEye * (iris * ic * (1.0 + 1.8 * uH) * (1.0 - slit * 0.97) + (1.0 - iris) * vec3(1.0, 0.9, 0.6) * 0.2);
+        glow += vec3(1.0, 0.55, 0.12) * exp(-abs(abs(e.y) - lid) / 0.004) * step(abs(e.x), ew) * 0.5 * step(0.02, uH) * (1.0 - inEye * 0.5); }
     } else if (uMode > 21.5) {                  // start lights and a speedometer: the needle climbs round the egg as it is held, and the lamps on
                                                 //   either side come on red one row at a time, then all turn green
       float ta = mod(3.927 - ang, 6.2832) / 4.712, inArc = step(ta, 1.0), R0 = 0.34;
@@ -4545,6 +4608,13 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     }
     if (st.mint > 0.002) { const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7); g.addColorStop(0, `rgba(140,255,215,${0.22 * st.mint})`); g.addColorStop(1, `rgba(255,200,120,${0.12 * st.mint})`); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h); }
     if (st.gh) ghostFx(ctx, st.gh, st.t);
+    if (st.bolt >= 0) boltFx(ctx, w, h, st.rect, st.bolt, st.boltSeed);
+    if (st.arcs >= 0) arcsFx(ctx, w, h, st.rect, st.t, st.arcs);
+    if (st.balloon >= 0) balloonFx(ctx, w, h, st.rect, st.t, st.balloon);
+    if (st.ribbon >= 0) ribbonFx(ctx, w, h, st.rect, st.ribbon);
+    if (st.hwave >= 0) hwaveFx(ctx, w, h, st.rect, st.hwave);
+    if (st.claw >= 0) clawFx(ctx, w, h, st.claw);
+    if (st.roar >= 0) roarFx(ctx, w, h, cardRect(), st.roar);
     if (st.race) raceFx(ctx, w, h, st.rect, st.race[0], st.race[1]);
     if (st.boom >= 0) boomFx(ctx, w, h, st.rect, st.boom);
     if (st.spray >= 0) sprayFx(ctx, w, h, st.rect, st.spray);
@@ -4713,6 +4783,14 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         op = (i % 2 ? 0 : 0.22 + 0.3 * k) * (0.7 + 0.3 * Math.sin(t * 1.3 + p.ph)); sc = p.s * 4 * (1.2 - 0.5 * k); rot = a * 0.5; }                     // shadow: smoke drawn in toward the egg
       else if (role === 'inkcurl') { const tt = u, life = 1.7; x0 = p.v.x * 0.55 * tt * (1 - tt * 0.15); y0 = baseY + p.v.y * 0.4 * tt + 0.3 * tt * tt; z0 = -0.25 + p.v.z * tt * 0.12;
         op = Math.min(1, tt * 6) * Math.pow(Math.max(0, 1 - tt / life), 1.6) * (i % 3 ? 0 : 0.7); sc = p.s * (2.2 + tt * 2.6); rot = tt * (0.6 + p.sp * 2) + p.ph; }       // shadow: the egg's smoke curls away and thins
+      else if (role === 'zap') { const tt = u, g = 3;      // lightning: sparks thrown out where the bolt hits
+        x0 = p.v.x * 1.3 * tt; y0 = WY + p.v.y * 1.1 * tt - 0.5 * g * tt * tt; z0 = 0.3 + p.v.z * tt * 0.3; op = Math.min(1, tt * 20) * Math.max(0, 1 - tt / 1.0) * (0.6 + 0.4 * Math.sin(t * 40 + p.ph)); sc = p.s * 1.1; }
+      else if (role === 'hearts' || role === 'heartrise') { const tt = role === 'heartrise' ? u + pace.turn : u, up = Math.max(0, tt - 0.9);      // pink: a cloud of little hearts, hanging, then floating up
+        if (i % 2) { p.m.material.opacity = 0; return; } x0 = p.v.x * 0.6 * (1 - Math.exp(-tt * 3)) * 1.2 + Math.sin(tt * 2 + p.ph) * 0.06 * up; y0 = WY + p.v.y * 0.5 * (1 - Math.exp(-tt * 3)) * 1.2 + up * up * (0.5 + hash(i + 611) * 0.9); z0 = 0.3 + p.v.z * 0.2;
+        op = Math.min(1, tt * 10) * Math.max(0, 1 - up / 2.2); sc = p.s * (i % 8 ? 2.4 : 4.2) * (1 + 0.12 * Math.sin(tt * 9 + p.ph)); rot = Math.sin(tt * 2 + p.ph) * 0.3; }
+      else if (role === 'shred') { const tt = u, g = 1.7;      // tiger: leaves shredded by the claws, flung out and hanging in the slow motion
+        if (i % 2) { p.m.material.opacity = 0; return; } x0 = p.v.x * 0.9 * tt; y0 = WY + p.v.y * 0.7 * tt - 0.5 * g * tt * tt; z0 = 0.3 + p.v.z * tt * 0.3; rot = tt * (2 + p.sp * 6) + p.ph;
+        op = Math.min(1, tt * 12) * Math.max(0, 1 - tt / 1.8); sc = p.s * (i % 6 ? 2.6 : 4.2); }
       else if (role === 'sonic') { const tt = u, a = p.a, sp = 2.2 + hash(i + 71) * 2.6, rr = sp * (1 - Math.exp(-tt * 3.6)) + hash(i + 72) * 0.1;   // speed: sand thrown out by the sonic boom, hanging in the slow motion
         x0 = Math.cos(a) * rr * 1.25; y0 = WY + Math.sin(a) * rr * 0.62 - tt * tt * 0.5; z0 = 0.25 + (hash(i + 73) - 0.5) * 0.4; op = Math.min(1, tt * 16) * Math.max(0, 1 - tt / 1.5) * 0.85; sc = p.s * (0.7 + hash(i + 74) * 0.9); }
       else if (role === 'none') { p.m.material.opacity = 0; return; }
@@ -4794,6 +4872,10 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       else if (R.arrive === 'squash') { const x = clamp01(A / pace.arrive), y = x < 0.6 ? 1 - Math.pow(x / 0.6, 2) : 0, sq = x < 0.6 ? 0 : Math.sin((x - 0.6) / 0.4 * Math.PI * 3) * Math.exp(-(x - 0.6) * 6) * 0.16;
         card.position.y = WY + 2.2 * y; card.scale.set(WS * (1 + sq), WS * (1 - sq), WS); }
       else if (R.arrive === 'slide') { card.position.x = 5 * k * k; card.rotation.y += k * 0.5; card.rotation.z = Math.sin(A * 9) * 0.03 * k; }
+      else if (R.arrive === 'strike') { const x = A / pace.arrive; if (x < 0.28) card.scale.setScalar(0.0001); else { const f = easeOut((x - 0.28) / 0.72); card.scale.setScalar(WS * (1.07 - 0.07 * f)); card.rotation.z = Math.sin(A * 40) * 0.02 * (1 - f); } }   // lightning strikes and it is there
+      else if (R.arrive === 'balloon') { const e = easeOut(clamp01(A / pace.arrive)); card.position.y = WY + 1.5 * (1 - e); card.rotation.z = Math.sin(A * 2.1) * 0.07 * k; card.position.x = Math.sin(A * 1.3) * 0.18 * k; }   // floats down held by two heart balloons
+      else if (R.arrive === 'stalk') { const e = clamp01(A / pace.arrive), sm = (a0, a1) => { const x = clamp01((e - a0) / (a1 - a0)); return x * x * (3 - 2 * x); }, p = 0.55 * sm(0, 0.38) + 0.45 * sm(0.52, 0.88), mv = Math.sin(Math.min(1, e / 0.38) * Math.PI) + Math.sin(clamp01((e - 0.52) / 0.36) * Math.PI);
+        card.position.x = 2.6 * (1 - p); card.position.y = WY - 0.32 * (1 - p) + Math.abs(Math.sin(A * 7)) * 0.025 * mv; card.rotation.z = -0.05 * (1 - p) + Math.sin(A * 7) * 0.012 * mv; card.rotation.y += 0.25 * (1 - p); }   // stalks in low, creeps, stops, creeps again
       else if (R.arrive === 'race') { const e = clamp01(A / pace.arrive), f = 1 - Math.pow(1 - e, 5), sk = Math.sin(Math.min(1, Math.max(0, (e - 0.4) / 0.6)) * Math.PI); card.position.x = -7.5 * (1 - f); card.rotation.y += (1 - f) * 0.5 - sk * 0.12; card.rotation.z = (1 - f) * 0.1 - sk * 0.05; card.position.y = WY - sk * 0.03; }   // races in and skids to a stop
       else if (R.arrive === 'unroll') { const e = clamp01(A / pace.arrive), f = e < 0.15 ? 0 : easeOut((e - 0.15) / 0.85); card.scale.x = WS * Math.max(0.03, f); card.position.x = -W * WS * 0.5 * (1 - f); }   // unrolls from its rod, left to right
       else if (R.arrive === 'hyperspace') { const e = clamp01(A / pace.arrive), f = 1 - Math.pow(1 - Math.min(1, e / 0.55), 4); card.position.z = -0.2 - 14 * (1 - f); card.rotation.z = (1 - f) * 0.25; }   // shoots in out of hyperspace and stops dead
@@ -4809,7 +4891,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     lights((R.arrive === 'fade' || R.arrive === 'emerge') && !film ? 0.42 * (0.25 + 0.75 * ar) : 0.42); sweepForce = 9; SH.forEach(s => s.m.visible = false); SU.uT.value = t;
     parts(R.parts.wait, t, 0.15, 0); PT.forEach(p => p.m.material.opacity *= ar); EGG.wait(t, ar);
     Object.assign(S, { veil: 0.82 * Math.min(1, film ? 1 : A / 0.6), flash: 0, under: R.under ? 0.25 * ar : 0, ov: 0.55 * ar, warp: 0, sheet: 0, strike: 0, seam: 0, t });
-    eclipse('wait', t, ar, A); forge('wait', t, ar); aurora('wait', t, ar); haunt('wait', t, ar, A); hole('wait', t, ar, A); inkfx('wait', t, ar, A); racefx('wait', t, ar, A);
+    eclipse('wait', t, ar, A); forge('wait', t, ar); aurora('wait', t, ar); haunt('wait', t, ar, A); hole('wait', t, ar, A); inkfx('wait', t, ar, A); racefx('wait', t, ar, A); huntfx('wait', t, ar, A); lovefx('wait', t, ar, A); stormfx('wait', t, ar, A);
     hideTiles(); back(false);
   }
   function poseHatch(t, e, ht) {
@@ -4826,6 +4908,8 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     else if (R.shake === 'tick') { const q = t * 2, f = q - Math.floor(q), j = Math.exp(-f * 14); card.rotation.z = j * 0.016 * (hash(Math.floor(q)) - 0.5) * 2 * (0.4 + e) * (RM ? 0 : 1); card.position.y += j * 0.006 * (0.4 + e); }
     else if (R.shake === 'pulse') { card.scale.multiplyScalar(1 + Math.sin(t * 4.5) * 0.012 * e); card.rotation.y += Math.sin(t * 0.9) * 0.05 * e; }
     else if (R.shake === 'creak') { const q = Math.floor(t * 1.6), j = Math.exp(-(t * 1.6 - q) * 6) * (hash(q) < 0.5 ? 1 : -1); card.rotation.z = Math.sin(t * 1.3) * 0.035 * e + j * 0.012 * sh; }
+    else if (R.shake === 'beat') { const bp = 1 - 0.6 * e, bt = (t / bp) % 1, pu = Math.exp(-bt * 12) + 0.6 * Math.exp(-Math.max(bt - 0.2, 0) * 12) * (bt > 0.2 ? 1 : 0); card.scale.multiplyScalar(1 + pu * 0.022 * (0.3 + e) * (RM ? 0 : 1)); card.rotation.z = Math.sin(t * 1.1) * 0.02 * e; }   // beating like a heart
+    else if (R.shake === 'prowl') { const br = Math.sin(t * 2.3); card.scale.multiplyScalar(1 + br * 0.012 * (0.4 + e)); card.position.y += br * 0.012 * (0.4 + e); card.position.x += Math.sin(t * 55) * 0.006 * sh; card.rotation.z = Math.sin(t * 0.8) * 0.02 * e; }   // heavy breathing, a growl building
     else if (R.shake === 'rev') { const pu = Math.pow(0.5 + 0.5 * Math.sin(t * 13.8), 4) * (RM ? 0 : 1); card.position.x += Math.sin(t * 61) * 0.004 * (0.3 + e) * (1 + pu * 2); card.rotation.z = Math.sin(t * 47) * 0.006 * (0.3 + e) * (1 + pu); card.position.y += pu * 0.012 * e; card.rotation.x -= pu * 0.02 * e; }   // the engine revving
     else if (R.shake === 'breeze') { card.rotation.z = Math.sin(t * 0.9) * 0.025 * e; card.position.y += Math.sin(t * 1.2) * 0.015 * e; card.rotation.y += Math.sin(t * 0.7) * 0.03 * e; }   // a calm breeze
     else if (R.shake === 'pull') { card.position.z -= e * e * 0.22; card.rotation.x += e * 0.12; card.rotation.z = Math.sin(t * 1.3) * 0.03 * e + e * e * 0.06; card.position.x += Math.sin(t * 31) * 0.004 * sh; }   // drawn toward the black hole
@@ -4841,7 +4925,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     parts(R.parts.hatch, t, e, 0); EGG.hatch(t, e, RM);
     let sheet = 0; if (theme === 'lightning') { const q = Math.floor(t * 9); sheet = hash(q + 99) < 0.08 + e * 0.22 ? (0.05 + e * 0.12) * (1 - (t * 9 - q)) : 0; }
     Object.assign(S, { veil: 0.82 + e * 0.06, flash: 0, under: R.under ? 0.25 + e * 0.75 : 0, ov: 0.55 + 0.45 * e, warp: 0, sheet, strike: 0, seam: theme === 'twoface' ? e : 0, t });
-    eclipse('hatch', t, e); forge('hatch', t, e); aurora('hatch', t, e); haunt('hatch', t, e); hole('hatch', t, e); inkfx('hatch', t, e); racefx('hatch', t, e);
+    eclipse('hatch', t, e); forge('hatch', t, e); aurora('hatch', t, e); haunt('hatch', t, e); hole('hatch', t, e); inkfx('hatch', t, e); racefx('hatch', t, e); huntfx('hatch', t, e); lovefx('hatch', t, e); stormfx('hatch', t, e);
     hideTiles(); back(false);
   }
   function poseGo(t, u) {
@@ -4867,6 +4951,9 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         else if (R.turn === 'glide') { card.position.x += sw * 0.75; card.rotation.z = -sw * 0.08; }
         else if (R.turn === 'dive') card.position.y -= sw * 0.45;
         else if (R.turn === 'grow') card.scale.multiplyScalar(1 + sw * 0.18);
+        else if (R.turn === 'jolt') { const st = Math.floor(e * 7) / 7, j = hash(Math.floor(u * 30)) - 0.5; card.rotation.y = Math.PI + (st + (e - st) * 0.25) * spin * Math.PI; card.position.x += j * 0.06 * sw; card.rotation.z = j * 0.05 * sw; }   // turns in jolts, like a strobe
+        else if (R.turn === 'twirl') { card.rotation.z = e * Math.PI * 2; card.position.y += sw * 0.32; card.scale.multiplyScalar(1 - sw * 0.1); }   // twirls like a dancer
+        else if (R.turn === 'leap') { card.position.z += sw * 1.2; card.position.y += sw * 0.45; card.rotation.x -= sw * 0.3; card.rotation.z = Math.sin(e * Math.PI * 2) * 0.06; }   // leaps out at you
         else if (R.turn === 'drift') { card.position.x += sw * 0.85; card.position.y -= sw * 0.1; card.rotation.z = -sw * 0.16; card.rotation.x += sw * 0.08; }   // drifts round like a car taking a corner
         else if (R.turn === 'page') { card.position.x += sw * W * 0.32; card.position.z += sw * 0.12; card.rotation.z = -sw * 0.04; }   // turns over like the page of a book
         else if (R.turn === 'wormhole') { card.position.z -= sw * 0.9; card.rotation.z = e * Math.PI * 2; }   // falls into the tunnel, spinning through it, and out the other side
@@ -4881,7 +4968,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       parts(R.burst || (R.forge ? 'erupt' : 'implode'), t, 0, u); shards(u); EGG.burst(u, RM);
       const strike = theme === 'lightning' ? Math.max(0, 1 - u / 0.35) * (u < 0.05 ? u / 0.05 : 1) : 0;
       Object.assign(S, { veil: 0.88 * (1 - clamp01((u - TU + 0.2) / 1.2)), flash: strike * 0.55, under: R.under ? 1 - e * 0.5 : 0, ov: 1, warp: R.warp && !RM ? Math.sin(x0 * Math.PI) : 0, sheet: 0, strike, seed: 7, seam: theme === 'twoface' ? 1 - e * 0.3 : 0, t });
-      eclipse('turn', t, x0, e); forge('turn', t, x0, u); aurora('turn', t, x0, u); haunt('turn', t, x0, u); hole('turn', t, x0, u); inkfx('turn', t, x0, u); racefx('turn', t, x0, u);
+      eclipse('turn', t, x0, e); forge('turn', t, x0, u); aurora('turn', t, x0, u); haunt('turn', t, x0, u); hole('turn', t, x0, u); inkfx('turn', t, x0, u); racefx('turn', t, x0, u); huntfx('turn', t, x0, u); lovefx('turn', t, x0, u); stormfx('turn', t, x0, u);
       hideTiles(); back(false);
     } else {                                       // the landing and the journey lighting up
       const u2 = u - TU, k = Math.exp(-u2 * 4.2);
@@ -4901,7 +4988,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         let flash = ui < 0 ? 0 : Math.max(0, 1 - ui / (last ? 1.1 : 0.7)) * (last ? 0.12 : 0.05), lift = (1 - clamp01(ui / 0.5)) * 0.03 * (ui >= 0 ? 1 : 0);
         let pu = 0; if (i === so) { const x = clamp01((u2 - tDone) / 1.3), pe = Math.sin(Math.PI * x); lift += pe * 0.05; pu = x > 0 && x < 1 ? x : 0; }   // the stat this trail shines brightest in
         return [s, flash, lift, wp, pu]; }, t);
-      eclipse('land', t, u2, tDone); forge('land', t, u2, TU); aurora('land', t, u2, TU); haunt('land', t, u2, tDone); hole('land', t, u2, tDone); inkfx('land', t, u2, tDone); racefx('land', t, u2, tDone);
+      eclipse('land', t, u2, tDone); forge('land', t, u2, TU); aurora('land', t, u2, TU); haunt('land', t, u2, tDone); hole('land', t, u2, tDone); inkfx('land', t, u2, tDone); racefx('land', t, u2, tDone); huntfx('land', t, u2, tDone); lovefx('land', t, u2, tDone); stormfx('land', t, u2, tDone);
       if (so >= 0 && u2 >= tDone) fire('shine', () => SND.play(theme, 'tick', 7, true));
       if (u2 > 0.35 + (n - 1) * pace.gap + pace.write * 1.3 * 0.8) fire('fin', () => SND.play(theme, 'fin'));
       if (u > end && !film) finish();
@@ -5081,6 +5168,96 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     const s = Math.max(6, Math.min(18 * K, ch * 0.045)), inn = Math.min(1, Math.max(0, (u2 - 0.42) / 0.4)), out = Math.min(1, Math.max(0, (u2 - 1.8) / 0.8)), ie = 1 - Math.pow(1 - inn, 3);
     if (inn > 0 && out < 1) { const y = r[3] + s * 0.8, n = Math.ceil(cw / s), shown = Math.ceil(n * ie); c.globalAlpha = 0.9 * (1 - out);
       for (let i = 0; i < shown; i++) for (let j = 0; j < 2; j++) { c.fillStyle = (i + j) % 2 ? '#111111' : '#f6f2ea'; c.fillRect(r[0] + i * s, y + j * s, Math.min(s, r[2] - (r[0] + i * s)), s); } }
+    c.restore(); }
+
+  // ----- Tiger's hunt, laid over each step: the dark of the jungle, the claw marks, the roar -----
+  function huntfx(step, t, a, b) {
+    const R = recipe(); S.claw = -1; S.roar = -1; if (!R.hunt) return;
+    if (step === 'wait') { lights(0.42 * (0.7 + 0.3 * a)); }
+    else if (step === 'hatch') { const e = a; lights(0.42 - 0.16 * e); S.veil = 0.82 + 0.12 * e; aura.material.color.set('#ff7a1a'); aura.material.opacity = 0.12 + 0.3 * e; }
+    else if (step === 'turn') { const u = b; S.claw = u; S.flash = 0.3 * Math.exp(-Math.pow((u - 0.04) / 0.06, 2)); aura.material.opacity *= 0.6; }
+    else { const u2 = a, k = Math.exp(-u2 * 7); S.roar = u2; card.position.x += Math.sin(u2 * 83) * 0.035 * k; card.position.y += Math.sin(u2 * 71) * 0.025 * k; S.flash = 0; ring.material.opacity *= 0.5; }
+  }
+  function clawFx(c, w, h, u) {                         // three giant claw marks ripping across the screen
+    if (u < 0 || u > 1.8) return; const M = Math.min(w, h), out = Math.max(0, Math.min(1, (u - 0.75) / 0.8)); c.save(); c.lineCap = 'round';
+    for (let i = 0; i < 3; i++) { const g = Math.min(1, Math.max(0, (u - i * 0.025) / 0.1)), ge = 1 - Math.pow(1 - g, 3); if (g <= 0) continue;
+      const ox = (i - 1) * M * 0.17, ax = w * 0.5 + ox + M * 0.42, ay = h * 0.5 - M * 0.5, bx = w * 0.5 + ox - M * 0.42, by = h * 0.5 + M * 0.5;
+      const ex = ax + (bx - ax) * ge, ey = ay + (by - ay) * ge, nx = (by - ay), ny = -(bx - ax), nl = Math.hypot(nx, ny), wd = M * (0.045 - i * 0.004);
+      const path = () => { c.beginPath(); c.moveTo(ax, ay); const N = 14; for (let k = 0; k <= N; k++) { const f = k / N, x = ax + (ex - ax) * f, y = ay + (ey - ay) * f, s = Math.sin(f * Math.PI) * wd; c.lineTo(x + nx / nl * s, y + ny / nl * s); }
+        for (let k = N; k >= 0; k--) { const f = k / N, x = ax + (ex - ax) * f, y = ay + (ey - ay) * f, s = Math.sin(f * Math.PI) * wd * 0.35; c.lineTo(x - nx / nl * s, y - ny / nl * s); } c.closePath(); };
+      c.globalAlpha = 1 - out; c.shadowColor = 'rgba(255,120,20,0.95)'; c.shadowBlur = M * 0.05; path(); c.fillStyle = 'rgba(24,8,2,0.92)'; c.fill();
+      c.shadowBlur = 0; c.strokeStyle = 'rgba(255,170,60,0.95)'; c.lineWidth = M * 0.005; path(); c.stroke();
+      c.strokeStyle = 'rgba(255,230,160,0.8)'; c.lineWidth = M * 0.002; c.beginPath(); c.moveTo(ax, ay); c.lineTo(ex, ey); c.stroke(); }
+    c.restore(); }
+  function roarFx(c, w, h, r, u2) {                    // the roar: waves of force rolling out through the jungle, and its edges darkening
+    if (u2 < 0 || u2 > 2.4) return; const cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2, M = Math.max(w, h); c.save();
+    for (let k = 0; k < 4; k++) { const q = u2 - k * 0.12; if (q <= 0) continue; const R = M * (0.08 + q * 0.55), al = Math.max(0, 1 - q / 1.4) * 0.38;
+      c.strokeStyle = `rgba(255,150,60,${al})`; c.lineWidth = M * 0.012 * Math.max(0.2, 1 - q); c.beginPath(); c.arc(cx, cy, R, 0, 7); c.stroke(); }
+    const v = Math.exp(-u2 * 2.5) * 0.5, g = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, M * 0.75); g.addColorStop(0, 'rgba(20,6,0,0)'); g.addColorStop(1, `rgba(20,6,0,${v})`); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.restore(); }
+
+  // ----- Pink's heartbeat, laid over each step: the balloons, the ribbon, the heart of light -----
+  function lovefx(step, t, a, b) {
+    const R = recipe(); S.balloon = -1; S.ribbon = -1; S.hwave = -1; if (!R.love) return;
+    card.updateMatrixWorld(true); S.rect = cardRect();
+    if (step === 'wait') { const A = b; S.balloon = film ? -1 : Math.max(0, (A - pace.arrive * 0.92) / 1.6); }
+    else if (step === 'hatch') { aura.material.color.set('#ff6ab4'); aura.material.opacity = 0.15 + 0.35 * a; }
+    else if (step === 'turn') { S.ribbon = b; S.flash = 0.22 * Math.exp(-Math.pow((b - 0.04) / 0.07, 2)); }
+    else { S.hwave = a; ring.material.opacity = 0; S.flash = 0.12 * Math.exp(-a * 5); }
+  }
+  function heartPath(c, x, y, s) { c.beginPath(); c.moveTo(x, y + s * 0.62); c.bezierCurveTo(x - s * 1.25, y - s * 0.15, x - s * 0.6, y - s * 1.05, x, y - s * 0.45); c.bezierCurveTo(x + s * 0.6, y - s * 1.05, x + s * 1.25, y - s * 0.15, x, y + s * 0.62); c.closePath(); }
+  function balloonFx(c, w, h, r, t, up) {          // two heart balloons holding the card, let go once it has arrived
+    if (up > 1) return; const cw = r[2] - r[0], ch = r[3] - r[1], s = Math.min(cw, ch) * 0.2, al = 1 - Math.max(0, (up - 0.6) / 0.4); c.save(); c.globalAlpha = al;
+    for (const [sd, ph] of [[-1, 0], [1, 1.7]]) { const ax = sd < 0 ? r[0] + cw * 0.2 : r[2] - cw * 0.2, ay = r[1] + ch * 0.02, lift = up * up * h * 0.55;
+      const bx = ax + Math.sin(t * 1.4 + ph) * s * 0.25 + sd * s * 0.3 + up * sd * s * 0.8, by = ay - ch * 0.32 - lift + Math.sin(t * 1.9 + ph) * s * 0.08;
+      c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = Math.max(1, s * 0.03); c.beginPath(); c.moveTo(up > 0 ? bx + (ax - bx) * Math.max(0, 0.4 - up) : ax, up > 0 ? by + s * 0.62 + (ay - by) * Math.max(0, 0.4 - up) * 0.5 : ay); c.quadraticCurveTo((ax + bx) / 2 + Math.sin(t * 2 + ph) * s * 0.2, (ay + by) / 2, bx, by + s * 0.62); c.stroke();
+      const g = c.createRadialGradient(bx - s * 0.3, by - s * 0.3, s * 0.1, bx, by, s * 1.1); g.addColorStop(0, '#ffc2e0'); g.addColorStop(0.5, '#ff5fa8'); g.addColorStop(1, '#c8186a');
+      c.fillStyle = g; heartPath(c, bx, by, s); c.fill(); c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.ellipse(bx - s * 0.4, by - s * 0.35, s * 0.15, s * 0.09, -0.6, 0, 7); c.fill(); }
+    c.restore(); }
+  function ribbonFx(c, w, h, r, u) {               // a pink ribbon swirling round the card as it twirls
+    const TU = pace.turn; if (u < 0 || u > TU + 0.3) return; const cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2, R0 = Math.max(r[2] - r[0], r[3] - r[1]) * 0.62, al = Math.min(1, u / 0.15) * Math.max(0, 1 - (u - TU + 0.4) / 0.6);
+    c.save(); c.lineCap = 'round'; const N = 46, head = (u / TU) * Math.PI * 3.2;
+    for (let k = 0; k < N; k++) { const f0 = k / N, f1 = (k + 1) / N, a0 = head - f0 * 3.4, a1 = head - f1 * 3.4, rr0 = R0 * (0.78 + 0.22 * Math.sin(a0 * 1.5)), rr1 = R0 * (0.78 + 0.22 * Math.sin(a1 * 1.5));
+      c.strokeStyle = `rgba(255,${120 + 60 * Math.sin(a0 * 2)},${190},${al * (1 - f0) * 0.9})`; c.lineWidth = Math.max(1, R0 * 0.06 * (1 - f0) * (0.55 + 0.45 * Math.abs(Math.cos(a0 * 2))));
+      c.beginPath(); c.moveTo(cx + Math.cos(a0) * rr0, cy + Math.sin(a0) * rr0 * 0.55); c.lineTo(cx + Math.cos(a1) * rr1, cy + Math.sin(a1) * rr1 * 0.55); c.stroke(); }
+    c.restore(); }
+  function hwaveFx(c, w, h, r, u2) {                // a heart of light rippling out from the card as it lands
+    if (u2 < 0 || u2 > 2.2) return; const cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2 + (r[3] - r[1]) * 0.05, M = Math.max(w, h); c.save();
+    for (let k = 0; k < 3; k++) { const q = u2 - k * 0.16; if (q <= 0) continue; const s = M * (0.05 + q * 0.42), al = Math.max(0, 1 - q / 1.5) * (0.75 - k * 0.2);
+      c.shadowColor = 'rgba(255,120,190,0.9)'; c.shadowBlur = M * 0.02; c.strokeStyle = `rgba(255,190,225,${al})`; c.lineWidth = M * 0.006 * Math.max(0.3, 1 - q); heartPath(c, cx, cy, s); c.stroke(); }
+    c.restore(); }
+
+  // ----- Lightning's storm, laid over each step: the strike it arrives in, the bolt from the sky, the arcs round its edges -----
+  function stormfx(step, t, a, b) {
+    const R = recipe(); S.bolt = -1; S.boltSeed = 0; S.arcs = -1; if (!R.storm) return;
+    card.updateMatrixWorld(true); S.rect = cardRect();
+    if (step === 'wait') { const A = b, x = A / pace.arrive; if (!film && x < 0.85) { S.bolt = x * 1.4; S.boltSeed = 3; S.flash = x < 0.28 ? 0 : 0.7 * Math.exp(-(x - 0.28) * 7); } }
+    else if (step === 'turn') { S.bolt = b; S.boltSeed = 11; }
+    else { S.arcs = a; }
+  }
+  function boltPath(seed, x0, y0, x1, y1, n, amp) {   // a jagged bolt from one point to another, by repeated midpoint displacement
+    let P = [[x0, y0], [x1, y1]];
+    for (let lv = 0; lv < n; lv++) { const Q = [P[0]]; for (let i = 1; i < P.length; i++) { const [ax, ay] = P[i - 1], [bx, by] = P[i], mx = (ax + bx) / 2, my = (ay + by) / 2, dx = by - ay, dy = -(bx - ax), L = Math.hypot(dx, dy) || 1;
+      const o = (hash(seed + lv * 31 + i * 7.3) - 0.5) * amp * Math.pow(0.55, lv) * 2; Q.push([mx + dx / L * o, my + dy / L * o], P[i]); } P = Q; }
+    return P; }
+  function boltFx(c, w, h, r, u, seed) {              // a giant bolt from the sky to the egg; it hangs in the slow motion
+    if (u < 0 || u > 1.2) return; const M = Math.max(w, h), cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2, g = Math.min(1, u / 0.04), al = u < 0.55 ? 1 : Math.max(0, 1 - (u - 0.55) / 0.5);
+    const fl = 0.75 + 0.25 * Math.sin(u * 90), main = boltPath(seed, cx + M * 0.12, -20, cx, cy, 7, M * 0.18), cut = Math.max(2, Math.ceil(main.length * g));
+    c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+    const draw = (P, wd) => { c.beginPath(); c.moveTo(P[0][0], P[0][1]); for (let i = 1; i < P.length; i++) c.lineTo(P[i][0], P[i][1]);
+      c.shadowColor = 'rgba(140,190,255,1)'; c.shadowBlur = M * 0.03; c.strokeStyle = `rgba(170,210,255,${al * fl * 0.8})`; c.lineWidth = wd * 3; c.stroke();
+      c.shadowBlur = 0; c.strokeStyle = `rgba(255,255,255,${al * fl})`; c.lineWidth = wd; c.stroke(); };
+    draw(main.slice(0, cut), M * 0.005);
+    for (let b = 0; b < 4; b++) { const k = Math.floor(main.length * (0.25 + b * 0.16)); if (k >= cut) continue; const [sx, sy] = main[k], ang = (hash(seed + b * 5.1) - 0.5) * 1.6 + Math.PI / 2, L = M * (0.08 + 0.1 * hash(seed + b * 2.2));
+      draw(boltPath(seed + b * 13, sx, sy, sx + Math.cos(ang) * L * (b % 2 ? 1 : -1), sy + Math.sin(ang) * L, 4, L * 0.35), M * 0.0025); }
+    c.restore(); }
+  function arcsFx(c, w, h, r, t, u2) {                 // electricity crackling round the card's edges as it lands
+    if (u2 < 0 || u2 > 1.8) return; const pts = [[r[0], r[1]], [r[2], r[1]], [r[2], r[3]], [r[0], r[3]]], per = 2 * ((r[2] - r[0]) + (r[3] - r[1])), al = Math.max(0, 1 - u2 / 1.8), fr = Math.floor(t * 24);
+    const at = (d) => { d = ((d % per) + per) % per; for (let i = 0; i < 4; i++) { const [ax, ay] = pts[i], [bx, by] = pts[(i + 1) % 4], L = Math.hypot(bx - ax, by - ay); if (d <= L) return [ax + (bx - ax) * d / L, ay + (by - ay) * d / L]; d -= L; } return pts[0]; };
+    c.save(); c.lineJoin = 'round'; c.shadowColor = 'rgba(140,190,255,1)'; c.shadowBlur = Math.max(w, h) * 0.012;
+    for (let k = 0; k < 4; k++) { const s0 = (k / 4 + u2 * (0.35 + k * 0.07)) * per, L = per * 0.09; c.beginPath();
+      for (let i = 0; i <= 12; i++) { const [x, y] = at(s0 + L * i / 12), j = (hash(fr * 13 + k * 7 + i) - 0.5) * Math.max(w, h) * 0.012; if (i) c.lineTo(x + j, y - j); else c.moveTo(x, y); }
+      c.strokeStyle = `rgba(230,240,255,${al * (0.6 + 0.4 * hash(fr + k))})`; c.lineWidth = Math.max(1, Math.max(w, h) * 0.0018); c.stroke(); }
     c.restore(); }
 
   // ----- running a live reveal -----
