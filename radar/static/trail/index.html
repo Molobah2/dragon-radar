@@ -2584,12 +2584,13 @@ if (wiP < 0.999) {
   vec2 su = uv, blur = vec2(0.0);
   float r = 1.0, fr = 0.0, glowK = 1.0, overA = 0.0, ex = 0.0, dim = 1.0;
   vec3 tint = vec3(1.0), over = vec3(1.0), exC = vec3(1.0);
-  if (wiM == 1) {                                   // lava: molten metal pours up from below, glows, then cools and sets
-    float f = uv.y * 0.85 + (wiF(q * 5.0 + 3.0) - 0.5) * 0.35, f0 = p * 1.5 - 0.25;
-    r = smoothstep(f - 0.06, f + 0.02, f0); fr = clamp(1.0 - (f0 - f) / 0.55, 0.0, 1.0) * r;
-    tint = mix(vec3(1.0, 0.22, 0.02), vec3(1.0, 0.92, 0.6), fr * fr); glowK = 2.4;
-    float cr = 1.0 - smoothstep(0.0, 0.03, abs(wiF(q * 7.0 + 11.0) - 0.5));
-    ex = cr * exp(-pow((f0 - f - 0.04) / 0.1, 2.0)) * (1.0 - smoothstep(0.7, 1.0, p)) * 1.1; exC = vec3(1.0, 0.4, 0.08);
+  if (wiM == 1) {                                   // lava: struck on the anvil. A clang of light, a ring of force, and the number is there at once,
+                                                    // white hot, cooling through yellow and orange into its own colour
+    float hit = 0.05, on = step(hit, p), hh = 1.0 - smoothstep(hit, 1.0, p);
+    r = on; fr = smoothstep(0.0, 0.55, hh) * on;
+    tint = mix(vec3(1.0, 0.3, 0.04), vec3(1.0, 0.78, 0.36), smoothstep(0.35, 0.7, hh)); tint = mix(tint, vec3(1.0, 0.97, 0.9), smoothstep(0.75, 1.0, hh)); glowK = 2.6;
+    float d = length(q - ctr) / maxd, ring = exp(-pow((d - (p - hit) * 3.2) / 0.05, 2.0)) * (1.0 - smoothstep(hit, hit + 0.3, p)) * on;
+    ex = exp(-pow((p - hit) / 0.03, 2.0)) * 0.3 + ring * 1.3; exC = vec3(1.0, 0.6, 0.25);
   } else if (wiM == 2) {                            // ice: frost creeps in from the edges, the number forms inside it, then the frost clears
     float n = wiF(q * 9.0 + 7.0);
     float d = min(min(q.x, wiA - q.x), min(uv.y, 1.0 - uv.y)) / (0.5 * min(wiA, 1.0));
@@ -3647,8 +3648,8 @@ const SND = (() => {
   // ----- each design's sounds -----
   const V = {
     default: { loops: [['rumble', 0.05, 0.4]], cracks: ['crack1', 'crack2', 'crack3'], turn: [['shell', 0.9], ['whoosh', 0.8]], land: [['impact', 0.55]], fin: [['fin', 0.6]], tick: 1, arrive: 'arrive' },
-    lava: { loops: [['lavaloop', 0.18, 0.55], ['rumble', 0.08, 0.55]], cracks: ['bubble1', 'crack2', 'bubble2'], turn: [['shell', 0.8], ['firewhoosh', 0.9]],
-      land: [['fireboom', 0.8], ['ash', 0.55]], fin: [['hiss', 0.5]], tick: 0.75, arrive: 'firewhoosh' },
+    lava: { loops: [['lavaloop', 0.18, 0.55], ['rumble', 0.08, 0.55]], cracks: ['bubble1', 'crack2', 'bubble2'], turn: [['fireboom', 0.75], ['lv_steam', 0.85]],
+      land: [['hiss', 0.6], ['ash', 0.3]], fin: [['lv_hit', 0.45]], tk: 'lv_anvil', tick: 1, arrive: 'firewhoosh' },
     lightning: { loops: [['hum', 0.12, 0.5]], cracks: ['crack1', 'crackle', 'crack3'], turn: [['shell', 0.7], ['thunder', 1]], land: [['blast', 0.8]], fin: [['sparks', 0.55]],
       tick: 1.26, rnd: [['crackle'], 0.3, 0.6], arrive: 'whoosh' },
     twoface: { loops: [], heart: true, cracks: ['crack1', 'crack2', 'crack3'], turn: [['shell', 0.7], ['swirl', 0.8, -0.9, 0.7], ['swirl', 0.8, 0.9, -0.7]],
@@ -3936,8 +3937,10 @@ window.KT_EGGC = {"ghost": ["#cfd2d6", "#5a5d63"], "lava": ["#c8561e", "#f2c230"
 const RECIPES = {
   default: { seal: 0, c1: [1.0, 0.85, 0.55], c2: [1, 1, 1], veil: '8,6,14', arrive: 'far', turn: 'spin',
     parts: { wait: 'orbit', hatch: 'converge', land: 'burst' }, cols: null, flash: '255,255,255', ring: null, flick: 'still' },
-  lava: { seal: 0, c1: [1.0, 0.42, 0.06], c2: [1.0, 0.85, 0.3], veil: '26,4,0', arrive: 'below', turn: 'rise', under: '255,90,20',
-    parts: { wait: 'rise', hatch: 'rise', land: 'fountain' }, cols: ['#ffd27a', '#ff8a2a', '#ff4a10', '#fff2c8'], flash: '255,170,90', ring: '#ff9a40', flick: 'glow', shake: 'rumble' },
+  // Lava, The Forge (Jon, 7 Nov): the card rises out of the magma, heats from black to white hot as you hold, the egg erupts in lava
+  // that arcs and falls, the card is quenched in a burst of steam, and each number is struck on the anvil with a spray of sparks
+  lava: { emi: 0.3, seal: 17, c1: [1.0, 0.42, 0.06], c2: [1.0, 0.85, 0.3], veil: '22,4,0', arrive: 'magma', turn: 'quench', under: '255,90,20', forge: true,
+    parts: { wait: 'rise', hatch: 'rise', land: 'hammer' }, cols: ['#ffd27a', '#ff8a2a', '#ff4a10', '#fff2c8'], flash: '255,96,24', ring: null, flick: 'glow', shake: 'rumble' },
   lightning: { seal: 0, c1: [0.62, 0.8, 1.0], c2: [1.0, 0.92, 0.45], veil: '2,6,22', arrive: 'drop', turn: 'snap',
     parts: { wait: 'orbit', hatch: 'jitter', land: 'sparks' }, cols: ['#ffffff', '#bfe2ff', '#ffe27a', '#8fc4ff'], flash: '220,235,255', ring: '#cfe6ff', flick: 'storm', shake: 'twitch', dark: 1.12, vc: 0.62 },
   twoface: { seal: 1, c1: [1.0, 0.45, 0.38], c2: [0.42, 0.62, 1.0], veil: '10,6,16', arrive: 'halves', turn: 'split',
@@ -4177,10 +4180,15 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       float R0 = 0.31, cor = exp(-abs(r - R0) / (0.004 + 0.03 * uH)) * (1.0 + 0.6 * sin(ang * 13.0 + uT * 1.5)) ;
       float streams = pow(0.5 + 0.5 * sin(ang * 21.0 + n * 6.0), 8.0) * exp(-max(r - R0, 0.0) / (0.02 + 0.2 * uH)) * step(R0, r);
       glow += uC1 * (cor * (0.6 + 2.2 * uH) + streams * 1.4 * uH) + uC2 * 0.06 * uH;
-    } else {                                    // acid eats round holes that glow at their rims
+    } else if (uMode < 16.5) {                  // acid eats round holes that glow at their rims
       vec2 g = sv * vec2(15.0, 8.4), id = floor(g), f = fract(g) - 0.5 - (vec2(shs(id), shs(id + 3.1)) - 0.5) * 0.4;
       float on = step(shs(id + 5.5), uH * 0.95), rad = on * (0.08 + 0.32 * uH * shs(id + 2.2)), d = length(f);
       glow += uC1 * (exp(-abs(d - rad) / 0.025) * 1.8 + smoothstep(rad, rad - 0.06, d) * 0.6) * on * (0.6 + 1.2 * uH) * uFlick + uC1 * 0.08 * uH;
+    } else {                                    // heat: the seal glows like metal in the forge, dark red, then orange, then white hot, from the edges in
+      float reach = uH * 0.95 - ed * 1.9 + (n - 0.5) * 0.4, T = clamp(reach * 1.5, 0.0, 0.9) * (0.35 + 0.65 * uH) * uH;
+      vec3 hot = mix(vec3(0.55, 0.03, 0.0), vec3(1.0, 0.2, 0.01), smoothstep(0.0, 0.5, T)); hot = mix(hot, vec3(1.0, 0.45, 0.05), smoothstep(0.5, 0.85, T)); hot = mix(hot, vec3(1.0, 0.85, 0.55), smoothstep(0.93, 1.0, T));
+      float seam = 1.0 - smoothstep(0.0, 0.018 + 0.02 * uH, svor(sv * vec2(7.0, 4.0) + uSeed));
+      glow += hot * T * (0.22 + 0.3 * uH) * uFlick + vec3(1.0, 0.28, 0.02) * seam * smoothstep(0.1, 0.6, uH) * 0.7 * uFlick;
     }
     if (uBreak > 0.0) {                         // the seal breaks away, burning at its edges
       float k = n + (1.0 - length(q)) * 0.25 - uBreak * 1.5 + 0.15;
@@ -4281,6 +4289,23 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       c.restore(); }
     c.restore();
   }
+  // lava bubbles swelling and popping along the bottom of the screen (Lava)
+  function magma(c, w, h, t, a) { const K = Math.max(w, h) / 1600; c.save();
+    for (let i = 0; i < 14; i++) { const per = 1.6 + hash(i + 601) * 2.2, q = ((t + hash(i + 602) * per) / per) % 1, x = (0.04 + 0.92 * hash(i + 603)) * w, y = h * (0.9 + 0.08 * hash(i + 604)), r = (6 + 18 * hash(i + 605)) * K * Math.min(1, q * 1.3);
+      if (q < 0.85) { const g = c.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r); g.addColorStop(0, `rgba(255,236,170,${0.85 * a})`); g.addColorStop(0.5, `rgba(255,130,30,${0.7 * a})`); g.addColorStop(1, `rgba(160,30,0,${0.25 * a})`);
+        c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+      else { const f = (q - 0.85) / 0.15; c.strokeStyle = `rgba(255,170,70,${0.8 * a * (1 - f)})`; c.lineWidth = 2 * K; c.beginPath(); c.arc(x, y, r * (1 + f * 1.2), Math.PI * 1.1, Math.PI * 1.9); c.stroke();
+        c.fillStyle = `rgba(255,200,110,${a * (1 - f)})`; for (let k = 0; k < 4; k++) { const an = Math.PI * (1.15 + k * 0.23); c.beginPath(); c.arc(x + Math.cos(an) * r * (1 + f * 2.4), y + Math.sin(an) * r * (1 + f * 2.4) + f * f * 20 * K, 2 * K, 0, 7); c.fill(); } } }
+    const sh = 0.5 + 0.5 * Math.sin(t * 1.7); c.globalCompositeOperation = 'lighter';        // heat haze rising off the pool
+    for (let i = 0; i < 6; i++) { const x = w * (0.08 + i * 0.17) + Math.sin(t * 0.9 + i) * 30 * K, g = c.createLinearGradient(0, h, 0, h * 0.35); g.addColorStop(0, `rgba(255,120,40,${0.07 * a * (0.6 + 0.4 * sh)})`); g.addColorStop(1, 'rgba(255,120,40,0)');
+      c.fillStyle = g; c.beginPath(); c.moveTo(x - 40 * K, h); c.bezierCurveTo(x + 50 * K * Math.sin(t + i), h * 0.75, x - 50 * K * Math.cos(t * 0.8 + i), h * 0.55, x, h * 0.35); c.lineTo(x + 30 * K, h * 0.35); c.bezierCurveTo(x - 30 * K, h * 0.6, x + 60 * K, h * 0.8, x + 40 * K, h); c.fill(); }
+    c.restore(); }
+  // the quench: a burst of steam that rolls out from the card and rises away (Lava). su is reveal time, so it hangs in the slow motion
+  function steam(c, w, h, su, a) { const K = Math.max(w, h) / 1600, M = Math.min(w, h); c.save();
+    for (let i = 0; i < 16; i++) { const ang = hash(i + 701) * 6.283, sp = 0.35 + 0.65 * hash(i + 702), d = (0.12 + su * 0.75 * sp) * M, x = w / 2 + Math.cos(ang) * d * 1.5, y = h * 0.5 + Math.sin(ang) * d * 0.7 - su * su * 0.06 * h * sp, r = (0.12 + 0.2 * hash(i + 703) + su * 0.18) * M;
+      const g = c.createRadialGradient(x, y, 0, x, y, r), al = a * (0.16 + 0.16 * hash(i + 704)); g.addColorStop(0, `rgba(255,246,236,${al})`); g.addColorStop(0.55, `rgba(240,226,214,${al * 0.45})`); g.addColorStop(1, 'rgba(230,214,200,0)');
+      c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); }
+    c.restore(); }
   // stars that come out as the moon goes dark (Shadow)
   function starsOut(c, w, h, t, a) { const K = Math.max(w, h) / 1600; c.save(); c.fillStyle = '#efeaff';
     for (let i = 0; i < 90; i++) { const tw = Math.pow(0.5 + 0.5 * Math.sin(t * (1 + hash(i + 401) * 3) + i), 3), on = Math.min(1, Math.max(0, a * 1.6 - hash(i + 402) * 0.8));
@@ -4307,7 +4332,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
   function lights(Lv) { const c = theme && CARDS[theme]; if (!c) return; const f = c.cfg; key.intensity = f.key[1] * Lv; fill.intensity = f.fill[1] * Lv; amb.intensity = 0.15 * Lv; }
   // the journey's tiles on the front, hidden until they light up one by one
   function tiles() { const c = theme && CARDS[theme]; return c && c.read ? c.read : []; }
-  const tmpC = new THREE.Color();
+  const tmpC = new THREE.Color(), tmpV = new THREE.Vector3();
   function setTiles(fn, tw) { tiles().forEach((t, i) => { const [s, flash, lift, wp, pu] = fn(i); t.g.scale.setScalar(Math.max(0.0001, wp == null ? s : 0.97 + 0.03 * s)); t.g.position.z = t.z + lift;
     if (t.wi) { t.wi.wiP.value = wp == null ? 1 : wp; t.wi.wiT.value = tw || 0; t.wi.wiPulse.value = pu || 0; }
     if (t.ava) { t.ava.scale.setScalar(Math.max(0.0001, s)); t.ava.position.z = t.az + lift; }
@@ -4350,6 +4375,8 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       const g = ctx.createLinearGradient(0, h, 0, h * 0.45); g.addColorStop(0, `rgba(${U},${0.6 * st.under * fl})`); g.addColorStop(0.5, `rgba(${U},${0.2 * st.under * fl})`); g.addColorStop(1, `rgba(${U},0)`);
       ctx.fillStyle = g; ctx.fillRect(0, h * 0.45, w, h * 0.55);
     }
+    if (st.bub > 0.002) magma(ctx, w, h, st.t, st.bub);
+    if (st.steam > 0.002) steam(ctx, w, h, st.su || 0, st.steam);
     if (st.sheet > 0.002) { ctx.fillStyle = `rgba(170,200,255,${st.sheet})`; ctx.fillRect(0, 0, w, h); }
     if (st.strike > 0.002) bolt(ctx, w, h, w * (0.3 + hash(st.seed) * 0.4), -10, w / 2 + (hash(st.seed + 1) - 0.5) * w * 0.1, h * 0.42, st.seed, st.strike);
     if (st.seam > 0.002) {                           // the screen itself splits into two lights
@@ -4503,6 +4530,13 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         op = (i % 2 ? 0 : 0.22 + 0.3 * k) * (0.7 + 0.3 * Math.sin(t * 1.3 + p.ph)); sc = p.s * 4 * (1.2 - 0.5 * k); rot = a * 0.5; }                     // shadow: smoke drawn in toward the egg
       else if (role === 'inkcurl') { const tt = u, life = 1.7; x0 = p.v.x * 0.55 * tt * (1 - tt * 0.15); y0 = baseY + p.v.y * 0.4 * tt + 0.3 * tt * tt; z0 = -0.25 + p.v.z * tt * 0.12;
         op = Math.min(1, tt * 6) * Math.pow(Math.max(0, 1 - tt / life), 1.6) * (i % 3 ? 0 : 0.7); sc = p.s * (2.2 + tt * 2.6); rot = tt * (0.6 + p.sp * 2) + p.ph; }       // shadow: the egg's smoke curls away and thins
+      else if (role === 'erupt') { const tt = u, g = 5.2, vx = p.v.x * 0.55, vy = 2.3 + hash(i + 9) * 2.9;      // lava: blobs thrown up from the egg, arcing back down
+        x0 = vx * tt; y0 = WY + vy * tt - 0.5 * g * tt * tt; z0 = 0.15 + p.v.z * tt * 0.3; const fell = y0 < WY - 1.6;
+        op = (i % 2 ? 0.95 : 0.6) * Math.min(1, tt * 8) * (fell ? 0 : 1) * Math.max(0, 1 - tt / 2.2); sc = p.s * (i % 3 ? 1.6 : 3.2) * (1 - tt * 0.15); }
+      else if (role === 'hammer') { const T_ = tiles(), n = T_.length || 1, j = i % n, ui = u - 0.35 - j * pace.gap - 0.04 * pace.write;   // sparks off the anvil, tile by tile
+        if (ui < 0 || ui > 0.95 || !T_[j]) { p.m.material.opacity = 0; return; }
+        T_[j].g.getWorldPosition(tmpV); const vx = (hash(i + 500) - 0.5) * 3.4, vy = 0.8 + hash(i + 501) * 2.4;
+        x0 = tmpV.x + vx * ui; y0 = tmpV.y + vy * ui - 3.6 * ui * ui; z0 = tmpV.z + 0.12 + hash(i + 502) * 0.5 * ui; op = Math.pow(1 - ui / 0.95, 1.3) * (hash(i + 503) < 0.75 ? 1 : 0); sc = p.s * (0.6 + 0.6 * (1 - ui)); }
       else if (role === 'implode') { p.m.position.multiplyScalar(0.9); p.m.material.opacity *= 0.94; return; }
       else if (role === 'snowfall' || role === 'falling') { const fall = role === 'falling', sp = p.sp * (fall ? 0.5 : 0.42) * (1 + k * 1.6), q = (hash(i + 7) + t * sp) % 1;
         x0 = p.x0 + Math.sin(t * (0.6 + p.sp) + p.ph) * (fall ? 0.35 : 0.15); y0 = 1.9 - q * 3.8; z0 = p.z - 0.1; op = Math.sin(q * Math.PI) * 0.8; sc = p.s * (fall ? 1.5 : 1.1); rot = t * (0.8 + p.sp * 3) + p.ph; }
@@ -4560,6 +4594,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       else if (R.arrive === 'squash') { const x = clamp01(A / pace.arrive), y = x < 0.6 ? 1 - Math.pow(x / 0.6, 2) : 0, sq = x < 0.6 ? 0 : Math.sin((x - 0.6) / 0.4 * Math.PI * 3) * Math.exp(-(x - 0.6) * 6) * 0.16;
         card.position.y = WY + 2.2 * y; card.scale.set(WS * (1 + sq), WS * (1 - sq), WS); }
       else if (R.arrive === 'slide') { card.position.x = 5 * k * k; card.rotation.y += k * 0.5; card.rotation.z = Math.sin(A * 9) * 0.03 * k; }
+      else if (R.arrive === 'magma') { card.position.y = WY - 2.5 * k * k; card.rotation.x += 0.22 * k; card.rotation.z = Math.sin(A * 4) * 0.02 * k; }   // rises out of the lava pool
       else if (R.arrive === 'descend') { card.position.y = WY + 1.8 * k; card.rotation.x -= 0.45 * k; }
       else { card.position.z = -0.2 - 3.2 * k; card.rotation.y += k * 1.4; }
     }
@@ -4569,7 +4604,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     lights((R.arrive === 'fade' || R.arrive === 'emerge') && !film ? 0.42 * (0.25 + 0.75 * ar) : 0.42); sweepForce = 9; SH.forEach(s => s.m.visible = false); SU.uT.value = t;
     parts(R.parts.wait, t, 0.15, 0); PT.forEach(p => p.m.material.opacity *= ar); EGG.wait(t, ar);
     Object.assign(S, { veil: 0.82 * Math.min(1, film ? 1 : A / 0.6), flash: 0, under: R.under ? 0.25 * ar : 0, ov: 0.55 * ar, warp: 0, sheet: 0, strike: 0, seam: 0, t });
-    eclipse('wait', t, ar, A);
+    eclipse('wait', t, ar, A); forge('wait', t, ar);
     hideTiles(); back(false);
   }
   function poseHatch(t, e, ht) {
@@ -4597,7 +4632,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     parts(R.parts.hatch, t, e, 0); EGG.hatch(t, e, RM);
     let sheet = 0; if (theme === 'lightning') { const q = Math.floor(t * 9); sheet = hash(q + 99) < 0.08 + e * 0.22 ? (0.05 + e * 0.12) * (1 - (t * 9 - q)) : 0; }
     Object.assign(S, { veil: 0.82 + e * 0.06, flash: 0, under: R.under ? 0.25 + e * 0.75 : 0, ov: 0.55 + 0.45 * e, warp: 0, sheet, strike: 0, seam: theme === 'twoface' ? e : 0, t });
-    eclipse('hatch', t, e);
+    eclipse('hatch', t, e); forge('hatch', t, e);
     hideTiles(); back(false);
   }
   function poseGo(t, u) {
@@ -4623,15 +4658,16 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         else if (R.turn === 'glide') { card.position.x += sw * 0.75; card.rotation.z = -sw * 0.08; }
         else if (R.turn === 'dive') card.position.y -= sw * 0.45;
         else if (R.turn === 'grow') card.scale.multiplyScalar(1 + sw * 0.18);
+        else if (R.turn === 'quench') { card.position.y -= sw * 0.28; card.rotation.z = Math.sin(e * Math.PI * 4) * 0.03 * (1 - e); }    // plunged into the steam and lifted out
         else if (R.turn === 'eclipse') { card.position.z -= sw * 0.4; card.rotation.x += sw * 0.1; }     // turns slowly in the dark, set back, before it steps out
       }
       SU.uT.value = t;
       const br = clamp01(x0 / 0.3); SU.uBreak.value = br; SU.uH.value = 1; cover.visible = br < 1; coverM.emissiveIntensity = 0.9;
       aura.material.opacity = 0.78 - e * 0.2; lights(0.6 + e * 0.2); sweepForce = 9; ring.material.opacity = 0;
-      parts('implode', t, 0, 0); shards(u); EGG.burst(u, RM);
+      parts(R.forge ? 'erupt' : 'implode', t, 0, u); shards(u); EGG.burst(u, RM);
       const strike = theme === 'lightning' ? Math.max(0, 1 - u / 0.35) * (u < 0.05 ? u / 0.05 : 1) : 0;
       Object.assign(S, { veil: 0.88 * (1 - clamp01((u - TU + 0.2) / 1.2)), flash: strike * 0.55, under: R.under ? 1 - e * 0.5 : 0, ov: 1, warp: R.warp && !RM ? Math.sin(x0 * Math.PI) : 0, sheet: 0, strike, seed: 7, seam: theme === 'twoface' ? 1 - e * 0.3 : 0, t });
-      eclipse('turn', t, x0, e);
+      eclipse('turn', t, x0, e); forge('turn', t, x0, u);
       hideTiles(); back(false);
     } else {                                       // the landing and the journey lighting up
       const u2 = u - TU, k = Math.exp(-u2 * 4.2);
@@ -4651,7 +4687,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         let flash = ui < 0 ? 0 : Math.max(0, 1 - ui / (last ? 1.1 : 0.7)) * (last ? 0.12 : 0.05), lift = (1 - clamp01(ui / 0.5)) * 0.03 * (ui >= 0 ? 1 : 0);
         let pu = 0; if (i === so) { const x = clamp01((u2 - tDone) / 1.3), pe = Math.sin(Math.PI * x); lift += pe * 0.05; pu = x > 0 && x < 1 ? x : 0; }   // the stat this trail shines brightest in
         return [s, flash, lift, wp, pu]; }, t);
-      eclipse('land', t, u2, tDone);
+      eclipse('land', t, u2, tDone); forge('land', t, u2, TU);
       if (so >= 0 && u2 >= tDone) fire('shine', () => SND.play(theme, 'tick', 7, true));
       if (u2 > 0.35 + (n - 1) * pace.gap + pace.write * 1.3 * 0.8) fire('fin', () => SND.play(theme, 'fin'));
       if (u > end && !film) finish();
@@ -4670,6 +4706,20 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       MOON.place(1, 1, cor); lights(0.1 + 0.18 * b); S.stars = 1; S.flash = 0.42 * Math.sin(Math.min(1, x0 / 0.45) * Math.PI); aura.material.opacity = 0.45 + 0.2 * Math.sin(x0 * Math.PI); }
     else { const u2 = a, tDone = b, back = Math.min(1, u2 / 2.6), sm = back * back * (3 - 2 * back), out = Math.min(1, Math.max(0, (u2 - tDone - 0.2) / 1.4));
       MOON.place(1 - out, 1 + sm, Math.exp(-u2 * 1.1)); lights(0.22 + 0.78 * Math.min(1, u2 / 1.7)); S.stars = Math.max(0, 1 - u2 / 3); }
+  }
+
+  // ----- Lava's forge, laid over each step: bubbling magma, the heat, the eruption's glare, the quench's steam -----
+  function forge(step, t, a, b) {
+    const R = recipe(); S.steam = 0; S.bub = 0; if (!R.forge) return;
+    if (step === 'wait') { S.bub = a; S.under = 0.35 * a; }
+    else if (step === 'hatch') { const e = a; S.bub = 1; coverM.emissiveIntensity = 0.04; S.under = 0.35 + 0.65 * e; lights(0.42 + e * 0.12); aura.material.color.setRGB(1, 0.35 + 0.35 * e, 0.08 + 0.3 * e * e); aura.material.opacity = 0.2 + e * 0.35; }
+    else if (step === 'turn') { const x0 = a, u = b, TU = pace.turn;
+      coverM.emissiveIntensity = 0.04;
+      S.flash = 0.28 * Math.exp(-Math.pow((u - 0.05) / 0.16, 2));                       // the eruption's orange glare, no white
+      S.steam = Math.min(1, Math.max(0, (u - 0.32 * TU) / (0.25 * TU))); S.su = u; S.bub = 1 - x0;
+      aura.material.color.setRGB(1, 0.4, 0.1); aura.material.opacity = 0.8 * (1 - S.steam * 0.8); }
+    else { const u2 = a, TU = b; S.flash = 0; ring.material.opacity = 0; S.su = TU + u2;
+      S.steam = Math.max(0, 1 - u2 / 0.9); S.under = 0.25 * Math.exp(-u2); aura.material.opacity = 0; lights(Math.min(1, 0.55 + u2 * 0.6)); }
   }
 
   // ----- running a live reveal -----
