@@ -3112,6 +3112,7 @@ const SEAL = (() => {
   function shade(hex, f) { const c = new THREE.Color(hex); const t = f < 0 ? 0 : 1, p = Math.abs(f); c.r += (t - c.r) * p; c.g += (t - c.g) * p; c.b += (t - c.b) * p; return '#' + c.getHexString(); }
   // s: seconds since it was pressed on (below 0: not yet, hidden; null: at rest)
   function at(s, film) {
+    g.visible = false; return;   // Jon, 7 Nov: no seal on the card
     const on = paint(); g.visible = on && s !== undefined && (s == null || s >= 0); if (!g.visible) return;
     if (s == null || s > 1.2) { g.position.copy(HOME); g.scale.setScalar(1); g.rotation.z = TILT; top.opacity = side.opacity = 1; return; }
     const e = Math.min(1, s / 0.42), fall = 1 - e * e * e;                 // it drops onto the card, fast at the end
