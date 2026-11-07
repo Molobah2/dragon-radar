@@ -2618,12 +2618,15 @@ if (wiP < 0.999) {
     float t0 = wiH(c + 5.0) * 0.5; r = smoothstep(0.0, 0.22, p - t0 - 0.1 + (wiF(q * 18.0) - 0.5) * 0.1);
     float fade = 1.0 - smoothstep(0.78, 1.0, p); ex = (g + ln) * fade; exC = vec3(1.0, 0.78, 0.95);
     fr = r * fade * 0.6; tint = vec3(1.0, 0.45, 0.85); glowK = 1.2;
-  } else if (wiM == 5) {                            // ghost: the number appears like breath on a cold window, wobbles once and settles
-    float fog = wiF(q * 3.0 + vec2(wiT * 0.18, 0.0));
-    su = uv + vec2(sin(uv.y * 26.0 + wiT * 5.0), cos(uv.x * 20.0 + wiT * 4.0)) * 0.007 * (1.0 - p);
-    r = smoothstep(0.12, 0.85, p + (fog - 0.5) * 0.35);
-    overA = (1.0 - smoothstep(0.0, 0.92, p)) * 0.6 * (0.55 + 0.6 * fog); over = vec3(0.94, 0.96, 1.0);
-    fr = r * (1.0 - p); tint = vec3(0.82, 0.88, 1.0); glowK = 0.8;
+  } else if (wiM == 5) {                            // ghost: the number haunts its way in. It flickers on and off as if making up its mind,
+                                                    // shivers sideways when it does, then glows a solid spectral mint and settles with a little float
+    float f1 = smoothstep(0.06, 0.08, p) * (1.0 - smoothstep(0.13, 0.15, p)), f2 = smoothstep(0.22, 0.24, p) * (1.0 - smoothstep(0.29, 0.31, p)) * 0.8,
+          f3 = smoothstep(0.38, 0.4, p) * (1.0 - smoothstep(0.44, 0.46, p)), solid = smoothstep(0.55, 0.62, p);
+    r = max(max(f1 * 0.55, f2 * 0.45), max(f3 * 0.8, solid));
+    float jit = (1.0 - solid) * (wiH(vec2(floor(p * 60.0), 3.0)) - 0.5) * 0.03;
+    su = uv + vec2(jit, sin(p * 9.0) * 0.012 * (1.0 - p));
+    fr = r * (0.5 + 0.5 * (1.0 - p)); tint = vec3(0.5, 1.0, 0.84); glowK = 1.6;
+    ex = (f1 + f2 + f3) * 0.25 + exp(-pow((p - 0.6) / 0.05, 2.0)) * 0.35; exC = vec3(0.5, 1.0, 0.84);
   } else if (wiM == 6) {                            // tiger: three claw marks tear across and the number is underneath
     vec2 dir = normalize(vec2(-0.42, 1.0)), nrm = vec2(dir.y, -dir.x); float band = 0.0, rim = 0.0;
     for (int i = 0; i < 3; i++) {
@@ -2750,7 +2753,7 @@ if (wiP < 0.999) {
     sh = (wiM == 4 ? vec3(1.0, 0.7, 0.95) : vec3(1.0, 0.92, 0.6)) * step(0.93, wiH(c + 9.0)) * tw * exp(-dot(fract(q * 26.0) - 0.5, fract(q * 26.0) - 0.5) / 0.01) * 0.7; } // stars twinkle
   else if (wiM == 8 || wiM == 15) { vec2 c = floor(q * 14.0 + vec2(0.0, -t * 0.25)); vec2 f = fract(q * 14.0 + vec2(0.0, -t * 0.25)) - 0.5;
     sh = (wiM == 8 ? vec3(0.5, 1.0, 0.45) : vec3(0.45, 1.0, 0.5)) * step(0.9, wiH(c)) * exp(-dot(f, f) / 0.02) * 0.35; }                          // tree spores, acid bubbles rising
-  else if (wiM == 5) sh = vec3(0.85, 0.88, 1.0) * wiF(q * 3.0 + vec2(t * 0.12, 0.0)) * (0.05 + band * 0.08);                         // ghost: drifting mist
+  else if (wiM == 5) sh = vec3(0.5, 1.0, 0.84) * wiF(q * 3.0 + vec2(t * 0.12, 0.0)) * (0.04 + band * 0.09);                          // ghost: a drifting mint glow
   else if (wiM == 14) sh = vec3(0.6, 0.48, 1.0) * wiF(q * 3.0 + vec2(t * 0.1, 0.0)) * (0.04 + band * 0.1);                            // shadow: violet night haze
   else if (wiM == 9) sh = vec3(1.0, 0.85, 0.4) * band * 0.3;                                                                                     // jelly: a honey gloss
   else if (wiM == 16) sh = mix(vec3(0.42, 0.62, 1.0), vec3(1.0, 0.45, 0.38), step(0.5, uv.x)) * band * 0.16;                                       // 2Face: each side its own light
@@ -3660,8 +3663,8 @@ const SND = (() => {
       land: [['gn_coins', 0.7], ['gn_strike', 0.45]], fin: [['gn_fin', 0.5]], tk: 'gn_tick', tick: 1, arrive: 'gn_arrive' },
     twilight: { loops: [['tw_loop', 0.2, 0.5]], cracks: ['crack1', 'tw_spell', 'crack3'], turn: [['shell', 0.55], ['tw_turn', 0.8]], land: [['tw_land', 0.8], ['impact', 0.25]],
       fin: [['tw_fin', 0.6]], tick: 0.9, arrive: 'tw_arrive' },
-    ghost: { loops: [['gh_loop', 0.15, 0.5]], cracks: ['gh_creak1', 'crack2', 'gh_creak2'], turn: [['gh_swoosh', 0.9], ['gh_door', 0.35]], land: [['gh_poof', 0.8]],
-      fin: [['gh_fin', 0.45]], tick: 0.84, arrive: 'gh_arrive' },
+    ghost: { loops: [['gh_loop', 0.15, 0.5]], cracks: ['gh_creak1', 'gh_wooo', 'gh_creak2'], turn: [['gh_giggle', 0.85], ['gh_swoosh', 0.7]], land: [['gh_poof', 0.6], ['gh_giggle2', 0.4]],
+      fin: [['gh_fin', 0.4]], tk: 'gh_tick', tick: 1, arrive: 'gh_giggle2' },
     space: { loops: [['sp_loop', 0.15, 0.55]], cracks: ['sp_btn', 'sp_bleep', 'sp_bleep2'], turn: [['shell', 0.45], ['sp_whizz', 0.85]], land: [['sp_impact', 0.8]],
       fin: [['sp_fin', 0.6]], tk: 'sp_bleep', tick: 1, rnd: [['sp_btn', 'sp_bleep2'], 0.12, 0.25], arrive: 'sp_arrive' },
     speed: { loops: [['sd_loop', 0.12, 0.55]], rev: 0.4, cracks: ['sd_gear1', 'crack2', 'sd_gear2'], turn: [['sd_pass', 0.9], ['sd_swoosh', 0.5]], land: [['sd_hit', 0.8]],
@@ -3951,8 +3954,12 @@ const RECIPES = {
     parts: { wait: 'motes', hatch: 'converge', land: 'shower' }, tex: 'coin', cols: ['#ffe08a', '#d6a440', '#fff4cf', '#b88a2e'], flash: '255,214,140', ring: '#ffd98a', flick: 'glow' },
   twilight: { seal: 8, c1: [0.7, 0.58, 1.0], c2: [1.0, 0.9, 0.6], veil: '4,3,18', arrive: 'float', turn: 'spin', shake: 'drift', ov: 'stars',
     parts: { wait: 'stars', hatch: 'spiral', land: 'ring' }, tex: 'star', cols: ['#d8ccff', '#ffe9a8', '#a98cff', '#ffffff'], flash: '200,180,255', ring: '#cdbfff', flick: 'still' },
-  ghost: { emi: 0.5, seal: 10, c1: [0.86, 0.9, 1.0], c2: [0.7, 0.75, 0.85], veil: '10,12,18', arrive: 'fade', turn: 'float', spin: 1, shake: 'float', ov: 'mist',
-    parts: { wait: 'motes', hatch: 'converge', land: 'snowburst' }, tex: 'puff', cols: ['#ffffff', '#e8ecf5', '#cfd6e6', '#f6f8ff'], flash: '235,240,255', ring: '#f0f4ff', flick: 'still' },
+  // Ghost, The Haunted Gallery (Jon, 7 Nov): two little ghosts carry the card in and play around it, mint ectoplasm swirls over the seal
+  // as you hold while they circle faster, the egg bursts into a flock of tiny ghosts that hang frozen in the slow motion then zoom off
+  // giggling, the card floats round once, and each number flickers in like a ghost making up its mind. A little longer than the others.
+  ghost: { emi: 0.25, seal: 19, c1: [0.45, 1.0, 0.82], c2: [0.85, 1.0, 0.95], veil: '4,10,10', arrive: 'carried', turn: 'haunt', spin: 1, shake: 'possess', ov: 'mist', haunt: true,
+    pace: { full: { arrive: 2.6, hatch: 2.8, settle: 1.3 } },
+    parts: { wait: 'motes', hatch: 'converge', land: 'ghostaway' }, burst: 'ghostburst', tex: 'ghost', cols: ['#ffffff', '#eafff8', '#d4fff0', '#ffffff'], flash: '120,255,210', ring: '#7fffd0', flick: 'still' },
   space: { seal: 11, brk: 1, c1: [1.0, 0.3, 0.78], c2: [0.45, 0.42, 1.0], veil: '6,2,16', arrive: 'spiral', turn: 'swirl', shake: 'drift', ov: 'stars', warp: true,
     parts: { wait: 'orbit', hatch: 'spiral', land: 'ring' }, tex: 'star', cols: ['#ff6ac4', '#ffffff', '#8a7aff', '#ffd2f0'], flash: '255,170,235', ring: '#ff9ade', flick: 'still' },
   speed: { seal: 7, brk: 3, c1: [1.0, 0.8, 0.28], c2: [1.0, 1.0, 1.0], veil: '2,6,18', arrive: 'zoom', turn: 'snap', spin: 5, shake: 'rev', ov: 'speed',
@@ -3993,8 +4000,8 @@ function slowBeats(pc, R) {
   const TU = pc.turn, spin = R.spin || 3, snap = R.turn === 'snap', want = spin === 1 ? 0.5 : 1 - 0.5 / spin;
   let lo = 0, hi = 1; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2, e = snap ? 1 - Math.pow(1 - m, 4) : (m < 0.5 ? 4 * m * m * m : 1 - Math.pow(-2 * m + 2, 3) / 2); if (e < want) lo = m; else hi = m; }
   const k = pc.slow, B = [];
-  if (pc === PACE.full || pc === PACE.film) B.push({ c: 0.11 * TU, d: 0.86 * k, s: 0.075 });   // the seal bursts: every shard hangs in the air
-  if (pc === PACE.full || pc === PACE.film) B.push({ c: lo * TU, d: 0.9 * k, s: 0.05 });       // edge-on in the last spin
+  if (pc.big) B.push({ c: 0.11 * TU, d: 0.86 * k, s: 0.075 });   // the seal bursts: every shard hangs in the air
+  if (pc.big) B.push({ c: lo * TU, d: 0.9 * k, s: 0.05 });       // edge-on in the last spin
   B.push({ c: TU + 0.04, d: 0.84 * k, s: 0.1 });                                                   // the landing: the burst freezes, then falls
   return B;
 }
@@ -4009,9 +4016,9 @@ function warpTable(B, uEnd) {
 }
 // how long each step takes: the full reveal, the short one for later visits, and the one inside the saved film
 const PACE = {
-  full: { arrive: 1.7, hatch: 2.4, turn: 1.5, gap: 0.24, settle: 0.9, write: 0.95, slow: 1 },
+  full: { arrive: 1.7, hatch: 2.4, turn: 1.5, gap: 0.24, settle: 0.9, write: 0.95, slow: 1, big: 1 },
   short: { arrive: 0.6, hatch: 0.9, turn: 1.0, gap: 0.1, settle: 0.5, write: 0.55, slow: 0.55 },
-  film: { arrive: 0, hatch: 1.3, turn: 1.2, gap: 0.16, settle: 0.4, h0: 0.4, write: 0.75, slow: 1 },
+  film: { arrive: 0, hatch: 1.3, turn: 1.2, gap: 0.16, settle: 0.4, h0: 0.4, write: 0.75, slow: 1, big: 1 },
 };
 
 RV = (() => {
@@ -4051,7 +4058,15 @@ RV = (() => {
       g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(0.45, 'rgba(205,236,255,.55)'); g.addColorStop(1, 'rgba(160,215,255,.8)'); x.fillStyle = g; x.fill();
       x.fillStyle = 'rgba(255,255,255,.55)'; x.beginPath(); x.moveTo(P[0][0], P[0][1]); x.lineTo(P[1][0], P[1][1]); x.lineTo(0, 0); x.lineTo(P[5][0], P[5][1]); x.closePath(); x.fill();   // the lit facet
       x.strokeStyle = 'rgba(255,255,255,.95)'; x.lineWidth = S * 0.025; x.beginPath(); P.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.closePath(); x.stroke(); }, 96);
-  const SOLID = { petal: 1, leaf: 1, coin: 1, smoke: 1, crystal: 1 };                  // shapes that sit on top, rather than glowing
+  TEXS.ghost = spriteTex((x, S) => { x.translate(S / 2, S / 2); const s = S * 0.4;
+      x.beginPath(); x.moveTo(-s * 0.8, s * 0.55); x.lineTo(-s * 0.8, -s * 0.1); x.bezierCurveTo(-s * 0.8, -s * 1.05, s * 0.8, -s * 1.05, s * 0.8, -s * 0.1); x.lineTo(s * 0.8, s * 0.55);
+      for (let k = 0; k < 4; k++) { const x0 = s * 0.8 - k * s * 0.4; x.quadraticCurveTo(x0 - s * 0.1, s * (k % 2 ? 0.75 : 0.95), x0 - s * 0.4, s * 0.55); } x.closePath();
+      const g = x.createLinearGradient(0, -s, 0, s); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#d6fff0'); x.fillStyle = g; x.fill();
+      x.fillStyle = '#1b2a2a'; x.beginPath(); x.ellipse(-s * 0.3, -s * 0.18, s * 0.13, s * 0.19, 0, 0, 7); x.ellipse(s * 0.3, -s * 0.18, s * 0.13, s * 0.19, 0, 0, 7); x.fill();
+      x.beginPath(); x.ellipse(0, s * 0.18, s * 0.09, s * 0.12, 0, 0, 7); x.fill();
+      x.fillStyle = '#ffffff'; x.beginPath(); x.arc(-s * 0.26, -s * 0.25, s * 0.045, 0, 7); x.arc(s * 0.34, -s * 0.25, s * 0.045, 0, 7); x.fill();
+      x.fillStyle = 'rgba(255,150,170,.45)'; x.beginPath(); x.ellipse(-s * 0.52, s * 0.04, s * 0.1, s * 0.06, 0, 0, 7); x.ellipse(s * 0.52, s * 0.04, s * 0.1, s * 0.06, 0, 0, 7); x.fill(); }, 128);
+  const SOLID = { petal: 1, leaf: 1, coin: 1, smoke: 1, crystal: 1, ghost: 1 };                  // shapes that sit on top, rather than glowing
   const grp = new THREE.Group(); grp.visible = false; scene.add(grp);
   const aura = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.4), new THREE.MeshBasicMaterial({ map: glowT, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, opacity: 0 }));
   aura.position.z = -0.35; aura.renderOrder = -1; grp.add(aura);
@@ -4193,6 +4208,10 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       vec2 g = sv * vec2(15.0, 8.4), id = floor(g), f = fract(g) - 0.5 - (vec2(shs(id), shs(id + 3.1)) - 0.5) * 0.4;
       float on = step(shs(id + 5.5), uH * 0.95), rad = on * (0.08 + 0.32 * uH * shs(id + 2.2)), d = length(f);
       glow += uC1 * (exp(-abs(d - rad) / 0.025) * 1.8 + smoothstep(rad, rad - 0.06, d) * 0.6) * on * (0.6 + 1.2 * uH) * uFlick + uC1 * 0.08 * uH;
+    } else if (uMode > 18.5) {                  // ectoplasm: mint wisps swirl round the egg and thicken as it is held
+      float rr = length(q), sw = rr * 4.0 - uT * (0.5 + 1.6 * uH); vec2 rq = vec2(cos(sw) * q.x - sin(sw) * q.y, sin(sw) * q.x + cos(sw) * q.y);
+      float f = sfb(rq * 3.2 + uSeed + vec2(uT * 0.15, 0.0)), wisp = smoothstep(0.6 - 0.06 * uH, 0.82, f) * smoothstep(uH * 1.2 + 0.1, uH * 1.2 - 0.2, rr - 0.1);
+      glow += uC1 * wisp * (0.2 + 0.85 * uH) + uC2 * pow(wisp, 3.0) * 0.4 * uH + uC1 * 0.06 * uH * (1.0 - rr);
     } else if (uMode > 17.5) {                  // fracture: jagged deep blue cracks run out from the egg through thick ice, a frost web spreading behind them
       float rr = length(q), a2 = atan(q.y, q.x) / 6.2832 + 0.5, best = 1.0;
       for (int i = 0; i < 9; i++) { float fi = float(i), a0 = (fi + 0.5 + (shs(vec2(fi, uSeed)) - 0.5) * 0.6) / 9.0;
@@ -4418,6 +4437,8 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       const g = ctx.createLinearGradient(0, h, 0, h * 0.45); g.addColorStop(0, `rgba(${U},${0.6 * st.under * fl})`); g.addColorStop(0.5, `rgba(${U},${0.2 * st.under * fl})`); g.addColorStop(1, `rgba(${U},0)`);
       ctx.fillStyle = g; ctx.fillRect(0, h * 0.45, w, h * 0.55);
     }
+    if (st.mint > 0.002) { const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7); g.addColorStop(0, `rgba(140,255,215,${0.22 * st.mint})`); g.addColorStop(1, `rgba(255,200,120,${0.12 * st.mint})`); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h); }
+    if (st.gh) ghostFx(ctx, st.gh, st.t);
     if (st.aur > 0.002) auroraFx(ctx, w, h, st.t, st.aur);
     if (st.shock >= 0 && st.shock < 1.2) shockFx(ctx, w, h, st.shock);
     if (st.rime > 0.002) rimeFx(ctx, w, h, st.rime);
@@ -4576,6 +4597,10 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         op = (i % 2 ? 0 : 0.22 + 0.3 * k) * (0.7 + 0.3 * Math.sin(t * 1.3 + p.ph)); sc = p.s * 4 * (1.2 - 0.5 * k); rot = a * 0.5; }                     // shadow: smoke drawn in toward the egg
       else if (role === 'inkcurl') { const tt = u, life = 1.7; x0 = p.v.x * 0.55 * tt * (1 - tt * 0.15); y0 = baseY + p.v.y * 0.4 * tt + 0.3 * tt * tt; z0 = -0.25 + p.v.z * tt * 0.12;
         op = Math.min(1, tt * 6) * Math.pow(Math.max(0, 1 - tt / life), 1.6) * (i % 3 ? 0 : 0.7); sc = p.s * (2.2 + tt * 2.6); rot = tt * (0.6 + p.sp * 2) + p.ph; }       // shadow: the egg's smoke curls away and thins
+      else if (role === 'ghostburst' || role === 'ghostaway') { const tt = role === 'ghostaway' ? u + pace.turn : u;      // ghost: a flock of tiny ghosts flies out of the egg, hangs, then zooms off
+        if (i % 3) { p.m.material.opacity = 0; return; } const up = Math.max(0, tt - 0.75);
+        x0 = p.v.x * 0.55 * tt + Math.sin(tt * 5 + p.ph) * 0.05 + p.v.x * up * up * 0.9; y0 = WY * (1 - Math.min(1, tt)) + baseY * Math.min(1, tt) + p.v.y * 0.4 * tt + up * up * (1.6 + hash(i + 901) * 2.2); z0 = 0.3 + p.v.z * tt * 0.2;
+        op = Math.min(1, tt * 8) * Math.max(0, 1 - up / 1.6); sc = p.s * (3.4 + 1.2 * Math.sin(tt * 7 + p.ph)) * (1 + up * 0.4); rot = Math.sin(tt * 6 + p.ph) * 0.35; }
       else if (role === 'crystals') { const tt = u, vx = p.v.x * 0.75, vy = p.v.y * 0.6, g = 3.4;      // ice: chunks of crystal flung out from the egg, tumbling and glinting
         x0 = vx * tt; y0 = WY + vy * tt - 0.5 * g * tt * tt; z0 = 0.2 + p.v.z * tt * 0.35; rot = tt * (3 + p.sp * 9) + p.ph;
         op = Math.min(1, tt * 10) * Math.max(0, 1 - tt / 1.9) * (0.7 + 0.3 * Math.sin(t * 23 + p.ph)); sc = p.s * (i % 4 ? 2.4 : 4.6); }
@@ -4645,6 +4670,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       else if (R.arrive === 'squash') { const x = clamp01(A / pace.arrive), y = x < 0.6 ? 1 - Math.pow(x / 0.6, 2) : 0, sq = x < 0.6 ? 0 : Math.sin((x - 0.6) / 0.4 * Math.PI * 3) * Math.exp(-(x - 0.6) * 6) * 0.16;
         card.position.y = WY + 2.2 * y; card.scale.set(WS * (1 + sq), WS * (1 - sq), WS); }
       else if (R.arrive === 'slide') { card.position.x = 5 * k * k; card.rotation.y += k * 0.5; card.rotation.z = Math.sin(A * 9) * 0.03 * k; }
+      else if (R.arrive === 'carried') { const e = easeOut(clamp01(A / pace.arrive)); card.position.x = 5.0 * (1 - e); card.position.y = WY + Math.sin(A * 4.2) * 0.07 * k + 0.25 * k; card.rotation.z = Math.sin(A * 3.1) * 0.08 * k; card.rotation.y += Math.sin(A * 2.3) * 0.2 * k; }   // carried in by two little ghosts, bobbing
       else if (R.arrive === 'skate') { const e = easeOut(clamp01(A / pace.arrive)); card.position.x = -5.2 * (1 - e) * (1 - e); card.position.y = WY - 0.25 * k; card.rotation.y += (1 - e) * Math.PI * 4; card.rotation.z = -0.06 * k; }   // skates in across the ice, spinning to a stop
       else if (R.arrive === 'magma') { card.position.y = WY - 2.5 * k * k; card.rotation.x += 0.22 * k; card.rotation.z = Math.sin(A * 4) * 0.02 * k; }   // rises out of the lava pool
       else if (R.arrive === 'descend') { card.position.y = WY + 1.8 * k; card.rotation.x -= 0.45 * k; }
@@ -4656,7 +4682,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     lights((R.arrive === 'fade' || R.arrive === 'emerge') && !film ? 0.42 * (0.25 + 0.75 * ar) : 0.42); sweepForce = 9; SH.forEach(s => s.m.visible = false); SU.uT.value = t;
     parts(R.parts.wait, t, 0.15, 0); PT.forEach(p => p.m.material.opacity *= ar); EGG.wait(t, ar);
     Object.assign(S, { veil: 0.82 * Math.min(1, film ? 1 : A / 0.6), flash: 0, under: R.under ? 0.25 * ar : 0, ov: 0.55 * ar, warp: 0, sheet: 0, strike: 0, seam: 0, t });
-    eclipse('wait', t, ar, A); forge('wait', t, ar); aurora('wait', t, ar);
+    eclipse('wait', t, ar, A); forge('wait', t, ar); aurora('wait', t, ar); haunt('wait', t, ar, A);
     hideTiles(); back(false);
   }
   function poseHatch(t, e, ht) {
@@ -4673,6 +4699,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     else if (R.shake === 'tick') { const q = t * 2, f = q - Math.floor(q), j = Math.exp(-f * 14); card.rotation.z = j * 0.016 * (hash(Math.floor(q)) - 0.5) * 2 * (0.4 + e) * (RM ? 0 : 1); card.position.y += j * 0.006 * (0.4 + e); }
     else if (R.shake === 'pulse') { card.scale.multiplyScalar(1 + Math.sin(t * 4.5) * 0.012 * e); card.rotation.y += Math.sin(t * 0.9) * 0.05 * e; }
     else if (R.shake === 'creak') { const q = Math.floor(t * 1.6), j = Math.exp(-(t * 1.6 - q) * 6) * (hash(q) < 0.5 ? 1 : -1); card.rotation.z = Math.sin(t * 1.3) * 0.035 * e + j * 0.012 * sh; }
+    else if (R.shake === 'possess') { const q = Math.floor(t * 3), j = Math.exp(-(t * 3 - q) * 9) * (hash(q) - 0.5); card.rotation.z = Math.sin(t * 2.1) * 0.05 * e + j * 0.14 * e * (RM ? 0 : 1); card.position.y += Math.sin(t * 1.7) * 0.04 * e + Math.abs(j) * 0.05 * e; card.rotation.y += Math.sin(t * 9) * 0.02 * e; }   // tugged by unseen hands
     else if (R.shake === 'drift') { card.rotation.z = Math.sin(t * 0.8) * 0.07 * e; card.rotation.y += Math.sin(t * 1.1) * 0.06 * e; card.position.y += Math.sin(t * 1.4) * 0.02 * e; }
     else if (R.shake === 'roll') { card.rotation.z = Math.sin(t * 3) * 0.09 * e * (RM ? 0.3 : 1); }
     else { card.rotation.y += Math.sin(t * 47) * 0.035 * sh; card.rotation.x += Math.sin(t * 61) * 0.025 * sh; card.rotation.z = Math.sin(t * 53) * 0.02 * sh; }
@@ -4684,7 +4711,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     parts(R.parts.hatch, t, e, 0); EGG.hatch(t, e, RM);
     let sheet = 0; if (theme === 'lightning') { const q = Math.floor(t * 9); sheet = hash(q + 99) < 0.08 + e * 0.22 ? (0.05 + e * 0.12) * (1 - (t * 9 - q)) : 0; }
     Object.assign(S, { veil: 0.82 + e * 0.06, flash: 0, under: R.under ? 0.25 + e * 0.75 : 0, ov: 0.55 + 0.45 * e, warp: 0, sheet, strike: 0, seam: theme === 'twoface' ? e : 0, t });
-    eclipse('hatch', t, e); forge('hatch', t, e); aurora('hatch', t, e);
+    eclipse('hatch', t, e); forge('hatch', t, e); aurora('hatch', t, e); haunt('hatch', t, e);
     hideTiles(); back(false);
   }
   function poseGo(t, u) {
@@ -4710,6 +4737,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         else if (R.turn === 'glide') { card.position.x += sw * 0.75; card.rotation.z = -sw * 0.08; }
         else if (R.turn === 'dive') card.position.y -= sw * 0.45;
         else if (R.turn === 'grow') card.scale.multiplyScalar(1 + sw * 0.18);
+        else if (R.turn === 'haunt') { card.position.y += sw * 0.4; card.rotation.z = Math.sin(e * Math.PI * 2) * 0.12 * (1 - e); card.position.x += Math.sin(e * Math.PI * 2) * 0.18; }   // floats up and drifts round once, dreamily
         else if (R.turn === 'pirouette') { card.position.y += sw * 0.22; card.rotation.z = Math.sin(e * Math.PI * 2) * 0.05 * (1 - e); card.scale.multiplyScalar(1 - sw * 0.08); }   // spins on the spot, lifted a little, like a skater
         else if (R.turn === 'quench') { card.position.y -= sw * 0.28; card.rotation.z = Math.sin(e * Math.PI * 4) * 0.03 * (1 - e); }    // plunged into the steam and lifted out
         else if (R.turn === 'eclipse') { card.position.z -= sw * 0.4; card.rotation.x += sw * 0.1; }     // turns slowly in the dark, set back, before it steps out
@@ -4720,7 +4748,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       parts(R.burst || (R.forge ? 'erupt' : 'implode'), t, 0, u); shards(u); EGG.burst(u, RM);
       const strike = theme === 'lightning' ? Math.max(0, 1 - u / 0.35) * (u < 0.05 ? u / 0.05 : 1) : 0;
       Object.assign(S, { veil: 0.88 * (1 - clamp01((u - TU + 0.2) / 1.2)), flash: strike * 0.55, under: R.under ? 1 - e * 0.5 : 0, ov: 1, warp: R.warp && !RM ? Math.sin(x0 * Math.PI) : 0, sheet: 0, strike, seed: 7, seam: theme === 'twoface' ? 1 - e * 0.3 : 0, t });
-      eclipse('turn', t, x0, e); forge('turn', t, x0, u); aurora('turn', t, x0, u);
+      eclipse('turn', t, x0, e); forge('turn', t, x0, u); aurora('turn', t, x0, u); haunt('turn', t, x0, u);
       hideTiles(); back(false);
     } else {                                       // the landing and the journey lighting up
       const u2 = u - TU, k = Math.exp(-u2 * 4.2);
@@ -4740,7 +4768,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         let flash = ui < 0 ? 0 : Math.max(0, 1 - ui / (last ? 1.1 : 0.7)) * (last ? 0.12 : 0.05), lift = (1 - clamp01(ui / 0.5)) * 0.03 * (ui >= 0 ? 1 : 0);
         let pu = 0; if (i === so) { const x = clamp01((u2 - tDone) / 1.3), pe = Math.sin(Math.PI * x); lift += pe * 0.05; pu = x > 0 && x < 1 ? x : 0; }   // the stat this trail shines brightest in
         return [s, flash, lift, wp, pu]; }, t);
-      eclipse('land', t, u2, tDone); forge('land', t, u2, TU); aurora('land', t, u2, TU);
+      eclipse('land', t, u2, tDone); forge('land', t, u2, TU); aurora('land', t, u2, TU); haunt('land', t, u2, tDone);
       if (so >= 0 && u2 >= tDone) fire('shine', () => SND.play(theme, 'tick', 7, true));
       if (u2 > 0.35 + (n - 1) * pace.gap + pace.write * 1.3 * 0.8) fire('fin', () => SND.play(theme, 'fin'));
       if (u > end && !film) finish();
@@ -4786,11 +4814,55 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       ring.material.opacity *= 0.5; aura.material.opacity = 0; }
   }
 
+  // ----- Ghost's haunting, laid over each step: the two little ghosts around the card, mint mist, the candlelight flare -----
+  const cv3 = new THREE.Vector3();
+  function cardRect() {                          // where the card sits on the overlay, in its pixels
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { cv3.set(a * W / 2, b * H / 2, 0); card.localToWorld(cv3); cv3.project(camera);
+      const px = (cv3.x * 0.5 + 0.5) * OV.width, py = (0.5 - cv3.y * 0.5) * OV.height; x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); }
+    return [x0, y0, x1, y1];
+  }
+  function haunt(step, t, a, b) {
+    const R = recipe(); S.gh = null; S.mint = 0; if (!R.haunt) return;
+    card.updateMatrixWorld(true); const r = cardRect(), cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2, cw = r[2] - r[0], ch = r[3] - r[1];
+    const G = [];                                 // each ghost: x, y, size, tilt, facing, opacity, waving
+    if (step === 'wait') { const A = b, hold = Math.min(1, A / pace.arrive), let_ = Math.min(1, Math.max(0, (A - pace.arrive * 0.85) / 0.9)), ls = let_ * let_ * (3 - 2 * let_);
+      for (const sd of [-1, 1]) { const hx = cx + sd * cw * 0.44, hy = r[1] - ch * 0.02, fx = cx + sd * cw * (0.62 + 0.04 * Math.sin(t * 0.9 + sd)), fy = r[1] - ch * (0.12 + 0.05 * Math.sin(t * 1.7 + sd * 2));
+        G.push([hx + (fx - hx) * ls, hy + (fy - hy) * ls + Math.sin(t * 4 + sd) * ch * 0.02, ch * 0.3, Math.sin(t * 2 + sd) * 0.15 - sd * 0.1 * (1 - ls), -sd, a, 0]); }
+      if (hold < 1) S.mint = 0; }
+    else if (step === 'hatch') { const e = a, sp = 0.9 + e * 4.5;
+      const rx = Math.min(cw * 0.62, OV.width * 0.42), ry = Math.max(ch * 0.78, rx * 0.35);
+      for (const sd of [0, 1]) { const ang = t * sp + sd * Math.PI; G.push([cx + Math.cos(ang) * rx, cy + Math.sin(ang) * ry, ch * (0.28 + 0.04 * Math.sin(ang)), Math.cos(ang) * 0.3, Math.sin(ang) > 0 ? 1 : -1, 1, 0]); }
+      aura.material.color.set('#7fffd0'); aura.material.opacity = 0.15 + 0.35 * e; lights(0.42 - 0.08 * e); }
+    else if (step === 'turn') { const u = b, f = Math.min(1, u / 0.9);
+      for (const sd of [-1, 1]) G.push([cx + sd * cw * (0.6 + f * 0.9), cy - ch * (0.3 + f * 1.2), ch * 0.28, sd * 0.5 * f, sd, 1 - f, 0]);
+      S.flash = 0; aura.material.color.set('#7fffd0'); aura.material.opacity = 0.5 * (1 - a); S.ov = 1; }
+    else { const u2 = a, tDone = b, inn = Math.min(1, Math.max(0, (u2 - tDone + 0.6) / 0.6)), out = Math.min(1, Math.max(0, (u2 - tDone - 0.9) / 0.9));
+      for (const sd of [-1, 1]) G.push([cx + sd * cw * 0.56, r[1] - ch * 0.12 + Math.sin(t * 3 + sd) * ch * 0.02, ch * 0.26, Math.sin(t * 9 + sd) * 0.12, -sd, inn * (1 - out), 1]);
+      S.mint = 0.55 * Math.exp(-u2 * 2.4); S.flash = 0.06 * Math.exp(-u2 * 4); ring.material.opacity *= 0.6; S.ov = Math.max(0.3, 1 - u2 / 2); }
+    const Wd = OV.width, Hd = OV.height, narrow = cw > Wd * 0.8;      // on a phone the card fills the width: the ghosts keep above it and on screen
+    for (const g of G) { if (narrow && step !== 'hatch') { g[1] = Math.min(g[1], r[1] - g[2] * 0.55); } g[0] = Math.max(g[2] * 0.6, Math.min(Wd - g[2] * 0.6, g[0])); g[1] = Math.max(g[2] * 0.6, Math.min(Hd - g[2] * 0.6, g[1])); }
+    S.gh = G;
+  }
+  function ghostFx(c, G, t) {
+    for (const [x, y, s, tilt, face, op, wave] of G) { if (op <= 0.01) continue; c.save(); c.globalAlpha = Math.min(1, op); c.translate(x, y); c.rotate(tilt); c.scale(face, 1);
+      const blink = (t * 0.7 + x * 0.001) % 3 < 0.12 ? 0.15 : 1, k = s / 2;
+      const g = c.createRadialGradient(0, 0, k * 0.2, 0, 0, k * 1.6); g.addColorStop(0, 'rgba(127,255,208,.35)'); g.addColorStop(1, 'rgba(127,255,208,0)'); c.fillStyle = g; c.fillRect(-k * 1.6, -k * 1.6, k * 3.2, k * 3.2);
+      c.beginPath(); c.moveTo(-k * 0.8, k * 0.55); c.lineTo(-k * 0.8, -k * 0.1); c.bezierCurveTo(-k * 0.8, -k * 1.05, k * 0.8, -k * 1.05, k * 0.8, -k * 0.1); c.lineTo(k * 0.8, k * 0.55);
+      for (let j = 0; j < 4; j++) { const x0 = k * 0.8 - j * k * 0.4, wv = Math.sin(t * 6 + j) * k * 0.08; c.quadraticCurveTo(x0 - k * 0.1, k * (j % 2 ? 0.75 : 0.95) + wv, x0 - k * 0.4, k * 0.55); } c.closePath();
+      const b = c.createLinearGradient(0, -k, 0, k); b.addColorStop(0, '#ffffff'); b.addColorStop(1, '#d2fff0'); c.fillStyle = b; c.fill();
+      const arm = wave ? Math.sin(t * 12) * 0.6 : 0.1; c.save(); c.translate(k * 0.7, k * 0.05); c.rotate(-0.6 - arm); c.beginPath(); c.ellipse(k * 0.2, 0, k * 0.24, k * 0.12, 0, 0, 7); c.fill(); c.restore();   // a little arm
+      c.fillStyle = '#1b2a2a'; c.beginPath(); c.ellipse(-k * 0.28, -k * 0.2, k * 0.12, k * 0.17 * blink, 0, 0, 7); c.ellipse(k * 0.28, -k * 0.2, k * 0.12, k * 0.17 * blink, 0, 0, 7); c.fill();
+      c.beginPath(); c.arc(0, k * 0.1, k * 0.1, 0, Math.PI); c.fill();                                                    // a small smile
+      c.fillStyle = 'rgba(255,150,170,.5)'; c.beginPath(); c.ellipse(-k * 0.52, k * 0.04, k * 0.1, k * 0.06, 0, 0, 7); c.ellipse(k * 0.52, k * 0.04, k * 0.1, k * 0.06, 0, 0, 7); c.fill();
+      c.restore(); }
+  }
+
   // ----- running a live reveal -----
   function ui(cls) { body.classList.toggle('rv-on', true); body.classList.toggle('rv-going', cls === 'going'); body.classList.toggle('rv-hold', holding); }
   function startWait(m) {
     if (typeof coinsReset === 'function') coinsReset();
-    mode = m; pace = PACE[m]; state = 'arrive'; film = false; grp.visible = true; colsFor = null; tint(); fired = {}; h = 0; holding = false; auto = false;
+    mode = m; pace = Object.assign({}, PACE[m], ((recipe().pace || {})[m]) || {}); state = 'arrive'; film = false; grp.visible = true; colsFor = null; tint(); fired = {}; h = 0; holding = false; auto = false;
     body.classList.remove('rv-done'); ui('wait'); $('rv').hidden = false; flip = flipNow = Math.PI; a0 = clock.getElapsedTime(); lastT = a0; lay = -1;
     window.KT_REVEAL = 'wait'; hideTiles(); SND.arrive(theme); why(); const sb = $('rv-shine'); if (sb) sb.innerHTML = '';
   }
