@@ -2680,11 +2680,13 @@ if (wiP < 0.999) {
     r = smoothstep(f - 0.04, f + 0.02, f0); float gl = exp(-pow((f0 - f - 0.05) / 0.05, 2.0));
     fr = max(gl, clamp(1.0 - (f0 - f) / 0.4, 0.0, 1.0) * r * 0.7); tint = vec3(1.0, 0.8, 0.36); glowK = 1.3;
     ex = gl * (1.0 - smoothstep(0.85, 1.0, p)) * 0.55; exC = vec3(1.0, 0.92, 0.7);
-  } else if (wiM == 14) {                           // shadow: the tile sits in darkness, the number comes out of it with an eclipse rim
-    float d = length(q - ctr) / maxd, f0 = p * 1.3;
-    float on = smoothstep(0.0, 0.06, p); r = (1.0 - smoothstep(f0 - 0.12, f0, d)) * on; dim = mix(0.16, 1.0, (1.0 - smoothstep(f0 - 0.06, f0 + 0.12, d)) * on);
-    ex = exp(-pow((d - f0) / 0.03, 2.0)) * (1.0 - smoothstep(0.82, 1.0, p)) * smoothstep(0.03, 0.15, f0) * 1.6; exC = vec3(0.82, 0.8, 1.0);
-    fr = r * (1.0 - p) * 0.5; tint = vec3(0.85, 0.82, 1.0); glowK = 1.0;
+  } else if (wiM == 14) {                           // shadow: each tile has its own eclipse. A dark disc covers the number and slides off to the left,
+                                                    // a violet corona burning along its edge, the same way the moon came back behind the card
+    vec2 dc = ctr + vec2(-p * p * (3.0 - 2.0 * p) * 2.25 * maxd, 0.0);
+    float d = length(q - dc) / maxd, on = smoothstep(0.0, 0.04, p);
+    r = smoothstep(0.985, 1.02, d) * on + step(0.999, p); r = clamp(r, 0.0, 1.0); dim = mix(0.12, 1.0, r);
+    ex = (exp(-pow((d - 1.0) / 0.022, 2.0)) * 1.9 + exp(-pow((d - 1.0) / 0.09, 2.0)) * 0.35) * on * (1.0 - smoothstep(0.86, 1.0, p)); exC = vec3(0.68, 0.55, 1.0);
+    fr = r * (1.0 - p) * 0.45; tint = vec3(0.72, 0.6, 1.0); glowK = 1.15;
   } else if (wiM == 15) {                           // acid: it eats its way through the tile, glowing and fizzing at the edges
     float n = wiF(q * 5.0 + 4.0), f0 = p * 1.3 - 0.15;
     r = smoothstep(n - 0.04, n, f0); float rim = exp(-pow((f0 - n) / 0.024, 2.0));
@@ -2746,7 +2748,8 @@ if (wiP < 0.999) {
     sh = (wiM == 4 ? vec3(1.0, 0.7, 0.95) : vec3(1.0, 0.92, 0.6)) * step(0.93, wiH(c + 9.0)) * tw * exp(-dot(fract(q * 26.0) - 0.5, fract(q * 26.0) - 0.5) / 0.01) * 0.7; } // stars twinkle
   else if (wiM == 8 || wiM == 15) { vec2 c = floor(q * 14.0 + vec2(0.0, -t * 0.25)); vec2 f = fract(q * 14.0 + vec2(0.0, -t * 0.25)) - 0.5;
     sh = (wiM == 8 ? vec3(0.5, 1.0, 0.45) : vec3(0.45, 1.0, 0.5)) * step(0.9, wiH(c)) * exp(-dot(f, f) / 0.02) * 0.35; }                          // tree spores, acid bubbles rising
-  else if (wiM == 5 || wiM == 14) sh = vec3(0.85, 0.88, 1.0) * wiF(q * 3.0 + vec2(t * 0.12, 0.0)) * (0.05 + band * 0.08);                         // ghost and shadow: drifting mist
+  else if (wiM == 5) sh = vec3(0.85, 0.88, 1.0) * wiF(q * 3.0 + vec2(t * 0.12, 0.0)) * (0.05 + band * 0.08);                         // ghost: drifting mist
+  else if (wiM == 14) sh = vec3(0.6, 0.48, 1.0) * wiF(q * 3.0 + vec2(t * 0.1, 0.0)) * (0.04 + band * 0.1);                            // shadow: violet night haze
   else if (wiM == 9) sh = vec3(1.0, 0.85, 0.4) * band * 0.3;                                                                                     // jelly: a honey gloss
   else if (wiM == 16) sh = mix(vec3(0.42, 0.62, 1.0), vec3(1.0, 0.45, 0.38), step(0.5, uv.x)) * band * 0.16;                                       // 2Face: each side its own light
   else if (wiM == 3 || wiM == 10) sh = vec3(1.0, 0.85, 0.4) * exp(-pow((uv.x - fract(t * 0.18 + k)) * wiA / 0.05, 2.0)) * 0.12;                  // speed and lightning: a streak running across
@@ -3677,8 +3680,8 @@ const SND = (() => {
       fin: [['tr_fin', 0.55]], tick: 0.9, arrive: 'tr_arrive' },
     jelly: { loops: [['je_loop', 0.2, 0.65]], cracks: ['je_sq1', 'je_sq2', 'je_sq3'], turn: [['je_boing', 0.85], ['whoosh', 0.3]], land: [['je_splat', 0.8]],
       fin: [['je_fin', 0.55]], tk: 'je_tick', tick: 1, arrive: 'je_arrive' },
-    shadow: { loops: [['sh_loop', 0.2, 0.6], ['rumble', 0.03, 0.35]], cracks: ['crack1', 'crack2', 'sh_drum'], turn: [['sh_swoosh', 0.9]], land: [['sh_smoke', 0.8]],
-      fin: [['sh_fin', 0.55]], tick: 0.8, arrive: 'sh_arrive' },
+    shadow: { loops: [['sh_loop', 0.2, 0.6], ['rumble', 0.03, 0.35]], cracks: ['crack1', 'crack2', 'sh_drum'], turn: [['sh_swoosh', 0.9]], land: [['sh_smoke', 0.8], ['heart', 0.45]],
+      fin: [['sh_fin', 0.45], ['crystal', 0.35]], tick: 0.8, arrive: 'sh_arrive' },
     acid: { loops: [['ac_loop', 0.25, 0.7]], cracks: ['ac_squirt', 'ac_can', 'ac_hit'], turn: [['ac_potion', 0.85]], land: [['ac_steam', 0.8], ['impact', 0.3]],
       fin: [['ac_fin', 0.55]], tk: 'ac_tick', tick: 1, rnd: [['ac_can'], 0.15, 0.3], arrive: 'ac_arrive' },
   };
@@ -3966,8 +3969,10 @@ const RECIPES = {
     parts: { wait: 'rise', hatch: 'rise', land: 'leafburst' }, tex: 'leaf', cols: ['#7dff8a', '#3ccf4a', '#d8ffb0', '#1f8a3a'], flash: '200,255,190', ring: '#9dff9a', flick: 'glow', ovc: '125,255,140' },
   jelly: { seal: 4, brk: 2, c1: [1.0, 0.78, 0.2], c2: [1.0, 0.95, 0.75], veil: '16,10,2', arrive: 'squash', turn: 'wobble', shake: 'wobble', ov: 'drip',
     parts: { wait: 'bubbles', hatch: 'bubbles', land: 'bubbleburst' }, tex: 'bubble', cols: ['#ffd96a', '#fff2c0', '#e8b020', '#ffffff'], flash: '255,225,150', ring: '#ffe08a', flick: 'glow', ovc: '255,200,60' },
-  shadow: { seal: 15, brk: 1, c1: [0.78, 0.78, 1.0], c2: [1.0, 1.0, 1.0], veil: '2,2,8', dark: 1.08, arrive: 'emerge', turn: 'spin', shake: 'drift', ov: 'shadow',
-    parts: { wait: 'converge', hatch: 'converge', land: 'burst' }, tex: 'puff', cols: ['#c9c9e8', '#ffffff', '#8a8ab0', '#e6e6ff'], flash: '210,210,255', ring: '#dcdcff', flick: 'still' },
+  // Shadow, The Eclipse (Jon, 7 Nov): a pale moon behind the card goes dark as you hold, only a violet ring is left, the egg bursts
+  // into smoke and ink with no flash, and the card steps out of the dark lit by that ring while the moon comes back
+  shadow: { emi: 0.55, seal: 15, brk: 1, c1: [0.62, 0.48, 1.0], c2: [0.85, 0.78, 1.0], veil: '3,2,10', dark: 1.12, arrive: 'emerge', turn: 'eclipse', spin: 3, shake: 'drift', ov: 'shadow', moon: true,
+    parts: { wait: 'gather', hatch: 'gather', land: 'inkcurl' }, tex: 'smoke', cols: ['#140f2a', '#221a44', '#0b0818', '#2e2460'], flash: '3,2,10', ring: '#9d84ff', flick: 'still' },
   acid: { seal: 16, c1: [0.42, 1.0, 0.48], c2: [0.85, 1.0, 0.6], veil: '2,12,4', arrive: 'below', turn: 'rise', shake: 'twitch', ov: 'bubbles', under: '90,255,110',
     parts: { wait: 'bubbles', hatch: 'bubbles', land: 'fountain' }, tex: 'bubble', cols: ['#7dff9e', '#d8ffb0', '#2fd860', '#ffffff'], flash: '190,255,200', ring: '#9dffb0', flick: 'glow', ovc: '125,255,160' },
 };
@@ -4032,7 +4037,9 @@ RV = (() => {
     coin: spriteTex((x, S) => { x.translate(S / 2, S / 2); const g = x.createLinearGradient(-S / 2, -S / 2, S / 2, S / 2); g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, '#d8d0c0'); g.addColorStop(1, '#ffffff');
       x.fillStyle = g; x.beginPath(); x.arc(0, 0, S * 0.44, 0, 7); x.fill(); x.strokeStyle = 'rgba(0,0,0,.25)'; x.lineWidth = S * 0.05; x.beginPath(); x.arc(0, 0, S * 0.32, 0, 7); x.stroke(); }, 64),
   };
-  const SOLID = { petal: 1, leaf: 1, coin: 1 };                  // shapes that sit on top, rather than glowing
+  TEXS.smoke = spriteTex((x, S) => { for (let i = 0; i < 5; i++) { const cx = S * (0.35 + 0.3 * hash(i + 91)), cy = S * (0.35 + 0.3 * hash(i + 92)), r = S * (0.2 + 0.14 * hash(i + 93));
+      const g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, 'rgba(255,255,255,.5)'); g.addColorStop(0.6, 'rgba(255,255,255,.22)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, S, S); } }, 96);
+  const SOLID = { petal: 1, leaf: 1, coin: 1, smoke: 1 };                  // shapes that sit on top, rather than glowing
   const grp = new THREE.Group(); grp.visible = false; scene.add(grp);
   const aura = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.4), new THREE.MeshBasicMaterial({ map: glowT, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, opacity: 0 }));
   aura.position.z = -0.35; aura.renderOrder = -1; grp.add(aura);
@@ -4220,6 +4227,66 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     x.restore(); coverT.needsUpdate = true;
   }
 
+  // ----- the moon behind the card (Shadow): full while the card waits, eclipsed as you hold, a violet corona at the break, back after the landing -----
+  const MOON = (() => {
+    const N = LITE ? 384 : 640, cv = document.createElement('canvas'); cv.width = cv.height = N; const x = cv.getContext('2d');
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: true, opacity: 0 }));
+    m.renderOrder = -3; m.visible = false; grp.add(m);
+    const C = N / 2, Rm = N * 0.3, craters = [...Array(9)].map((_, i) => [(hash(i + 201) - 0.5) * 1.2, (hash(i + 202) - 0.5) * 1.2, 0.08 + hash(i + 203) * 0.16]);
+    let last = '';
+    // ecl: 0 full moon, 1 totality, 2 the dark disc has slid off the other side. cor: the violet corona
+    function draw(ecl, cor) {
+      const k = Math.round(ecl * 400) + '|' + Math.round(cor * 100); if (k === last) return; last = k;
+      x.clearRect(0, 0, N, N);
+      const lit = 1 - Math.min(1, Math.max(0, 1 - Math.abs(ecl - 1) * 1.15));     // how much of the moon shows
+      let g = x.createRadialGradient(C, C, Rm * 0.9, C, C, N / 2);                 // its glow in the sky
+      g.addColorStop(0, `rgba(205,196,255,${0.42 * (0.15 + 0.85 * lit)})`); g.addColorStop(1, 'rgba(205,196,255,0)'); x.fillStyle = g; x.fillRect(0, 0, N, N);
+      g = x.createRadialGradient(C - Rm * 0.3, C - Rm * 0.35, Rm * 0.1, C, C, Rm); g.addColorStop(0, '#fbf9ff'); g.addColorStop(0.7, '#e4def8'); g.addColorStop(1, '#c6bde8');
+      x.fillStyle = g; x.beginPath(); x.arc(C, C, Rm, 0, 7); x.fill();
+      x.fillStyle = 'rgba(150,138,196,.22)'; for (const [a, b, r] of craters) { if (a * a + b * b > 0.5) continue; x.beginPath(); x.arc(C + a * Rm, C + b * Rm, r * Rm, 0, 7); x.fill(); }
+      const dx = (1 - ecl) * Rm * 2.15;                                            // the shadow slides in from the right and leaves to the left
+      x.save(); x.beginPath(); x.arc(C, C, Rm + 1, 0, 7); x.clip();                // the shadow only darkens the moon itself
+      x.fillStyle = '#070512'; x.beginPath(); x.arc(C + dx, C, Rm * 1.03, 0, 7); x.fill(); x.restore();
+      if (cor > 0.002) {                                                           // the corona: a thin violet ring with soft streamers
+        x.save(); x.globalCompositeOperation = 'lighter';
+        for (const [w, a] of [[Rm * 0.5, 0.2], [Rm * 0.18, 0.45], [Rm * 0.05, 0.95]]) { const r0 = Rm * 1.02, r1 = Rm * 1.03 + w, gr = x.createRadialGradient(C + dx, C, r0, C + dx, C, r1);
+          gr.addColorStop(0, 'rgba(170,140,255,0)'); gr.addColorStop(Math.min(0.2, (Rm * 0.015) / (r1 - r0)), `rgba(170,140,255,${a * cor})`); gr.addColorStop(1, 'rgba(170,140,255,0)');
+          x.fillStyle = gr; x.beginPath(); x.arc(C + dx, C, r1, 0, 7); x.arc(C + dx, C, r0, 0, 7, true); x.fill('evenodd'); }
+        x.strokeStyle = `rgba(235,226,255,${0.9 * cor})`; x.lineWidth = N * 0.004; x.beginPath(); x.arc(C + dx, C, Rm * 1.035, 0, 7); x.stroke();
+        x.restore();
+      }
+      tex.needsUpdate = true;
+    }
+    // where it sits: centred behind the card, a little larger than the card is wide, so its rim shows above and below
+    function place(op, ecl, cor) {
+      if (!recipe().moon) { m.visible = false; return; }
+      m.visible = op > 0.002; if (!m.visible) return; draw(ecl, cor);
+      const z = -2.4, cz = camera.position.z, sc = card.scale.x * W * 0.82 / 0.6 * (cz - z) / (cz - card.position.z);
+      m.position.set(card.position.x * 0.4, card.position.y + 0.02, z); m.scale.setScalar(sc); m.material.opacity = op;
+    }
+    return { place, hide: () => { m.visible = false; } };
+  })();
+  // little bats crossing the sky while the moon is up (Shadow): cute, not scary
+  function bats(c, w, h, t, a) {
+    const K = Math.max(w, h) / 1600; c.save(); c.fillStyle = '#07050f';
+    for (let i = 0; i < 5; i++) { const per = 7 + hash(i + 301) * 5, q = ((t + hash(i + 302) * per) / per) % 1, dir = i % 2 ? 1 : -1;
+      const x = w * (dir > 0 ? -0.08 + q * 1.16 : 1.08 - q * 1.16), y = h * (0.12 + 0.22 * hash(i + 303)) + Math.sin(q * 9 + i) * h * 0.02, s = (10 + 8 * hash(i + 304)) * K, f = Math.sin(t * (14 + i * 2) + i) * 0.5 + 0.5;
+      c.globalAlpha = a * 0.9 * Math.sin(q * Math.PI); c.save(); c.translate(x, y); c.scale(dir, 1);
+      c.beginPath(); c.ellipse(0, 0, s * 0.32, s * 0.42, 0, 0, 7); c.fill();                                 // a round little body
+      c.beginPath(); c.moveTo(-s * 0.15, -s * 0.36); c.lineTo(-s * 0.08, -s * 0.62); c.lineTo(0, -s * 0.38); c.lineTo(s * 0.08, -s * 0.62); c.lineTo(s * 0.15, -s * 0.36); c.fill();   // ears
+      for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * s * 0.25, -s * 0.12); c.quadraticCurveTo(sd * s * 0.9, -s * (0.5 + 0.5 * f), sd * s * 1.35, -s * (0.05 + 0.35 * f));
+        c.quadraticCurveTo(sd * s * 1.0, s * 0.05, sd * s * 0.85, s * 0.18); c.quadraticCurveTo(sd * s * 0.6, 0, sd * s * 0.25, s * 0.16); c.fill(); }   // flapping wings
+      c.fillStyle = 'rgba(200,180,255,.9)'; c.beginPath(); c.arc(-s * 0.1, -s * 0.12, s * 0.05, 0, 7); c.arc(s * 0.1, -s * 0.12, s * 0.05, 0, 7); c.fill(); c.fillStyle = '#07050f';   // two tiny eyes
+      c.restore(); }
+    c.restore();
+  }
+  // stars that come out as the moon goes dark (Shadow)
+  function starsOut(c, w, h, t, a) { const K = Math.max(w, h) / 1600; c.save(); c.fillStyle = '#efeaff';
+    for (let i = 0; i < 90; i++) { const tw = Math.pow(0.5 + 0.5 * Math.sin(t * (1 + hash(i + 401) * 3) + i), 3), on = Math.min(1, Math.max(0, a * 1.6 - hash(i + 402) * 0.8));
+      c.globalAlpha = on * (0.25 + 0.75 * tw); c.beginPath(); c.arc(hash(i + 403) * w, hash(i + 404) * h * 0.75, (0.6 + hash(i + 405) * 1.5) * K, 0, 7); c.fill(); }
+    c.restore(); }
+
   // ----- colours of the moment -----
   const accent = new THREE.Color(1, 1, 1), WHITE = new THREE.Color(1, 1, 1);
   let colsFor = null, colList = [];
@@ -4347,7 +4414,9 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     } else if (R.ov === 'shadow') {
       const p = 0.5 + 0.5 * Math.sin(t * 1.6);
       for (let i = 0; i < 3; i++) { const g = c.createRadialGradient(w / 2 + Math.sin(t * 0.4 + i * 2) * w * 0.04, h / 2, Math.max(w, h) * (0.26 + i * 0.08 - 0.06 * a * p), w / 2, h / 2, Math.max(w, h) * (0.62 + i * 0.05));
-        g.addColorStop(0, 'rgba(0,0,6,0)'); g.addColorStop(1, `rgba(0,0,6,${0.42 * a})`); c.fillStyle = g; c.fillRect(0, 0, w, h); }
+        g.addColorStop(0, 'rgba(3,2,10,0)'); g.addColorStop(1, `rgba(3,2,10,${0.42 * a})`); c.fillStyle = g; c.fillRect(0, 0, w, h); }
+      if (st.stars > 0.002) starsOut(c, w, h, t, st.stars);
+      if (st.bats > 0.002) bats(c, w, h, t, st.bats);
     } else if (R.ov === 'spores') {
       for (let i = 0; i < 60 * n; i++) { const q = (hash(i + 3) + t * (0.03 + hash(i + 4) * 0.04)) % 1, x = hash(i + 5) * w + Math.sin(t * 0.9 + i) * 26 * K, y = (1.03 - q * 1.08) * h, r = (1.2 + hash(i + 6) * 2.4) * K, al = a * Math.sin(q * Math.PI);
         c.fillStyle = `rgba(${col},${0.18 * al})`; c.beginPath(); c.arc(x, y, r * 3, 0, 7); c.fill(); c.fillStyle = `rgba(230,255,220,${0.8 * al})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
@@ -4430,6 +4499,10 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       else if (role === 'jitter') { const q = Math.floor(t * 18 + p.ph * 3), side = hash(q + i * 3.1), f = hash(q + i * 7.7), hw = W * WS * 0.52, hh = H * WS * 0.52;
         [x0, y0] = side < 0.25 ? [-hw + f * 2 * hw, hh] : side < 0.5 ? [-hw + f * 2 * hw, -hh] : side < 0.75 ? [-hw, -hh + f * 2 * hh] : [hw, -hh + f * 2 * hh];
         x0 += (hash(q + i) - 0.5) * 0.08; y0 += WY + (hash(q + i + 1) - 0.5) * 0.08; z0 = 0.05; op = hash(q + i * 1.3) < 0.25 + k * 0.6 ? 0.9 : 0; sc = p.s * (0.6 + hash(q) * 1.4); }
+      else if (role === 'gather') { const a = p.a + t * p.sp * 0.5 + k * 2.2, r = p.r * (1.25 - 0.95 * k * k); x0 = Math.cos(a) * r; y0 = Math.sin(a) * r * p.el + Math.sin(t * 0.7 + p.ph) * 0.08; z0 = (p.z - 0.3) * (1 - k);
+        op = (i % 2 ? 0 : 0.22 + 0.3 * k) * (0.7 + 0.3 * Math.sin(t * 1.3 + p.ph)); sc = p.s * 4 * (1.2 - 0.5 * k); rot = a * 0.5; }                     // shadow: smoke drawn in toward the egg
+      else if (role === 'inkcurl') { const tt = u, life = 1.7; x0 = p.v.x * 0.55 * tt * (1 - tt * 0.15); y0 = baseY + p.v.y * 0.4 * tt + 0.3 * tt * tt; z0 = -0.25 + p.v.z * tt * 0.12;
+        op = Math.min(1, tt * 6) * Math.pow(Math.max(0, 1 - tt / life), 1.6) * (i % 3 ? 0 : 0.7); sc = p.s * (2.2 + tt * 2.6); rot = tt * (0.6 + p.sp * 2) + p.ph; }       // shadow: the egg's smoke curls away and thins
       else if (role === 'implode') { p.m.position.multiplyScalar(0.9); p.m.material.opacity *= 0.94; return; }
       else if (role === 'snowfall' || role === 'falling') { const fall = role === 'falling', sp = p.sp * (fall ? 0.5 : 0.42) * (1 + k * 1.6), q = (hash(i + 7) + t * sp) % 1;
         x0 = p.x0 + Math.sin(t * (0.6 + p.sp) + p.ph) * (fall ? 0.35 : 0.15); y0 = 1.9 - q * 3.8; z0 = p.z - 0.1; op = Math.sin(q * Math.PI) * 0.8; sc = p.s * (fall ? 1.5 : 1.1); rot = t * (0.8 + p.sp * 3) + p.ph; }
@@ -4496,6 +4569,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     lights((R.arrive === 'fade' || R.arrive === 'emerge') && !film ? 0.42 * (0.25 + 0.75 * ar) : 0.42); sweepForce = 9; SH.forEach(s => s.m.visible = false); SU.uT.value = t;
     parts(R.parts.wait, t, 0.15, 0); PT.forEach(p => p.m.material.opacity *= ar); EGG.wait(t, ar);
     Object.assign(S, { veil: 0.82 * Math.min(1, film ? 1 : A / 0.6), flash: 0, under: R.under ? 0.25 * ar : 0, ov: 0.55 * ar, warp: 0, sheet: 0, strike: 0, seam: 0, t });
+    eclipse('wait', t, ar, A);
     hideTiles(); back(false);
   }
   function poseHatch(t, e, ht) {
@@ -4523,6 +4597,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     parts(R.parts.hatch, t, e, 0); EGG.hatch(t, e, RM);
     let sheet = 0; if (theme === 'lightning') { const q = Math.floor(t * 9); sheet = hash(q + 99) < 0.08 + e * 0.22 ? (0.05 + e * 0.12) * (1 - (t * 9 - q)) : 0; }
     Object.assign(S, { veil: 0.82 + e * 0.06, flash: 0, under: R.under ? 0.25 + e * 0.75 : 0, ov: 0.55 + 0.45 * e, warp: 0, sheet, strike: 0, seam: theme === 'twoface' ? e : 0, t });
+    eclipse('hatch', t, e);
     hideTiles(); back(false);
   }
   function poseGo(t, u) {
@@ -4548,6 +4623,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         else if (R.turn === 'glide') { card.position.x += sw * 0.75; card.rotation.z = -sw * 0.08; }
         else if (R.turn === 'dive') card.position.y -= sw * 0.45;
         else if (R.turn === 'grow') card.scale.multiplyScalar(1 + sw * 0.18);
+        else if (R.turn === 'eclipse') { card.position.z -= sw * 0.4; card.rotation.x += sw * 0.1; }     // turns slowly in the dark, set back, before it steps out
       }
       SU.uT.value = t;
       const br = clamp01(x0 / 0.3); SU.uBreak.value = br; SU.uH.value = 1; cover.visible = br < 1; coverM.emissiveIntensity = 0.9;
@@ -4555,6 +4631,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       parts('implode', t, 0, 0); shards(u); EGG.burst(u, RM);
       const strike = theme === 'lightning' ? Math.max(0, 1 - u / 0.35) * (u < 0.05 ? u / 0.05 : 1) : 0;
       Object.assign(S, { veil: 0.88 * (1 - clamp01((u - TU + 0.2) / 1.2)), flash: strike * 0.55, under: R.under ? 1 - e * 0.5 : 0, ov: 1, warp: R.warp && !RM ? Math.sin(x0 * Math.PI) : 0, sheet: 0, strike, seed: 7, seam: theme === 'twoface' ? 1 - e * 0.3 : 0, t });
+      eclipse('turn', t, x0, e);
       hideTiles(); back(false);
     } else {                                       // the landing and the journey lighting up
       const u2 = u - TU, k = Math.exp(-u2 * 4.2);
@@ -4574,11 +4651,25 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         let flash = ui < 0 ? 0 : Math.max(0, 1 - ui / (last ? 1.1 : 0.7)) * (last ? 0.12 : 0.05), lift = (1 - clamp01(ui / 0.5)) * 0.03 * (ui >= 0 ? 1 : 0);
         let pu = 0; if (i === so) { const x = clamp01((u2 - tDone) / 1.3), pe = Math.sin(Math.PI * x); lift += pe * 0.05; pu = x > 0 && x < 1 ? x : 0; }   // the stat this trail shines brightest in
         return [s, flash, lift, wp, pu]; }, t);
+      eclipse('land', t, u2, tDone);
       if (so >= 0 && u2 >= tDone) fire('shine', () => SND.play(theme, 'tick', 7, true));
       if (u2 > 0.35 + (n - 1) * pace.gap + pace.write * 1.3 * 0.8) fire('fin', () => SND.play(theme, 'fin'));
       if (u > end && !film) finish();
     }
     key.position.set(-2.5 + Math.sin(card.rotation.y) * 2, 3 - card.rotation.x * 4, 4);
+  }
+
+  // ----- Shadow's eclipse, laid over each step: the moon, the dark, the violet ring, the light coming back -----
+  function eclipse(step, t, a, b) {
+    const R = recipe(); S.stars = 0; S.bats = 0; if (!R.moon) { MOON.hide(); return; }
+    aura.material.color.set('#7a5cff');
+    if (step === 'wait') { MOON.place(0.95 * a, 0, 0); S.bats = a; S.stars = 0.12 * a; }
+    else if (step === 'hatch') { const e = a; MOON.place(1, e, Math.pow(e, 5) * 0.7); lights(0.42 * (1 - 0.6 * e)); S.veil = 0.82 + e * 0.14; S.stars = 0.15 + 0.85 * e; S.bats = Math.max(0, 1 - e * 1.6);
+      aura.material.opacity = 0.18 + e * 0.3; }
+    else if (step === 'turn') { const x0 = a, cor = 0.7 + 0.3 * Math.sin(Math.min(1, x0 / 0.35) * Math.PI * 0.5);   // totality: only the ring is lit
+      MOON.place(1, 1, cor); lights(0.1 + 0.18 * b); S.stars = 1; S.flash = 0.42 * Math.sin(Math.min(1, x0 / 0.45) * Math.PI); aura.material.opacity = 0.45 + 0.2 * Math.sin(x0 * Math.PI); }
+    else { const u2 = a, tDone = b, back = Math.min(1, u2 / 2.6), sm = back * back * (3 - 2 * back), out = Math.min(1, Math.max(0, (u2 - tDone - 0.2) / 1.4));
+      MOON.place(1 - out, 1 + sm, Math.exp(-u2 * 1.1)); lights(0.22 + 0.78 * Math.min(1, u2 / 1.7)); S.stars = Math.max(0, 1 - u2 / 3); }
   }
 
   // ----- running a live reveal -----
@@ -4594,7 +4685,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
   function beginTurn(t) { state = 'go'; tTurn = t; vg = 0; beats = slowBeats(pace, recipe()); so = standIdx(); holding = false; SND.droneStop(); SND.play(theme, 'turn'); window.KT_REVEAL = 'go'; ui('going');
     clearTimeout(tease.t); tease.t = setTimeout(() => tease(false), 1800); }
   function finish() {
-    state = 'off'; SND.slow(0); grp.visible = false; cover.visible = false; EGG.hide(); split = null; showTiles(); back(true); card.scale.setScalar(1); card.position.set(0, baseY, 0); card.rotation.z = 0;
+    state = 'off'; SND.slow(0); grp.visible = false; MOON.hide(); cover.visible = false; EGG.hide(); split = null; showTiles(); back(true); card.scale.setScalar(1); card.position.set(0, baseY, 0); card.rotation.z = 0;
     flip = flipNow = 0; sweepForce = null; lights(1); Object.assign(S, { veil: 0, flash: 0, under: 0, ov: 0, warp: 0, sheet: 0, strike: 0, seam: 0 }); ovx.clearRect(0, 0, OV.width, OV.height);
     if (mode === 'full') { try { localStorage.setItem('kt-seen', '1'); } catch (e) {} }
     body.classList.remove('rv-on', 'rv-going', 'rv-hold'); body.classList.add('rv-done'); $('rv').hidden = true;
@@ -4635,7 +4726,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     if (tt < F.h0) poseWait(tt, 9); else if (tt < F.turn) poseHatch(tt, (tt - F.h0) / FP.hatch, tt - F.h0); else { const u = warp().uOf(tt - F.turn); beats = warp().B; so = standIdx(); poseGo(F.turn + u, u); }
     return tt < F.after;
   }
-  function filmEnd() { film = false; grp.visible = false; cover.visible = false; EGG.hide(); split = null; showTiles(); back(true); card.scale.setScalar(1); card.position.set(0, 0, 0); card.rotation.z = 0; sweepForce = null; lights(1); lay = -1; pace = PACE[mode];
+  function filmEnd() { film = false; grp.visible = false; MOON.hide(); cover.visible = false; EGG.hide(); split = null; showTiles(); back(true); card.scale.setScalar(1); card.position.set(0, 0, 0); card.rotation.z = 0; sweepForce = null; lights(1); lay = -1; pace = PACE[mode];
     Object.assign(S, { veil: 0, flash: 0, under: 0, ov: 0, warp: 0, sheet: 0, strike: 0, seam: 0 }); }
 
   // pages made for test pictures freeze the reveal at a moment of the film: ?shot=front&rvt=2.4 (rvt=-1 is the sealed card waiting)
