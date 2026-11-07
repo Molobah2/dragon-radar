@@ -26,19 +26,19 @@ window.SKY_L = (() => {
   L.skyAt = (img, shape, sx, sy) => {
     if (!img || !img.naturalWidth) return [238, 180, 146];
     let p = probe[shape];
-    if (!p) { const c = document.createElement('canvas'); c.width = 96; c.height = Math.round(96 / L.ASPECT[shape]); const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, c.width, c.height); p = probe[shape] = { x, w: c.width, h: c.height }; }
+    if (!p) { const c = document.createElement('canvas'); c.width = 96; c.height = Math.round(96 / L.ASPECT[shape]); const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, c.width, c.height); p = probe[shape] = { x, d: x.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height }; }
     // the screen point mapped through the painting's cover fit
     const W = innerWidth, H = innerHeight, ia = L.ASPECT[shape]; let bw = W, bh = W / ia; if (bh < H) { bh = H; bw = H * ia; }
     const u = Math.max(0, Math.min(1, (sx * W - (W - bw) / 2) / bw)), v = Math.max(0, Math.min(1, (sy * H - (H - bh) / 2) / bh));
-    const d = p.x.getImageData(Math.min(p.w - 1, Math.round(u * (p.w - 1))), Math.min(p.h - 1, Math.round(v * (p.h - 1))), 1, 1).data;
-    return [d[0], d[1], d[2]];
+    const i = (Math.min(p.h - 1, Math.round(v * (p.h - 1))) * p.w + Math.min(p.w - 1, Math.round(u * (p.w - 1)))) * 4;   // read once from the painting, never from the canvas each frame
+    return [p.d[i], p.d[i + 1], p.d[i + 2]];
   };
   // the sky colour at a point on the painting itself (u, v from the top left, 0 to 1)
   L.skyUV = (img, shape, u, v) => {
     if (!img || !img.naturalWidth) return [238, 180, 146];
     if (!probe[shape]) L.skyAt(img, shape, .5, .5);
-    const p = probe[shape], d = p.x.getImageData(Math.max(0, Math.min(p.w - 1, Math.round(u * (p.w - 1)))), Math.max(0, Math.min(p.h - 1, Math.round(v * (p.h - 1)))), 1, 1).data;
-    return [d[0], d[1], d[2]];
+    const p = probe[shape], i = (Math.max(0, Math.min(p.h - 1, Math.round(v * (p.h - 1)))) * p.w + Math.max(0, Math.min(p.w - 1, Math.round(u * (p.w - 1))))) * 4;
+    return [p.d[i], p.d[i + 1], p.d[i + 2]];
   };
   return L;
 })();
@@ -662,10 +662,16 @@ window.SKY_L = (() => {
     if (!SHOT && DOOR.t0) { DOOR.r = clock.getElapsedTime() - DOOR.t0; if (DOOR.r > 4.2 && !DOOR.told) { DOOR.told = true; try { (window.KT_SKY_IN || (() => {}))(); } catch (e) {} } }
     pose(time); renderer.render(scene, camera);
     // a device that cannot keep up draws the sky at a lower resolution, a step at a time, so the flight stays smooth for everyone
-    if (!SHOT && window.SKY_READY && AP.dt > 0) { GOV.n++; GOV.sum += AP.dt; GOV.age += AP.dt;
-      if (GOV.age > 1.6 && GOV.n >= 8) { const avg = GOV.sum / GOV.n; if (avg > 1 / 42 && prI < PR.length - 1) GOV.want = true; GOV.n = 0; GOV.sum = 0; GOV.age = .8; } }
+    if (!SHOT && window.SKY_READY && AP.dt > 0 && AP.s > .4) { GOV.n++; GOV.sum += AP.dt; GOV.age += AP.dt;
+      // on the title (the picture is still) it measures once and jumps straight to the resolution this device can carry; in flight it
+      // only steps down again if the device is struggling badly, and then only while the camera holds at a stop
+      const title = AP.s < AP.START;
+      if (title && !GOV.sized && GOV.age > 1.1 && GOV.n >= 6) { const avg = GOV.sum / GOV.n, k = Math.sqrt((1 / 55) / avg); GOV.sized = true;
+        if (k < .95) { let j = prI; while (j < PR.length - 1 && PR[j + 1] >= PR[0] * k - .02) j++; if (PR[j] > PR[0] * k && j < PR.length - 1) j++; GOV.to = j; GOV.want = j > prI; } GOV.n = 0; GOV.sum = 0; GOV.age = 0; }
+      if (!title && GOV.age > 2.5 && GOV.n >= 10) { const avg = GOV.sum / GOV.n; if (avg > 1 / 30 && prI < PR.length - 1) { GOV.to = prI + 1; GOV.want = true; } GOV.n = 0; GOV.sum = 0; GOV.age = .8; } }
     // the change itself costs a moment, so it waits until the camera is holding still (on the title or at a stop), never mid move
-    if (GOV.want && (AP.s < AP.START || Math.abs(target - t) < .0015)) { GOV.want = false; prI++; window.SKY_SLOW = prI; renderer.setPixelRatio(PR[prI]); layout(); GOV.n = 0; GOV.sum = 0; GOV.age = 0; }
+    if (GOV.want && (AP.landed || DOOR.t0)) GOV.want = false;   // never at the Hatchery: that is where the card is built and the doorway opens
+    if (GOV.want && !P.get("nogov") && (AP.s < AP.START || Math.abs(target - t) < .0015)) { GOV.want = false; prI = Math.max(prI + 1, GOV.to || 0); window.SKY_SLOW = prI; renderer.setPixelRatio(PR[prI]); layout(); GOV.n = 0; GOV.sum = 0; GOV.age = 0; }
     if (!SHOT && !stopped) requestAnimationFrame(frame);
   }
   let stopped = false;
