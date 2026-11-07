@@ -57,7 +57,8 @@ window.SKY_L = (() => {
   try { renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: false, powerPreference: 'high-performance' }); }
   catch (e) { return; }                                   // no WebGL: the painted first picture stays
   const phone = matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 600;
-  const PR = [Math.min(devicePixelRatio || 1, phone ? 1.6 : 1.75)]; let prI = 0;
+  const weak = (navigator.deviceMemory && navigator.deviceMemory <= 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);   // a modest device starts lighter
+  const PR = [Math.min(devicePixelRatio || 1, weak ? 1.3 : phone ? 1.6 : 1.75)]; let prI = 0; if (weak) window.SKY_SLOW = 1;
   renderer.setPixelRatio(PR[0]);
   for (const k of [0.82, 0.68, 0.56]) { const v = Math.max(1, PR[0] * k); if (v < PR[PR.length - 1] - 0.05) PR.push(v); } if (PR[PR.length - 1] > 0.85) PR.push(phone ? 0.85 : 0.8);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -662,13 +663,20 @@ window.SKY_L = (() => {
     pose(time); renderer.render(scene, camera);
     // a device that cannot keep up draws the sky at a lower resolution, a step at a time, so the flight stays smooth for everyone
     if (!SHOT && window.SKY_READY && AP.dt > 0) { GOV.n++; GOV.sum += AP.dt; GOV.age += AP.dt;
-      if (GOV.age > 1.6 && GOV.n >= 8) { const avg = GOV.sum / GOV.n; if (avg > 1 / 42 && prI < PR.length - 1) { prI++; renderer.setPixelRatio(PR[prI]); layout(); } GOV.n = 0; GOV.sum = 0; GOV.age = .8; } }
+      if (GOV.age > 1.6 && GOV.n >= 8) { const avg = GOV.sum / GOV.n; if (avg > 1 / 42 && prI < PR.length - 1) GOV.want = true; GOV.n = 0; GOV.sum = 0; GOV.age = .8; } }
+    // the change itself costs a moment, so it waits until the camera is holding still (on the title or at a stop), never mid move
+    if (GOV.want && (AP.s < AP.START || Math.abs(target - t) < .0015)) { GOV.want = false; prI++; window.SKY_SLOW = prI; renderer.setPixelRatio(PR[prI]); layout(); GOV.n = 0; GOV.sum = 0; GOV.age = 0; }
     if (!SHOT && !stopped) requestAnimationFrame(frame);
   }
   let stopped = false;
-  window.SKY_STOP = () => { if (stopped) return; stopped = true; try { renderer.dispose(); renderer.forceContextLoss(); } catch (e) {} };   // the card has the device to itself after the way in
+  // the card has the device to itself after the way in: the sky stops drawing at once, but giving its memory back (slow on some phones)
+  // waits until the card's reveal is over and the device is idle, so it never lands in the middle of the reveal
+  window.SKY_STOP = () => { if (stopped) return; stopped = true; cv.style.visibility = 'hidden'; const t0 = Date.now();
+    const free = () => { const r = window.KT_REVEAL; if (r && r !== 'done' && r !== 'off' && Date.now() - t0 < 90000) return setTimeout(free, 1500);
+      (window.requestIdleCallback || ((f) => setTimeout(f, 200)))(() => { try { renderer.dispose(); renderer.forceContextLoss(); } catch (e) {} }, { timeout: 3000 }); };
+    setTimeout(free, 2500); };
   window.SKY_AT_HATCH = () => { AP.s = AP_END; target = 1; t = Math.max(t, .995); if (!AP.landed) { AP.landed = true; try { (window.KT_AT_GATE || (() => {}))(); } catch (e) {} } const b = $('skip'); if (b) b.classList.add('gone'); };
-  window.SKY_FRAME = frame; window.SKY_T = () => [+t.toFixed(3), +target.toFixed(3), +AP.s.toFixed(1)];
+  window.SKY_GL = () => (renderer.info.programs || []).map((p) => p.name + "|" + String(p.cacheKey).slice(0, 60)); window.SKY_FRAME = frame; window.SKY_T = () => [+t.toFixed(3), +target.toFixed(3), +AP.s.toFixed(1)];
   if (SHOT) window.SKY_GO = (v, tm) => { target = t = v; window.SKY_TIME = tm; };
   if (SHOT) window.SKY_MIST = { mistU, mist, mistNear: typeof mistNear !== 'undefined' ? mistNear : null };
   // ---------- test hooks (rulebook X5): read only, they never change the look ----------
@@ -759,7 +767,8 @@ window.SKY_L = (() => {
     tex.forEach((t) => { try { renderer.initTexture(t); } catch (e) {} });
     const ov = objs.map((o) => [o, o.visible, o.frustumCulled]), mv = [...mats].map((m) => [m, m.visible]);
     objs.forEach((o) => { o.visible = true; o.frustumCulled = false; }); mv.forEach(([m]) => { m.visible = true; });
-    renderer.compile(scene, camera);
+    renderer.compile(scene, camera); if (camera.parent !== scene) renderer.compile(camera, camera);   // the doorway's veil rides on the camera, outside the scene
+    renderer.render(scene, camera); if (camera.parent !== scene) { const ac = renderer.autoClear; renderer.autoClear = false; renderer.render(camera, camera); renderer.autoClear = ac; }   // drawn once, so each shader is really finished now (some devices only finish them on first use)
     ov.forEach(([o, v, f]) => { o.visible = v; o.frustumCulled = f; }); mv.forEach(([m, v]) => { m.visible = v; });
   } catch (e) {} };
   const go = () => { layout(); buildPath(); warm(); frame(); requestAnimationFrame(() => { document.body.classList.add('gl'); window.SKY_READY = true; }); };
