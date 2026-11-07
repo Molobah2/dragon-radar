@@ -194,6 +194,7 @@ window.SKY_L = (() => {
   const cellOf = (i, v) => { const c = i % FLAP.cols, rr = Math.floor(i / FLAP.cols); return v.set((c * FLAP.cw + FLAP.pad) / FLAP.W, 1 - (rr * FLAP.ch + FLAP.pad + FLAP.ih) / FLAP.H, FLAP.iw / FLAP.W, FLAP.ih / FLAP.H); };
   const blinky = card(T.blinky, IMG.blinky, 'isle', { name: 'blinky', guide: true });
   blinky.material.uniforms.uHaze.value.setRGB(1, .82, .7, THREE.SRGBColorSpace);
+  if (blinky.parent) blinky.parent.remove(blinky);   // Jon, 7 Nov: the sky without Blinky (kept in code, never drawn)
   const bhalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowT, color: 0xffbe78, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false })); scene.add(bhalo);   // sunlight wrapping round him
   let clouds = [], bank = null, passA = null, passB = null, passC = null;
   const hglow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowT, color: 0xffc27a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false }));
@@ -493,13 +494,17 @@ window.SKY_L = (() => {
   let target = SHOT ? +(P.get('t') || 0) : 0, t = target;
   const clamp = (v) => Math.max(0, Math.min(1, v));
   const PX = 0.00045;   // 100 px of wheel moves 0.045 of the journey, about half a stop's hold
-  addEventListener('wheel', (e) => { if (stopped || DOOR.t0) return; const k = e.deltaMode === 1 ? 33.3 : e.deltaMode === 2 ? innerHeight : 1; target = clamp(target + Math.max(-.6 * innerHeight, Math.min(.6 * innerHeight, e.deltaY * k)) * PX); e.preventDefault(); }, { passive: false });
-  addEventListener('keydown', (e) => { if (stopped || DOOR.t0) return; const k = { ArrowDown: 1, PageDown: 1, ' ': 1, ArrowUp: -1, PageUp: -1 }[e.key]; if (!k || e.target.closest && e.target.closest('button,a,input')) return; target = clamp(target + k * (e.shiftKey && e.key === ' ' ? -1 : 1) * .03); e.preventDefault(); });
-  const STOPT = [0, 1 / 3, 2 / 3, 1], snap = () => { const n = STOPT.reduce((a, b) => Math.abs(b - target) < Math.abs(a - target) ? b : a); if (Math.abs(n - target) < .06) target = n; };   // a swipe that ends near a stop settles onto it
-  let ty = null;
-  addEventListener('touchstart', (e) => { if (stopped || DOOR.t0) return; ty = e.touches[0].clientY; }, { passive: true });
-  addEventListener('touchmove', (e) => { if (stopped || DOOR.t0) return; if (ty == null) return; const y = e.touches[0].clientY; target = clamp(target + (ty - y) * 0.0007); ty = y; e.preventDefault(); }, { passive: false });
-  addEventListener('touchend', () => { if (stopped || DOOR.t0) return; ty = null; snap(); });
+  // the journey flies itself (Jon, 7 Nov): no wheel, keys or swipes. It waits on the title, then glides island to island,
+  // resting at each so its line can be read, and stays at the Hatchery. Pause holds it; Skip flies straight there.
+  const AP = { START: 3.5, MOVE: 6.5, DWELL: 2.8, s: 0, last: null }, AP_END = AP.START + STOPS * AP.MOVE + (STOPS - 1) * AP.DWELL;
+  const apAt = (x) => { if (x <= AP.START) return 0; x -= AP.START; for (let i = 0; i < STOPS; i++) { if (x < AP.MOVE) return (i + x / AP.MOVE) / STOPS; x -= AP.MOVE; if (i < STOPS - 1) { if (x < AP.DWELL) return (i + 1) / STOPS; x -= AP.DWELL; } } return 1; };
+  const apTick = (now) => { const dt = AP.last == null ? 0 : Math.min(.5, now - AP.last); AP.last = now; AP.dt = dt; if (SHOT || DOOR.t0 || !window.SKY_READY) return;
+    if (RM.matches) { if (AP.s < AP.START + 1) { AP.s += dt; if (AP.s >= AP.START + 1) window.SKY_AT_HATCH(); } return; }   // reduced motion: no flight, the Hatchery after the title
+    // Skip: the rest of the flight at four times the pace
+    if (!still.user || AP.fast) AP.s = Math.min(AP_END, AP.s + dt * (AP.fast ? 4 : 1));
+    target = Math.max(target, apAt(AP.s));
+    if (AP.s >= AP_END - AP.MOVE * .5 && !AP.hid) { AP.hid = true; const b = $('skip'); if (b) b.classList.add('gone'); } };   // nearly there: nothing left to skip
+  { const b = $('skip'); if (b) b.addEventListener('click', (e) => { e.stopPropagation(); AP.fast = true; if (AP.s < AP.START) AP.s = AP.START; b.classList.add('gone'); }); }
   let mx = 0, my = 0, cmx = 0, cmy = 0;
   addEventListener('pointermove', (e) => { if (stopped || DOOR.t0) return; if (e.pointerType === 'mouse') { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; } });
 
@@ -646,15 +651,15 @@ window.SKY_L = (() => {
   function frame() {
     if (stopped) return;
     const time = SHOT ? (window.SKY_TIME != null ? window.SKY_TIME : +(P.get('time') || 7)) : clock.getElapsedTime() + 1.5;
-    t += (target - t) * (SHOT ? 1 : 0.06); cmx += (mx - cmx) * .04; cmy += (my - cmy) * .04;
+    apTick(clock.getElapsedTime()); t += (target - t) * (SHOT ? 1 : 1 - Math.exp(-3.7 * (AP.dt || 1 / 60)));   // the same glide at any frame rate cmx += (mx - cmx) * .04; cmy += (my - cmy) * .04;
     if (!SHOT && DOOR.t0) { DOOR.r = clock.getElapsedTime() - DOOR.t0; if (DOOR.r > 4.2 && !DOOR.told) { DOOR.told = true; try { (window.KT_SKY_IN || (() => {}))(); } catch (e) {} } }
     pose(time); renderer.render(scene, camera);
     if (!SHOT && !stopped) requestAnimationFrame(frame);
   }
   let stopped = false;
   window.SKY_STOP = () => { if (stopped) return; stopped = true; try { renderer.dispose(); renderer.forceContextLoss(); } catch (e) {} };   // the card has the device to itself after the way in
-  window.SKY_AT_HATCH = () => { target = 1; t = Math.max(t, .995); };
-  window.SKY_FRAME = frame;
+  window.SKY_AT_HATCH = () => { AP.s = AP_END; target = 1; t = Math.max(t, .995); const b = $('skip'); if (b) b.classList.add('gone'); };
+  window.SKY_FRAME = frame; window.SKY_T = () => [+t.toFixed(3), +target.toFixed(3), +AP.s.toFixed(1)];
   if (SHOT) window.SKY_GO = (v, tm) => { target = t = v; window.SKY_TIME = tm; };
   if (SHOT) window.SKY_MIST = { mistU, mist, mistNear: typeof mistNear !== 'undefined' ? mistNear : null };
   // ---------- test hooks (rulebook X5): read only, they never change the look ----------
