@@ -427,7 +427,7 @@ window.KT_EVT = (function () {
   window.KT_HOLD = true; window.KT_HOME_DONE = false;
   // a Keeper's first reveal is always one of the two classics (Gilded Night or Twilight), picked at random and kept for this device until
   // that reveal is done; after it, the 16 eggs open to choose from
-  var FIRST = null; try { if (localStorage.getItem('kt-seen') !== '1') { FIRST = localStorage.getItem('kt-first'); if (FIRST !== 'butter' && FIRST !== 'twilight') { FIRST = Math.random() < 0.5 ? 'butter' : 'twilight'; localStorage.setItem('kt-first', FIRST); } } } catch (e) { FIRST = 'butter'; }
+  var FIRST = null; try { if (localStorage.getItem('kt-seen2') !== '1') { FIRST = localStorage.getItem('kt-first'); if (FIRST !== 'butter' && FIRST !== 'twilight') { FIRST = Math.random() < 0.5 ? 'butter' : 'twilight'; localStorage.setItem('kt-first', FIRST); } } } catch (e) { FIRST = 'butter'; }
   window.KT_FIRST = FIRST;
   var API = window.KT_TRAIL_API, BASE = window.KT_TRAIL_BASE || '/trail', EV = window.KT_EVT;
   // Jon's window: open 25 Nov 2026 00:00 UTC, closed for good from 6 Dec 2026 00:00 UTC (all of 5 Dec is open). A preview may try others with ?opens=&closes=.
@@ -5635,7 +5635,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
   function finish() {
     state = 'off'; SND.slow(0); grp.visible = false; MOON.hide(); HOLE.hide(); cover.visible = false; EGG.hide(); split = null; showTiles(); back(true); card.scale.setScalar(1); card.position.set(0, baseY, 0); card.rotation.z = 0;
     flip = flipNow = 0; sweepForce = null; lights(1); Object.assign(S, { veil: 0, flash: 0, under: 0, ov: 0, warp: 0, sheet: 0, strike: 0, seam: 0 }); ovx.clearRect(0, 0, OV.width, OV.height);
-    if (mode === 'full') { try { localStorage.setItem('kt-seen', '1'); localStorage.removeItem('kt-first'); } catch (e) {} if (!body.classList.contains('eggs-open')) body.classList.add('eggs-open', 'eggs-new'); }   // the 16 eggs open
+    if (mode === 'full') { try { localStorage.setItem('kt-seen2', '1'); localStorage.removeItem('kt-first'); } catch (e) {} if (!body.classList.contains('eggs-open')) body.classList.add('eggs-open', 'eggs-new'); }   // the 16 eggs open
     body.classList.remove('rv-on', 'rv-going', 'rv-hold'); body.classList.add('rv-done'); $('rv').hidden = true;
     const w = $('rv-welcome'); w.classList.remove('show'); void w.offsetWidth; w.classList.add('show'); shine();
     window.KT_REVEAL = 'done'; tease(false);
@@ -5680,7 +5680,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
 
   // pages made for test pictures freeze the reveal at a moment of the film: ?shot=front&rvt=2.4 (rvt=-1 is the sealed card waiting)
   const RT = SHOT ? (() => { const v = new URLSearchParams(location.search).get('rvt'); return v == null ? null : +v; })() : null;
-  let seen = false; try { seen = localStorage.getItem('kt-seen') === '1'; } catch (e) {}
+  let seen = false; try { seen = localStorage.getItem('kt-seen2') === '1'; } catch (e) {}
   if (seen) body.classList.add('eggs-open');
   { const off = () => body.classList.remove('eggs-new'); const pb = $('pickbtn'), en = $('eggsnew'); if (pb) pb.addEventListener('click', off); if (en) en.addEventListener('click', (e) => { e.stopPropagation(); off(); if (pb) pb.click(); }); }
   return {
