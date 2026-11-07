@@ -2656,9 +2656,14 @@ if (wiP < 0.999) {
     float bolt = exp(-pow((uv.y - by) / 0.012, 2.0)) * smoothstep(0.06, 0.1, p) * (1.0 - smoothstep(0.14, 0.28, p));
     ex = bolt * 3.0; exC = vec3(0.85, 0.93, 1.0);
     fr = r * (1.0 - smoothstep(0.62, 1.0, p)); tint = vec3(0.75, 0.88, 1.0); glowK = 2.0;
-  } else if (wiM == 11) {                           // panda: an ink brush paints the number stroke by stroke, wet and dark at first
-    float f0 = p * 1.25 - 0.1, rag = (wiF(vec2(uv.y * 18.0, uv.x * 2.0)) - 0.5) * 0.12;
-    r = smoothstep(-0.03, 0.0, f0 + rag - uv.x); fr = clamp(1.0 - (f0 - uv.x) / 0.22, 0.0, 1.0) * r; tint = vec3(0.02, 0.02, 0.03); glowK = 0.0;
+  } else if (wiM == 11) {                           // panda: calligraphy. A loaded brush sweeps across the tile and paints the number in,
+                                                    // its wet head passing over, dry streaks trailing behind, the ink bleeding a little before it settles
+    float streak = wiF(vec2(uv.y * 42.0, uv.x * 1.5 + 3.0)), f0 = p * 1.3 - 0.15, edge = f0 + (streak - 0.5) * 0.14 + sin(uv.y * 7.0) * 0.015 - uv.x;
+    r = smoothstep(-0.02, 0.0, edge);
+    float band = smoothstep(0.1, 0.3, uv.y) * (1.0 - smoothstep(0.7, 0.9, uv.y)), head = exp(-pow((edge - 0.03) / 0.05, 2.0)) * (1.0 - smoothstep(0.85, 1.0, p));
+    vec3 ink = dot(base, vec3(0.3, 0.55, 0.15)) < 0.35 ? vec3(0.96, 0.92, 0.84) : vec3(0.06, 0.05, 0.045);
+    overA = head * band * 0.5 * (0.55 + 0.45 * streak); over = ink;
+    fr = clamp(1.0 - edge / 0.28, 0.0, 1.0) * r; tint = ink; glowK = 0.0;
   } else if (wiM == 12 || wiM == 18) {              // pink: petals swirl together into the number. twilight: fireflies gather and glow it on
     float cs = wiM == 12 ? 0.16 : 0.19; vec2 c = floor(q / cs); float g = 0.0;
     r = 0.0;
@@ -3670,8 +3675,8 @@ const SND = (() => {
       land: [['tg_roar', 0.7], ['impact', 0.35]], fin: [['tg_fin', 0.5]], tick: 0.95, arrive: 'tg_arrive' },
     pink: { loops: [['pk_loop', 0.2, 0.5]], cracks: ['crack1', 'pk_kiss', 'crack3'], turn: [['shell', 0.45], ['pk_harp', 0.8]], land: [['pk_bless', 0.8]],
       fin: [['pk_fin', 0.4]], tick: 1.06, arrive: 'pk_arrive' },
-    panda: { loops: [['pa_loop', 0.22, 0.6]], cracks: ['pa_wood', 'crack2', 'pa_wood'], turn: [['shell', 0.45], ['pa_flute', 0.75]], land: [['pa_gong', 0.7]],
-      fin: [['pa_fin', 0.55]], tk: 'pa_wood', tick: 1, arrive: 'pa_arrive' },
+    panda: { loops: [['pa_loop', 0.22, 0.6]], cracks: ['pa_harp', 'pa_wood', 'pa_harp'], turn: [['pa_gong', 0.8], ['pa_flute', 0.45]], land: [['pa_drop', 0.7], ['pa_chimes', 0.35]],
+      fin: [['pa_fin', 0.5]], tk: 'pa_brush', tick: 1, arrive: 'pa_arrive' },
     light: { loops: [['lt_loop', 0.22, 0.65]], cracks: ['crack1', 'lt_bowl', 'crack3'], turn: [['shell', 0.45], ['lt_choir', 0.8]], land: [['lt_bell', 0.65]],
       fin: [['lt_fin', 0.55]], tick: 1, arrive: 'lt_arrive' },
     ice: { loops: [['ic_loop', 0.15, 0.5]], cracks: ['ic_icicle', 'ic_aurora', 'ic_cube'], turn: [['ic_impact', 0.75], ['ic_shatter', 0.55]], land: [['ic_whoosh', 0.5], ['ic_sparkle', 0.4]],
@@ -3969,8 +3974,12 @@ const RECIPES = {
     parts: { wait: 'falling', hatch: 'falling', land: 'leafburst' }, tex: 'leaf', cols: ['#ff9a3a', '#d9622a', '#ffcf7a', '#8a3a12'], flash: '255,190,120', ring: '#ffb060', flick: 'glow', ovc: '230,120,40' },
   pink: { seal: 12, brk: 1, c1: [1.0, 0.55, 0.82], c2: [1.0, 0.85, 0.95], veil: '16,4,14', arrive: 'fall', turn: 'sway', shake: 'float', ov: 'petals',
     parts: { wait: 'falling', hatch: 'spiral', land: 'petalrain' }, tex: 'petal', cols: ['#ffb3dc', '#ff7ac0', '#ffe0f0', '#e05aa8'], flash: '255,200,235', ring: '#ffc4e6', flick: 'still' },
-  panda: { emi: 0.5, seal: 13, c1: [0.95, 0.96, 1.0], c2: [0.55, 0.6, 0.8], veil: '6,8,14', arrive: 'roll', turn: 'roll', shake: 'roll', ov: 'leaves',
-    parts: { wait: 'falling', hatch: 'converge', land: 'leafburst' }, tex: 'leaf', cols: ['#e8f0e0', '#9fc49a', '#ffffff', '#6d8a6a'], flash: '240,245,255', ring: '#ffffff', flick: 'still', ovc: '170,200,160' },
+  // Panda, The Ink Scroll (Jon, 7 Nov): a living ink painting. The card unrolls like a scroll, a brush paints an enso round the egg as
+  // you hold, the egg bursts into a splash of ink that hangs in the slow motion, the card turns like a page, a ring of ink spreads like a
+  // drop in water, a little brush painted panda appears in the corner munching bamboo, and each number is brushed in by calligraphy
+  panda: { emi: 0.3, seal: 21, c1: [0.98, 0.94, 0.86], c2: [0.86, 0.22, 0.12], veil: '40,34,28', dark: 0.7, arrive: 'unroll', turn: 'page', spin: 1, shake: 'breeze', ov: 'leaves', ink: true,
+    pace: { full: { arrive: 2.4, hatch: 2.8, turn: 1.6, settle: 1.8 } },
+    parts: { wait: 'none', hatch: 'none', land: 'inkfall' }, burst: 'inksplash', tex: 'inkdrop', cols: ['#141210', '#1f1b17', '#0b0a09', '#c8321c'], flash: '20,18,16', ring: '#c8321c', flick: 'still', ovc: '30,28,26' },
   light: { emi: 0.6, seal: 14, brk: 1, c1: [1.0, 0.9, 0.62], c2: [1.0, 0.98, 0.9], veil: '26,18,6', dark: 0.72, arrive: 'descend', turn: 'spin', spin: 1, shake: 'pulse', ov: 'rays',
     parts: { wait: 'motes', hatch: 'converge', land: 'ring' }, tex: 'star', cols: ['#fff2c8', '#ffd98a', '#ffffff', '#e8b84a'], flash: '255,244,214', ring: '#fff0c0', flick: 'glow' },
   // Ice, The Aurora (Jon, 7 Nov): the card skates in spinning, the northern lights wake as you hold while deep blue fractures run
@@ -4067,7 +4076,10 @@ RV = (() => {
       x.beginPath(); x.ellipse(0, s * 0.18, s * 0.09, s * 0.12, 0, 0, 7); x.fill();
       x.fillStyle = '#ffffff'; x.beginPath(); x.arc(-s * 0.26, -s * 0.25, s * 0.045, 0, 7); x.arc(s * 0.34, -s * 0.25, s * 0.045, 0, 7); x.fill();
       x.fillStyle = 'rgba(255,150,170,.45)'; x.beginPath(); x.ellipse(-s * 0.52, s * 0.04, s * 0.1, s * 0.06, 0, 0, 7); x.ellipse(s * 0.52, s * 0.04, s * 0.1, s * 0.06, 0, 0, 7); x.fill(); }, 128);
-  const SOLID = { petal: 1, leaf: 1, coin: 1, smoke: 1, crystal: 1, ghost: 1 };                  // shapes that sit on top, rather than glowing
+  TEXS.inkdrop = spriteTex((x, S) => { x.translate(S / 2, S / 2); x.fillStyle = '#ffffff';
+      x.beginPath(); x.arc(0, 0, S * 0.26, 0, 7); x.fill();
+      for (let k = 0; k < 7; k++) { const a = hash(k + 41) * 6.283, d = S * (0.24 + hash(k + 42) * 0.16), r = S * (0.03 + hash(k + 43) * 0.06); x.beginPath(); x.arc(Math.cos(a) * d, Math.sin(a) * d, r, 0, 7); x.fill(); } }, 96);
+  const SOLID = { petal: 1, leaf: 1, coin: 1, smoke: 1, crystal: 1, ghost: 1, inkdrop: 1 };                  // shapes that sit on top, rather than glowing
   const grp = new THREE.Group(); grp.visible = false; scene.add(grp);
   const aura = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.4), new THREE.MeshBasicMaterial({ map: glowT, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, opacity: 0 }));
   aura.position.z = -0.35; aura.renderOrder = -1; grp.add(aura);
@@ -4209,6 +4221,14 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       vec2 g = sv * vec2(15.0, 8.4), id = floor(g), f = fract(g) - 0.5 - (vec2(shs(id), shs(id + 3.1)) - 0.5) * 0.4;
       float on = step(shs(id + 5.5), uH * 0.95), rad = on * (0.08 + 0.32 * uH * shs(id + 2.2)), d = length(f);
       glow += uC1 * (exp(-abs(d - rad) / 0.025) * 1.8 + smoothstep(rad, rad - 0.06, d) * 0.6) * on * (0.6 + 1.2 * uH) * uFlick + uC1 * 0.08 * uH;
+    } else if (uMode > 20.5) {                  // enso: a brush paints one open circle round the egg, thick where it starts and thinning as it goes,
+                                                //   dry streaks breaking up its edge, and a small red seal dot where it began
+      float rr = length(q), a3 = fract(0.62 - atan(q.y, q.x) / 6.2832), prog = uH * 0.93;
+      float R0 = 0.36 + 0.012 * sin(a3 * 6.2832 * 2.0 + uSeed), wid = (0.045 - 0.03 * a3) * smoothstep(0.0, 0.04, prog);
+      float on = step(a3, prog) * (1.0 - smoothstep(prog - 0.02, prog, a3) * 0.4), dry = smoothstep(0.25, 0.6, snz(vec2(a3 * 60.0, (rr - R0) * 90.0 + uSeed)));
+      float br = (1.0 - smoothstep(wid * 0.55, wid, abs(rr - R0))) * on * mix(1.0, dry, smoothstep(0.4, 0.9, a3));
+      vec2 dp = q - vec2(cos(-0.62 * 6.2832), sin(-0.62 * 6.2832)) * 0.36 + vec2(0.0, 0.0); float dot_ = 1.0 - smoothstep(0.018, 0.024, length(q - vec2(0.36 * cos(0.38 * 6.2832 * -1.0 + 3.1416), 0.36 * sin(0.38 * 6.2832 * -1.0 + 3.1416))));
+      glow += uC1 * br * (0.8 + 0.6 * uH) + uC2 * dot_ * smoothstep(0.02, 0.08, prog) * 1.4;
     } else if (uMode > 19.5) {                  // gravity: the seal's stars stream inward and stretch toward the middle as the pull grows
       float rr = length(q), a2 = atan(q.y, q.x) / 6.2832 + 0.5, lr = log(max(rr, 0.01));
       vec2 cg = vec2(a2 * 46.0, lr * 7.0 + uT * (0.25 + 2.4 * uH)), id = floor(cg), f = fract(cg) - 0.5;
@@ -4494,6 +4514,9 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     }
     if (st.mint > 0.002) { const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7); g.addColorStop(0, `rgba(140,255,215,${0.22 * st.mint})`); g.addColorStop(1, `rgba(255,200,120,${0.12 * st.mint})`); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h); }
     if (st.gh) ghostFx(ctx, st.gh, st.t);
+    if (st.ripple >= 0) rippleFx(ctx, w, h, st.ripple);
+    if (st.panda > 0.002) pandaFx(ctx, w, h, st.t, st.panda, st.pandaT || 0, st.prect);
+    if (st.rod) rodFx(ctx, st.rod[0], st.rod[1], st.rod[2], st.rod[3]);
     if (st.tun > 0.002) tunnelFx(ctx, w, h, st.su || 0, st.tun);
     if (st.nova >= 0 && st.nova < 1.3) novaFx(ctx, w, h, st.nova);
     if (st.sats > 0.002) satsFx(ctx, w, h, st.t, st.sats);
@@ -4655,6 +4678,10 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         op = (i % 2 ? 0 : 0.22 + 0.3 * k) * (0.7 + 0.3 * Math.sin(t * 1.3 + p.ph)); sc = p.s * 4 * (1.2 - 0.5 * k); rot = a * 0.5; }                     // shadow: smoke drawn in toward the egg
       else if (role === 'inkcurl') { const tt = u, life = 1.7; x0 = p.v.x * 0.55 * tt * (1 - tt * 0.15); y0 = baseY + p.v.y * 0.4 * tt + 0.3 * tt * tt; z0 = -0.25 + p.v.z * tt * 0.12;
         op = Math.min(1, tt * 6) * Math.pow(Math.max(0, 1 - tt / life), 1.6) * (i % 3 ? 0 : 0.7); sc = p.s * (2.2 + tt * 2.6); rot = tt * (0.6 + p.sp * 2) + p.ph; }       // shadow: the egg's smoke curls away and thins
+      else if (role === 'none') { p.m.material.opacity = 0; return; }
+      else if (role === 'inksplash' || role === 'inkfall') { const tt = role === 'inkfall' ? u + pace.turn : u, g = 2.6;      // panda: a splash of ink droplets, hanging in the slow motion, then falling
+        if (i % 2) { p.m.material.opacity = 0; return; } x0 = p.v.x * 0.7 * tt; y0 = WY * (1 - Math.min(1, tt)) + baseY * Math.min(1, tt) * 0 + WY * Math.min(1, tt) + p.v.y * 0.55 * tt - 0.5 * g * tt * tt; z0 = 0.3 + p.v.z * tt * 0.2;
+        op = Math.min(1, tt * 14) * Math.max(0, 1 - Math.max(0, tt - (role === 'inkfall' ? 0.9 : 1.4)) / 0.6); sc = p.s * (i % 6 ? 2.2 : 4.4) * (1 - tt * 0.1); rot = p.ph; }
       else if (role === 'nova') { const tt = u, ring = i % 3, rr = (0.25 + ring * 0.32) * (1 - Math.exp(-tt * 3.2)) * 2.6 + hash(i + 951) * 0.12, a = p.a + ring * 0.4;   // space: rings of a supernova, hanging in the slow motion
         x0 = Math.cos(a) * rr; y0 = WY + Math.sin(a) * rr * (0.55 + ring * 0.12); z0 = 0.25 + (ring - 1) * 0.1; op = Math.min(1, tt * 12) * Math.max(0, 1 - tt / (1.4 + ring * 0.3)) * (0.7 + 0.3 * Math.sin(t * 30 + p.ph)); sc = p.s * (1.6 - ring * 0.3); }
       else if (role === 'ghostburst' || role === 'ghostaway') { const tt = role === 'ghostaway' ? u + pace.turn : u;      // ghost: a flock of tiny ghosts flies out of the egg, hangs, then zooms off
@@ -4730,6 +4757,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       else if (R.arrive === 'squash') { const x = clamp01(A / pace.arrive), y = x < 0.6 ? 1 - Math.pow(x / 0.6, 2) : 0, sq = x < 0.6 ? 0 : Math.sin((x - 0.6) / 0.4 * Math.PI * 3) * Math.exp(-(x - 0.6) * 6) * 0.16;
         card.position.y = WY + 2.2 * y; card.scale.set(WS * (1 + sq), WS * (1 - sq), WS); }
       else if (R.arrive === 'slide') { card.position.x = 5 * k * k; card.rotation.y += k * 0.5; card.rotation.z = Math.sin(A * 9) * 0.03 * k; }
+      else if (R.arrive === 'unroll') { const e = clamp01(A / pace.arrive), f = e < 0.15 ? 0 : easeOut((e - 0.15) / 0.85); card.scale.x = WS * Math.max(0.03, f); card.position.x = -W * WS * 0.5 * (1 - f); }   // unrolls from its rod, left to right
       else if (R.arrive === 'hyperspace') { const e = clamp01(A / pace.arrive), f = 1 - Math.pow(1 - Math.min(1, e / 0.55), 4); card.position.z = -0.2 - 14 * (1 - f); card.rotation.z = (1 - f) * 0.25; }   // shoots in out of hyperspace and stops dead
       else if (R.arrive === 'carried') { const e = easeOut(clamp01(A / pace.arrive)); card.position.x = 5.0 * (1 - e); card.position.y = WY + Math.sin(A * 4.2) * 0.07 * k + 0.25 * k; card.rotation.z = Math.sin(A * 3.1) * 0.08 * k; card.rotation.y += Math.sin(A * 2.3) * 0.2 * k; }   // carried in by two little ghosts, bobbing
       else if (R.arrive === 'skate') { const e = easeOut(clamp01(A / pace.arrive)); card.position.x = -5.2 * (1 - e) * (1 - e); card.position.y = WY - 0.25 * k; card.rotation.y += (1 - e) * Math.PI * 4; card.rotation.z = -0.06 * k; }   // skates in across the ice, spinning to a stop
@@ -4743,7 +4771,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     lights((R.arrive === 'fade' || R.arrive === 'emerge') && !film ? 0.42 * (0.25 + 0.75 * ar) : 0.42); sweepForce = 9; SH.forEach(s => s.m.visible = false); SU.uT.value = t;
     parts(R.parts.wait, t, 0.15, 0); PT.forEach(p => p.m.material.opacity *= ar); EGG.wait(t, ar);
     Object.assign(S, { veil: 0.82 * Math.min(1, film ? 1 : A / 0.6), flash: 0, under: R.under ? 0.25 * ar : 0, ov: 0.55 * ar, warp: 0, sheet: 0, strike: 0, seam: 0, t });
-    eclipse('wait', t, ar, A); forge('wait', t, ar); aurora('wait', t, ar); haunt('wait', t, ar, A); hole('wait', t, ar, A);
+    eclipse('wait', t, ar, A); forge('wait', t, ar); aurora('wait', t, ar); haunt('wait', t, ar, A); hole('wait', t, ar, A); inkfx('wait', t, ar, A);
     hideTiles(); back(false);
   }
   function poseHatch(t, e, ht) {
@@ -4760,6 +4788,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     else if (R.shake === 'tick') { const q = t * 2, f = q - Math.floor(q), j = Math.exp(-f * 14); card.rotation.z = j * 0.016 * (hash(Math.floor(q)) - 0.5) * 2 * (0.4 + e) * (RM ? 0 : 1); card.position.y += j * 0.006 * (0.4 + e); }
     else if (R.shake === 'pulse') { card.scale.multiplyScalar(1 + Math.sin(t * 4.5) * 0.012 * e); card.rotation.y += Math.sin(t * 0.9) * 0.05 * e; }
     else if (R.shake === 'creak') { const q = Math.floor(t * 1.6), j = Math.exp(-(t * 1.6 - q) * 6) * (hash(q) < 0.5 ? 1 : -1); card.rotation.z = Math.sin(t * 1.3) * 0.035 * e + j * 0.012 * sh; }
+    else if (R.shake === 'breeze') { card.rotation.z = Math.sin(t * 0.9) * 0.025 * e; card.position.y += Math.sin(t * 1.2) * 0.015 * e; card.rotation.y += Math.sin(t * 0.7) * 0.03 * e; }   // a calm breeze
     else if (R.shake === 'pull') { card.position.z -= e * e * 0.22; card.rotation.x += e * 0.12; card.rotation.z = Math.sin(t * 1.3) * 0.03 * e + e * e * 0.06; card.position.x += Math.sin(t * 31) * 0.004 * sh; }   // drawn toward the black hole
     else if (R.shake === 'possess') { const q = Math.floor(t * 3), j = Math.exp(-(t * 3 - q) * 9) * (hash(q) - 0.5); card.rotation.z = Math.sin(t * 2.1) * 0.05 * e + j * 0.14 * e * (RM ? 0 : 1); card.position.y += Math.sin(t * 1.7) * 0.04 * e + Math.abs(j) * 0.05 * e; card.rotation.y += Math.sin(t * 9) * 0.02 * e; }   // tugged by unseen hands
     else if (R.shake === 'drift') { card.rotation.z = Math.sin(t * 0.8) * 0.07 * e; card.rotation.y += Math.sin(t * 1.1) * 0.06 * e; card.position.y += Math.sin(t * 1.4) * 0.02 * e; }
@@ -4773,7 +4802,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     parts(R.parts.hatch, t, e, 0); EGG.hatch(t, e, RM);
     let sheet = 0; if (theme === 'lightning') { const q = Math.floor(t * 9); sheet = hash(q + 99) < 0.08 + e * 0.22 ? (0.05 + e * 0.12) * (1 - (t * 9 - q)) : 0; }
     Object.assign(S, { veil: 0.82 + e * 0.06, flash: 0, under: R.under ? 0.25 + e * 0.75 : 0, ov: 0.55 + 0.45 * e, warp: 0, sheet, strike: 0, seam: theme === 'twoface' ? e : 0, t });
-    eclipse('hatch', t, e); forge('hatch', t, e); aurora('hatch', t, e); haunt('hatch', t, e); hole('hatch', t, e);
+    eclipse('hatch', t, e); forge('hatch', t, e); aurora('hatch', t, e); haunt('hatch', t, e); hole('hatch', t, e); inkfx('hatch', t, e);
     hideTiles(); back(false);
   }
   function poseGo(t, u) {
@@ -4799,6 +4828,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         else if (R.turn === 'glide') { card.position.x += sw * 0.75; card.rotation.z = -sw * 0.08; }
         else if (R.turn === 'dive') card.position.y -= sw * 0.45;
         else if (R.turn === 'grow') card.scale.multiplyScalar(1 + sw * 0.18);
+        else if (R.turn === 'page') { card.position.x += sw * W * 0.32; card.position.z += sw * 0.12; card.rotation.z = -sw * 0.04; }   // turns over like the page of a book
         else if (R.turn === 'wormhole') { card.position.z -= sw * 0.9; card.rotation.z = e * Math.PI * 2; }   // falls into the tunnel, spinning through it, and out the other side
         else if (R.turn === 'haunt') { card.position.y += sw * 0.4; card.rotation.z = Math.sin(e * Math.PI * 2) * 0.12 * (1 - e); card.position.x += Math.sin(e * Math.PI * 2) * 0.18; }   // floats up and drifts round once, dreamily
         else if (R.turn === 'pirouette') { card.position.y += sw * 0.22; card.rotation.z = Math.sin(e * Math.PI * 2) * 0.05 * (1 - e); card.scale.multiplyScalar(1 - sw * 0.08); }   // spins on the spot, lifted a little, like a skater
@@ -4811,7 +4841,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       parts(R.burst || (R.forge ? 'erupt' : 'implode'), t, 0, u); shards(u); EGG.burst(u, RM);
       const strike = theme === 'lightning' ? Math.max(0, 1 - u / 0.35) * (u < 0.05 ? u / 0.05 : 1) : 0;
       Object.assign(S, { veil: 0.88 * (1 - clamp01((u - TU + 0.2) / 1.2)), flash: strike * 0.55, under: R.under ? 1 - e * 0.5 : 0, ov: 1, warp: R.warp && !RM ? Math.sin(x0 * Math.PI) : 0, sheet: 0, strike, seed: 7, seam: theme === 'twoface' ? 1 - e * 0.3 : 0, t });
-      eclipse('turn', t, x0, e); forge('turn', t, x0, u); aurora('turn', t, x0, u); haunt('turn', t, x0, u); hole('turn', t, x0, u);
+      eclipse('turn', t, x0, e); forge('turn', t, x0, u); aurora('turn', t, x0, u); haunt('turn', t, x0, u); hole('turn', t, x0, u); inkfx('turn', t, x0, u);
       hideTiles(); back(false);
     } else {                                       // the landing and the journey lighting up
       const u2 = u - TU, k = Math.exp(-u2 * 4.2);
@@ -4831,7 +4861,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         let flash = ui < 0 ? 0 : Math.max(0, 1 - ui / (last ? 1.1 : 0.7)) * (last ? 0.12 : 0.05), lift = (1 - clamp01(ui / 0.5)) * 0.03 * (ui >= 0 ? 1 : 0);
         let pu = 0; if (i === so) { const x = clamp01((u2 - tDone) / 1.3), pe = Math.sin(Math.PI * x); lift += pe * 0.05; pu = x > 0 && x < 1 ? x : 0; }   // the stat this trail shines brightest in
         return [s, flash, lift, wp, pu]; }, t);
-      eclipse('land', t, u2, tDone); forge('land', t, u2, TU); aurora('land', t, u2, TU); haunt('land', t, u2, tDone); hole('land', t, u2, tDone);
+      eclipse('land', t, u2, tDone); forge('land', t, u2, TU); aurora('land', t, u2, TU); haunt('land', t, u2, tDone); hole('land', t, u2, tDone); inkfx('land', t, u2, tDone);
       if (so >= 0 && u2 >= tDone) fire('shine', () => SND.play(theme, 'tick', 7, true));
       if (u2 > 0.35 + (n - 1) * pace.gap + pace.write * 1.3 * 0.8) fire('fin', () => SND.play(theme, 'fin'));
       if (u > end && !film) finish();
@@ -4932,6 +4962,45 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     else { const u2 = a; HOLE.hide(); S.flash = 0.05 * Math.exp(-u2 * 5); S.sats = Math.min(1, u2 / 1.5); ring.material.opacity *= 0.7; S.ov = Math.max(0.35, 1 - u2 / 3); }
   }
 
+  // ----- Panda's ink painting, laid over each step: the scroll rod, the ink ring, the little panda -----
+  function inkfx(step, t, a, b) {
+    const R = recipe(); S.rod = null; S.ripple = -1; S.panda = 0; if (!R.ink) return;
+    card.updateMatrixWorld(true);
+    if (step === 'wait') { const A = b, e = clamp01(A / pace.arrive), r = cardRect(); if (e < 1) S.rod = [r[2], r[1], r[3], e < 0.15 ? e / 0.15 : 1 - Math.max(0, (e - 0.85) / 0.15)]; S.ov = 0.5 * a; lights(0.5); }
+    else if (step === 'hatch') { lights(0.5); S.ov = 0.55 + 0.35 * a; aura.material.opacity = 0; }
+    else if (step === 'turn') { S.flash = 0.08 * Math.exp(-Math.pow(b / 0.12, 2)); aura.material.opacity = 0; lights(0.6); }
+    else { const u2 = a, tDone = b; S.ripple = u2; S.flash = 0; ring.material.opacity = 0; aura.material.opacity = 0; S.panda = Math.min(1, Math.max(0, (u2 - 0.6) / 1.4)); S.pandaT = u2; S.prect = cardRect(); S.ov = Math.max(0.3, 0.9 - u2 / 3); }
+  }
+  // the wooden rod the card unrolls from
+  function rodFx(c, x, y0, y1, a) { const w = Math.max(10, (y1 - y0) * 0.06), ext = w * 0.9; c.save(); c.globalAlpha = Math.min(1, a);
+    const g = c.createLinearGradient(x - w / 2, 0, x + w / 2, 0); g.addColorStop(0, '#3a2414'); g.addColorStop(0.45, '#8a5a32'); g.addColorStop(1, '#2a1a0e');
+    c.fillStyle = g; c.fillRect(x - w / 2, y0 - ext * 0.3, w, y1 - y0 + ext * 0.6);
+    c.fillStyle = '#c8321c'; c.fillRect(x - w * 0.7, y0 - ext, w * 1.4, ext * 0.75); c.fillRect(x - w * 0.7, y1 + ext * 0.25, w * 1.4, ext * 0.75); c.restore(); }
+  // a ring of ink spreading like a drop in water (Panda)
+  function rippleFx(c, w, h, s) { if (s < 0 || s > 1.7) return; const M = Math.max(w, h); c.save();
+    for (let k = 0; k < 3; k++) { const q = s - k * 0.22; if (q <= 0) continue; const r = M * (0.05 + q * 0.42), al = Math.max(0, 1 - q / 1.3) * (0.26 - k * 0.07);
+      c.strokeStyle = `rgba(20,18,16,${al})`; c.lineWidth = M * (0.012 + 0.02 * Math.max(0, 1 - q)); c.beginPath(); c.ellipse(w / 2, h * 0.52, r, r * 0.45, 0, 0, 7); c.stroke(); }
+    c.restore(); }
+  // a little brush painted panda in the corner, munching bamboo, waving once (Panda)
+  function pandaFx(c, w, h, t, a, u2, r) { r = r || [w * 0.2, h * 0.3, w * 0.8, h * 0.7];      // it sits on the top edge of the card, near the right corner, legs over the edge
+    const s = Math.max(24, Math.min(Math.min(w, h) * 0.13, (r[1] - 6) / 1.2)), x = Math.min(w - s * 0.7, r[2] - s * 1.1), y = r[1] - s * 0.62 + (1 - Math.min(1, a)) * s * 0.4; c.save(); c.globalAlpha = Math.min(1, a);
+    const chew = Math.sin(t * 7) * 0.5 + 0.5, wave = Math.max(0, Math.sin(Math.min(1, Math.max(0, (u2 - 2.2) / 1.2)) * Math.PI));
+    const blot = (cx, cy, rx, ry, col, rot) => { c.save(); c.translate(cx, cy); c.rotate(rot || 0); c.fillStyle = col; c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, 7); c.fill(); c.restore(); };
+    blot(x, y + s * 0.32, s * 0.52, s * 0.42, '#f6efe0'); c.strokeStyle = 'rgba(20,18,16,.5)'; c.lineWidth = s * 0.025; c.beginPath(); c.ellipse(x, y + s * 0.32, s * 0.52, s * 0.42, 0, 0, 7); c.stroke();      // body
+    blot(x - s * 0.36, y + s * 0.42, s * 0.2, s * 0.26, '#141210', 0.3); blot(x + s * 0.36, y + s * 0.42, s * 0.2, s * 0.26, '#141210', -0.3);   // legs
+    blot(x + s * 0.42, y + s * (0.12 - wave * 0.45), s * 0.13, s * 0.22, '#141210', -0.4 - wave * 1.2);   // the waving arm
+    c.strokeStyle = '#3e6b2e'; c.lineWidth = s * 0.075; c.lineCap = 'round'; c.beginPath(); c.moveTo(x - s * 0.62, y + s * 0.62); c.lineTo(x - s * 0.12, y + s * (0.06 - chew * 0.03)); c.stroke();   // the bamboo it munches
+    c.strokeStyle = 'rgba(20,40,14,.6)'; c.lineWidth = s * 0.02; for (const k of [0.3, 0.62]) { const px = x - s * 0.62 + s * 0.5 * k, py = y + s * 0.62 - s * 0.56 * k; c.beginPath(); c.moveTo(px - s * 0.04, py - s * 0.04); c.lineTo(px + s * 0.04, py + s * 0.04); c.stroke(); }
+    c.fillStyle = '#4f8a3a'; c.beginPath(); c.ellipse(x - s * 0.5, y + s * 0.3, s * 0.17, s * 0.05, -0.5, 0, 7); c.fill(); c.beginPath(); c.ellipse(x - s * 0.56, y + s * 0.42, s * 0.14, s * 0.045, 0.5, 0, 7); c.fill();
+    blot(x - s * 0.3, y + s * 0.32, s * 0.13, s * 0.2, '#141210', -0.7);                                        // the arm holding the bamboo
+    blot(x, y - s * 0.12, s * 0.42, s * 0.36, '#fbf6ea'); c.strokeStyle = 'rgba(20,18,16,.85)'; c.lineWidth = s * 0.03; c.beginPath(); c.ellipse(x, y - s * 0.12, s * 0.42, s * 0.36, 0, 0, 7); c.stroke();   // head
+    blot(x - s * 0.32, y - s * 0.42, s * 0.12, s * 0.11, '#141210'); blot(x + s * 0.32, y - s * 0.42, s * 0.12, s * 0.11, '#141210');   // ears
+    blot(x - s * 0.15, y - s * 0.14, s * 0.1, s * 0.13, '#141210', 0.5); blot(x + s * 0.15, y - s * 0.14, s * 0.1, s * 0.13, '#141210', -0.5);   // eye patches
+    const bl = (t * 0.5) % 3 < 0.1 ? 0.2 : 1; blot(x - s * 0.13, y - s * 0.15, s * 0.035, s * 0.04 * bl, '#ffffff'); blot(x + s * 0.13, y - s * 0.15, s * 0.035, s * 0.04 * bl, '#ffffff');
+    blot(x, y - s * 0.02, s * 0.05, s * 0.035, '#141210'); blot(x, y + s * (0.06 + chew * 0.02), s * 0.06, s * 0.025 * (0.6 + chew), '#7a2a1c');   // nose and munching mouth
+    blot(x - s * 0.27, y + s * 0.0, s * 0.06, s * 0.035, 'rgba(200,50,28,.35)'); blot(x + s * 0.27, y + s * 0.0, s * 0.06, s * 0.035, 'rgba(200,50,28,.35)');
+    c.restore(); }
+
   // ----- running a live reveal -----
   function ui(cls) { body.classList.toggle('rv-on', true); body.classList.toggle('rv-going', cls === 'going'); body.classList.toggle('rv-hold', holding); }
   function startWait(m) {
@@ -5005,7 +5074,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     // a different egg picked after a reveal: it comes sealed, waiting to be cracked like the first one
     reseal() { if (state !== 'off' || exporting || !body.classList.contains('rv-done')) return; $('rv-welcome').classList.remove('show'); startWait('short'); },
     pose(t) {
-      if (SHOT && RT != null) { const rt = window.KT_RVT != null ? window.KT_RVT : RT; if (rt < 0) { layout(); tint(); poseWait(2, 9); } else filmPose(rt, P.get('ws') ? +P.get('ws') : 0.8); drawOV(ovx, OV.width, OV.height, S); return; }
+      if (SHOT && RT != null) { const rt = window.KT_RVT != null ? window.KT_RVT : RT; if (rt < 0) { layout(); tint(); if (window.KT_RVA != null) { pace = Object.assign({}, pace, { arrive: (recipe().pace && recipe().pace.full && recipe().pace.full.arrive) || 1.6 }); poseWait(2 + window.KT_RVA, window.KT_RVA); } else poseWait(2, 9); } else filmPose(rt, P.get('ws') ? +P.get('ws') : 0.8); drawOV(ovx, OV.width, OV.height, S); return; }
       if (state !== 'off') pose(t);
     },
     dbg: () => ({ state, h, holding, auto }),
