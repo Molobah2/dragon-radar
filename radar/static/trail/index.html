@@ -2600,10 +2600,14 @@ if (wiP < 0.999) {
     float gl = step(0.986, wiH(floor(q * 46.0))) * exp(-pow((dd - 0.08) / 0.07, 2.0)) * (0.6 + 0.4 * sin(wiT * 30.0 + wiH(floor(q * 46.0) + 2.0) * 20.0));
     ex = (beam * 1.15 + gl * 2.2) * (1.0 - smoothstep(0.9, 1.0, p)); exC = mix(vec3(0.85, 0.97, 1.0), rb, 0.75 * (1.0 - gl));
     fr = r * exp(-max(dd, 0.0) / 0.2) * (1.0 - p); tint = vec3(0.7, 0.92, 1.0); glowK = 1.0;
-  } else if (wiM == 3) {                            // speed: the number races in from the left with a motion blur, then locks
-    float e = 1.0 - pow(1.0 - p, 3.0), off = (1.0 - e) * 0.6;
-    su.x = uv.x + off; blur = vec2(off * 0.45, 0.0);
-    r = smoothstep(0.0, 0.18, p); fr = 1.0 - e; tint = vec3(1.0, 0.82, 0.32); glowK = 1.8;
+  } else if (wiM == 3) {                            // speed: a racing timer. Each column of the tile rolls like a drum of digits, fast and blurred,
+                                                    // slowing until it clicks to a stop, one column after another from the left
+    float cw = 0.11 / max(1.0, wiA * 0.5), col = floor(uv.x / cw), nC = 1.0 / cw;
+    float t0 = 0.03 + col / nC * 0.42, f = clamp((p - t0) / 0.45, 0.0, 1.0), e = 1.0 - pow(1.0 - f, 3.0);
+    su.y = fract(uv.y + (1.0 - e) * 3.0); blur = vec2(0.0, (1.0 - e) * 0.09);
+    r = step(0.0001, f); dim = 1.0 - (1.0 - e) * 0.4 * (1.0 - sin(uv.y * 3.14159));
+    float lk = exp(-pow((f - 1.0) / 0.06, 2.0)) * step(0.0001, f) * (1.0 - smoothstep(0.9, 1.0, p));
+    fr = (1.0 - e) * 0.8 + lk * 0.6; tint = vec3(1.0, 0.84, 0.36); glowK = 1.6; ex = lk * 0.35; exC = vec3(1.0, 0.92, 0.7);
   } else if (wiM == 4) {                            // space: a hologram. A scan line sweeps down the tile; behind it the number flickers in cyan and
                                                     // magenta with scan lines and a glitch shift, then locks solid
     float f = 1.0 - uv.y, b = p * 1.35 - 0.15, dd = b - f, lock = smoothstep(0.78, 0.9, p);
@@ -3534,7 +3538,7 @@ async function saveVideo(o = {}) {
     const pick = await pickCodec(OW, OH);
     viewFor(Math.round(OW * SS), Math.round(OH * SS));
     const FT = plan.FT, TS = plan.turnStart, sideAt = (t) => t < TS ? 0 : t > TS + TURN_S ? 1 : easeIO((t - TS) / TURN_S);
-    const ovc = document.createElement('canvas'); ovc.width = OW; ovc.height = OH; const ovx2 = ovc.getContext('2d');
+    const ovc = document.createElement('canvas'); ovc.width = OW; ovc.height = OH; const ovx2 = ovc.getContext('2d'); if (RV.ovSize) RV.ovSize(OW, OH);
     let inReveal = plan.reveal;
     const poseFilm = (t) => {
       if (inReveal && !RV.filmPose(t)) { RV.filmEnd(); inReveal = false; }
@@ -3594,7 +3598,7 @@ async function saveVideo(o = {}) {
     busy(true, L('saving'));
     if (window.KT_TEST) { window.KT_TEST_RESULT = blob; } else await saveFile(fileBase() + '.' + ext, blob);
   } catch (e) { console.warn(e); busy(true, L('noVid')); await new Promise(r => setTimeout(r, 2500)); }
-  finally { RV.filmEnd(); SEAL.at(null, true); SEAL.stampT = -1; coinsAt(window.KT_REVEAL === 'done' && backAt >= 0 ? 9 : null); exporting = false; restoreView(); renderFrame(); thaw(); busy(false); const c = theme && CARDS[theme]; if (c && c.playVideo) c.playVideo(); }
+  finally { if (RV.ovSize) RV.ovSize(0, 0); RV.filmEnd(); SEAL.at(null, true); SEAL.stampT = -1; coinsAt(window.KT_REVEAL === 'done' && backAt >= 0 ? 9 : null); exporting = false; restoreView(); renderFrame(); thaw(); busy(false); const c = theme && CARDS[theme]; if (c && c.playVideo) c.playVideo(); }
 }
 // ---------- sound: real recordings (Mixkit, free licence) ----------
 // Eggshell cracks, bubbling lava, fire, thunder, electric hum, a heartbeat, glasses clinking, playing cards, a bell and a
@@ -3620,9 +3624,16 @@ const SND = (() => {
         .catch(() => { packs[k] = null; });
     });
   }
+  // each design's music for the saved video comes on its own, only when a video is made
+  const mus = {};
+  function needMu(k) {
+    if (!k || window.KT_SFX) return Promise.resolve();
+    if (mus[k]) return mus[k];
+    return mus[k] = getData().then((d) => { if (!d) return; return fetch((window.KT_SFX_DIR || '') + 'mu-' + k + '.json').then(r => r.ok ? r.json() : {}).then((p) => { Object.assign(d, p); }).catch(() => { mus[k] = null; }); });
+  }
   const toBuf = (u) => { const b = atob(u.slice(u.indexOf(',') + 1)), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a.buffer; };
   const decode = (c, d, k) => new Promise((res) => { try { const p = c.decodeAudioData(toBuf(d[k]), res, () => res(null)); if (p && p.catch) p.catch(() => res(null)); } catch (e) { res(null); } });
-  async function loadAll(c, store, only) { const d = await getData(); if (!d) return store; await Promise.all(Object.keys(d).filter(k => !only || only(k)).map(async k => { if (!store[k]) store[k] = await decode(c, d, k); })); return store; }
+  async function loadAll(c, store, only) { const d = await getData(); if (!d) return store; await Promise.all(Object.keys(d).filter(k => (!only || only(k)) && (store !== bufs || k.slice(0, 3) !== 'mu_')).map(async k => { if (!store[k]) store[k] = await decode(c, d, k); })); return store; }
   function bus(c) {                                 // a gentle compressor so the loud and soft sounds sit together
     const o = c.createGain(), comp = c.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3; comp.attack.value = 0.003; comp.release.value = 0.25;
     // a low pass on everything, opened wide; slow motion closes it so the world goes deep and muffled, then it snaps open again
@@ -3654,42 +3665,42 @@ const SND = (() => {
   // ----- each design's sounds -----
   const V = {
     default: { loops: [['rumble', 0.05, 0.4]], cracks: ['crack1', 'crack2', 'crack3'], turn: [['shell', 0.9], ['whoosh', 0.8]], land: [['impact', 0.55]], fin: [['fin', 0.6]], tick: 1, arrive: 'arrive' },
-    lava: { loops: [['lavaloop', 0.18, 0.55], ['rumble', 0.08, 0.55]], cracks: ['bubble1', 'crack2', 'bubble2'], turn: [['fireboom', 0.75], ['lv_steam', 0.85]],
+    lava: { mu: 'mu_lava', loops: [['lavaloop', 0.18, 0.55], ['rumble', 0.08, 0.55]], cracks: ['bubble1', 'crack2', 'bubble2'], turn: [['fireboom', 0.75], ['lv_steam', 0.85]],
       land: [['hiss', 0.6], ['ash', 0.3]], fin: [['lv_hit', 0.45]], tk: 'lv_anvil', tick: 1, arrive: 'firewhoosh' },
-    lightning: { loops: [['hum', 0.12, 0.5]], cracks: ['crack1', 'crackle', 'crack3'], turn: [['shell', 0.7], ['thunder', 1]], land: [['blast', 0.8]], fin: [['sparks', 0.55]],
+    lightning: { mu: 'mu_lightning', loops: [['hum', 0.12, 0.5]], cracks: ['crack1', 'crackle', 'crack3'], turn: [['shell', 0.7], ['thunder', 1]], land: [['blast', 0.8]], fin: [['sparks', 0.55]],
       tick: 1.26, rnd: [['crackle'], 0.3, 0.6], arrive: 'whoosh' },
-    twoface: { loops: [], heart: true, cracks: ['crack1', 'crack2', 'crack3'], turn: [['shell', 0.7], ['swirl', 0.8, -0.9, 0.7], ['swirl', 0.8, 0.9, -0.7]],
+    twoface: { mu: 'mu_twoface', loops: [], heart: true, cracks: ['crack1', 'crack2', 'crack3'], turn: [['shell', 0.7], ['swirl', 0.8, -0.9, 0.7], ['swirl', 0.8, 0.9, -0.7]],
       land: [['clink', 0.9], ['ring', 0.55]], fin: [['crystal', 0.6]], tick: 1, alt: true, arrive: 'whoosh', join: [['place', 0.9]] },
     // Gilded Night: a vault clock ticking, the dial and locks giving way, the vault door swinging, gold coins and a clock chime
     butter: { loops: [['gn_loop', 0.25, 0.6], ['rumble', 0.03, 0.3]], cracks: ['gn_lock', 'gn_gear', 'gn_knob'], turn: [['gn_vault', 0.9], ['whoosh', 0.35]],
       land: [['gn_coins', 0.7], ['gn_strike', 0.45]], fin: [['gn_fin', 0.5]], tk: 'gn_tick', tick: 1, arrive: 'gn_arrive' },
     twilight: { loops: [['tw_loop', 0.2, 0.5]], cracks: ['crack1', 'tw_spell', 'crack3'], turn: [['shell', 0.55], ['tw_turn', 0.8]], land: [['tw_land', 0.8], ['impact', 0.25]],
       fin: [['tw_fin', 0.6]], tick: 0.9, arrive: 'tw_arrive' },
-    ghost: { loops: [['gh_loop', 0.15, 0.5]], cracks: ['gh_creak1', 'gh_wooo', 'gh_creak2'], turn: [['gh_giggle', 0.85], ['gh_swoosh', 0.7]], land: [['gh_poof', 0.6], ['gh_giggle2', 0.4]],
+    ghost: { mu: 'mu_ghost', loops: [['gh_loop', 0.15, 0.5]], cracks: ['gh_creak1', 'gh_wooo', 'gh_creak2'], turn: [['gh_giggle', 0.85], ['gh_swoosh', 0.7]], land: [['gh_poof', 0.6], ['gh_giggle2', 0.4]],
       fin: [['gh_fin', 0.4]], tk: 'gh_tick', tick: 1, arrive: 'gh_giggle2' },
-    space: { loops: [['sp_loop', 0.15, 0.55]], cracks: ['sp_swell', 'sp_bleep', 'sp_swell'], turn: [['sp_boom', 0.85], ['sp_rush', 0.6]], land: [['sp_zoom', 0.6], ['sp_impact', 0.35]],
+    space: { mu: 'mu_space', loops: [['sp_loop', 0.15, 0.55]], cracks: ['sp_swell', 'sp_bleep', 'sp_swell'], turn: [['sp_boom', 0.85], ['sp_rush', 0.6]], land: [['sp_zoom', 0.6], ['sp_impact', 0.35]],
       fin: [['sp_fin', 0.55]], tk: 'sp_bleep', tick: 1, rnd: [['sp_btn', 'sp_bleep2'], 0.12, 0.25], arrive: 'sp_whizz' },
-    speed: { loops: [['sd_loop', 0.12, 0.55]], rev: 0.4, cracks: ['sd_gear1', 'crack2', 'sd_gear2'], turn: [['sd_pass', 0.9], ['sd_swoosh', 0.5]], land: [['sd_hit', 0.8]],
-      fin: [['sd_fin', 0.5]], tick: 1.2, arrive: 'sd_arrive' },
-    tiger: { loops: [['tg_loop', 0.22, 0.45], ['tg_purr', 0.1, 0.85]], cracks: ['tg_leaves', 'crack2', 'tg_step'], turn: [['shell', 0.45], ['tg_growl', 0.85]],
+    speed: { mu: 'mu_speed', loops: [['sd_loop', 0.12, 0.55]], rev: 0.4, cracks: ['sd_beep', 'sd_beep', 'sd_beep'], turn: [['sd_go', 0.8], ['sd_boom', 0.95], ['sd_swoosh', 0.45]], land: [['sd_shutter', 0.9], ['sd_hit', 0.35]],
+      fin: [['sd_fin', 0.5]], tk: 'sd_tick', tick: 1, arrive: 'sd_car' },
+    tiger: { mu: 'mu_tiger', loops: [['tg_loop', 0.22, 0.45], ['tg_purr', 0.1, 0.85]], cracks: ['tg_leaves', 'crack2', 'tg_step'], turn: [['shell', 0.45], ['tg_growl', 0.85]],
       land: [['tg_roar', 0.7], ['impact', 0.35]], fin: [['tg_fin', 0.5]], tick: 0.95, arrive: 'tg_arrive' },
-    pink: { loops: [['pk_loop', 0.2, 0.5]], cracks: ['crack1', 'pk_kiss', 'crack3'], turn: [['shell', 0.45], ['pk_harp', 0.8]], land: [['pk_bless', 0.8]],
+    pink: { mu: 'mu_pink', loops: [['pk_loop', 0.2, 0.5]], cracks: ['crack1', 'pk_kiss', 'crack3'], turn: [['shell', 0.45], ['pk_harp', 0.8]], land: [['pk_bless', 0.8]],
       fin: [['pk_fin', 0.4]], tick: 1.06, arrive: 'pk_arrive' },
-    panda: { loops: [['pa_loop', 0.22, 0.6]], cracks: ['pa_harp', 'pa_wood', 'pa_harp'], turn: [['pa_gong', 0.8], ['pa_flute', 0.45]], land: [['pa_drop', 0.7], ['pa_chimes', 0.35]],
+    panda: { mu: 'mu_panda', loops: [['pa_loop', 0.22, 0.6]], cracks: ['pa_harp', 'pa_wood', 'pa_harp'], turn: [['pa_gong', 0.8], ['pa_flute', 0.45]], land: [['pa_drop', 0.7], ['pa_chimes', 0.35]],
       fin: [['pa_fin', 0.5]], tk: 'pa_brush', tick: 1, arrive: 'pa_arrive' },
-    light: { loops: [['lt_loop', 0.22, 0.65]], cracks: ['crack1', 'lt_bowl', 'crack3'], turn: [['shell', 0.45], ['lt_choir', 0.8]], land: [['lt_bell', 0.65]],
+    light: { mu: 'mu_light', loops: [['lt_loop', 0.22, 0.65]], cracks: ['crack1', 'lt_bowl', 'crack3'], turn: [['shell', 0.45], ['lt_choir', 0.8]], land: [['lt_bell', 0.65]],
       fin: [['lt_fin', 0.55]], tick: 1, arrive: 'lt_arrive' },
-    ice: { loops: [['ic_loop', 0.15, 0.5]], cracks: ['ic_icicle', 'ic_aurora', 'ic_cube'], turn: [['ic_impact', 0.75], ['ic_shatter', 0.55]], land: [['ic_whoosh', 0.5], ['ic_sparkle', 0.4]],
+    ice: { mu: 'mu_ice', loops: [['ic_loop', 0.15, 0.5]], cracks: ['ic_icicle', 'ic_aurora', 'ic_cube'], turn: [['ic_impact', 0.75], ['ic_shatter', 0.55]], land: [['ic_whoosh', 0.5], ['ic_sparkle', 0.4]],
       fin: [['ic_fin', 0.45]], tk: 'ic_chime', tick: 1, arrive: 'ic_arrive' },
-    water: { loops: [['wa_loop', 0.15, 0.5]], cracks: ['wa_bub', 'wa_liq', 'wa_drop'], turn: [['wa_jump', 0.85]], land: [['wa_splash', 0.75], ['wa_wave', 0.45]],
+    water: { mu: 'mu_water', loops: [['wa_loop', 0.15, 0.5]], cracks: ['wa_bub', 'wa_liq', 'wa_drop'], turn: [['wa_jump', 0.85]], land: [['wa_splash', 0.75], ['wa_wave', 0.45]],
       fin: [['wa_fin', 0.55]], tk: 'wa_bub', tick: 1, rnd: [['wa_bub', 'wa_liq'], 0.2, 0.4], arrive: 'wa_arrive' },
-    tree: { loops: [['tr_loop', 0.25, 0.6]], cracks: ['tr_creak', 'tr_twig', 'tr_branch'], turn: [['tr_leaves', 0.7], ['tr_rustle', 0.6]], land: [['tr_grow', 0.7], ['impact', 0.3]],
+    tree: { mu: 'mu_tree', loops: [['tr_loop', 0.25, 0.6]], cracks: ['tr_creak', 'tr_twig', 'tr_branch'], turn: [['tr_leaves', 0.7], ['tr_rustle', 0.6]], land: [['tr_grow', 0.7], ['impact', 0.3]],
       fin: [['tr_fin', 0.55]], tick: 0.9, arrive: 'tr_arrive' },
-    jelly: { loops: [['je_loop', 0.2, 0.65]], cracks: ['je_sq1', 'je_sq2', 'je_sq3'], turn: [['je_boing', 0.85], ['whoosh', 0.3]], land: [['je_splat', 0.8]],
+    jelly: { mu: 'mu_jelly', loops: [['je_loop', 0.2, 0.65]], cracks: ['je_sq1', 'je_sq2', 'je_sq3'], turn: [['je_boing', 0.85], ['whoosh', 0.3]], land: [['je_splat', 0.8]],
       fin: [['je_fin', 0.55]], tk: 'je_tick', tick: 1, arrive: 'je_arrive' },
-    shadow: { loops: [['sh_loop', 0.2, 0.6], ['rumble', 0.03, 0.35]], cracks: ['crack1', 'crack2', 'sh_drum'], turn: [['sh_swoosh', 0.9]], land: [['sh_smoke', 0.8], ['heart', 0.45]],
+    shadow: { mu: 'mu_shadow', loops: [['sh_loop', 0.2, 0.6], ['rumble', 0.03, 0.35]], cracks: ['crack1', 'crack2', 'sh_drum'], turn: [['sh_swoosh', 0.9]], land: [['sh_smoke', 0.8], ['heart', 0.45]],
       fin: [['sh_fin', 0.45], ['crystal', 0.35]], tick: 0.8, arrive: 'sh_arrive' },
-    acid: { loops: [['ac_loop', 0.25, 0.7]], cracks: ['ac_squirt', 'ac_can', 'ac_hit'], turn: [['ac_potion', 0.85]], land: [['ac_steam', 0.8], ['impact', 0.3]],
+    acid: { mu: 'mu_acid', loops: [['ac_loop', 0.25, 0.7]], cracks: ['ac_squirt', 'ac_can', 'ac_hit'], turn: [['ac_potion', 0.85]], land: [['ac_steam', 0.8], ['impact', 0.3]],
       fin: [['ac_fin', 0.55]], tk: 'ac_tick', tick: 1, rnd: [['ac_can'], 0.15, 0.3], arrive: 'ac_arrive' },
   };
   const voice = (k) => V[k] || V.default;
@@ -3742,11 +3753,11 @@ const SND = (() => {
     turnCard() { const c = live(); if (!c) return; play(c, out, bufs, 'flip', at(), { g: 0.8 }); play(c, out, bufs, 'whoosh', at(), { g: 0.25 }); },
     // the film: the card's music, a card flick as it turns to the back, and when chosen the design's reveal first
     async film(k, R, plan = { sec: 14, reveal: true, turnStart: 9 }) {
-      await need(k);
+      await need(k); await needMu(k);
       const sr = 48000, sec = plan.sec, c = new OfflineAudioContext(2, sr * sec, sr), o0 = bus(c), v = voice(k), B = await loadAll(c, {});
       const o = c.createGain(); o.connect(o0); o.gain.setValueAtTime(1, Math.max(0, sec - 1.6)); o.gain.linearRampToValueAtTime(0.0001, sec);   // everything fades out at the end
       if (!plan.reveal) {
-        play(c, o, B, 'music', 0.2, { g: 0.55 });
+        play(c, o, B, B[v.mu] ? v.mu : 'music', 0.2, { g: 0.55 });
         play(c, o, B, 'whoosh', plan.turnStart - 0.1, { g: 0.25 }); play(c, o, B, 'flip', plan.turnStart + 0.05, { g: 0.7 });
         return c.startRendering();
       }
@@ -3761,7 +3772,7 @@ const SND = (() => {
       R.ticks.forEach((t, i) => tickAt(c, o, B, v, i, t, i === R.ticks.length - 1));
       fireList(c, o, B, v.fin, R.ticks[R.ticks.length - 1] + 0.25);
       if (R.shine) tickAt(c, o, B, v, 7, R.shine, true);
-      play(c, o, B, 'music', R.after - 0.6, { g: 0.55 });
+      play(c, o, B, B[v.mu] ? v.mu : 'music', R.after - 0.6, { g: 0.55 });   // every design has its own music
       if (plan.stamp != null) { play(c, o, B, 'impact', plan.stamp, { g: 0.6, rate: 0.78 }); play(c, o, B, 'tick', plan.stamp + 0.03, { g: 0.35, rate: 0.62 }); }
       play(c, o, B, 'whoosh', plan.turnStart - 0.1, { g: 0.25 }); play(c, o, B, 'flip', plan.turnStart + 0.05, { g: 0.7 });
       return c.startRendering();
@@ -3968,8 +3979,14 @@ const RECIPES = {
   space: { emi: 0.3, seal: 20, brk: 1, c1: [0.43, 0.9, 1.0], c2: [1.0, 0.42, 0.84], veil: '2,3,14', arrive: 'hyperspace', turn: 'wormhole', shake: 'pull', ov: 'stars', hole: true,
     pace: { full: { arrive: 2.0, hatch: 3.0, turn: 1.9, settle: 1.3 } },
     parts: { wait: 'orbit', hatch: 'spiral', land: 'ring' }, burst: 'nova', tex: 'star', cols: ['#6fe6ff', '#ffffff', '#ff6ad5', '#cfe9ff'], flash: '120,200,255', ring: '#ff6ad5', flick: 'still' },
-  speed: { seal: 7, brk: 3, c1: [1.0, 0.8, 0.28], c2: [1.0, 1.0, 1.0], veil: '2,6,18', arrive: 'zoom', turn: 'snap', spin: 5, shake: 'rev', ov: 'speed',
-    parts: { wait: 'streaks', hatch: 'streaks', land: 'sparks' }, cols: ['#ffd25a', '#ffffff', '#ffb020', '#fff2c0'], flash: '255,230,170', ring: '#ffd25a', flick: 'still' },
+  // Speed, The Photo Finish (Jon, 7 Nov): the quickest reveal. The card races in across the dunes and skids to a stop, the start lights
+  // come on one by one as you hold while a speedometer needle climbs, on green the egg breaks the sound barrier and the sonic boom
+  // and the sand it throws hang in a long slow motion, the card drifts round like a car in a corner, a finish line camera sweeps
+  // across it and flashes, and each number rolls in like a racing timer and clicks to a stop
+  speed: { emi: 0.4, seal: 22, brk: 3, c1: [1.0, 0.8, 0.28], c2: [1.0, 1.0, 1.0], veil: '12,8,2', arrive: 'race', turn: 'drift', spin: 3, shake: 'rev', ov: 'speed', race: true,
+    pace: { full: { arrive: 1.2, hatch: 2.0, turn: 1.15, settle: 1.0, gap: 0.18, write: 0.85 } },
+    beats: (TU, k) => [{ c: 0.1 * TU, d: 0.93 * k, s: 0.16 }, { c: TU + 0.03, d: 0.7 * k, s: 0.07 }],
+    parts: { wait: 'none', hatch: 'none', land: 'sparks' }, burst: 'sonic', cols: ['#ffd8a0', '#e8b878', '#fff2d8', '#c89858'], flash: '255,250,240', ring: '#ffd25a', flick: 'still' },
   tiger: { seal: 6, brk: 4, c1: [1.0, 0.55, 0.14], c2: [1.0, 0.85, 0.5], veil: '14,6,2', arrive: 'pounce', turn: 'pounce', shake: 'growl', ov: 'leaves',
     parts: { wait: 'falling', hatch: 'falling', land: 'leafburst' }, tex: 'leaf', cols: ['#ff9a3a', '#d9622a', '#ffcf7a', '#8a3a12'], flash: '255,190,120', ring: '#ffb060', flick: 'glow', ovc: '230,120,40' },
   pink: { seal: 12, brk: 1, c1: [1.0, 0.55, 0.82], c2: [1.0, 0.85, 0.95], veil: '16,4,14', arrive: 'fall', turn: 'sway', shake: 'float', ov: 'petals',
@@ -4010,6 +4027,7 @@ function slowBeats(pc, R) {
   const TU = pc.turn, spin = R.spin || 3, snap = R.turn === 'snap', want = spin === 1 ? 0.5 : 1 - 0.5 / spin;
   let lo = 0, hi = 1; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2, e = snap ? 1 - Math.pow(1 - m, 4) : (m < 0.5 ? 4 * m * m * m : 1 - Math.pow(-2 * m + 2, 3) / 2); if (e < want) lo = m; else hi = m; }
   const k = pc.slow, B = [];
+  if (R.beats) return R.beats(TU, k);
   if (pc.big) B.push({ c: 0.11 * TU, d: 0.86 * k, s: 0.075 });   // the seal bursts: every shard hangs in the air
   if (pc.big) B.push({ c: lo * TU, d: 0.9 * k, s: 0.05 });       // edge-on in the last spin
   B.push({ c: TU + 0.04, d: 0.84 * k, s: 0.1 });                                                   // the landing: the burst freezes, then falls
@@ -4221,6 +4239,19 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       vec2 g = sv * vec2(15.0, 8.4), id = floor(g), f = fract(g) - 0.5 - (vec2(shs(id), shs(id + 3.1)) - 0.5) * 0.4;
       float on = step(shs(id + 5.5), uH * 0.95), rad = on * (0.08 + 0.32 * uH * shs(id + 2.2)), d = length(f);
       glow += uC1 * (exp(-abs(d - rad) / 0.025) * 1.8 + smoothstep(rad, rad - 0.06, d) * 0.6) * on * (0.6 + 1.2 * uH) * uFlick + uC1 * 0.08 * uH;
+    } else if (uMode > 21.5) {                  // start lights and a speedometer: the needle climbs round the egg as it is held, and the lamps on
+                                                //   either side come on red one row at a time, then all turn green
+      float ta = mod(3.927 - ang, 6.2832) / 4.712, inArc = step(ta, 1.0), R0 = 0.34;
+      float band = (1.0 - smoothstep(0.007, 0.013, abs(r - R0))) * inArc, fill = band * step(ta, uH * 1.02);
+      float tk = inArc * (1.0 - smoothstep(0.0, 0.012, abs(fract(ta * 10.0 + 0.5) - 0.5))) * (1.0 - smoothstep(0.0, 0.004, abs(r - R0 - 0.03) - 0.012));
+      float tip = exp(-length(q - vec2(cos(3.927 - uH * 4.712), sin(3.927 - uH * 4.712)) * R0) / 0.02) * step(0.01, uH);
+      glow += uC1 * (band * 0.22 + fill * (0.9 + 1.4 * uH) + tip * 2.2) + vec3(1.0, 0.95, 0.85) * tk * 0.45;
+      float go = step(0.965, uH);
+      for (int i = 0; i < 3; i++) { float fi = float(i), th = 0.28 + fi * 0.29, on = step(th, uH), y = 0.14 - fi * 0.14;
+        for (int j = 0; j < 2; j++) { vec2 c = vec2(float(j) * 1.16 - 0.58, y); float d = length(q - c);
+          float disc = 1.0 - smoothstep(0.034, 0.041, d), rim = exp(-pow((d - 0.047) / 0.006, 2.0)), halo = exp(-max(d - 0.03, 0.0) / 0.045) * on;
+          vec3 lc = mix(vec3(1.0, 0.1, 0.05), vec3(0.2, 1.0, 0.35), go);
+          glow += lc * (disc * (0.06 + on * 2.0) + halo * 0.7 * (1.0 + go)) + vec3(0.9, 0.85, 0.7) * rim * 0.3; } }
     } else if (uMode > 20.5) {                  // enso: a brush paints one open circle round the egg, thick where it starts and thinning as it goes,
                                                 //   dry streaks breaking up its edge, and a small red seal dot where it began
       float rr = length(q), a3 = fract(0.62 - atan(q.y, q.x) / 6.2832), prog = uH * 0.93;
@@ -4497,7 +4528,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     x.restore();
   }
   function drawOV(ctx, w, h, st) {
-    ctx.clearRect(0, 0, w, h); const R = recipe();
+    OVW = w; OVH = h; ctx.clearRect(0, 0, w, h); const R = recipe();
     if (st.veil > 0.002) { const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.2, w / 2, h / 2, Math.max(w, h) * 0.75), va = Math.min(0.97, st.veil * (R.dark || 1));
       g.addColorStop(0, `rgba(${R.veil},${va * (R.vc || 0.25)})`); g.addColorStop(1, `rgba(${R.veil},${va})`); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h); }
     if (st.ov > 0.002 && R.ov) ovFx(ctx, w, h, st, R);
@@ -4514,6 +4545,10 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     }
     if (st.mint > 0.002) { const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7); g.addColorStop(0, `rgba(140,255,215,${0.22 * st.mint})`); g.addColorStop(1, `rgba(255,200,120,${0.12 * st.mint})`); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h); }
     if (st.gh) ghostFx(ctx, st.gh, st.t);
+    if (st.race) raceFx(ctx, w, h, st.rect, st.race[0], st.race[1]);
+    if (st.boom >= 0) boomFx(ctx, w, h, st.rect, st.boom);
+    if (st.spray >= 0) sprayFx(ctx, w, h, st.rect, st.spray);
+    if (st.pfin >= 0) finishFx(ctx, w, h, st.rect, st.pfin);
     if (st.ripple >= 0) rippleFx(ctx, w, h, st.ripple);
     if (st.panda > 0.002) pandaFx(ctx, w, h, st.t, st.panda, st.pandaT || 0, st.prect);
     if (st.rod) rodFx(ctx, st.rod[0], st.rod[1], st.rod[2], st.rod[3]);
@@ -4678,6 +4713,8 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         op = (i % 2 ? 0 : 0.22 + 0.3 * k) * (0.7 + 0.3 * Math.sin(t * 1.3 + p.ph)); sc = p.s * 4 * (1.2 - 0.5 * k); rot = a * 0.5; }                     // shadow: smoke drawn in toward the egg
       else if (role === 'inkcurl') { const tt = u, life = 1.7; x0 = p.v.x * 0.55 * tt * (1 - tt * 0.15); y0 = baseY + p.v.y * 0.4 * tt + 0.3 * tt * tt; z0 = -0.25 + p.v.z * tt * 0.12;
         op = Math.min(1, tt * 6) * Math.pow(Math.max(0, 1 - tt / life), 1.6) * (i % 3 ? 0 : 0.7); sc = p.s * (2.2 + tt * 2.6); rot = tt * (0.6 + p.sp * 2) + p.ph; }       // shadow: the egg's smoke curls away and thins
+      else if (role === 'sonic') { const tt = u, a = p.a, sp = 2.2 + hash(i + 71) * 2.6, rr = sp * (1 - Math.exp(-tt * 3.6)) + hash(i + 72) * 0.1;   // speed: sand thrown out by the sonic boom, hanging in the slow motion
+        x0 = Math.cos(a) * rr * 1.25; y0 = WY + Math.sin(a) * rr * 0.62 - tt * tt * 0.5; z0 = 0.25 + (hash(i + 73) - 0.5) * 0.4; op = Math.min(1, tt * 16) * Math.max(0, 1 - tt / 1.5) * 0.85; sc = p.s * (0.7 + hash(i + 74) * 0.9); }
       else if (role === 'none') { p.m.material.opacity = 0; return; }
       else if (role === 'inksplash' || role === 'inkfall') { const tt = role === 'inkfall' ? u + pace.turn : u, g = 2.6;      // panda: a splash of ink droplets, hanging in the slow motion, then falling
         if (i % 2) { p.m.material.opacity = 0; return; } x0 = p.v.x * 0.7 * tt; y0 = WY * (1 - Math.min(1, tt)) + baseY * Math.min(1, tt) * 0 + WY * Math.min(1, tt) + p.v.y * 0.55 * tt - 0.5 * g * tt * tt; z0 = 0.3 + p.v.z * tt * 0.2;
@@ -4757,6 +4794,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       else if (R.arrive === 'squash') { const x = clamp01(A / pace.arrive), y = x < 0.6 ? 1 - Math.pow(x / 0.6, 2) : 0, sq = x < 0.6 ? 0 : Math.sin((x - 0.6) / 0.4 * Math.PI * 3) * Math.exp(-(x - 0.6) * 6) * 0.16;
         card.position.y = WY + 2.2 * y; card.scale.set(WS * (1 + sq), WS * (1 - sq), WS); }
       else if (R.arrive === 'slide') { card.position.x = 5 * k * k; card.rotation.y += k * 0.5; card.rotation.z = Math.sin(A * 9) * 0.03 * k; }
+      else if (R.arrive === 'race') { const e = clamp01(A / pace.arrive), f = 1 - Math.pow(1 - e, 5), sk = Math.sin(Math.min(1, Math.max(0, (e - 0.4) / 0.6)) * Math.PI); card.position.x = -7.5 * (1 - f); card.rotation.y += (1 - f) * 0.5 - sk * 0.12; card.rotation.z = (1 - f) * 0.1 - sk * 0.05; card.position.y = WY - sk * 0.03; }   // races in and skids to a stop
       else if (R.arrive === 'unroll') { const e = clamp01(A / pace.arrive), f = e < 0.15 ? 0 : easeOut((e - 0.15) / 0.85); card.scale.x = WS * Math.max(0.03, f); card.position.x = -W * WS * 0.5 * (1 - f); }   // unrolls from its rod, left to right
       else if (R.arrive === 'hyperspace') { const e = clamp01(A / pace.arrive), f = 1 - Math.pow(1 - Math.min(1, e / 0.55), 4); card.position.z = -0.2 - 14 * (1 - f); card.rotation.z = (1 - f) * 0.25; }   // shoots in out of hyperspace and stops dead
       else if (R.arrive === 'carried') { const e = easeOut(clamp01(A / pace.arrive)); card.position.x = 5.0 * (1 - e); card.position.y = WY + Math.sin(A * 4.2) * 0.07 * k + 0.25 * k; card.rotation.z = Math.sin(A * 3.1) * 0.08 * k; card.rotation.y += Math.sin(A * 2.3) * 0.2 * k; }   // carried in by two little ghosts, bobbing
@@ -4771,7 +4809,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     lights((R.arrive === 'fade' || R.arrive === 'emerge') && !film ? 0.42 * (0.25 + 0.75 * ar) : 0.42); sweepForce = 9; SH.forEach(s => s.m.visible = false); SU.uT.value = t;
     parts(R.parts.wait, t, 0.15, 0); PT.forEach(p => p.m.material.opacity *= ar); EGG.wait(t, ar);
     Object.assign(S, { veil: 0.82 * Math.min(1, film ? 1 : A / 0.6), flash: 0, under: R.under ? 0.25 * ar : 0, ov: 0.55 * ar, warp: 0, sheet: 0, strike: 0, seam: 0, t });
-    eclipse('wait', t, ar, A); forge('wait', t, ar); aurora('wait', t, ar); haunt('wait', t, ar, A); hole('wait', t, ar, A); inkfx('wait', t, ar, A);
+    eclipse('wait', t, ar, A); forge('wait', t, ar); aurora('wait', t, ar); haunt('wait', t, ar, A); hole('wait', t, ar, A); inkfx('wait', t, ar, A); racefx('wait', t, ar, A);
     hideTiles(); back(false);
   }
   function poseHatch(t, e, ht) {
@@ -4788,6 +4826,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     else if (R.shake === 'tick') { const q = t * 2, f = q - Math.floor(q), j = Math.exp(-f * 14); card.rotation.z = j * 0.016 * (hash(Math.floor(q)) - 0.5) * 2 * (0.4 + e) * (RM ? 0 : 1); card.position.y += j * 0.006 * (0.4 + e); }
     else if (R.shake === 'pulse') { card.scale.multiplyScalar(1 + Math.sin(t * 4.5) * 0.012 * e); card.rotation.y += Math.sin(t * 0.9) * 0.05 * e; }
     else if (R.shake === 'creak') { const q = Math.floor(t * 1.6), j = Math.exp(-(t * 1.6 - q) * 6) * (hash(q) < 0.5 ? 1 : -1); card.rotation.z = Math.sin(t * 1.3) * 0.035 * e + j * 0.012 * sh; }
+    else if (R.shake === 'rev') { const pu = Math.pow(0.5 + 0.5 * Math.sin(t * 13.8), 4) * (RM ? 0 : 1); card.position.x += Math.sin(t * 61) * 0.004 * (0.3 + e) * (1 + pu * 2); card.rotation.z = Math.sin(t * 47) * 0.006 * (0.3 + e) * (1 + pu); card.position.y += pu * 0.012 * e; card.rotation.x -= pu * 0.02 * e; }   // the engine revving
     else if (R.shake === 'breeze') { card.rotation.z = Math.sin(t * 0.9) * 0.025 * e; card.position.y += Math.sin(t * 1.2) * 0.015 * e; card.rotation.y += Math.sin(t * 0.7) * 0.03 * e; }   // a calm breeze
     else if (R.shake === 'pull') { card.position.z -= e * e * 0.22; card.rotation.x += e * 0.12; card.rotation.z = Math.sin(t * 1.3) * 0.03 * e + e * e * 0.06; card.position.x += Math.sin(t * 31) * 0.004 * sh; }   // drawn toward the black hole
     else if (R.shake === 'possess') { const q = Math.floor(t * 3), j = Math.exp(-(t * 3 - q) * 9) * (hash(q) - 0.5); card.rotation.z = Math.sin(t * 2.1) * 0.05 * e + j * 0.14 * e * (RM ? 0 : 1); card.position.y += Math.sin(t * 1.7) * 0.04 * e + Math.abs(j) * 0.05 * e; card.rotation.y += Math.sin(t * 9) * 0.02 * e; }   // tugged by unseen hands
@@ -4802,7 +4841,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     parts(R.parts.hatch, t, e, 0); EGG.hatch(t, e, RM);
     let sheet = 0; if (theme === 'lightning') { const q = Math.floor(t * 9); sheet = hash(q + 99) < 0.08 + e * 0.22 ? (0.05 + e * 0.12) * (1 - (t * 9 - q)) : 0; }
     Object.assign(S, { veil: 0.82 + e * 0.06, flash: 0, under: R.under ? 0.25 + e * 0.75 : 0, ov: 0.55 + 0.45 * e, warp: 0, sheet, strike: 0, seam: theme === 'twoface' ? e : 0, t });
-    eclipse('hatch', t, e); forge('hatch', t, e); aurora('hatch', t, e); haunt('hatch', t, e); hole('hatch', t, e); inkfx('hatch', t, e);
+    eclipse('hatch', t, e); forge('hatch', t, e); aurora('hatch', t, e); haunt('hatch', t, e); hole('hatch', t, e); inkfx('hatch', t, e); racefx('hatch', t, e);
     hideTiles(); back(false);
   }
   function poseGo(t, u) {
@@ -4828,6 +4867,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         else if (R.turn === 'glide') { card.position.x += sw * 0.75; card.rotation.z = -sw * 0.08; }
         else if (R.turn === 'dive') card.position.y -= sw * 0.45;
         else if (R.turn === 'grow') card.scale.multiplyScalar(1 + sw * 0.18);
+        else if (R.turn === 'drift') { card.position.x += sw * 0.85; card.position.y -= sw * 0.1; card.rotation.z = -sw * 0.16; card.rotation.x += sw * 0.08; }   // drifts round like a car taking a corner
         else if (R.turn === 'page') { card.position.x += sw * W * 0.32; card.position.z += sw * 0.12; card.rotation.z = -sw * 0.04; }   // turns over like the page of a book
         else if (R.turn === 'wormhole') { card.position.z -= sw * 0.9; card.rotation.z = e * Math.PI * 2; }   // falls into the tunnel, spinning through it, and out the other side
         else if (R.turn === 'haunt') { card.position.y += sw * 0.4; card.rotation.z = Math.sin(e * Math.PI * 2) * 0.12 * (1 - e); card.position.x += Math.sin(e * Math.PI * 2) * 0.18; }   // floats up and drifts round once, dreamily
@@ -4841,7 +4881,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       parts(R.burst || (R.forge ? 'erupt' : 'implode'), t, 0, u); shards(u); EGG.burst(u, RM);
       const strike = theme === 'lightning' ? Math.max(0, 1 - u / 0.35) * (u < 0.05 ? u / 0.05 : 1) : 0;
       Object.assign(S, { veil: 0.88 * (1 - clamp01((u - TU + 0.2) / 1.2)), flash: strike * 0.55, under: R.under ? 1 - e * 0.5 : 0, ov: 1, warp: R.warp && !RM ? Math.sin(x0 * Math.PI) : 0, sheet: 0, strike, seed: 7, seam: theme === 'twoface' ? 1 - e * 0.3 : 0, t });
-      eclipse('turn', t, x0, e); forge('turn', t, x0, u); aurora('turn', t, x0, u); haunt('turn', t, x0, u); hole('turn', t, x0, u); inkfx('turn', t, x0, u);
+      eclipse('turn', t, x0, e); forge('turn', t, x0, u); aurora('turn', t, x0, u); haunt('turn', t, x0, u); hole('turn', t, x0, u); inkfx('turn', t, x0, u); racefx('turn', t, x0, u);
       hideTiles(); back(false);
     } else {                                       // the landing and the journey lighting up
       const u2 = u - TU, k = Math.exp(-u2 * 4.2);
@@ -4861,7 +4901,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         let flash = ui < 0 ? 0 : Math.max(0, 1 - ui / (last ? 1.1 : 0.7)) * (last ? 0.12 : 0.05), lift = (1 - clamp01(ui / 0.5)) * 0.03 * (ui >= 0 ? 1 : 0);
         let pu = 0; if (i === so) { const x = clamp01((u2 - tDone) / 1.3), pe = Math.sin(Math.PI * x); lift += pe * 0.05; pu = x > 0 && x < 1 ? x : 0; }   // the stat this trail shines brightest in
         return [s, flash, lift, wp, pu]; }, t);
-      eclipse('land', t, u2, tDone); forge('land', t, u2, TU); aurora('land', t, u2, TU); haunt('land', t, u2, tDone); hole('land', t, u2, tDone); inkfx('land', t, u2, tDone);
+      eclipse('land', t, u2, tDone); forge('land', t, u2, TU); aurora('land', t, u2, TU); haunt('land', t, u2, tDone); hole('land', t, u2, tDone); inkfx('land', t, u2, tDone); racefx('land', t, u2, tDone);
       if (so >= 0 && u2 >= tDone) fire('shine', () => SND.play(theme, 'tick', 7, true));
       if (u2 > 0.35 + (n - 1) * pace.gap + pace.write * 1.3 * 0.8) fire('fin', () => SND.play(theme, 'fin'));
       if (u > end && !film) finish();
@@ -4909,10 +4949,11 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
 
   // ----- Ghost's haunting, laid over each step: the two little ghosts around the card, mint mist, the candlelight flare -----
   const cv3 = new THREE.Vector3();
+  let OVW = 0, OVH = 0;                          // the size of the layer being drawn: the screen, or the saved film's frame
   function cardRect() {                          // where the card sits on the overlay, in its pixels
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { cv3.set(a * W / 2, b * H / 2, 0); card.localToWorld(cv3); cv3.project(camera);
-      const px = (cv3.x * 0.5 + 0.5) * OV.width, py = (0.5 - cv3.y * 0.5) * OV.height; x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); }
+      const px = (cv3.x * 0.5 + 0.5) * (OVW || OV.width), py = (0.5 - cv3.y * 0.5) * (OVH || OV.height); x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); }
     return [x0, y0, x1, y1];
   }
   function haunt(step, t, a, b) {
@@ -4924,7 +4965,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         G.push([hx + (fx - hx) * ls, hy + (fy - hy) * ls + Math.sin(t * 4 + sd) * ch * 0.02, ch * 0.3, Math.sin(t * 2 + sd) * 0.15 - sd * 0.1 * (1 - ls), -sd, a, 0]); }
       if (hold < 1) S.mint = 0; }
     else if (step === 'hatch') { const e = a, sp = 0.9 + e * 4.5;
-      const rx = Math.min(cw * 0.62, OV.width * 0.42), ry = Math.max(ch * 0.78, rx * 0.35);
+      const rx = Math.min(cw * 0.62, (OVW || OV.width) * 0.42), ry = Math.max(ch * 0.78, rx * 0.35);
       for (const sd of [0, 1]) { const ang = t * sp + sd * Math.PI; G.push([cx + Math.cos(ang) * rx, cy + Math.sin(ang) * ry, ch * (0.28 + 0.04 * Math.sin(ang)), Math.cos(ang) * 0.3, Math.sin(ang) > 0 ? 1 : -1, 1, 0]); }
       aura.material.color.set('#7fffd0'); aura.material.opacity = 0.15 + 0.35 * e; lights(0.42 - 0.08 * e); }
     else if (step === 'turn') { const u = b, f = Math.min(1, u / 0.9);
@@ -4933,7 +4974,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     else { const u2 = a, tDone = b, inn = Math.min(1, Math.max(0, (u2 - tDone + 0.6) / 0.6)), out = Math.min(1, Math.max(0, (u2 - tDone - 0.9) / 0.9));
       for (const sd of [-1, 1]) G.push([cx + sd * cw * 0.56, r[1] - ch * 0.12 + Math.sin(t * 3 + sd) * ch * 0.02, ch * 0.26, Math.sin(t * 9 + sd) * 0.12, -sd, inn * (1 - out), 1]);
       S.mint = 0.55 * Math.exp(-u2 * 2.4); S.flash = 0.06 * Math.exp(-u2 * 4); ring.material.opacity *= 0.6; S.ov = Math.max(0.3, 1 - u2 / 2); }
-    const Wd = OV.width, Hd = OV.height, narrow = cw > Wd * 0.8;      // on a phone the card fills the width: the ghosts keep above it and on screen
+    const Wd = OVW || OV.width, Hd = OVH || OV.height, narrow = cw > Wd * 0.8;      // on a phone the card fills the width: the ghosts keep above it and on screen
     for (const g of G) { if (narrow && step !== 'hatch') { g[1] = Math.min(g[1], r[1] - g[2] * 0.55); } g[0] = Math.max(g[2] * 0.6, Math.min(Wd - g[2] * 0.6, g[0])); g[1] = Math.max(g[2] * 0.6, Math.min(Hd - g[2] * 0.6, g[1])); }
     S.gh = G;
   }
@@ -4999,6 +5040,47 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     const bl = (t * 0.5) % 3 < 0.1 ? 0.2 : 1; blot(x - s * 0.13, y - s * 0.15, s * 0.035, s * 0.04 * bl, '#ffffff'); blot(x + s * 0.13, y - s * 0.15, s * 0.035, s * 0.04 * bl, '#ffffff');
     blot(x, y - s * 0.02, s * 0.05, s * 0.035, '#141210'); blot(x, y + s * (0.06 + chew * 0.02), s * 0.06, s * 0.025 * (0.6 + chew), '#7a2a1c');   // nose and munching mouth
     blot(x - s * 0.27, y + s * 0.0, s * 0.06, s * 0.035, 'rgba(200,50,28,.35)'); blot(x + s * 0.27, y + s * 0.0, s * 0.06, s * 0.035, 'rgba(200,50,28,.35)');
+    c.restore(); }
+
+  // ----- Speed's race, laid over each step: speed streaks and dust on the way in, the sonic boom, sand spray, the finish camera -----
+  function racefx(step, t, a, b) {
+    const R = recipe(); S.race = null; S.boom = -1; S.spray = -1; S.pfin = -1; if (!R.race) return;
+    card.updateMatrixWorld(true); S.rect = cardRect();
+    if (step === 'wait') { const A = b, e = clamp01(A / pace.arrive); if (e < 1) S.race = [Math.pow(1 - e, 1.5), e]; }
+    else if (step === 'hatch') { aura.material.color.set('#ffd25a'); aura.material.opacity = 0.2 + a * 0.4; }
+    else if (step === 'turn') { const u = b; S.boom = u; S.spray = u; S.flash = 0.42 * Math.exp(-Math.pow((u - 0.03) / 0.05, 2)); }
+    else { const u2 = a; S.pfin = u2; S.flash = u2 > 0.4 ? 0.55 * Math.exp(-(u2 - 0.42) * 10) * (u2 < 0.42 ? 0 : 1) : 0; ring.material.opacity *= 0.4; aura.material.opacity *= 0.5; }
+  }
+  function raceFx(c, w, h, r, k, e) {               // speed streaks behind the card, dust kicked up as it skids
+    const K = Math.max(w, h) / 1600, ch = r[3] - r[1]; c.save();
+    for (let i = 0; i < 22; i++) { const y = r[1] + ch * (0.05 + 0.9 * hash(i + 501)), L = (0.3 + 0.7 * hash(i + 502)) * w * 1.1 * k, x = r[0] + (r[2] - r[0]) * (0.25 + 0.5 * hash(i + 503)) * Math.min(1, k * 2);
+      const g = c.createLinearGradient(x - L, 0, x, 0); g.addColorStop(0, 'rgba(255,230,180,0)'); g.addColorStop(1, `rgba(255,240,210,${0.55 * k})`);
+      c.strokeStyle = g; c.lineWidth = (1 + 2.5 * hash(i + 504)) * K * 1.6; c.beginPath(); c.moveTo(x - L, y); c.lineTo(x, y); c.stroke(); }
+    const sk = Math.max(0, Math.min(1, (e - 0.35) / 0.65));
+    for (let i = 0; i < 26; i++) { const q = (sk - hash(i + 511) * 0.4) / 0.6; if (q <= 0 || q > 1) continue; const x = r[0] + (r[2] - r[0]) * (0.1 + 0.8 * hash(i + 512)), y = r[3] + 6 * K;
+      const rad = (10 + 26 * hash(i + 513)) * K * (0.4 + q), al = (1 - q) * 0.4; c.fillStyle = `rgba(214,176,118,${al})`; c.beginPath(); c.arc(x - q * (40 + 80 * hash(i + 514)) * K, y - q * (20 + 50 * hash(i + 515)) * K, rad, 0, 7); c.fill(); }
+    c.restore(); }
+  function boomFx(c, w, h, r, u) {                    // the sonic boom: rings of shock round a cone of white vapour
+    if (u < 0 || u > 1.6) return; const cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2, M = Math.max(w, h); c.save();
+    const v = Math.max(0, 1 - u / 0.5), g = c.createRadialGradient(cx, cy, 0, cx, cy, M * (0.12 + u * 0.5)); g.addColorStop(0, `rgba(255,255,255,${0.75 * v})`); g.addColorStop(0.6, `rgba(255,250,235,${0.25 * v})`); g.addColorStop(1, 'rgba(255,250,235,0)');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    for (let k = 0; k < 3; k++) { const q = u - k * 0.05; if (q <= 0) continue; const R = M * (0.06 + q * 0.85), al = Math.max(0, 1 - q / 1.3) * (0.6 - k * 0.15);
+      c.strokeStyle = `rgba(255,252,240,${al})`; c.lineWidth = M * (0.002 + 0.006 * Math.max(0, 1 - q)); c.beginPath(); c.ellipse(cx, cy, R, R * 0.5, 0, 0, 7); c.stroke(); }
+    c.restore(); }
+  function sprayFx(c, w, h, r, u) {                   // sand sprayed out from under the card as it drifts round
+    const TU = pace.turn; if (u < 0 || u > TU + 0.8) return; const K = Math.max(w, h) / 1600, ox = (r[0] + r[2]) / 2, oy = r[3]; c.save();
+    for (let i = 0; i < 60; i++) { const bi = 0.15 * TU + (i / 60) * 0.7 * TU, age = u - bi; if (age < 0 || age > 0.8) continue;
+      const sd = hash(i + 521) < 0.5 ? -1 : 1, x = ox + sd * (r[2] - r[0]) * 0.4 * hash(i + 522) - sd * (140 + 320 * hash(i + 523)) * age * K, y = oy - (120 + 260 * hash(i + 524)) * age * K + 700 * age * age * K;
+      c.fillStyle = `rgba(222,186,128,${(1 - age / 0.8) * 0.7})`; c.beginPath(); c.arc(x, y, (2 + 5 * hash(i + 525)) * K * 1.6, 0, 7); c.fill(); }
+    c.restore(); }
+  function finishFx(c, w, h, r, u2) {                 // the photo finish: a camera line sweeps across, flashes, and a chequered strip runs under the card
+    if (u2 < 0 || u2 > 3) return; const K = Math.max(w, h) / 1600, ch = r[3] - r[1], cw = r[2] - r[0]; c.save();
+    const sw = Math.min(1, u2 / 0.42), x = r[0] - 10 * K + (cw + 20 * K) * sw, al = u2 < 0.42 ? 1 : Math.max(0, 1 - (u2 - 0.42) / 0.25);
+    if (al > 0) { const g = c.createLinearGradient(x - 60 * K, 0, x + 8 * K, 0); g.addColorStop(0, 'rgba(255,240,200,0)'); g.addColorStop(0.85, `rgba(255,245,215,${0.35 * al})`); g.addColorStop(1, `rgba(255,255,255,${al})`);
+      c.fillStyle = g; c.fillRect(x - 60 * K, r[1] - ch * 0.08, 68 * K, ch * 1.16); c.fillStyle = `rgba(255,255,255,${al})`; c.fillRect(x - 1.5 * K, r[1] - ch * 0.1, 3 * K, ch * 1.2); }
+    const s = Math.max(6, Math.min(18 * K, ch * 0.045)), inn = Math.min(1, Math.max(0, (u2 - 0.42) / 0.4)), out = Math.min(1, Math.max(0, (u2 - 1.8) / 0.8)), ie = 1 - Math.pow(1 - inn, 3);
+    if (inn > 0 && out < 1) { const y = r[3] + s * 0.8, n = Math.ceil(cw / s), shown = Math.ceil(n * ie); c.globalAlpha = 0.9 * (1 - out);
+      for (let i = 0; i < shown; i++) for (let j = 0; j < 2; j++) { c.fillStyle = (i + j) % 2 ? '#111111' : '#f6f2ea'; c.fillRect(r[0] + i * s, y + j * s, Math.min(s, r[2] - (r[0] + i * s)), s); } }
     c.restore(); }
 
   // ----- running a live reveal -----
@@ -5079,6 +5161,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     },
     dbg: () => ({ state, h, holding, auto }),
     render, filmPose, filmEnd, filmTimes, drawOV: (c, w, h) => drawOV(c, w, h, S),
+    ovSize: (w, h) => { OVW = w; OVH = h; },
   };
 })();
 
