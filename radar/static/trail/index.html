@@ -2643,16 +2643,24 @@ if (wiP < 0.999) {
     float ring = exp(-pow((length(q - ctr) / maxd - (p - st) * 2.6) / 0.05, 2.0)) * on * (1.0 - smoothstep(st, st + 0.3, p));
     ex = ring * 1.1 + exp(-pow((p - st) / 0.025, 2.0)) * 0.25; exC = vec3(1.0, 0.6, 0.2);
     fr = on * (1.0 - smoothstep(st, 0.85, p)); tint = vec3(1.0, 0.6, 0.2); glowK = 1.2; dim = 1.0 - paw * 0.2 * imp * on;
-  } else if (wiM == 7) {                            // water: the number rises through ripples, wavy first, then sharp
-    float d = length(q - ctr), f0 = p * 1.3 * maxd; vec2 dir = (q - ctr) / max(d, 1e-4);
-    su = uv + vec2(dir.x / wiA, dir.y) * sin(d * 60.0 - wiT * 10.0) * 0.011 * (1.0 - p);
-    r = (1.0 - smoothstep(f0 - 0.09, f0, d)) * smoothstep(0.0, 0.05, p); fr = r * (1.0 - p); tint = vec3(0.55, 0.88, 1.0); glowK = 1.1;
-    ex = exp(-pow((d - f0) / 0.022, 2.0)) * (1.0 - smoothstep(0.75, 1.0, p)) * smoothstep(0.03, 0.15, f0) * 1.2; exC = vec3(0.65, 0.9, 1.0);
-  } else if (wiM == 8) {                            // tree: a green vine grows across and the number grows behind it
-    float f = uv.x * 0.78 + uv.y * 0.22 + (wiF(q * 4.0 + 2.0) - 0.5) * 0.42, f0 = p * 1.5 - 0.22;
-    r = smoothstep(f - 0.05, f + 0.02, f0); fr = clamp(1.0 - (f0 - f) / 0.3, 0.0, 1.0) * r; tint = vec3(0.45, 1.0, 0.4); glowK = 1.5;
-    float tip = exp(-pow((f0 - f) / 0.016, 2.0));
-    ex = (tip * 1.1 + step(0.985, wiH(floor(q * 46.0))) * exp(-pow((f0 - f) / 0.04, 2.0)) * 1.6) * (1.0 - smoothstep(0.8, 1.0, p)); exC = vec3(0.5, 1.0, 0.45);
+  } else if (wiM == 7) {                           // water: a drop falls onto the middle of the tile, rings spread out from where it lands, and the
+                                                    // number swims into place under the water, magnified and wobbling, then settles still
+    float hit = 0.16, fall = clamp(p / hit, 0.0, 1.0), on = step(hit, p), k = max(0.0, p - hit);
+    vec2 dp = ctr + vec2(0.0, (1.0 - fall * fall) * 0.7); float drop = exp(-dot((q - dp) * vec2(1.0, 0.55), (q - dp) * vec2(1.0, 0.55)) / 0.0016) * (1.0 - on);
+    float d = length(q - ctr), wv = sin(d * 48.0 - k * 26.0) * exp(-d * 3.0) * exp(-k * 3.2) * on;
+    vec2 dir = (q - ctr) / max(d, 1e-4); su = uv + vec2(dir.x / wiA, dir.y) * wv * 0.012 - (uv - vec2(0.5)) * 0.14 * exp(-k * 4.0) * on;
+    r = on; float rings = 0.0; for (int i = 0; i < 3; i++) { float rr = (k - float(i) * 0.08) * 1.6 * maxd; rings += exp(-pow((d - rr) / 0.012, 2.0)) * step(0.0, rr) * exp(-k * 2.5); }
+    ex = drop * 1.4 + rings * 1.2 + exp(-pow(k / 0.02, 2.0)) * on * 0.5; exC = vec3(0.7, 0.92, 1.0);
+    overA = drop * 0.6; over = vec3(0.85, 0.96, 1.0);
+    fr = on * (1.0 - smoothstep(hit, 0.9, p)); tint = vec3(0.55, 0.88, 1.0); glowK = 1.1;
+  } else if (wiM == 8) {                           // tree: little flowers bloom open all over the tile, scattered, and the number grows in under them
+                                                    // as they fade back into the green
+    float cs = 0.32, g = 0.0, pet = 0.0, ctrF = 0.0; vec2 c = floor(q / cs);
+    for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { vec2 nb = c + vec2(float(i), float(j)), s0 = (nb + 0.5 + (vec2(wiH(nb), wiH(nb + 1.7)) - 0.5) * 0.7) * cs;
+      vec2 dv = q - s0; float t0 = wiH(nb + 3.3) * 0.4, k = clamp((p - t0) / 0.25, 0.0, 1.0), op = sin(k * 3.14159) * step(0.3, wiH(nb + 6.1)), ang = atan(dv.y, dv.x), rr = length(dv);
+      float rad = cs * 0.5 * sqrt(k) * (0.6 + 0.4 * cos(5.0 * ang + wiH(nb) * 6.28)); pet = max(pet, (1.0 - smoothstep(rad - 0.006, rad, rr)) * op); ctrF = max(ctrF, (1.0 - smoothstep(rad * 0.28 - 0.004, rad * 0.28, rr)) * op); g = max(g, exp(-rr * rr / 0.00012) * op); }
+    r = smoothstep(0.25, 0.7, p); overA = max(pet, ctrF) * 0.92; over = mix(mix(vec3(1.0, 0.48, 0.72), vec3(0.98, 0.98, 1.0), step(0.5, wiH(c))), vec3(1.0, 0.78, 0.15), ctrF);
+    ex = g * 1.4; exC = vec3(1.0, 0.85, 0.3); fr = r * (1.0 - smoothstep(0.5, 1.0, p)); tint = vec3(0.55, 1.0, 0.45); glowK = 1.3;
   } else if (wiM == 9) {                            // jelly: the number drops in, squashes, and bounces twice
     float drop = 1.0 - smoothstep(0.0, 0.32, p); drop *= drop; float k = max(0.0, p - 0.32), sq = sin(k * 24.0) * exp(-k * 7.5) * 0.24;
     su.y = uv.y - drop * 0.55; su = vec2((su.x - 0.5) / (1.0 + sq * 0.6) + 0.5, (su.y - 0.15) / (1.0 - sq) + 0.15);
@@ -2701,11 +2709,13 @@ if (wiP < 0.999) {
     if (wiM == 12) { tint = vec3(1.0, 0.55, 0.8); fr = clamp(g, 0.0, 1.0); glowK = 1.0; ex = g * 0.25; exC = vec3(1.0, 0.7, 0.88);
       overA = clamp(g, 0.0, 1.0) * 0.38; over = vec3(1.0, 0.72, 0.88); }                // the petals themselves, blooming and fading as the number forms
     else { tint = vec3(1.0, 0.9, 0.55); fr = r * (1.0 - smoothstep(0.6, 1.0, p)) * 0.6; glowK = 1.2; ex = g; exC = vec3(1.0, 0.88, 0.5); }
-  } else if (wiM == 13) {                           // light: gold leaf pressed into the marble, catching a glint of sun
-    float f = uv.x * 0.7 + (1.0 - uv.y) * 0.3, f0 = p * 1.55 - 0.28;
-    r = smoothstep(f - 0.04, f + 0.02, f0); float gl = exp(-pow((f0 - f - 0.05) / 0.05, 2.0));
-    fr = max(gl, clamp(1.0 - (f0 - f) / 0.4, 0.0, 1.0) * r * 0.7); tint = vec3(1.0, 0.8, 0.36); glowK = 1.3;
-    ex = gl * (1.0 - smoothstep(0.85, 1.0, p)) * 0.55; exC = vec3(1.0, 0.92, 0.7);
+  } else if (wiM == 13) {                           // light: the number condenses out of light. A four pointed star flares in the middle of the tile,
+                                                    // the tile fills with white gold light, and the number settles out of it as the light fades
+    vec2 d = q - ctr; float fl = exp(-pow((p - 0.12) / 0.07, 2.0)), star = exp(-abs(d.x) * 40.0 / max(0.3, wiA) - abs(d.y) * 6.0) + exp(-abs(d.y) * 40.0 - abs(d.x) * 6.0 / max(0.3, wiA * 0.5));
+    float bloom = smoothstep(0.05, 0.25, p) * (1.0 - smoothstep(0.3, 0.95, p));
+    r = smoothstep(0.2, 0.55, p); fr = r * (1.0 - smoothstep(0.45, 1.0, p)); tint = vec3(1.0, 0.92, 0.7); glowK = 1.6;
+    overA = bloom * 0.75 * exp(-dot(d, d) * 1.2); over = vec3(1.0, 0.97, 0.88);
+    ex = star * fl * 1.8 + bloom * 0.25; exC = vec3(1.0, 0.92, 0.72);
   } else if (wiM == 14) {                           // shadow: each tile has its own eclipse. A dark disc covers the number and slides off to the left,
                                                     // a violet corona burning along its edge, the same way the moon came back behind the card
     vec2 dc = ctr + vec2(-p * p * (3.0 - 2.0 * p) * 2.25 * maxd, 0.0);
@@ -3703,14 +3713,14 @@ const SND = (() => {
       fin: [['pk_fin', 0.4]], tk: 'pk_spark', tick: 1, arrive: 'pk_arrive' },
     panda: { mu: 'mu_panda', loops: [['pa_loop', 0.22, 0.6]], cracks: ['pa_harp', 'pa_wood', 'pa_harp'], turn: [['pa_gong', 0.8], ['pa_flute', 0.45]], land: [['pa_drop', 0.7], ['pa_chimes', 0.35]],
       fin: [['pa_fin', 0.5]], tk: 'pa_brush', tick: 1, arrive: 'pa_arrive' },
-    light: { mu: 'mu_light', loops: [['lt_loop', 0.22, 0.65]], cracks: ['crack1', 'lt_bowl', 'crack3'], turn: [['shell', 0.45], ['lt_choir', 0.8]], land: [['lt_bell', 0.65]],
-      fin: [['lt_fin', 0.55]], tick: 1, arrive: 'lt_arrive' },
+    light: { mu: 'mu_light', loops: [['lt_loop', 0.22, 0.65]], cracks: ['lt_bowl', 'lt_bowl', 'lt_bowl'], turn: [['lt_wings', 0.7], ['lt_choir', 0.85]], land: [['lt_bless', 0.8], ['lt_bell', 0.45]],
+      fin: [['lt_fin', 0.55]], tk: 'lt_chime', tick: 1, arrive: 'lt_arrive' },
     ice: { mu: 'mu_ice', loops: [['ic_loop', 0.15, 0.5]], cracks: ['ic_icicle', 'ic_aurora', 'ic_cube'], turn: [['ic_impact', 0.75], ['ic_shatter', 0.55]], land: [['ic_whoosh', 0.5], ['ic_sparkle', 0.4]],
       fin: [['ic_fin', 0.45]], tk: 'ic_chime', tick: 1, arrive: 'ic_arrive' },
-    water: { mu: 'mu_water', loops: [['wa_loop', 0.15, 0.5]], cracks: ['wa_bub', 'wa_liq', 'wa_drop'], turn: [['wa_jump', 0.85]], land: [['wa_splash', 0.75], ['wa_wave', 0.45]],
-      fin: [['wa_fin', 0.55]], tk: 'wa_bub', tick: 1, rnd: [['wa_bub', 'wa_liq'], 0.2, 0.4], arrive: 'wa_arrive' },
-    tree: { mu: 'mu_tree', loops: [['tr_loop', 0.25, 0.6]], cracks: ['tr_creak', 'tr_twig', 'tr_branch'], turn: [['tr_leaves', 0.7], ['tr_rustle', 0.6]], land: [['tr_grow', 0.7], ['impact', 0.3]],
-      fin: [['tr_fin', 0.55]], tick: 0.9, arrive: 'tr_arrive' },
+    water: { mu: 'mu_water', loops: [['wa_loop', 0.15, 0.5]], cracks: ['wa_bub', 'wa_bub', 'wa_liq'], turn: [['wa_jump', 0.85], ['wa_drain', 0.6]], land: [['wa_wave', 0.6], ['wa_bub', 0.4]],
+      fin: [['wa_fin', 0.55]], tk: 'wa_plop', tick: 1, rnd: [['wa_bub', 'wa_liq'], 0.2, 0.4], arrive: 'wa_arrive' },
+    tree: { mu: 'mu_tree', loops: [['tr_loop', 0.25, 0.6]], cracks: ['tr_creak', 'tr_creak', 'tr_branch'], turn: [['tr_flies', 0.8], ['tr_rustle', 0.7]], land: [['tr_grow', 0.6], ['tr_birds', 0.55]],
+      fin: [['tr_fin', 0.55]], tk: 'tr_bloom', tick: 1, arrive: 'tr_rustle' },
     jelly: { mu: 'mu_jelly', loops: [['je_loop', 0.2, 0.65]], cracks: ['je_sq1', 'je_sq2', 'je_sq3'], turn: [['je_boing', 0.85], ['whoosh', 0.3]], land: [['je_splat', 0.8]],
       fin: [['je_fin', 0.55]], tk: 'je_tick', tick: 1, arrive: 'je_arrive' },
     shadow: { mu: 'mu_shadow', loops: [['sh_loop', 0.2, 0.6], ['rumble', 0.03, 0.35]], cracks: ['crack1', 'crack2', 'sh_drum'], turn: [['sh_swoosh', 0.9]], land: [['sh_smoke', 0.8], ['heart', 0.45]],
@@ -4030,17 +4040,32 @@ const RECIPES = {
   panda: { emi: 0.3, seal: 21, c1: [0.98, 0.94, 0.86], c2: [0.86, 0.22, 0.12], veil: '40,34,28', dark: 0.7, arrive: 'unroll', turn: 'page', spin: 1, shake: 'breeze', ov: 'leaves', ink: true,
     pace: { full: { arrive: 2.4, hatch: 2.8, turn: 1.6, settle: 1.8 } },
     parts: { wait: 'none', hatch: 'none', land: 'inkfall' }, burst: 'inksplash', tex: 'inkdrop', cols: ['#141210', '#1f1b17', '#0b0a09', '#c8321c'], flash: '20,18,16', ring: '#c8321c', flick: 'still', ovc: '30,28,26' },
-  light: { emi: 0.6, seal: 14, brk: 1, c1: [1.0, 0.9, 0.62], c2: [1.0, 0.98, 0.9], veil: '26,18,6', dark: 0.72, arrive: 'descend', turn: 'spin', spin: 1, shake: 'pulse', ov: 'rays',
-    parts: { wait: 'motes', hatch: 'converge', land: 'ring' }, tex: 'star', cols: ['#fff2c8', '#ffd98a', '#ffffff', '#e8b84a'], flash: '255,244,214', ring: '#fff0c0', flick: 'glow' },
+  // Light, The Sanctuary (Jon, 7 Nov): the card comes down slowly in a beam of light, sacred geometry draws itself in gold round the egg
+  // as you hold while the card rises off the ground, the egg bursts into white feathers that hang in the slow motion and drift down,
+  // the card is lifted up into the light and set down, great wings of light open behind it, and each number condenses out of light
+  light: { emi: 0.5, seal: 26, brk: 1, c1: [1.0, 0.86, 0.5], c2: [1.0, 0.98, 0.9], veil: '26,18,6', dark: 0.6, arrive: 'heaven', turn: 'ascend', spin: 1, shake: 'hover', ov: 'rays', holy: true,
+    pace: { full: { arrive: 2.6, hatch: 2.8, turn: 1.8, settle: 1.6 } },
+    beats: (TU, k) => [{ c: 0.12 * TU, d: 0.9 * k, s: 0.16 }, { c: TU + 0.05, d: 0.75 * k, s: 0.12 }],
+    parts: { wait: 'motes', hatch: 'motes', land: 'featherfall' }, burst: 'feathers', tex: 'feather', cols: ['#ffffff', '#fff6e0', '#ffffff', '#ffe8b8'], flash: '255,246,220', ring: '#fff0c0', flick: 'still' },
   // Ice, The Aurora (Jon, 7 Nov): the card skates in spinning, the northern lights wake as you hold while deep blue fractures run
   // through the ice, the egg bursts into chunks of crystal that hang in the slow motion, a ring of frost freezes the screen's edges,
   // the card pirouettes, and each number is lit by a beam of light passing through ice, split into a rainbow
   ice: { emi: 0.3, seal: 18, brk: 4, c1: [0.35, 0.78, 1.0], c2: [0.9, 0.98, 1.0], veil: '2,10,22', arrive: 'skate', turn: 'pirouette', shake: 'shiver', ov: 'snow', aurora: true,
     parts: { wait: 'snowfall', hatch: 'snowfall', land: 'powder' }, burst: 'crystals', tex: 'crystal', cols: ['#ffffff', '#d6f1ff', '#9fd8ff', '#eefaff'], flash: '150,220,255', ring: '#9fe4ff', flick: 'still' },
-  water: { seal: 3, brk: 1, c1: [0.4, 0.8, 1.0], c2: [0.8, 0.95, 1.0], veil: '0,8,22', arrive: 'float', turn: 'dive', shake: 'float', ov: 'bubbles',
-    parts: { wait: 'bubbles', hatch: 'bubbles', land: 'bubbleburst' }, tex: 'bubble', cols: ['#bfe4ff', '#ffffff', '#6ab8ff', '#dff2ff'], flash: '190,230,255', ring: '#bfe4ff', flick: 'still', ovc: '190,228,255' },
-  tree: { seal: 5, c1: [0.45, 1.0, 0.42], c2: [0.85, 1.0, 0.6], veil: '4,10,4', arrive: 'grow', turn: 'grow', shake: 'creak', ov: 'spores',
-    parts: { wait: 'rise', hatch: 'rise', land: 'leafburst' }, tex: 'leaf', cols: ['#7dff8a', '#3ccf4a', '#d8ffb0', '#1f8a3a'], flash: '200,255,190', ring: '#9dff9a', flick: 'glow', ovc: '125,255,140' },
+  // Water, The Deep (Jon, 7 Nov): the card sinks down through the water rocking gently, trailing bubbles, water rises inside the seal as
+  // you hold, the egg bursts in a crown of splashing drops that hang in the slow motion, the card spins down a whirlpool, a little school
+  // of fish swims past as it lands, and on each tile a drop falls, the number rippling into place under it
+  water: { emi: 0.35, seal: 27, brk: 1, c1: [0.4, 0.8, 1.0], c2: [0.85, 0.97, 1.0], veil: '0,8,22', arrive: 'sink', turn: 'whirl', spin: 1, shake: 'current', ov: 'bubbles', deep: true,
+    pace: { full: { arrive: 2.5, hatch: 2.6, turn: 1.7, settle: 1.6 } },
+    beats: (TU, k) => [{ c: 0.1 * TU, d: 0.92 * k, s: 0.15 }, { c: TU + 0.05, d: 0.6 * k, s: 0.09 }],
+    parts: { wait: 'bubbles', hatch: 'bubbles', land: 'bubbles' }, burst: 'crown', tex: 'bubble', cols: ['#bfe4ff', '#ffffff', '#6ab8ff', '#dff2ff'], flash: '190,230,255', ring: '#bfe4ff', flick: 'still', ovc: '190,228,255' },
+  // Tree, The Ancient Grove (Jon, 7 Nov): the card is lowered into the forest on two vines, growth rings spread out through the seal
+  // like the rings of an old tree as you hold while fireflies gather, the egg bursts into a swarm of fireflies that hang blinking in the
+  // slow motion, the card turns inside a whirl of leaves, flowers bloom open on its corners as it lands, and flowers bloom over each number
+  tree: { emi: 0.35, seal: 28, c1: [0.55, 1.0, 0.42], c2: [1.0, 0.92, 0.55], veil: '4,10,4', arrive: 'vines', turn: 'leafwhirl', spin: 1, shake: 'bend', ov: 'spores', grove: true,
+    pace: { full: { arrive: 2.6, hatch: 2.7, turn: 1.6, settle: 1.6 } },
+    beats: (TU, k) => [{ c: 0.1 * TU, d: 0.9 * k, s: 0.16 }, { c: TU + 0.05, d: 0.65 * k, s: 0.1 }],
+    parts: { wait: 'rise', hatch: 'gatherflies', land: 'rise' }, burst: 'fireflies', cols: ['#d8ff7a', '#fff2a0', '#9dff6a', '#ffe680'], flash: '200,255,190', ring: '#9dff9a', flick: 'glow', ovc: '170,255,120' },
   jelly: { seal: 4, brk: 2, c1: [1.0, 0.78, 0.2], c2: [1.0, 0.95, 0.75], veil: '16,10,2', arrive: 'squash', turn: 'wobble', shake: 'wobble', ov: 'drip',
     parts: { wait: 'bubbles', hatch: 'bubbles', land: 'bubbleburst' }, tex: 'bubble', cols: ['#ffd96a', '#fff2c0', '#e8b020', '#ffffff'], flash: '255,225,150', ring: '#ffe08a', flick: 'glow', ovc: '255,200,60' },
   // Shadow, The Eclipse (Jon, 7 Nov): a pale moon behind the card goes dark as you hold, only a violet ring is left, the egg bursts
@@ -4133,7 +4158,11 @@ RV = (() => {
   TEXS.heart = spriteTex((x, S) => { x.translate(S / 2, S / 2 + S * 0.04); const s = S * 0.42; x.beginPath(); x.moveTo(0, s * 0.62);
       x.bezierCurveTo(-s * 1.25, -s * 0.15, -s * 0.6, -s * 1.05, 0, -s * 0.45); x.bezierCurveTo(s * 0.6, -s * 1.05, s * 1.25, -s * 0.15, 0, s * 0.62); x.closePath();
       x.fillStyle = '#ffffff'; x.fill(); x.fillStyle = 'rgba(255,255,255,0.55)'; x.beginPath(); x.ellipse(-s * 0.38, -s * 0.38, s * 0.16, s * 0.1, -0.6, 0, 7); x.fill(); }, 96);
-  const SOLID = { petal: 1, leaf: 1, coin: 1, smoke: 1, crystal: 1, ghost: 1, inkdrop: 1, heart: 1 };                  // shapes that sit on top, rather than glowing
+  TEXS.feather = spriteTex((x, S) => { x.translate(S / 2, S / 2); x.rotate(-0.5); const L = S * 0.44;
+      x.fillStyle = '#ffffff'; x.beginPath(); x.moveTo(0, -L); x.quadraticCurveTo(L * 0.42, -L * 0.2, L * 0.08, L * 0.8); x.lineTo(-L * 0.04, L * 0.8); x.quadraticCurveTo(-L * 0.38, -L * 0.25, 0, -L); x.fill();
+      x.strokeStyle = 'rgba(210,190,150,0.8)'; x.lineWidth = S * 0.018; x.beginPath(); x.moveTo(0, -L * 0.9); x.quadraticCurveTo(L * 0.04, 0, 0.02 * L, L); x.stroke();
+      x.strokeStyle = 'rgba(200,185,150,0.35)'; x.lineWidth = S * 0.006; for (let k = 0; k < 9; k++) { const y = -L * 0.75 + k * L * 0.17; x.beginPath(); x.moveTo(0, y); x.lineTo(L * 0.3, y - L * 0.12); x.moveTo(0, y); x.lineTo(-L * 0.26, y - L * 0.12); x.stroke(); } }, 96);
+  const SOLID = { petal: 1, leaf: 1, coin: 1, smoke: 1, crystal: 1, ghost: 1, inkdrop: 1, heart: 1, feather: 1 };                  // shapes that sit on top, rather than glowing
   const grp = new THREE.Group(); grp.visible = false; scene.add(grp);
   const aura = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.4), new THREE.MeshBasicMaterial({ map: glowT, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, opacity: 0 }));
   aura.position.z = -0.35; aura.renderOrder = -1; grp.add(aura);
@@ -4278,6 +4307,22 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       vec2 g = sv * vec2(15.0, 8.4), id = floor(g), f = fract(g) - 0.5 - (vec2(shs(id), shs(id + 3.1)) - 0.5) * 0.4;
       float on = step(shs(id + 5.5), uH * 0.95), rad = on * (0.08 + 0.32 * uH * shs(id + 2.2)), d = length(f);
       glow += uC1 * (exp(-abs(d - rad) / 0.025) * 1.8 + smoothstep(rad, rad - 0.06, d) * 0.6) * on * (0.6 + 1.2 * uH) * uFlick + uC1 * 0.08 * uH;
+    } else if (uMode > 27.5) {                  // growth rings spread out through the seal from the egg like the rings of an old tree, the newest brightest
+      float wob = (sfb(vec2(ang * 1.6, uSeed)) - 0.5) * 0.05 + (n - 0.5) * 0.02, rr = r + wob, reach = uH * 0.95;
+      float ring = pow(0.5 + 0.5 * cos(rr * 92.0), 10.0) * (1.0 - smoothstep(reach - 0.03, reach, rr)) * step(0.17, rr);
+      float edge = exp(-abs(rr - reach) / 0.006) * step(0.01, uH);
+      glow += mix(uC1, uC2, smoothstep(0.2, 0.9, rr / max(reach, 0.01))) * ring * (0.2 + 0.5 * uH) + uC2 * edge * 1.2;
+    } else if (uMode > 26.5) {                  // water rises inside the seal as it is held: a moving surface, light rippling below it, bubbles going up
+      float lv = -0.52 + uH * 1.02 + 0.018 * sin(q.x * 11.0 + uT * 2.1) + 0.009 * sin(q.x * 27.0 - uT * 3.3), dl = q.y - lv;
+      float below = 1.0 - smoothstep(-0.004, 0.004, dl), caus = pow(0.5 + 0.5 * sin(q.x * 23.0 + uT * 1.3 + sin(q.y * 17.0 - uT)) * sin(q.y * 19.0 - uT * 1.7 + sin(q.x * 13.0)), 5.0);
+      vec2 g = vec2(q.x * 9.0, q.y * 9.0 - uT * 1.2), id = floor(g), f = fract(g) - 0.5 - (vec2(shs(id), shs(id + 4.1)) - 0.5) * 0.5; float bb = step(0.82, shs(id + 9.3)) * exp(-pow((length(f) - 0.14) / 0.03, 2.0));
+      glow += (uC1 * (0.12 + caus * 0.9) + uC2 * bb * 0.9) * below * (0.4 + 0.8 * uH) * step(0.01, uH) + uC2 * exp(-abs(dl) / 0.004) * step(0.01, uH) * (1.0 + uH);
+    } else if (uMode > 25.5) {                  // sacred geometry: the flower of life draws itself in gold out from the egg as it is held, ring by ring
+      float R0 = 0.105, rr = uH * 0.42;
+      for (int i = -2; i <= 2; i++) for (int j = -2; j <= 2; j++) { if (abs(i + j) > 2) continue; vec2 c = R0 * vec2(float(i) + float(j) * 0.5, float(j) * 0.866);
+        float on = smoothstep(length(c) - 0.02, length(c) + 0.04, rr), d = abs(length(q - c) - R0);
+        glow += uC1 * (exp(-d / 0.0025) * 1.3 + exp(-d / 0.02) * 0.12) * on; }
+      float d3 = abs(r - R0 * 3.0); glow += uC1 * exp(-d3 / 0.003) * smoothstep(0.8, 0.98, uH) * 1.6 + uC2 * exp(-r / 0.25) * uH * uH * 0.35;
     } else if (uMode > 24.5) {                  // arcs of electricity crawl in from the card's edges toward the egg as it is held, flickering
       for (int i = 0; i < 7; i++) { float fi = float(i), a = fi * 0.8976 + uSeed, ca = cos(a), sa = sin(a); vec2 lq = vec2(ca * q.x + sa * q.y, -sa * q.x + ca * q.y);
         float fr = floor(uT * 13.0 + fi * 3.0), jag = (snz(vec2(lq.x * 15.0, fr + fi * 7.0)) - 0.5) * 0.1 * (lq.x - 0.18) + (snz(vec2(lq.x * 40.0, fr * 1.7)) - 0.5) * 0.025;
@@ -4608,6 +4653,14 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     }
     if (st.mint > 0.002) { const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7); g.addColorStop(0, `rgba(140,255,215,${0.22 * st.mint})`); g.addColorStop(1, `rgba(255,200,120,${0.12 * st.mint})`); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h); }
     if (st.gh) ghostFx(ctx, st.gh, st.t);
+    if (st.vine >= 0) vineFx(ctx, w, h, st.rect, st.t, st.vine);
+    if (st.lwhirl >= 0) lwhirlFx(ctx, w, h, st.rect, st.t, st.lwhirl);
+    if (st.bloom >= 0) bloomFx(ctx, w, h, st.rect, st.t, st.bloom);
+    if (st.trail >= 0) trailFx(ctx, w, h, st.rect, st.trail);
+    if (st.whirl >= 0) whirlFx(ctx, w, h, st.rect, st.whirl);
+    if (st.fish >= 0) fishFx(ctx, w, h, st.rect, st.fish);
+    if (st.beam > 0.002) beamFx(ctx, w, h, st.rect, st.beam);
+    if (st.wings >= 0) wingsFx(ctx, w, h, st.rect, st.wings);
     if (st.bolt >= 0) boltFx(ctx, w, h, st.rect, st.bolt, st.boltSeed);
     if (st.arcs >= 0) arcsFx(ctx, w, h, st.rect, st.t, st.arcs);
     if (st.balloon >= 0) balloonFx(ctx, w, h, st.rect, st.t, st.balloon);
@@ -4783,6 +4836,16 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         op = (i % 2 ? 0 : 0.22 + 0.3 * k) * (0.7 + 0.3 * Math.sin(t * 1.3 + p.ph)); sc = p.s * 4 * (1.2 - 0.5 * k); rot = a * 0.5; }                     // shadow: smoke drawn in toward the egg
       else if (role === 'inkcurl') { const tt = u, life = 1.7; x0 = p.v.x * 0.55 * tt * (1 - tt * 0.15); y0 = baseY + p.v.y * 0.4 * tt + 0.3 * tt * tt; z0 = -0.25 + p.v.z * tt * 0.12;
         op = Math.min(1, tt * 6) * Math.pow(Math.max(0, 1 - tt / life), 1.6) * (i % 3 ? 0 : 0.7); sc = p.s * (2.2 + tt * 2.6); rot = tt * (0.6 + p.sp * 2) + p.ph; }       // shadow: the egg's smoke curls away and thins
+      else if (role === 'gatherflies') { const a = p.a + t * p.sp * 0.6, rr = p.r * (1.3 - 0.75 * k * k); x0 = Math.cos(a) * rr * 1.3; y0 = WY + Math.sin(a) * rr * p.el + Math.sin(t * 1.7 + p.ph) * 0.06; z0 = (p.z - 0.2) * (1 - k);      // tree: fireflies gathering round the egg as it is held
+        op = (i % 3 ? 0 : 1) * (0.25 + 0.75 * k) * Math.pow(0.5 + 0.5 * Math.sin(t * (2 + p.sp * 4) + p.ph * 5), 3); sc = p.s * 0.9; }
+      else if (role === 'fireflies') { const tt = u, out = 1 - Math.exp(-tt * 2.8), up = Math.max(0, tt - 0.8), a = p.a + up * 1.4;      // tree: a swarm of fireflies, hanging and blinking, then spiralling up
+        if (i % 2) { p.m.material.opacity = 0; return; } const rr = (0.4 + hash(i + 671) * 1.1) * out * (1 + up * 0.3); x0 = Math.cos(a) * rr * 1.2; y0 = WY + Math.sin(a) * rr * 0.55 + up * up * (0.8 + hash(i + 672)); z0 = 0.3 + (hash(i + 673) - 0.5) * 0.5;
+        op = Math.min(1, tt * 10) * Math.max(0, 1 - up / 2.2) * (0.35 + 0.65 * Math.pow(0.5 + 0.5 * Math.sin(t * (3 + p.sp * 5) + p.ph * 7), 2)); sc = p.s * 1.1; }
+      else if (role === 'crown') { const tt = u, a = p.a, R0 = 0.3 + (1 - Math.exp(-tt * 4)) * (0.35 + hash(i + 641) * 0.3), up = (2.0 + hash(i + 642) * 1.8) * tt - 2.6 * tt * tt;      // water: a crown of drops splashing up out of the egg
+        x0 = Math.cos(a) * R0 * 1.3; y0 = WY - 0.1 + Math.max(-0.6, up) * (0.6 + 0.4 * hash(i + 643)) + Math.sin(a) * R0 * 0.38; z0 = 0.3 + Math.sin(a) * R0 * 0.4; op = Math.min(1, tt * 14) * Math.max(0, 1 - tt / 1.6); sc = p.s * (i % 5 ? 1.0 : 1.8); }
+      else if (role === 'feathers' || role === 'featherfall') { const tt = role === 'featherfall' ? u + pace.turn : u, out = 1 - Math.exp(-tt * 3.2), dn = Math.max(0, tt - 0.6);      // light: white feathers, hanging, then drifting down
+        if (i % 3) { p.m.material.opacity = 0; return; } x0 = p.v.x * 0.75 * out + Math.sin(dn * 2.2 + p.ph) * 0.22 * Math.min(1, dn); y0 = WY + p.v.y * 0.55 * out + 0.2 * out - dn * (0.35 + hash(i + 631) * 0.3); z0 = 0.3 + p.v.z * 0.2;
+        op = Math.min(1, tt * 8) * Math.max(0, 1 - Math.max(0, tt - 2.6) / 1.2); sc = p.s * (i % 9 ? 3.4 : 5); rot = Math.sin(dn * 2.2 + p.ph) * 0.7 + p.ph; }
       else if (role === 'zap') { const tt = u, g = 3;      // lightning: sparks thrown out where the bolt hits
         x0 = p.v.x * 1.3 * tt; y0 = WY + p.v.y * 1.1 * tt - 0.5 * g * tt * tt; z0 = 0.3 + p.v.z * tt * 0.3; op = Math.min(1, tt * 20) * Math.max(0, 1 - tt / 1.0) * (0.6 + 0.4 * Math.sin(t * 40 + p.ph)); sc = p.s * 1.1; }
       else if (role === 'hearts' || role === 'heartrise') { const tt = role === 'heartrise' ? u + pace.turn : u, up = Math.max(0, tt - 0.9);      // pink: a cloud of little hearts, hanging, then floating up
@@ -4872,6 +4935,9 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       else if (R.arrive === 'squash') { const x = clamp01(A / pace.arrive), y = x < 0.6 ? 1 - Math.pow(x / 0.6, 2) : 0, sq = x < 0.6 ? 0 : Math.sin((x - 0.6) / 0.4 * Math.PI * 3) * Math.exp(-(x - 0.6) * 6) * 0.16;
         card.position.y = WY + 2.2 * y; card.scale.set(WS * (1 + sq), WS * (1 - sq), WS); }
       else if (R.arrive === 'slide') { card.position.x = 5 * k * k; card.rotation.y += k * 0.5; card.rotation.z = Math.sin(A * 9) * 0.03 * k; }
+      else if (R.arrive === 'vines') { const e = easeOut(clamp01(A / pace.arrive)); card.position.y = WY + 2.0 * (1 - e); card.rotation.z = Math.sin(A * 2.4) * 0.09 * k; card.position.x = Math.sin(A * 2.4 + 0.5) * 0.12 * k; }   // lowered into the forest on two vines, swinging
+      else if (R.arrive === 'sink') { const e = easeOut(clamp01(A / pace.arrive)); card.position.y = WY + 2.2 * (1 - e); card.rotation.z = Math.sin(A * 1.9) * 0.1 * k; card.rotation.x += Math.sin(A * 1.4) * 0.12 * k; card.position.x = Math.sin(A * 1.2) * 0.2 * k; }   // sinks down through the water, rocking
+      else if (R.arrive === 'heaven') { const e = easeOut(clamp01(A / pace.arrive)); card.position.y = WY + 2.1 * (1 - e); card.rotation.x -= 0.25 * (1 - e); card.rotation.y += Math.sin(A * 1.1) * 0.08 * k; }   // comes down slowly in a beam of light
       else if (R.arrive === 'strike') { const x = A / pace.arrive; if (x < 0.28) card.scale.setScalar(0.0001); else { const f = easeOut((x - 0.28) / 0.72); card.scale.setScalar(WS * (1.07 - 0.07 * f)); card.rotation.z = Math.sin(A * 40) * 0.02 * (1 - f); } }   // lightning strikes and it is there
       else if (R.arrive === 'balloon') { const e = easeOut(clamp01(A / pace.arrive)); card.position.y = WY + 1.5 * (1 - e); card.rotation.z = Math.sin(A * 2.1) * 0.07 * k; card.position.x = Math.sin(A * 1.3) * 0.18 * k; }   // floats down held by two heart balloons
       else if (R.arrive === 'stalk') { const e = clamp01(A / pace.arrive), sm = (a0, a1) => { const x = clamp01((e - a0) / (a1 - a0)); return x * x * (3 - 2 * x); }, p = 0.55 * sm(0, 0.38) + 0.45 * sm(0.52, 0.88), mv = Math.sin(Math.min(1, e / 0.38) * Math.PI) + Math.sin(clamp01((e - 0.52) / 0.36) * Math.PI);
@@ -4891,7 +4957,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     lights((R.arrive === 'fade' || R.arrive === 'emerge') && !film ? 0.42 * (0.25 + 0.75 * ar) : 0.42); sweepForce = 9; SH.forEach(s => s.m.visible = false); SU.uT.value = t;
     parts(R.parts.wait, t, 0.15, 0); PT.forEach(p => p.m.material.opacity *= ar); EGG.wait(t, ar);
     Object.assign(S, { veil: 0.82 * Math.min(1, film ? 1 : A / 0.6), flash: 0, under: R.under ? 0.25 * ar : 0, ov: 0.55 * ar, warp: 0, sheet: 0, strike: 0, seam: 0, t });
-    eclipse('wait', t, ar, A); forge('wait', t, ar); aurora('wait', t, ar); haunt('wait', t, ar, A); hole('wait', t, ar, A); inkfx('wait', t, ar, A); racefx('wait', t, ar, A); huntfx('wait', t, ar, A); lovefx('wait', t, ar, A); stormfx('wait', t, ar, A);
+    eclipse('wait', t, ar, A); forge('wait', t, ar); aurora('wait', t, ar); haunt('wait', t, ar, A); hole('wait', t, ar, A); inkfx('wait', t, ar, A); racefx('wait', t, ar, A); huntfx('wait', t, ar, A); lovefx('wait', t, ar, A); stormfx('wait', t, ar, A); holyfx('wait', t, ar, A); deepfx('wait', t, ar, A); grovefx('wait', t, ar, A);
     hideTiles(); back(false);
   }
   function poseHatch(t, e, ht) {
@@ -4908,6 +4974,9 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     else if (R.shake === 'tick') { const q = t * 2, f = q - Math.floor(q), j = Math.exp(-f * 14); card.rotation.z = j * 0.016 * (hash(Math.floor(q)) - 0.5) * 2 * (0.4 + e) * (RM ? 0 : 1); card.position.y += j * 0.006 * (0.4 + e); }
     else if (R.shake === 'pulse') { card.scale.multiplyScalar(1 + Math.sin(t * 4.5) * 0.012 * e); card.rotation.y += Math.sin(t * 0.9) * 0.05 * e; }
     else if (R.shake === 'creak') { const q = Math.floor(t * 1.6), j = Math.exp(-(t * 1.6 - q) * 6) * (hash(q) < 0.5 ? 1 : -1); card.rotation.z = Math.sin(t * 1.3) * 0.035 * e + j * 0.012 * sh; }
+    else if (R.shake === 'bend') { const q2 = Math.floor(t * 1.4), j = Math.exp(-(t * 1.4 - q2) * 5) * (hash(q2) < 0.5 ? 1 : -1); card.rotation.z = Math.sin(t * 0.7) * 0.05 * e + j * 0.01 * sh; card.position.x += Math.sin(t * 0.7) * 0.03 * e; card.rotation.y += Math.sin(t * 0.5) * 0.04 * e; }   // bending like a trunk in the wind, creaking
+    else if (R.shake === 'current') { card.position.x += Math.sin(t * 1.4) * 0.05 * e; card.rotation.z = Math.sin(t * 1.4 + 0.6) * 0.04 * e; card.rotation.y += Math.sin(t * 1.1) * 0.06 * e; card.position.y += Math.sin(t * 2.2) * 0.015 * e; }   // swaying in the current
+    else if (R.shake === 'hover') { const lf = e * e * (3 - 2 * e); card.position.y += lf * 0.1 + Math.sin(t * 1.8) * 0.012 * e; card.rotation.y += Math.sin(t * 0.9) * 0.03 * e; card.rotation.x += Math.sin(t * 1.3) * 0.015 * e; }   // rises off the ground, weightless
     else if (R.shake === 'beat') { const bp = 1 - 0.6 * e, bt = (t / bp) % 1, pu = Math.exp(-bt * 12) + 0.6 * Math.exp(-Math.max(bt - 0.2, 0) * 12) * (bt > 0.2 ? 1 : 0); card.scale.multiplyScalar(1 + pu * 0.022 * (0.3 + e) * (RM ? 0 : 1)); card.rotation.z = Math.sin(t * 1.1) * 0.02 * e; }   // beating like a heart
     else if (R.shake === 'prowl') { const br = Math.sin(t * 2.3); card.scale.multiplyScalar(1 + br * 0.012 * (0.4 + e)); card.position.y += br * 0.012 * (0.4 + e); card.position.x += Math.sin(t * 55) * 0.006 * sh; card.rotation.z = Math.sin(t * 0.8) * 0.02 * e; }   // heavy breathing, a growl building
     else if (R.shake === 'rev') { const pu = Math.pow(0.5 + 0.5 * Math.sin(t * 13.8), 4) * (RM ? 0 : 1); card.position.x += Math.sin(t * 61) * 0.004 * (0.3 + e) * (1 + pu * 2); card.rotation.z = Math.sin(t * 47) * 0.006 * (0.3 + e) * (1 + pu); card.position.y += pu * 0.012 * e; card.rotation.x -= pu * 0.02 * e; }   // the engine revving
@@ -4925,7 +4994,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     parts(R.parts.hatch, t, e, 0); EGG.hatch(t, e, RM);
     let sheet = 0; if (theme === 'lightning') { const q = Math.floor(t * 9); sheet = hash(q + 99) < 0.08 + e * 0.22 ? (0.05 + e * 0.12) * (1 - (t * 9 - q)) : 0; }
     Object.assign(S, { veil: 0.82 + e * 0.06, flash: 0, under: R.under ? 0.25 + e * 0.75 : 0, ov: 0.55 + 0.45 * e, warp: 0, sheet, strike: 0, seam: theme === 'twoface' ? e : 0, t });
-    eclipse('hatch', t, e); forge('hatch', t, e); aurora('hatch', t, e); haunt('hatch', t, e); hole('hatch', t, e); inkfx('hatch', t, e); racefx('hatch', t, e); huntfx('hatch', t, e); lovefx('hatch', t, e); stormfx('hatch', t, e);
+    eclipse('hatch', t, e); forge('hatch', t, e); aurora('hatch', t, e); haunt('hatch', t, e); hole('hatch', t, e); inkfx('hatch', t, e); racefx('hatch', t, e); huntfx('hatch', t, e); lovefx('hatch', t, e); stormfx('hatch', t, e); holyfx('hatch', t, e); deepfx('hatch', t, e); grovefx('hatch', t, e);
     hideTiles(); back(false);
   }
   function poseGo(t, u) {
@@ -4951,6 +5020,9 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         else if (R.turn === 'glide') { card.position.x += sw * 0.75; card.rotation.z = -sw * 0.08; }
         else if (R.turn === 'dive') card.position.y -= sw * 0.45;
         else if (R.turn === 'grow') card.scale.multiplyScalar(1 + sw * 0.18);
+        else if (R.turn === 'leafwhirl') { card.position.y += sw * 0.25; card.rotation.z = Math.sin(e * Math.PI * 2) * 0.1; }   // turns inside a whirl of leaves
+        else if (R.turn === 'whirl') { card.rotation.z = e * Math.PI * 2; card.position.z -= sw * 0.55; card.scale.multiplyScalar(1 - sw * 0.18); }   // spins down a whirlpool and back up
+        else if (R.turn === 'ascend') { card.position.y += sw * 0.62; card.scale.multiplyScalar(1 + sw * 0.06); card.rotation.x -= sw * 0.12; }   // lifted up into the light and set down
         else if (R.turn === 'jolt') { const st = Math.floor(e * 7) / 7, j = hash(Math.floor(u * 30)) - 0.5; card.rotation.y = Math.PI + (st + (e - st) * 0.25) * spin * Math.PI; card.position.x += j * 0.06 * sw; card.rotation.z = j * 0.05 * sw; }   // turns in jolts, like a strobe
         else if (R.turn === 'twirl') { card.rotation.z = e * Math.PI * 2; card.position.y += sw * 0.32; card.scale.multiplyScalar(1 - sw * 0.1); }   // twirls like a dancer
         else if (R.turn === 'leap') { card.position.z += sw * 1.2; card.position.y += sw * 0.45; card.rotation.x -= sw * 0.3; card.rotation.z = Math.sin(e * Math.PI * 2) * 0.06; }   // leaps out at you
@@ -4968,7 +5040,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
       parts(R.burst || (R.forge ? 'erupt' : 'implode'), t, 0, u); shards(u); EGG.burst(u, RM);
       const strike = theme === 'lightning' ? Math.max(0, 1 - u / 0.35) * (u < 0.05 ? u / 0.05 : 1) : 0;
       Object.assign(S, { veil: 0.88 * (1 - clamp01((u - TU + 0.2) / 1.2)), flash: strike * 0.55, under: R.under ? 1 - e * 0.5 : 0, ov: 1, warp: R.warp && !RM ? Math.sin(x0 * Math.PI) : 0, sheet: 0, strike, seed: 7, seam: theme === 'twoface' ? 1 - e * 0.3 : 0, t });
-      eclipse('turn', t, x0, e); forge('turn', t, x0, u); aurora('turn', t, x0, u); haunt('turn', t, x0, u); hole('turn', t, x0, u); inkfx('turn', t, x0, u); racefx('turn', t, x0, u); huntfx('turn', t, x0, u); lovefx('turn', t, x0, u); stormfx('turn', t, x0, u);
+      eclipse('turn', t, x0, e); forge('turn', t, x0, u); aurora('turn', t, x0, u); haunt('turn', t, x0, u); hole('turn', t, x0, u); inkfx('turn', t, x0, u); racefx('turn', t, x0, u); huntfx('turn', t, x0, u); lovefx('turn', t, x0, u); stormfx('turn', t, x0, u); holyfx('turn', t, x0, u); deepfx('turn', t, x0, u); grovefx('turn', t, x0, u);
       hideTiles(); back(false);
     } else {                                       // the landing and the journey lighting up
       const u2 = u - TU, k = Math.exp(-u2 * 4.2);
@@ -4988,7 +5060,7 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
         let flash = ui < 0 ? 0 : Math.max(0, 1 - ui / (last ? 1.1 : 0.7)) * (last ? 0.12 : 0.05), lift = (1 - clamp01(ui / 0.5)) * 0.03 * (ui >= 0 ? 1 : 0);
         let pu = 0; if (i === so) { const x = clamp01((u2 - tDone) / 1.3), pe = Math.sin(Math.PI * x); lift += pe * 0.05; pu = x > 0 && x < 1 ? x : 0; }   // the stat this trail shines brightest in
         return [s, flash, lift, wp, pu]; }, t);
-      eclipse('land', t, u2, tDone); forge('land', t, u2, TU); aurora('land', t, u2, TU); haunt('land', t, u2, tDone); hole('land', t, u2, tDone); inkfx('land', t, u2, tDone); racefx('land', t, u2, tDone); huntfx('land', t, u2, tDone); lovefx('land', t, u2, tDone); stormfx('land', t, u2, tDone);
+      eclipse('land', t, u2, tDone); forge('land', t, u2, TU); aurora('land', t, u2, TU); haunt('land', t, u2, tDone); hole('land', t, u2, tDone); inkfx('land', t, u2, tDone); racefx('land', t, u2, tDone); huntfx('land', t, u2, tDone); lovefx('land', t, u2, tDone); stormfx('land', t, u2, tDone); holyfx('land', t, u2, tDone); deepfx('land', t, u2, tDone); grovefx('land', t, u2, tDone);
       if (so >= 0 && u2 >= tDone) fire('shine', () => SND.play(theme, 'tick', 7, true));
       if (u2 > 0.35 + (n - 1) * pace.gap + pace.write * 1.3 * 0.8) fire('fin', () => SND.play(theme, 'fin'));
       if (u > end && !film) finish();
@@ -5258,6 +5330,90 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     for (let k = 0; k < 4; k++) { const s0 = (k / 4 + u2 * (0.35 + k * 0.07)) * per, L = per * 0.09; c.beginPath();
       for (let i = 0; i <= 12; i++) { const [x, y] = at(s0 + L * i / 12), j = (hash(fr * 13 + k * 7 + i) - 0.5) * Math.max(w, h) * 0.012; if (i) c.lineTo(x + j, y - j); else c.moveTo(x, y); }
       c.strokeStyle = `rgba(230,240,255,${al * (0.6 + 0.4 * hash(fr + k))})`; c.lineWidth = Math.max(1, Math.max(w, h) * 0.0018); c.stroke(); }
+    c.restore(); }
+
+  // ----- Light's sanctuary, laid over each step: the beam it comes down in, the light it is lifted into, the wings -----
+  function holyfx(step, t, a, b) {
+    const R = recipe(); S.beam = 0; S.wings = -1; if (!R.holy) return;
+    card.updateMatrixWorld(true); S.rect = cardRect();
+    if (step === 'wait') { S.beam = 0.55 * a + 0.25; }
+    else if (step === 'hatch') { S.beam = 0.8 + 0.2 * a; aura.material.color.set('#ffe6a8'); aura.material.opacity = 0.2 + 0.35 * a; }
+    else if (step === 'turn') { const x0 = a; S.beam = 1 + Math.sin(x0 * Math.PI) * 0.8; S.flash = 0.35 * Math.sin(Math.min(1, x0 / 0.6) * Math.PI); }
+    else { S.wings = a; S.beam = Math.max(0, 1 - a / 2.2); S.flash = 0.1 * Math.exp(-a * 4); ring.material.opacity *= 0.5; }
+  }
+  function beamFx(c, w, h, r, k) {                 // a beam of light pouring down from above onto the card
+    const cx = (r[0] + r[2]) / 2, cw = r[2] - r[0], top = cw * 0.25, bot = cw * 0.75; c.save();
+    const g = c.createLinearGradient(0, 0, 0, r[3]); g.addColorStop(0, `rgba(255,248,226,${0.5 * k})`); g.addColorStop(0.8, `rgba(255,240,200,${0.22 * k})`); g.addColorStop(1, 'rgba(255,236,190,0)');
+    c.fillStyle = g; c.beginPath(); c.moveTo(cx - top, 0); c.lineTo(cx + top, 0); c.lineTo(cx + bot, r[3]); c.lineTo(cx - bot, r[3]); c.closePath(); c.fill(); c.restore(); }
+  function wingsFx(c, w, h, r, u2) {               // great wings of light opening from the card's top corners
+    if (u2 < 0 || u2 > 3.2) return; const cy = r[1] + (r[3] - r[1]) * 0.12, M = Math.max(Math.min(w, h), (r[2] - r[0]) * 1.1), sp = easeOut(Math.min(1, u2 / 0.9)), al = Math.min(1, u2 / 0.25) * Math.max(0, 1 - Math.max(0, u2 - 1.9) / 1.3);
+    c.save(); c.lineCap = 'round'; c.shadowColor = 'rgba(255,214,120,0.9)'; c.shadowBlur = M * 0.025;
+    for (const sd of [-1, 1]) for (let k = 0; k < 14; k++) { const f = k / 13, ang = -(0.08 + f * 1.15) * sp - 0.1, L = M * (0.22 + 0.3 * Math.sin(f * Math.PI * 0.85 + 0.25)) * (0.35 + 0.65 * sp);
+      const ox = sd < 0 ? r[0] + (r[2] - r[0]) * 0.06 : r[2] - (r[2] - r[0]) * 0.06, tx = ox + sd * Math.cos(ang) * L, ty = cy + Math.sin(ang) * L, mx = ox + sd * Math.cos(ang + 0.4) * L * 0.55, my = cy + Math.sin(ang + 0.4) * L * 0.55 + L * 0.06;
+      const g = c.createLinearGradient(ox, cy, tx, ty); g.addColorStop(0, `rgba(255,226,150,${0.15 * al})`); g.addColorStop(0.5, `rgba(255,232,170,${0.55 * al})`); g.addColorStop(1, `rgba(255,250,230,${0.85 * al})`);
+      c.strokeStyle = g; c.lineWidth = M * (0.022 - f * 0.01); c.beginPath(); c.moveTo(ox, cy); c.quadraticCurveTo(mx, my, tx, ty); c.stroke(); }
+    c.restore(); }
+
+  // ----- Water's deep, laid over each step: the bubbles it trails as it sinks, the whirlpool, the little fish -----
+  function deepfx(step, t, a, b) {
+    const R = recipe(); S.trail = -1; S.whirl = -1; S.fish = -1; if (!R.deep) return;
+    card.updateMatrixWorld(true); S.rect = cardRect();
+    if (step === 'wait') { const A = b; if (!film && A < pace.arrive + 1.2) S.trail = A; }
+    else if (step === 'hatch') { aura.material.color.set('#6ac8ff'); aura.material.opacity = 0.15 + 0.3 * a; }
+    else if (step === 'turn') { S.whirl = b; S.flash = 0.12 * Math.exp(-Math.pow((b - 0.04) / 0.08, 2)); }
+    else { S.fish = a; S.flash = 0; ring.material.opacity *= 0.5; }
+  }
+  function trailFx(c, w, h, r, A) {                  // bubbles streaming up off the card as it sinks
+    const K = Math.max(w, h) / 1600; c.save(); c.lineWidth = Math.max(1, 1.6 * K);
+    for (let i = 0; i < 40; i++) { const born = hash(i + 651) * (pace.arrive + 0.4), age = A - born; if (age < 0 || age > 1.6) continue;
+      const x = r[0] + (r[2] - r[0]) * hash(i + 652) + Math.sin(age * 6 + i) * 6 * K, y = r[1] + (r[3] - r[1]) * 0.3 * hash(i + 653) - age * (180 + 220 * hash(i + 654)) * K, rad = (3 + 9 * hash(i + 655)) * K;
+      c.strokeStyle = `rgba(220,245,255,${0.7 * (1 - age / 1.6)})`; c.beginPath(); c.arc(x, y, rad, 0, 7); c.stroke(); c.fillStyle = `rgba(255,255,255,${0.5 * (1 - age / 1.6)})`; c.beginPath(); c.arc(x - rad * 0.35, y - rad * 0.35, rad * 0.25, 0, 7); c.fill(); }
+    c.restore(); }
+  function whirlFx(c, w, h, r, u) {                   // the whirlpool the card spins down
+    const TU = pace.turn; if (u < 0 || u > TU + 0.3) return; const cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2, M = Math.max(w, h), al = Math.sin(Math.min(1, u / TU) * Math.PI); c.save(); c.lineCap = 'round';
+    for (let k = 0; k < 7; k++) { c.beginPath(); for (let i = 0; i <= 40; i++) { const f = i / 40, a = k * 0.8976 + u * 5 + f * 4.2, rr = M * (0.05 + f * 0.55); const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr * 0.55; if (i) c.lineTo(x, y); else c.moveTo(x, y); }
+      c.strokeStyle = `rgba(200,236,255,${0.32 * al})`; c.lineWidth = M * 0.006; c.stroke(); }
+    c.restore(); }
+  function fishFx(c, w, h, r, u2) {                    // a little school of fish swimming past as the card lands
+    if (u2 < 0.3 || u2 > 4.2) return; const M = Math.min(w, h), f = (u2 - 0.3) / 3.9, s = M * 0.03; c.save();
+    for (let i = 0; i < 11; i++) { const lag = hash(i + 661) * 0.18, x = -w * 0.15 + (w * 1.3) * (f - lag + 0.1), y = r[1] - (r[3] - r[1]) * 0.1 + (hash(i + 662) - 0.5) * M * 0.28 + Math.sin(u2 * 3 + i) * M * 0.015;
+      if (x < -s * 3 || x > w + s * 3) continue; const sz = s * (0.7 + 0.6 * hash(i + 663)), wig = Math.sin(u2 * 14 + i * 2) * 0.35;
+      c.save(); c.translate(x, y); c.fillStyle = 'rgba(255,190,90,0.92)'; c.beginPath(); c.ellipse(0, 0, sz * 1.2, sz * 0.55, 0, 0, 7); c.fill();
+      c.beginPath(); c.moveTo(-sz * 1.0, 0); c.lineTo(-sz * 1.8, -sz * 0.55 + wig * sz); c.lineTo(-sz * 1.8, sz * 0.55 + wig * sz); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(255,255,255,0.9)'; c.beginPath(); c.arc(sz * 0.6, -sz * 0.1, sz * 0.18, 0, 7); c.fill(); c.fillStyle = '#123'; c.beginPath(); c.arc(sz * 0.65, -sz * 0.1, sz * 0.09, 0, 7); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = Math.max(1, sz * 0.12); c.beginPath(); c.moveTo(0, -sz * 0.5); c.lineTo(0, sz * 0.5); c.stroke(); c.restore(); }
+    c.restore(); }
+
+  // ----- Tree's grove, laid over each step: the vines it comes down on, the whirl of leaves, flowers on its corners -----
+  function grovefx(step, t, a, b) {
+    const R = recipe(); S.vine = -1; S.lwhirl = -1; S.bloom = -1; if (!R.grove) return;
+    card.updateMatrixWorld(true); S.rect = cardRect();
+    if (step === 'wait') { const A = b; if (!film) S.vine = Math.max(0, (A - pace.arrive * 0.95) / 1.2); }
+    else if (step === 'hatch') { aura.material.color.set('#c8ff7a'); aura.material.opacity = 0.12 + 0.3 * a; }
+    else if (step === 'turn') { S.lwhirl = b; }
+    else { S.bloom = a; ring.material.opacity *= 0.5; S.flash *= 0.35; aura.material.opacity *= 0.4; }
+  }
+  function leafShape(c, x, y, s, rot, col) { c.save(); c.translate(x, y); c.rotate(rot); c.fillStyle = col; c.beginPath(); c.moveTo(0, -s); c.quadraticCurveTo(s * 0.7, -s * 0.2, 0, s); c.quadraticCurveTo(-s * 0.7, -s * 0.2, 0, -s); c.fill();
+    c.strokeStyle = 'rgba(20,60,10,0.5)'; c.lineWidth = Math.max(1, s * 0.08); c.beginPath(); c.moveTo(0, -s * 0.85); c.lineTo(0, s * 0.85); c.stroke(); c.restore(); }
+  function vineFx(c, w, h, r, t, up) {                 // the two vines the card hangs from; they pull back up once it has arrived
+    if (up >= 1) return; const cw = r[2] - r[0], K = Math.max(w, h) / 1600, al = 1 - up; c.save(); c.globalAlpha = al;
+    for (const [sd, ph] of [[-1, 0], [1, 1.3]]) { const ax = sd < 0 ? r[0] + cw * 0.12 : r[2] - cw * 0.12, ay = r[1] + (r[1]) * 0 - up * r[1] * 1.2, top = -10;
+      c.strokeStyle = '#7fae45'; c.lineWidth = 10 * K; c.lineCap = 'round'; c.beginPath(); c.moveTo(ax + Math.sin(t + ph) * 10 * K, top); c.quadraticCurveTo(ax + sd * 30 * K + Math.sin(t * 1.3 + ph) * 18 * K, (top + ay) / 2, ax, ay); c.stroke();
+      for (let k = 1; k < 7; k++) { const f = k / 7, y = top + (ay - top) * f, x = ax + sd * 30 * K * 2 * f * (1 - f) + Math.sin(t + ph) * 10 * K * (1 - f); leafShape(c, x + (k % 2 ? 12 : -12) * K, y, 15 * K, (k % 2 ? 0.9 : -0.9) + Math.sin(t * 2 + k) * 0.15, k % 3 ? '#8fd24f' : '#b4e36a'); } }
+    c.restore(); }
+  function lwhirlFx(c, w, h, r, t, u) {                // a whirl of leaves round the card as it turns
+    const TU = pace.turn; if (u < 0 || u > TU + 0.4) return; const cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2, M = Math.max(r[2] - r[0], r[3] - r[1]), al = Math.min(1, u / 0.2) * Math.max(0, 1 - (u - TU + 0.2) / 0.6), K = Math.max(w, h) / 1600;
+    c.save(); c.globalAlpha = al; for (let i = 0; i < 26; i++) { const a = hash(i + 681) * 6.283 + u * (3 + hash(i + 682) * 2), rr = M * (0.45 + 0.25 * hash(i + 683)) * (0.8 + 0.2 * Math.sin(u * 3 + i));
+      leafShape(c, cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.5, (10 + 10 * hash(i + 684)) * K * 1.4, a + 1.6, ['#6fbf3a', '#9bd84e', '#d9b84a', '#4f9a2e'][i % 4]); }
+    c.restore(); }
+  function bloomFx(c, w, h, r, t, u2) {                // flowers blooming open on the card's corners, glowing pollen drifting off them
+    if (u2 < 0) return; const K = Math.max(w, h) / 1600, M = Math.min(r[2] - r[0], r[3] - r[1]); c.save();
+    const C = [[r[0], r[1], 0.2], [r[2], r[1], 0.35], [r[2], r[3], 0.5], [r[0], r[3], 0.65]];
+    C.forEach(([x, y, d0], k) => { const g = Math.max(0, Math.min(1, (u2 - d0) / 0.7)), ge = backOut(g), s = M * 0.11 * ge; if (g <= 0) return;
+      for (let j = 0; j < 3; j++) leafShape(c, x + Math.cos(j * 2.1 + k) * s * 1.1, y + Math.sin(j * 2.1 + k) * s * 1.1, s * 0.7, j * 2.1 + k + 1.57, '#5fa83a');
+      for (let p = 0; p < 5; p++) { const a = p * 1.2566 + k + u2 * 0.15; c.fillStyle = k % 2 ? '#ffd1e8' : '#fff3c4'; c.beginPath(); c.ellipse(x + Math.cos(a) * s * 0.55, y + Math.sin(a) * s * 0.55, s * 0.5, s * 0.3, a, 0, 7); c.fill(); }
+      c.fillStyle = '#ffcf3a'; c.beginPath(); c.arc(x, y, s * 0.24, 0, 7); c.fill();
+      for (let p = 0; p < 6; p++) { const q = (u2 - d0 - 0.4 - p * 0.25) % 2.2; if (q < 0) continue; c.fillStyle = `rgba(255,240,150,${0.8 * Math.max(0, 1 - q / 2.2)})`; c.beginPath(); c.arc(x + Math.sin(q * 3 + p) * 20 * K, y - q * 60 * K, 3 * K, 0, 7); c.fill(); } });
     c.restore(); }
 
   // ----- running a live reveal -----
