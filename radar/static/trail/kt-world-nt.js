@@ -57,7 +57,9 @@ window.SKY_L = (() => {
   try { renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: false, powerPreference: 'high-performance' }); }
   catch (e) { return; }                                   // no WebGL: the painted first picture stays
   const phone = matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 600;
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, phone ? 1.6 : 1.75));
+  const PR = [Math.min(devicePixelRatio || 1, phone ? 1.6 : 1.75)]; let prI = 0;
+  renderer.setPixelRatio(PR[0]);
+  for (const k of [0.82, 0.68, 0.56]) { const v = Math.max(1, PR[0] * k); if (v < PR[PR.length - 1] - 0.05) PR.push(v); } if (PR[PR.length - 1] > 0.85) PR.push(phone ? 0.85 : 0.8);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(45, 1, 1, 30000);
@@ -500,12 +502,11 @@ window.SKY_L = (() => {
   const apAt = (x) => { if (x <= AP.START) return 0; x -= AP.START; for (let i = 0; i < STOPS; i++) { if (x < AP.MOVE) return (i + x / AP.MOVE) / STOPS; x -= AP.MOVE; if (i < STOPS - 1) { if (x < AP.DWELL) return (i + 1) / STOPS; x -= AP.DWELL; } } return 1; };
   const apTick = (now) => { const dt = AP.last == null ? 0 : Math.min(.5, now - AP.last); AP.last = now; AP.dt = dt; if (SHOT || DOOR.t0 || !window.SKY_READY) return;
     if (RM.matches) { if (AP.s < AP.START + 1) { AP.s += dt; if (AP.s >= AP.START + 1) window.SKY_AT_HATCH(); } return; }   // reduced motion: no flight, the Hatchery after the title
-    // the card builds behind the sky (a heavy moment for the device): the flight waits on the title until it is built,
-    // at most 6 seconds, so the first leg never stutters
-    if (AP.s >= AP.START && !AP.go) { AP.wait += dt; AP.go = !window.KT_TRAIL || document.body.classList.contains('ready') || AP.wait > 6 || AP.fast; if (!AP.go) return; }
+    // the card is only built once the flight has landed at the Hatchery (the device's heavy moment, kept off the flight)
     // Skip: the rest of the flight at four times the pace
     if (!still.user || AP.fast) AP.s = Math.min(AP_END, AP.s + dt * (AP.fast ? 4 : 1));
     target = Math.max(target, apAt(AP.s));
+    if (AP.s >= AP_END && !AP.landed) { AP.landed = true; try { (window.KT_AT_GATE || (() => {}))(); } catch (e) {} }
     if (AP.s >= AP_END - AP.MOVE * .5 && !AP.hid) { AP.hid = true; const b = $('skip'); if (b) b.classList.add('gone'); } };   // nearly there: nothing left to skip
   { const b = $('skip'); if (b) b.addEventListener('click', (e) => { e.stopPropagation(); AP.fast = true; if (AP.s < AP.START) AP.s = AP.START; b.classList.add('gone'); }); }
   let mx = 0, my = 0, cmx = 0, cmy = 0;
@@ -651,17 +652,22 @@ window.SKY_L = (() => {
   window.SKY_DOOR_GO = () => { if (DOOR.t0 || HS.state !== 1) return false; target = 1; DOOR.t0 = clock.getElapsedTime(); return true; };
   if (SHOT) window.SKY_REVEAL = (r, hold) => { DOOR.r = r; window.SKY_HOLD = hold; };   // test stills of the way in, at reveal clock r
 
+  const GOV = { n: 0, sum: 0, age: 0 }; window.SKY_PR = () => [PR, prI, GOV, AP.dt];
   function frame() {
     if (stopped) return;
     const time = SHOT ? (window.SKY_TIME != null ? window.SKY_TIME : +(P.get('time') || 7)) : clock.getElapsedTime() + 1.5;
-    apTick(clock.getElapsedTime()); t += (target - t) * (SHOT ? 1 : 1 - Math.exp(-3.7 * (AP.dt || 1 / 60)));   // the same glide at any frame rate cmx += (mx - cmx) * .04; cmy += (my - cmy) * .04;
+    // the same glide at any frame rate
+    apTick(clock.getElapsedTime()); t += (target - t) * (SHOT ? 1 : 1 - Math.exp(-3.7 * (AP.dt || 1 / 60))); cmx += (mx - cmx) * .04; cmy += (my - cmy) * .04;
     if (!SHOT && DOOR.t0) { DOOR.r = clock.getElapsedTime() - DOOR.t0; if (DOOR.r > 4.2 && !DOOR.told) { DOOR.told = true; try { (window.KT_SKY_IN || (() => {}))(); } catch (e) {} } }
     pose(time); renderer.render(scene, camera);
+    // a device that cannot keep up draws the sky at a lower resolution, a step at a time, so the flight stays smooth for everyone
+    if (!SHOT && window.SKY_READY && AP.dt > 0) { GOV.n++; GOV.sum += AP.dt; GOV.age += AP.dt;
+      if (GOV.age > 1.6 && GOV.n >= 8) { const avg = GOV.sum / GOV.n; if (avg > 1 / 42 && prI < PR.length - 1) { prI++; renderer.setPixelRatio(PR[prI]); layout(); } GOV.n = 0; GOV.sum = 0; GOV.age = .8; } }
     if (!SHOT && !stopped) requestAnimationFrame(frame);
   }
   let stopped = false;
   window.SKY_STOP = () => { if (stopped) return; stopped = true; try { renderer.dispose(); renderer.forceContextLoss(); } catch (e) {} };   // the card has the device to itself after the way in
-  window.SKY_AT_HATCH = () => { AP.s = AP_END; target = 1; t = Math.max(t, .995); const b = $('skip'); if (b) b.classList.add('gone'); };
+  window.SKY_AT_HATCH = () => { AP.s = AP_END; target = 1; t = Math.max(t, .995); if (!AP.landed) { AP.landed = true; try { (window.KT_AT_GATE || (() => {}))(); } catch (e) {} } const b = $('skip'); if (b) b.classList.add('gone'); };
   window.SKY_FRAME = frame; window.SKY_T = () => [+t.toFixed(3), +target.toFixed(3), +AP.s.toFixed(1)];
   if (SHOT) window.SKY_GO = (v, tm) => { target = t = v; window.SKY_TIME = tm; };
   if (SHOT) window.SKY_MIST = { mistU, mist, mistNear: typeof mistNear !== 'undefined' ? mistNear : null };
@@ -744,6 +750,18 @@ window.SKY_L = (() => {
   if (SHOT) window.SKY_CLOUDS = () => clouds;
   if (SHOT) window.SKY_DBG = () => { const b = blinky.position.clone().project(camera); camera.getWorldDirection(fwd); return { uu, bx: +b.x.toFixed(3), by: +b.y.toFixed(3), yaw: +(Math.atan2(fwd.x, -fwd.z) * 57.3).toFixed(1), pitch: +(Math.asin(fwd.y) * 57.3).toFixed(1), roll: +(roll * 57.3).toFixed(1), cz: Math.round(camera.position.z), cx: Math.round(camera.position.x), isl: Object.fromEntries(['meadow', 'lantern', 'bamboo', 'hatch'].map((n) => { const v = isl[n].position.clone().project(camera); return [n, [+((v.x + 1) / 2).toFixed(3), +v.z.toFixed(6), +isl[n].material.uniforms.uOpacity.value.toFixed(2), Math.round(isl[n].position.distanceTo(camera.position)), +(isl[n].scale.x / (2 * Math.tan(FOV * Math.PI / 360) * AR * Math.max(1, isl[n].position.distanceTo(camera.position)))).toFixed(3), +((1 - v.y) / 2).toFixed(3)]]; })) }; };   // test hook: jump to any point of the journey
   // the living sky takes over only once its pictures are in, so the first picture never flashes away to nothing
-  const go = () => { layout(); buildPath(); frame(); requestAnimationFrame(() => { document.body.classList.add('gl'); window.SKY_READY = true; }); };
+  // before the sky shows, every picture goes up to the graphics card and every material is compiled, hidden ones included, so
+  // nothing has to be uploaded or compiled mid flight when an island first comes into view (that was the hitch on the first leg)
+  const warm = () => { try {
+    const objs = []; scene.traverse((o) => objs.push(o)); camera.traverse((o) => { if (!objs.includes(o)) objs.push(o); });
+    const tex = new Set(), mats = new Set(); objs.forEach((o) => { (o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []).forEach((m) => { mats.add(m);
+      for (const k in m) { const v = m[k]; if (v && v.isTexture) tex.add(v); } if (m.uniforms) for (const k in m.uniforms) { const v = m.uniforms[k] && m.uniforms[k].value; if (v && v.isTexture) tex.add(v); } }); });
+    tex.forEach((t) => { try { renderer.initTexture(t); } catch (e) {} });
+    const ov = objs.map((o) => [o, o.visible, o.frustumCulled]), mv = [...mats].map((m) => [m, m.visible]);
+    objs.forEach((o) => { o.visible = true; o.frustumCulled = false; }); mv.forEach(([m]) => { m.visible = true; });
+    renderer.compile(scene, camera);
+    ov.forEach(([o, v, f]) => { o.visible = v; o.frustumCulled = f; }); mv.forEach(([m, v]) => { m.visible = v; });
+  } catch (e) {} };
+  const go = () => { layout(); buildPath(); warm(); frame(); requestAnimationFrame(() => { document.body.classList.add('gl'); window.SKY_READY = true; }); };
   if (waiting === 0) go(); else onReady = go;
 })();
