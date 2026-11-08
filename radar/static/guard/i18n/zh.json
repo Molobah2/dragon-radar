@@ -211,5 +211,10 @@
  "practiseU": "不计时练习",
  "almost0": "这是个新主题。我们一起来学吧。",
  "e3e": "（会打开 notion.site 上的 Flashbots 页面，这是正常的）",
- "almostWhy0": "下面每个答案都讲解一种骗局。它们会在之后的测验中再次出现，帮你记牢。"
+ "almostWhy0": "下面每个答案都讲解一种骗局。它们会在之后的测验中再次出现，帮你记牢。",
+ "dailyT": "今天的守卫问题",
+ "dailyWhy": "来自你已开启课程的三个快速问题。今天完成的任何 Dragon Guard 测验都会完成你在 pdtools 每日目标中的 Dragon Guard 步骤。",
+ "dailyBtn": "回答 3 个问题",
+ "dailyGoal": "你今天在 pdtools 的 Dragon Guard 步骤已完成。",
+ "toFeed": "返回 Blinky's Friends"
 }

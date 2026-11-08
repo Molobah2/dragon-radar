@@ -1693,7 +1693,7 @@ def test_speed_budget(cfg, Session):
         assert size < code_max, f"{path}: scripts and styles {size} bytes"
     assert len(c.get("/static/i18n.js").get_data()) < 4000
     for lang in ("es", "ru", "zh"):
-        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 56_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker, then the help page, then the v2.1 welcome lane and Creator of the week, then Wrapped and Dragondle, then Cheers, the sticker shelf and the Hatchery canvas, then the v2.1 daily goal and the Dragondle card looks, then the four sections and the dock, then the nests, the Keeper badge and the wallpaper, then Keeper Art, the AMA Library summaries and the dates in every language (30 Oct)
+        assert len(gzip.compress(c.get(f"/i18n/{lang}.js").get_data())) < 60_000, lang   # raised on purpose: the full v2 translations, the lab and error pages, then the dragon book pages and the song picker, then the help page, then the v2.1 welcome lane and Creator of the week, then Wrapped and Dragondle, then Cheers, the sticker shelf and the Hatchery canvas, then the v2.1 daily goal and the Dragondle card looks, then the four sections and the dock, then the nests, the Keeper badge and the wallpaper, then Keeper Art, the AMA Library summaries and the dates in every language (30 Oct), then the mint month safety news and Dragon Guard in the daily goal (8 Nov)
     page = c.get("/friends").get_data(as_text=True)
     assert "e_background_removal" not in page            # icons are small stored files, not cut out per view
 
@@ -3407,3 +3407,37 @@ def test_odd_input_never_crashes_and_locked_pictures_stay_private(cfg, Session):
     assert not proof_ok("https://evil.example@x.com/a")
     assert not proof_ok("https://user:pw@youtube.com/watch?v=1")
     assert proof_ok("https://x.com/someone/status/1") and proof_ok("https://www.youtube.com/watch?v=abc123")
+
+
+def test_mint_month_safety_news_and_dragon_guard_in_the_daily_goal(cfg, Session, monkeypatch):
+    """Mint month (8 Nov 2026): once Dragon Guard is public it sits first in Learn, the feed and the community pages
+    carry the safety news (one tip a day, the mint calendar, the pdtools promise) through November, and the daily
+    goal's quiz step becomes today's Dragon Guard questions. Every new line is in all ten languages."""
+    import re
+    import radar.guard as G
+    from radar.v21 import nav_for
+    from radar.i18n_pack import build
+    assert [t["key"] for s in nav_for("/learn", True, False, True)["sections"] if s["key"] == "learn" for t in s["tabs"]][0] == "guard"
+    assert "guard" not in [t["key"] for s in nav_for("/learn", True, False)["sections"] for t in s["tabs"]]
+    assert G.safety_news(cfg, "2026-11-08") is False                    # Dragon Guard closed: no news
+    cfg.v2_public = True; cfg.v21_public = True; cfg.guard_public = True
+    assert G.safety_news(cfg, "2026-11-30") and not G.safety_news(cfg, "2026-12-01")
+    monkeypatch.setattr(G, "SAFETY_UNTIL", "2099-12-31")
+    c = create_app(cfg).test_client()
+    for path in ("/friends", "/community", "/friends/keepers"):
+        page = c.get(path).get_data(as_text=True)
+        assert 'id="sfn"' in page and "Mint month · Safety news" in page, path
+        assert page.count('class="sfn-h"') == len(G.SAFETY_TIPS), path
+        assert "pdtools will never post a mint link" in page and 'href="/guard"' in page, path
+    feed = c.get("/friends").get_data(as_text=True)
+    assert '"guard_on": true' in feed and "answer the Dragon Guard questions and follow 1 new Keeper" in feed
+    assert "Dragon Guard" in c.get("/learn").get_data(as_text=True)
+    assert 'id="sfn"' not in c.get("/create").get_data(as_text=True)
+    app_js = (Path(__file__).parent.parent / "radar" / "static" / "app.js").read_text(encoding="utf-8")
+    assert '"/guard/#daily"' in app_js and 'store.obj("pd:guard")' in app_js
+    src = (Path(__file__).parent.parent / "radar" / "i18n_src.js").read_text(encoding="utf-8")
+    for line in G.SAFETY_TIPS + ["Answer today's Dragon Guard questions", "Hide for today", "Open Dragon Guard"]:
+        assert src.count(json.dumps(line)) == 1, line
+    for lang, pack in build().items():
+        for k in ("sfT1", "sfT12", "sfPromise", "xGsGuard", "xDexHowGuard", "sGuard"):
+            assert len(re.findall(r"\b" + k + ":", pack)) == 2, (lang, k)

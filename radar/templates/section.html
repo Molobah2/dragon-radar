@@ -54,6 +54,7 @@ body { background: radial-gradient(1200px 700px at 20% -10%, #4b2a6e, transparen
       <h1>{{ sec.name }}</h1>
       <p>{{ sec.line }}</p>
     </div>
+    {% if sec.key == "community" %}{% include "_safety.html" %}{% endif %}
     <ul class="sx-grid">
       {% for t in sec.tabs %}<li><a class="sx-card" href="{{ t.path }}">
         <div class="sx-art{% if not t.bg %} aurora{% endif %}">

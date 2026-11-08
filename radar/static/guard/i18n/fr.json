@@ -211,5 +211,10 @@
  "practiseU": "S'entraîner sans minuteur",
  "almost0": "Un nouveau sujet. On l'apprend ensemble.",
  "e3e": "(cela ouvre une page Flashbots sur notion.site, c'est normal)",
- "almostWhy0": "Chaque réponse ci dessous explique une arnaque. Elles reviendront dans les prochains quiz pour bien rester."
+ "almostWhy0": "Chaque réponse ci dessous explique une arnaque. Elles reviendront dans les prochains quiz pour bien rester.",
+ "dailyT": "Les questions de garde du jour",
+ "dailyWhy": "Trois questions rapides sur les leçons que tu as ouvertes. Tout quiz Dragon Guard terminé aujourd'hui remplit l'étape Dragon Guard de ton objectif du jour sur pdtools.",
+ "dailyBtn": "Répondre à 3 questions",
+ "dailyGoal": "Ton étape Dragon Guard sur pdtools est faite pour aujourd'hui.",
+ "toFeed": "Retour à Blinky's Friends"
 }

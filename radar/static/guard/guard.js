@@ -121,6 +121,7 @@ function render() {
   if (v === "home") home();
   else if (/^m\d+$/.test(v)) lesson(+v.slice(1), +(a || 0));
   else if (v === "honour") honour(a);
+  else if (v === "daily") { if (openCount()) honour("daily"); else go("home"); }
   else if (v === "q") quizView();
   else if (v === "done") resultView();
   else if (v === "help") helpView();
@@ -156,6 +157,8 @@ function home() {
     todayHtml = `<div class="parch today"><div class="art" style="background-image:url(${art("shield")})"></div><div class="body"><span class="eyebrow" style="color:#7a4a16">${esc(T("allDone", "All open lessons done"))}</span><h2>${esc(oc < N ? T("nextOn", "Next lesson opens {d}", { d: fmtDate(opensAt(oc + 1)) }) : T("wellGuarded", "Your hoard is well guarded"))}</h2><p class="muted">${esc(oc < N ? T("comeBack", "Come back then. Until then, practise any lesson again.") : T("weekly", "Keep sharp with the weekly Guard Drill and Check Day."))}</p>${oc >= N || weeklyDue() ? `<a class="btn main wide" href="#honour/drill">${esc(T("drillBtn", "Start the Guard Drill"))}</a>` : ""}</div></div>`;
   }
   const drillHtml = drill && oc ? `<div class="panel check"><h3>${esc(T("mintReady", "Mint Ready drill"))}</h3><p>${esc(T("drill_" + dk, drill))} ${esc(T("drillWhy", "Five quick questions to make sure you are ready."))}</p>${S.drills[dk] ? `<p class="chip good">${esc(T("drillDone", "Done for today"))}</p>` : `<a class="btn main" href="#honour/drill">${esc(T("drillGo", "Start the drill"))}</a>`}</div>` : "";
+  const qdone = !!(S.qd && S.qd[localKey()]);
+  const dailyHtml = oc ? `<div class="panel check" id="dailycard"><h3>${esc(T("dailyT", "Today's guard questions"))}</h3><p>${esc(T("dailyWhy", "Three quick questions from the lessons you have opened. Any Dragon Guard quiz you finish today fills the Dragon Guard step of your daily goal on pdtools."))}</p>${qdone ? `<p class="chip good">${esc(T("drillDone", "Done for today"))}</p>` : `<a class="btn main" href="#daily">${esc(T("dailyBtn", "Answer 3 questions"))}</a>`}</div>` : "";
   const checkHtml = checkDue() ? `<div class="panel check" id="checkday"><h3>${esc(T("checkDay", "Check Day"))}</h3><p>${esc(T("checkWhy", "Look at what your wallet has approved. You can search by your address on revoke.cash without connecting anything. Revoke only the approvals you do not use or do not recognise. Each revoke costs a small gas fee."))}</p><div class="btn-row"><a class="btn main" href="https://revoke.cash/" target="_blank" rel="noopener noreferrer">${esc(T("openRevoke", "Open revoke.cash"))}</a><a class="btn ghost" href="#check">${esc(T("howCheck", "How to check"))}</a><button class="btn ghost" type="button" id="checked">${esc(T("iChecked", "I checked"))}</button></div></div>` : "";
   const inAppHtml = inApp ? `<div class="panel small">${esc(T("inapp", "You are inside an app's browser. Open pdtools.xyz/guard in your phone's own browser so your progress is kept."))}</div>` : "";
   const cal = CFG.events.map(([d, l]) => { const ms = Date.parse(d + "T13:00:00Z"), soon = ms > now() && ms - now() < 4 * 864e5; return `<div class="${soon ? "soon" : ""}"><b>${esc(fmtDate(ms, { day: "numeric", month: "short" }))}</b>${esc(T("ev_" + d, l))}</div>`; }).join("");
@@ -171,7 +174,7 @@ function home() {
   main.innerHTML = `
   <section class="hero"><span class="eyebrow">pdtools · ${esc(T("course", "Safety course"))}</span><h1>${esc(T("title", "Dragon Guard"))}</h1><p>${esc(T("tag", "One short lesson a day. Spot the scams before they reach your dragons."))}</p></section>
   <div class="stack-l">
-    ${inAppHtml}${checkHtml}${drillHtml}${todayHtml}
+    ${inAppHtml}${checkHtml}${drillHtml}${todayHtml}${dailyHtml}
     <section class="stack" aria-labelledby="calh"><h3 id="calh">${esc(T("calendar", "Mint calendar"))}</h3><div class="cal">${cal}</div><p class="small muted">${esc(T("calNote", "From the official Pocket Dragons mint post. Trust only links from the official accounts, checked on two channels. pdtools will never post a mint link."))}</p></section>
     <section class="stack" aria-labelledby="pathh"><h3 id="pathh">${esc(T("path", "Your path"))}</h3><ol class="path">${path}</ol></section>
     <section class="panel stack" aria-labelledby="meh"><div class="rank"><div class="badge">${ico.helm}</div><div style="flex:1"><span class="eyebrow">${esc(T("yourRank", "Your rank"))}</span><h3 id="meh">${esc(rk.name)}</h3><div class="bar" aria-hidden="true"><i style="width:${Math.round(rk.frac * 100)}%"></i></div><p class="small muted">${esc(!rk.next ? T("topRank", "The highest rank. Keep guarding.") : rk.need > 0 ? (rk.need === 1 ? T("toNext1", "1 more lesson to {r}", { r: rk.next }) : T("toNext", "{n} more lessons to {r}", { n: rk.need, r: rk.next })) : T("toNextCheck", "Keep {n} more Check Day to reach {r}", { n: Math.max(1, 4 - checksKept()), r: rk.next }))}</p></div></div>
@@ -308,7 +311,7 @@ async function lesson(m, c) {
 
 /* ---------- honour card ---------- */
 function honour(which) {
-  const isDrill = which === "drill", m = isDrill ? 0 : +which;
+  const isDaily = which === "daily", isDrill = which === "drill" || isDaily, m = isDrill ? 0 : +which;
   if (!isDrill && !isOpen(m)) { go("home"); return; }
   const mode = S.timer || (lang !== "en" ? "relaxed" : "on");
   main.innerHTML = `<div class="lesson-top"><a class="back" href="${isDrill ? "#home" : "#m" + m}" aria-label="${esc(T("backLesson", "Back to the lesson"))}">${ico.back}</a></div>
@@ -321,7 +324,7 @@ function honour(which) {
   main.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => { chosen = b.dataset.mode; main.querySelectorAll("[data-mode]").forEach((x) => x.setAttribute("aria-pressed", x === b)); });
   $("#swear2").onclick = async (e) => {
     e.preventDefault(); S.timer = chosen; save();
-    try { await startQuiz(isDrill ? "drill" : m, chosen); } catch (err) { return; }
+    try { await startQuiz(isDrill ? "drill" : m, chosen, isDaily ? "daily" : ""); } catch (err) { return; }
     location.hash = "q";
   };
 }
@@ -329,15 +332,16 @@ function honour(which) {
 /* ---------- building a quiz: 4 new + 2 review, scenarios first, spaced repeats ---------- */
 async function startQuiz(m, mode, kind) {
   const today = dayNo(localKey());
-  const r = rng(S.id + ":" + m + ":" + (m === "drill" ? localKey() : st(m).tries));
+  const r = rng(S.id + ":" + m + ":" + (kind || "") + ":" + (m === "drill" ? localKey() : st(m).tries));
   let ids = [];
   if (m === "drill") {
     const pool = [];
     const oc = openCount();
     for (let k = 1; k <= oc; k++) { const d = await mod(k); d.questions.forEach((q) => pool.push(q.id)); }
     const due = Object.entries(S.items).filter(([, v]) => v.due && v.due.some((x) => x <= today)).map(([k]) => k);
-    ids = shuffle(due, r).slice(0, 3);
-    for (const q of shuffle(pool, r)) { if (ids.length >= 5) break; if (!ids.includes(q)) ids.push(q); }
+    const size = kind === "daily" ? 3 : 5;     // the daily guard questions are three, the drill five
+    ids = shuffle(due, r).slice(0, kind === "daily" ? 1 : 3);
+    for (const q of shuffle(pool, r)) { if (ids.length >= size) break; if (!ids.includes(q)) ids.push(q); }
   } else {
     const d = await mod(m), s = st(m);
     const seenIds = s.seen || [];
@@ -464,7 +468,7 @@ let lastResult = null;
 function finishQuiz() {
   const Q = S.quiz, score = Q.ans.filter((a) => a && a.ok).length, n = Q.ids.length;
   const missed = Q.ans.filter((a) => a && !a.ok).map((a) => a.id);
-  if (Q.m === "drill") { S.drills[CFG.drills[utcKey()] ? utcKey() : "w" + isoWeek()] = 1; }
+  if (Q.m === "drill") { if (Q.kind !== "daily") S.drills[CFG.drills[utcKey()] ? utcKey() : "w" + isoWeek()] = 1; }
   else if (Q.kind === "practice") { const s = st(Q.m); if (score >= 5) { s.need = 0; s.pass = 1; } }
   else {
     const s = st(Q.m); s.tries++; s.best = Math.max(s.best, score); s.done = s.done || Date.now();
@@ -473,13 +477,14 @@ function finishQuiz() {
     tally(Q.m, "done", score);
   }
   touchDay();
-  lastResult = { m: Q.m, score, n, missed, mode: Q.mode };
+  S.qd = S.qd || {}; S.qd[localKey()] = 1;     // any guard quiz finished today fills the Dragon Guard step of the pdtools daily goal
+  lastResult = { m: Q.m, score, n, missed, mode: Q.mode, kind: Q.kind };
   S.quiz = null; quizActive = false; save();
   leaving = true; location.replace("#done");
 }
 async function resultView() {
   const R = lastResult; if (!R) { go("home"); return; }
-  const pass = R.m === "drill" ? R.score >= 4 : R.score >= 5, s = R.m === "drill" ? null : st(R.m);
+  const pass = R.m === "drill" ? R.score >= (R.kind === "daily" ? 2 : 4) : R.score >= 5, s = R.m === "drill" ? null : st(R.m);
   const stars = [R.score >= 3, pass, !!(s && s.swift)];
   const msgs = [];
   for (const id of R.missed) { const q = await qById(id); if (!q) continue;
@@ -487,7 +492,7 @@ async function resultView() {
     const ans = q.kind === "choice" ? `<br><b>${esc(T("answerIs", "The answer"))}:</b> ${esc(q.options[q.answer])}` : `<br><b>${esc(T("theFlags", "The red flags"))}:</b> ${esc(allSegs(q.sim).filter((x) => x.flag).map((x) => x.label).join(", "))}`;
     msgs.push(`<li><b>${esc(q.stem)}</b>${ctx ? ` <small>(${esc(ctx)})</small>` : ""}${ans}<br>${esc(q.why)}</li>`); }
   let next = "";
-  if (R.m === "drill") next = `<a class="btn main wide" href="#home">${esc(T("toHall", "Back to the hall"))}</a>`;
+  if (R.m === "drill") next = (R.kind === "daily" ? `<p class="chip good">${esc(T("dailyGoal", "Your Dragon Guard step on pdtools is done for today."))}</p><a class="btn main wide" href="/friends">${esc(T("toFeed", "Back to Blinky's Friends"))}</a>` : "") + `<a class="btn ${R.kind === "daily" ? "ghost" : "main"} wide" href="#home">${esc(T("toHall", "Back to the hall"))}</a>`;
   else if (pass) next = `<a class="btn main wide" href="#home">${esc(T("toHall", "Back to the hall"))}</a><button class="btn ghost wide" type="button" id="share">${esc(T("shareCard", "Make my guard card"))}</button>`;
   else if (s.tries < 2) next = `<a class="btn main wide" href="#m${R.m}/${(MODS[R.m] ? MODS[R.m].cards.length : 1) - 1}">${esc(T("reread", "Read the summary, then try again"))}</a><a class="btn ghost wide" href="#home">${esc(T("later", "Later"))}</a>`;
   else next = `<p>${esc(T("needsWhy", "This lesson is marked Needs review. Practise now without a timer, or again tomorrow. The next lesson still opens on its day."))}</p><a class="btn main wide" href="#m${R.m}">${esc(T("rereadL", "Read the lesson again"))}</a><button class="btn ghost wide" type="button" id="practise">${esc(T("practiseU", "Practise without a timer"))}</button><a class="btn ghost wide" href="#home">${esc(T("toHall", "Back to the hall"))}</a>`;

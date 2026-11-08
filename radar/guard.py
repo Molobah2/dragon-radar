@@ -34,6 +34,29 @@ DATES = {1: "2026-11-08", 2: "2026-11-08", 3: "2026-11-09", 4: "2026-11-10", 5: 
          13: "2026-11-21", 14: "2026-11-22"}
 DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
+# Mint month safety news (8 Nov 2026): one tip a day on the feed and the community pages until the month is over.
+# Each tip is a line Dragon Guard teaches. The language packs carry every tip in all ten languages.
+SAFETY_UNTIL = "2026-11-30"
+SAFETY_TIPS = [
+    "Your seed phrase goes only into your own wallet. Nobody real will ever ask for it.",
+    "A DM about the mint is a red flag. Nobody from the team will DM you first with a link.",
+    "Mint from a fresh wallet with only what you need, and keep your dragons in a vault that never connects to new sites.",
+    "Type the address yourself or use your own bookmark. Never trust a mint link from replies or DMs.",
+    "Official accounts can get hacked. Check any mint news on two official channels before you click.",
+    "Read every wallet popup. If you do not understand what you are signing, do not sign it.",
+    "A permit or an approval can hand over your tokens without a transfer. Approve only what you understand.",
+    "Check your wallet approvals on Check Day and revoke the ones you no longer use.",
+    "A rushed presale or auction link is a lure. Urgency is the red flag.",
+    "One signature can carry many actions. Slow down whenever a site asks you to sign.",
+    "Fake jobs, fake calls and deepfakes target Keepers. Never run a file or app someone sends you.",
+    "An address that looks almost right is a trap. Check the whole address, not just the start and the end.",
+]
+
+
+def safety_news(cfg, today: str) -> bool:
+    """The safety news shows while Dragon Guard is public, through the mint month."""
+    return bool(cfg.guard_public) and today <= SAFETY_UNTIL
+
 
 def dates(raw: str) -> dict:
     """The day each lesson opens. A bad GUARD_DATES value never breaks the page: it falls back to the plan."""

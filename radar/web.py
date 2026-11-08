@@ -130,6 +130,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         return [{**s, "src": url_for("static", filename=s["src"], v=version)} for s in playlist]
 
     from .v21 import TOOLS as V21_TOOLS, nav_for
+    from .guard import SAFETY_TIPS as _GUARD_TIPS, SAFETY_UNTIL as _GUARD_UNTIL, safety_news as _guard_safety
     from .dragondle import START as _DLE_START
     DLE_START = _DLE_START.isoformat()
 
@@ -155,7 +156,9 @@ def create_app(cfg: Config | None = None) -> Flask:
                 "dle_start": DLE_START,
                 "v22_live": _v22_live(),
                 "live_clips": live_clips,
-                "nav": nav_for(request.path if has_request_context() else "/", cfg.v21_public or getattr(g, "circle", False), getattr(g, "circle", False) or cfg.circle_public)}
+                "guard_open": cfg.guard_public,
+                "safety_news": _guard_safety(cfg, datetime.now(timezone.utc).strftime("%Y-%m-%d")), "safety_tips": _GUARD_TIPS, "safety_until": _GUARD_UNTIL,
+                "nav": nav_for(request.path if has_request_context() else "/", cfg.v21_public or getattr(g, "circle", False), getattr(g, "circle", False) or cfg.circle_public, cfg.guard_public)}
 
     # v2 tools in progress: add {"name", "url", "note"} here as each one is built
     LAB_TOOLS: list[dict] = [
@@ -1747,7 +1750,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     # ---------- the four sections (TJ's feedback): one page per section with its tools side by side ----------
     def section_page(key):
         from .v21 import friend_sites, nav_for
-        nav = nav_for(request.path, True, getattr(g, "circle", False) or cfg.circle_public)
+        nav = nav_for(request.path, True, getattr(g, "circle", False) or cfg.circle_public, cfg.guard_public)
         sec = next((x for x in nav["sections"] if x["key"] == key), None)
         if not sec:
             abort(404)

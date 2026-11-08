@@ -523,8 +523,10 @@
 
   // ---------- daily goal, an egg fills up as you go ----------
   // v1: give 5 quiet posts some love. v2: cheer on 20 fellow Keepers' posts (any post that is new to you, not the team's)
-  // v2.1 ("mix"): one percentage from three parts. 10 Keeper posts are worth 50% (5% each), today's Dragon Quiz 25%,
-  // following one new Keeper 25%. The egg hatches at 100%.
+  // v2.1 ("mix"): one percentage from three parts. 10 Keeper posts are worth 50% (5% each), today's Dragon Guard
+  // questions 25% (8 Nov, mint month: Dragon Guard took the Dragon Quiz's place), following one new Keeper 25%.
+  // The egg hatches at 100%. With Dragon Guard closed the Dragon Quiz keeps the step.
+  const GUARD = data.guard_on === true;
   const MIX = data.goal_rule === "mix";
   const GOAL = data.goal || 5, KEEPER_GOAL = data.goal_rule === "keeper" || MIX;
   const goalWord = KEEPER_GOAL ? "Keeper posts" : "quiet posts";
@@ -545,9 +547,15 @@
     if (!KEEPER_GOAL) return GOAL;
     return firstEgg() ? STARTER : GOAL;
   }
+  // today's Dragon Guard questions: any Dragon Guard quiz finished today on this device (pdtools.xyz/guard keeps it)
+  function guardDone() {
+    const gs = store.obj("pd:guard"), qd = gs.qd && typeof gs.qd === "object" ? gs.qd : {};
+    return qd[today()] === 1;
+  }
   // today's Dragon Quiz: every answer saved on this device (the set changes at midnight UTC)
   function dleDone() {
     if (goal.d) return true;
+    if (GUARD) return guardDone();
     const st = String(data.dle_start || ""); if (!/^\d{4}-\d{2}-\d{2}$/.test(st)) return false;
     const now = new Date(), utc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
     const n = Math.floor((utc - Date.parse(st + "T00:00:00Z")) / 864e5) + 1;
@@ -626,7 +634,8 @@
     steps.querySelector(".gs-bar i").style.width = `${g.pct}%`;
     steps.querySelector(".gs-list").innerHTML =
       row("posts", g.n >= g.P, `Open ${g.P} Keeper posts`, `${g.n}/${g.P}`, "#feed", "Go")
-      + (g.first ? `<li class="gs-row skip"><i class="gs-tick" aria-hidden="true">\u2013</i><span class="gs-t"><b>Play today's Dragon Quiz</b><small>Not needed for your first egg</small></span></li>`
+      + (g.first ? `<li class="gs-row skip"><i class="gs-tick" aria-hidden="true">\u2013</i><span class="gs-t"><b>${GUARD ? "Answer today's Dragon Guard questions" : "Play today's Dragon Quiz"}</b><small>Not needed for your first egg</small></span></li>`
+        : GUARD ? row("guard", g.d, "Answer today's Dragon Guard questions", "Mint month: learn to spot scams", "/guard/#daily", "Answer")
         : row("dle", g.d, "Play today's Dragon Quiz", "", "/quiz", "Play"))
       + row("follow", g.f, "Follow 1 new Keeper", "", "/friends/keepers", "Find one");
   }
@@ -643,7 +652,7 @@
     document.addEventListener("click", (e) => { if (!steps.hidden && !steps.contains(e.target) && !$("goal").contains(e.target)) closeSteps(); });
     addEventListener("keydown", (e) => { if (e.key === "Escape") closeSteps(); });
     // finished on another page or tab (the Dragon Quiz, the Keepers directory): the goal catches up straight away
-    addEventListener("storage", (e) => { if (["pd:dle", "radar:followed", "radar:pending", "radar:tapped", "pd:goal", "radar:kleft"].includes(e.key)) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
+    addEventListener("storage", (e) => { if (["pd:dle", "pd:guard", "radar:followed", "radar:pending", "radar:tapped", "pd:goal", "radar:kleft"].includes(e.key)) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
   }
   function closeSteps() { if (steps && !steps.hidden) { steps.hidden = true; $("goal").setAttribute("aria-expanded", "false"); steps.parentElement.classList.remove("gs-open"); } }

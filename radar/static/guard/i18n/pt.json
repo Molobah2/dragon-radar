@@ -211,5 +211,10 @@
  "practiseU": "Praticar sem cronômetro",
  "almost0": "Um tema novo. Vamos aprender juntos.",
  "e3e": "(abre uma página da Flashbots no notion.site, isso é esperado)",
- "almostWhy0": "Cada resposta abaixo explica um golpe. Elas voltam nos próximos quizzes para ficarem na memória."
+ "almostWhy0": "Cada resposta abaixo explica um golpe. Elas voltam nos próximos quizzes para ficarem na memória.",
+ "dailyT": "As perguntas de guarda de hoje",
+ "dailyWhy": "Três perguntas rápidas das lições que você já abriu. Qualquer quiz do Dragon Guard que você terminar hoje completa a etapa Dragon Guard da sua meta diária no pdtools.",
+ "dailyBtn": "Responder 3 perguntas",
+ "dailyGoal": "Sua etapa do Dragon Guard no pdtools está feita por hoje.",
+ "toFeed": "Voltar ao Blinky's Friends"
 }

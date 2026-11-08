@@ -211,5 +211,10 @@
  "practiseU": "타이머 없이 연습하기",
  "almost0": "새로운 주제예요. 함께 배워 봐요.",
  "e3e": "(notion.site에 있는 Flashbots 페이지가 열려요. 정상이에요)",
- "almostWhy0": "아래 답마다 사기 수법 하나를 설명합니다. 오래 기억하도록 다음 퀴즈에 다시 나옵니다."
+ "almostWhy0": "아래 답마다 사기 수법 하나를 설명합니다. 오래 기억하도록 다음 퀴즈에 다시 나옵니다.",
+ "dailyT": "오늘의 경계 질문",
+ "dailyWhy": "이미 연 레슨에서 나오는 짧은 질문 세 개예요. 오늘 끝낸 Dragon Guard 퀴즈는 모두 pdtools 일일 목표의 Dragon Guard 단계를 채워요.",
+ "dailyBtn": "3문제 답하기",
+ "dailyGoal": "pdtools의 Dragon Guard 단계를 오늘 완료했어요.",
+ "toFeed": "Blinky's Friends로 돌아가기"
 }

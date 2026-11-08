@@ -211,5 +211,10 @@
  "practiseU": "Luyện tập không hẹn giờ",
  "almost0": "Một chủ đề mới. Cùng nhau học nhé.",
  "e3e": "(liên kết sẽ mở một trang Flashbots trên notion.site, điều này là bình thường)",
- "almostWhy0": "Mỗi câu trả lời bên dưới giải thích một trò lừa đảo. Chúng sẽ quay lại trong các bài sau để bạn nhớ lâu."
+ "almostWhy0": "Mỗi câu trả lời bên dưới giải thích một trò lừa đảo. Chúng sẽ quay lại trong các bài sau để bạn nhớ lâu.",
+ "dailyT": "Câu hỏi canh gác hôm nay",
+ "dailyWhy": "Ba câu hỏi nhanh từ các bài bạn đã mở. Bất kỳ bài quiz Dragon Guard nào bạn làm xong hôm nay đều hoàn thành bước Dragon Guard trong mục tiêu hằng ngày của bạn trên pdtools.",
+ "dailyBtn": "Trả lời 3 câu hỏi",
+ "dailyGoal": "Bước Dragon Guard của bạn trên pdtools đã xong hôm nay.",
+ "toFeed": "Quay lại Blinky's Friends"
 }

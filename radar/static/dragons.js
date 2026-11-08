@@ -87,7 +87,7 @@
   // a brand new Keeper's first egg needs half the usual goal (set in app.js), so the first visit ends with a dragon
   const goalNow = () => (window.pdGoalNow ? window.pdGoalNow() : GOAL);
   function goalDone() {
-    if (window.pdGoalDone) return window.pdGoalDone();     // the feed knows the whole goal (v2.1: posts, Dragon Quiz, follow)
+    if (window.pdGoalDone) return window.pdGoalDone();     // the feed knows the whole goal (v2.1: posts, Dragon Guard, follow)
     const g = store.get("pd:goal", null); return !!g && g.day === today() && (g.n || 0) >= goalNow();
   }
   // the goal streak: days in a row with the daily goal finished
@@ -1155,7 +1155,7 @@
   (function waitReady(t) { if (document.body.classList.contains("ready") || t >= 20) autoHatch(1400); else setTimeout(() => waitReady(t + 1), 500); })(0);
   addEventListener("pd:goalshow", refreshGoal);
   addEventListener("pd:dexchange", () => { dex = load(); renderDex(); refreshGoal(); });
-  addEventListener("storage", (e) => { if (["pd:dex", "pd:goal", "pd:dle", "radar:followed", "radar:pending"].includes(e.key)) { dex = load(); refreshGoal(); } });
+  addEventListener("storage", (e) => { if (["pd:dex", "pd:goal", "pd:dle", "pd:guard", "radar:followed", "radar:pending"].includes(e.key)) { dex = load(); refreshGoal(); } });
   refreshGoal();
 
   async function todayHatch() {

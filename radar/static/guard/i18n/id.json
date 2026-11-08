@@ -211,5 +211,10 @@
  "practiseU": "Latihan tanpa pengatur waktu",
  "almost0": "Topik baru. Ayo kita pelajari bersama.",
  "e3e": "(ini membuka halaman Flashbots di notion.site, memang seharusnya begitu)",
- "almostWhy0": "Setiap jawaban di bawah menjelaskan satu penipuan. Semuanya akan muncul lagi di kuis berikutnya agar melekat."
+ "almostWhy0": "Setiap jawaban di bawah menjelaskan satu penipuan. Semuanya akan muncul lagi di kuis berikutnya agar melekat.",
+ "dailyT": "Pertanyaan jaga hari ini",
+ "dailyWhy": "Tiga pertanyaan singkat dari pelajaran yang sudah kamu buka. Kuis Dragon Guard apa pun yang kamu selesaikan hari ini mengisi langkah Dragon Guard di target harianmu di pdtools.",
+ "dailyBtn": "Jawab 3 pertanyaan",
+ "dailyGoal": "Langkah Dragon Guard-mu di pdtools sudah selesai hari ini.",
+ "toFeed": "Kembali ke Blinky's Friends"
 }

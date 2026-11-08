@@ -211,5 +211,10 @@
  "practiseU": "Practicar sin temporizador",
  "almost0": "Un tema nuevo. Aprendámoslo juntos.",
  "e3e": "(se abre una página de Flashbots en notion.site, es lo esperado)",
- "almostWhy0": "Cada respuesta de abajo explica una estafa. Volverán en próximos cuestionarios para que se queden."
+ "almostWhy0": "Cada respuesta de abajo explica una estafa. Volverán en próximos cuestionarios para que se queden.",
+ "dailyT": "Las preguntas de guardia de hoy",
+ "dailyWhy": "Tres preguntas rápidas de las lecciones que ya abriste. Cualquier quiz de Dragon Guard que termines hoy completa el paso de Dragon Guard de tu meta diaria en pdtools.",
+ "dailyBtn": "Responder 3 preguntas",
+ "dailyGoal": "Tu paso de Dragon Guard en pdtools está hecho por hoy.",
+ "toFeed": "Volver a Blinky's Friends"
 }

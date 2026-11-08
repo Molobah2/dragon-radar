@@ -402,7 +402,7 @@ TOOLS = [   # grouped like the sections: Community, then Learn, then Create
 
 # ---------- the four sections (TJ's feedback: fewer places, each with its tools side by side) ----------
 # key, name, landing page, one line, then the tabs: key, name, path, who can see it ("" everyone, "v21" open v2.1,
-# "circle" the locked Dragon Circle), one line, scene ("cloud:<name>" for a Cloudinary scene, "" for the aurora), character
+# "circle" the locked Dragon Circle, "guard" Dragon Guard once it is public), one line, scene ("cloud:<name>" for a Cloudinary scene, "" for the aurora), character
 # Each card uses its own tool's art, never another tool's.
 SECTIONS = [
     ("feed", "Feed", "/friends", "Every Pocket Dragons post the community shares, and your daily goal.", [
@@ -417,6 +417,7 @@ SECTIONS = [
         ("circle", "Dragon Circle", "/circle", "circle", "The Keepers you are closest to in dragon posts.", "", "v21/pinky-heart.webp"),
     ]),
     ("learn", "Learn", "/learn", "Learn the hatchery: the daily quiz, every AMA and the guides.", [
+        ("guard", "Dragon Guard", "/guard", "guard", "One short safety lesson a day. Spot the scams before they reach your dragons.", "guard/art/m1c0-640.webp", ""),
         ("quiz", "Dragon Quiz", "/quiz", "v21", "Five Pocket Dragons questions a day, three tries each.", "v21/dragondle-a-s.jpg", "v21/pinky-scroll.webp"),
         ("ama", "AMA Library", "/friends/ama", "", "Every AMA in one place: the recordings and what was shared.", "cloud:ama-library", ""),
         ("help", "Help and guides", "/help", "", "How pdtools works and answers to the questions Keepers ask most.", "help/poster.jpg", ""),
@@ -444,9 +445,9 @@ def friend_sites(key: str) -> list:
     return [{"name": n, "url": u, "line": l, "bg": b, "by": h} for k, n, u, l, b, h in FRIEND_SITES if k == key]
 
 
-def nav_for(path: str, v21: bool, circle: bool) -> dict:
+def nav_for(path: str, v21: bool, circle: bool, guard: bool = False) -> dict:
     """The sections this visitor can see, and which section and tab the page belongs to."""
-    ok = {"": True, "v21": v21, "circle": circle}
+    ok = {"": True, "v21": v21, "circle": circle, "guard": guard}
     secs, cur, tab = [], None, None
     for key, name, home, line, tabs in SECTIONS:
         seen = [{"key": t[0], "name": t[1], "path": t[2], "line": t[4], "bg": t[5], "who": t[6]} for t in tabs if ok[t[3]]]

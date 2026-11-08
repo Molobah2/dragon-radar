@@ -1,0 +1,77 @@
+{#- Mint month safety news (8 Nov 2026): one safety tip a day on the feed and the community pages, the mint calendar,
+    the pdtools promise and the way into Dragon Guard. Shown through November only. "Hide for today" is kept on this
+    device. Every line is plain English the language packs swap, so each Keeper reads it in their own language. -#}
+{% if safety_news %}
+<section class="sfn" id="sfn" aria-labelledby="sfn-h" hidden>
+  <div class="sfn-art" aria-hidden="true"><img src="{{ asset('guard/art/shield-640.webp') }}" alt="" width="640" height="480" loading="lazy" decoding="async"></div>
+  <div class="sfn-body">
+    <p class="sfn-kick"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.6-3.4 8.4-8 9-4.6-.6-8-4.4-8-9V6z"/></svg><span>Mint month · Safety news</span></p>
+    <ol class="sfn-tips" aria-live="polite">
+      {% for t in safety_tips %}<li hidden><h2 class="sfn-h"{% if loop.first %} id="sfn-h"{% endif %}>{{ t }}</h2></li>{% endfor %}
+    </ol>
+    <ul class="sfn-cal" aria-label="Mint calendar">
+      <li><b>Nov 13</b><span>Raffle closes</span></li>
+      <li><b>Nov 16</b><span>Community presale</span></li>
+      <li><b>Nov 30</b><span>Public auction</span></li>
+    </ul>
+    <p class="sfn-promise">pdtools will never post a mint link or ask for your wallet, your seed phrase or a signature.</p>
+    <div class="sfn-row">
+      {% if guard_open %}<a class="sfn-go" href="/guard">Open Dragon Guard</a>{% endif %}
+      <button class="sfn-btn" type="button" id="sfn-next">Next tip</button>
+      <button class="sfn-btn sfn-hide" type="button" id="sfn-hide">Hide for today</button>
+    </div>
+  </div>
+</section>
+<style>
+.sfn { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin: 0 0 22px; width: 100%; box-sizing: border-box; border-radius: 24px; overflow: hidden; color: #2b1d12;
+  background: linear-gradient(180deg, #f8ecd0, #efdcb2); box-shadow: 0 0 0 2px #c58c45, 0 14px 34px rgba(43, 29, 18, .28); }
+.sfn[hidden] { display: none; }
+.sfn-art { position: relative; min-height: 120px; max-height: 170px; overflow: hidden; background: #2a1d14; }
+.sfn-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sfn-body { padding: 18px 20px 20px; display: grid; gap: 12px; }
+.sfn-kick { margin: 0; display: inline-flex; align-items: center; gap: 8px; font-weight: 900; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: #8a4a12; }
+.sfn-tips { list-style: none; margin: 0; padding: 0; }
+.sfn-h { margin: 0; font-family: var(--font-display, inherit); font-weight: 700; font-size: clamp(21px, 4.6vw, 30px); line-height: 1.22; color: #2b1d12; text-wrap: balance; }
+.sfn-cal { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.sfn-cal li { display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, .55); box-shadow: inset 0 0 0 1px rgba(147, 96, 31, .35); }
+.sfn-cal b { font-size: 17px; font-weight: 900; color: #5c3608; }
+.sfn-cal span { font-size: 14px; font-weight: 700; line-height: 1.25; color: #5a4330; }
+.sfn-promise { margin: 0; font-size: 16px; font-weight: 800; line-height: 1.45; color: #6b2a10; }
+.sfn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.sfn-go, .sfn-btn { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; padding: 0 20px; border-radius: 999px; font: inherit; font-weight: 900; font-size: 16px; text-decoration: none; cursor: pointer; }
+.sfn-go { background: linear-gradient(180deg, #e9b46a, #b97a30); color: #24160a; border: 0; box-shadow: 0 4px 0 #6e4512; }
+.sfn-btn { background: transparent; color: #5c3608; border: 2px solid #b78e4c; }
+.sfn-go:focus-visible, .sfn-btn:focus-visible { outline: 3px solid #8a4a12; outline-offset: 3px; }
+@media (min-width: 760px) {
+  .sfn { grid-template-columns: 300px minmax(0, 1fr); }
+  .sfn-art { max-height: none; min-height: 100%; }
+  .sfn-body { padding: 24px 28px 26px; }
+}
+@media (max-width: 380px) { .sfn-cal { grid-template-columns: minmax(0, 1fr); } .sfn-body { padding: 16px; } }
+@media (prefers-reduced-motion: no-preference) {
+  .sfn-tips li.on { animation: sfn-in .4s cubic-bezier(.2, .8, .2, 1) both; }
+  .sfn-go, .sfn-btn { transition: transform .14s ease; }
+  .sfn-go:active, .sfn-btn:active { transform: scale(.97); }
+}
+@keyframes sfn-in { from { opacity: 0; transform: translateY(6px); } }
+</style>
+<script>
+(() => {
+  "use strict";
+  const box = document.getElementById("sfn"); if (!box) return;
+  const pad = (n) => String(n).padStart(2, "0");
+  const d = new Date(), day = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  if (day > "{{ safety_until }}") return;                    // mint month is over on this device's calendar too
+  let hid = ""; try { hid = localStorage.getItem("pd:sfnHide") || ""; } catch (e) {}
+  if (hid === day) return;
+  const tips = [...box.querySelectorAll(".sfn-tips li")]; if (!tips.length) return;
+  // one tip a day, the same for everyone on a given date; "Next tip" walks on from there
+  let i = Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(2026, 10, 1)) / 864e5);
+  i = ((i % tips.length) + tips.length) % tips.length;
+  const show = (k) => tips.forEach((li, j) => { li.hidden = j !== k; li.classList.toggle("on", j === k); });
+  show(i); box.hidden = false;
+  document.getElementById("sfn-next").addEventListener("click", () => { i = (i + 1) % tips.length; show(i); });
+  document.getElementById("sfn-hide").addEventListener("click", () => { try { localStorage.setItem("pd:sfnHide", day); } catch (e) {} box.hidden = true; });
+})();
+</script>
+{% endif %}

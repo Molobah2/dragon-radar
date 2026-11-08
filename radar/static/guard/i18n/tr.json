@@ -211,5 +211,10 @@
  "practiseU": "Zamanlayıcı olmadan çalış",
  "almost0": "Yeni bir konu. Birlikte öğrenelim.",
  "e3e": "(notion.site üzerinde bir Flashbots sayfası açılır, bu normaldir)",
- "almostWhy0": "Aşağıdaki her cevap bir dolandırıcılığı anlatıyor. Akılda kalsın diye sonraki testlerde tekrar gelecekler."
+ "almostWhy0": "Aşağıdaki her cevap bir dolandırıcılığı anlatıyor. Akılda kalsın diye sonraki testlerde tekrar gelecekler.",
+ "dailyT": "Bugünün nöbet soruları",
+ "dailyWhy": "Açtığın derslerden üç kısa soru. Bugün bitirdiğin her Dragon Guard testi, pdtools'taki günlük hedefinin Dragon Guard adımını tamamlar.",
+ "dailyBtn": "3 soruyu cevapla",
+ "dailyGoal": "pdtools'taki Dragon Guard adımın bugün için tamam.",
+ "toFeed": "Blinky's Friends'e dön"
 }
