@@ -363,6 +363,7 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     # The feed costs several database round trips. Everyone sees the same posts, so the result is kept
     # for FEED_CACHE_S seconds: a busy minute costs the database a couple of reads instead of hundreds.
+    quick: dict = {"at": None}   # last quick Discord check (see /cron/discord)
     feed_cache: dict = {}
     extras_cache: dict = {}
     days_cache: dict = {}
@@ -503,7 +504,10 @@ def create_app(cfg: Config | None = None) -> Flask:
                       "hatchery": "ancient hatchery" in (p.text or "").lower()} for p in fresh]
         filters = {"range": key, "who": who, "quotes": "1" if quotes else "0",
                    "from": args.get("from", ""), "to": args.get("to", "")}
-        updated = last_run.finished_at.strftime("%Y-%m-%dT%H:%M:%SZ") if last_run and last_run.finished_at else None
+        done = last_run.finished_at if last_run and last_run.finished_at else None
+        if quick.get("at") and (done is None or quick["at"] > done):
+            done = quick["at"]                   # the quick share channel check counts as an update too
+        updated = done.strftime("%Y-%m-%dT%H:%M:%SZ") if done else None
         return items, pinned_items, filters, updated, newcomers
 
     # Old addresses (the onrender.com host, the pre-pdtools paths) land on the new ones.
@@ -2622,6 +2626,41 @@ def create_app(cfg: Config | None = None) -> Flask:
             app.logger.exception("Background collection failed")
         finally:
             collect_lock.release()
+
+    # The share channel on its own, every 2 minutes (Supabase cron), so a post shared on Discord shows on pdtools
+    # within a couple of minutes instead of waiting for the 20 minute collection. Reading Discord and X's oEmbed is
+    # free; the run is only written down when it added something.
+    def discord_in_background():
+        from .discord_share import collect_discord
+        from .xapi import XClient
+        added = 0
+        try:
+            with Session() as s:
+                now = utcnow()
+                run = CollectorRun(started_at=now, status="discord")
+                added = collect_discord(s, cfg, run, now, client=XClient(cfg.x_bearer_token) if cfg.x_bearer_token else None)
+                if added or run.est_cost_usd:
+                    run.finished_at = utcnow()
+                    s.add(run)
+                s.commit()
+            quick["at"] = utcnow()
+            if added:
+                clear_feed()
+        except Exception:  # noqa: BLE001
+            app.logger.exception("Quick Discord read failed")
+        finally:
+            collect_lock.release()
+
+    @app.post("/cron/discord")
+    def cron_discord():
+        if not (cfg.discord_bot_token and cfg.discord_channel_ids):
+            return {"started": False, "reason": "off"}, 503
+        if quick["at"] and utcnow() - quick["at"] < timedelta(seconds=75):
+            return {"started": False, "reason": "too soon"}, 200
+        if not collect_lock.acquire(blocking=False):
+            return {"started": False, "reason": "already running"}, 200
+        threading.Thread(target=discord_in_background, daemon=True).start()
+        return {"started": True}, 202
 
     @app.post("/cron/collect")
     def cron_collect():

@@ -125,6 +125,10 @@ def collect_discord(s, cfg, run, now: datetime, client=None, http=None) -> int:
         # 2. read a batch for free through oEmbed
         batch, rest = queue[:cfg.discord_max_per_run], queue[cfg.discord_max_per_run:]
         found = []
+        # X's oEmbed can answer "not found" for a minute or two after a post goes up: try again a few runs
+        # before giving up on it, so a fresh share is never dropped for good on its first look
+        tries = json.loads(get_setting(s, "discord_retry") or "{}")
+        later = []
         for i, pid in enumerate(batch):
             got = oembed.fetch(pid, http)
             if got is None:                 # X busy: keep the rest for next run
@@ -132,6 +136,14 @@ def collect_discord(s, cfg, run, now: datetime, client=None, http=None) -> int:
                 break
             if got and got.get("username"):
                 found.append((pid, got))
+                tries.pop(pid, None)
+            elif tries.get(pid, 0) < 5 and now - x_time(pid) < timedelta(hours=6):
+                tries[pid] = tries.get(pid, 0) + 1
+                later.append(pid)
+            else:
+                tries.pop(pid, None)
+        rest = rest + later
+        set_setting(s, "discord_retry", json.dumps(dict(list(tries.items())[-300:])))
         set_setting(s, "discord_queue", json.dumps(rest[:500]))
         if not found:
             return 0

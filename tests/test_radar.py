@@ -3441,3 +3441,38 @@ def test_mint_month_safety_news_and_dragon_guard_in_the_daily_goal(cfg, Session,
     for lang, pack in build().items():
         for k in ("sfT1", "sfT12", "sfPromise", "xGsGuard", "xDexHowGuard", "sGuard"):
             assert len(re.findall(r"\b" + k + ":", pack)) == 2, (lang, k)
+
+
+def test_discord_share_tries_again_when_x_does_not_know_a_fresh_post_yet(cfg, Session):
+    """oEmbed can say "not found" for a minute after a post goes up: the share waits for the next runs, then lands."""
+    from radar.discord_share import collect_discord
+    now = utcnow()
+    a = x_id(now - timedelta(minutes=1))
+    cfg.discord_bot_token, cfg.discord_channel_ids = "tok", "123"
+    http = FakeHttp([{"id": "950", "content": f"https://x.com/ann/status/{a}"}], {})          # X: not found yet
+    with Session() as s:
+        run = CollectorRun(started_at=now); s.add(run)
+        assert collect_discord(s, cfg, run, now, http=http) == 0
+        s.commit()
+        assert a in get_setting(s, "discord_queue")
+    http2 = FakeHttp([], {a: ("Ann 🐉", "ann", "fresh egg")})
+    with Session() as s:
+        run = CollectorRun(started_at=now); s.add(run)
+        assert collect_discord(s, cfg, run, now + timedelta(minutes=2), http=http2) == 1
+        s.commit()
+        assert s.get(Post, a) is not None and a not in get_setting(s, "discord_queue")
+    # a post that stays gone is let go after a few tries
+    b = x_id(now - timedelta(minutes=1))
+    http3 = FakeHttp([{"id": "951", "content": f"https://x.com/bob/status/{b}"}], {})
+    for i in range(7):
+        with Session() as s:
+            run = CollectorRun(started_at=now); s.add(run)
+            collect_discord(s, cfg, run, now + timedelta(minutes=2 * i), http=http3)
+            s.commit()
+    with Session() as s:
+        assert b not in get_setting(s, "discord_queue")
+
+
+def test_quick_discord_check_runs_alone_and_is_not_spammable(client, cfg):
+    cfg.discord_bot_token, cfg.discord_channel_ids = "", ""
+    assert client.post("/cron/discord").status_code == 503                   # off until the bot is set up

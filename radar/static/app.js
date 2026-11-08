@@ -939,13 +939,13 @@
   $("love-show").addEventListener("click", loveOff);
   $("showOpened").addEventListener("change", (e) => { showOpened = e.target.checked; store.set("radar:showOpened", showOpened); render(); });
 
-  // ---------- status line: when posts were last collected and when the next check runs (every 20 minutes) ----------
+  // ---------- status line: when posts were last collected and when the next check runs (the share channel every 2 minutes) ----------
   let updatedAt = data.updated ? Date.parse(data.updated) : null;
   function statusLine() {
     const el2 = $("status-line"); if (!el2) return;
     if (!updatedAt) { el2.textContent = ""; return; }
     const mins = Math.max(0, Math.round((Date.now() - updatedAt) / 6e4));
-    const next = 20 - (new Date().getUTCMinutes() % 20);
+    const next = 2 - (new Date().getUTCMinutes() % 2);
     const ago2 = mins < 1 ? "just now" : mins < 60 ? `${mins} min ago` : `${Math.floor(mins / 60)}h ago`;
     el2.textContent = mins >= 60 ? `Updated ${ago2}` : `Updated ${ago2} \u00b7 next check in ${next} min`;
     el2.classList.toggle("stale", mins >= 60);

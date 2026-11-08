@@ -113,7 +113,7 @@ class BlockedAuthor(Base):
 
 
 # Run rows that are not scheduled collections (card lookups, directory checks)
-SIDE_RUNS = ("keeper_lookup", "directory_add")
+SIDE_RUNS = ("keeper_lookup", "directory_add", "discord")   # "discord": the quick share channel check every 2 minutes
 
 
 class CollectorRun(Base):
