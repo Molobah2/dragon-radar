@@ -5761,10 +5761,9 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     get active() { return state !== 'off' || (SHOT && RT != null); },
     get waiting() { return state === 'arrive' || state === 'wait'; },
     get busy() { return state !== 'off'; },
-    start(hold) { if (SHOT) { if (RT != null) { grp.visible = true; body.classList.add('rv-on'); $('rv').hidden = false; } return; } perfWatch(); startWait(seen ? 'short' : 'full', hold); },
-    release() { if (held) go_(); },
+    start(hold) { if (SHOT) { if (RT != null) { grp.visible = true; body.classList.add('rv-on'); $('rv').hidden = false; } return; } perfWatch(); startWait('full', hold); },   // walking in always gets the whole reveal, at the same pace as REVEAL AGAIN (8 Nov: the quick version felt rushed)
     press() { if (!(state === 'wait' || state === 'arrive' || state === 'hatch')) return; SND.unlock(); if (state !== 'hatch' && !beginHatch()) return; holding = true; auto = false; pressT = clock.getElapsedTime(); ui('going'); },
-    release() { if (!holding) return; holding = false; SND.unlock(); if (clock.getElapsedTime() - pressT < 0.3) auto = true; ui('going'); },
+    release() { if (held) { go_(); return; } if (!holding) return; holding = false; SND.unlock(); if (clock.getElapsedTime() - pressT < 0.3) auto = true; ui('going'); },
     tap() { this.press(); if (state === 'hatch') { auto = true; holding = false; ui('going'); } },
     skip() { if (state === 'off') return; SND.droneStop(); finish(); },
     again() { if (state !== 'off' || exporting) return; startWait('full'); },
