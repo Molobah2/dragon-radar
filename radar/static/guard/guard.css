@@ -7,7 +7,7 @@
 @font-face{font-family:Fredoka;src:url(/guard/fonts/fredoka-700.woff2) format("woff2");font-weight:700;font-display:swap}
 @font-face{font-family:Cinzel;src:url(/guard/fonts/cinzel-700.woff2) format("woff2");font-weight:700;font-display:swap}
 :root{
-  --fs:1.12;--mw:760px;--u:1;
+  --fs:.95;--mw:720px;--u:1;
   --night:#17110e;--stone:#2a211c;--stone2:#3a2e27;--stone3:#4b3c32;--line:#6a5442;
   --cream:#f7ecd5;--cream2:#d9c7a6;--parch:#f4e5c4;--parch2:#ead4a6;--ink:#2b1d12;--ink2:#5a4330;
   --bronze:#c58c45;--bronze2:#93601f;--bronze3:#6e4512;--torch:#ffb257;
@@ -391,10 +391,10 @@ html{scroll-padding-top:76px;scroll-padding-bottom:100px}
 .lesson-top>div:nth-child(2){min-width:0;flex:1} .lesson-top .eyebrow{white-space:nowrap} .lesson-top>div:nth-child(2)>div{font-size:calc(clamp(17px,4.6vw,20px) * var(--fs))} @media (max-width:360px){.lesson-top .dots{max-width:64px;flex-wrap:wrap;justify-content:flex-end}}
 
 /* Bigger everywhere (8 Nov): text and the things you tap scale up with the screen, and the page uses the width it has */
-@media (max-width:360px){:root{--fs:1.04}}
-@media (min-width:700px){:root{--fs:1.1;--mw:900px;--u:1.08}}
-@media (min-width:1000px){:root{--fs:1.12;--mw:1080px;--u:1.12}}
-@media (min-width:1500px){:root{--fs:1.18;--mw:1160px;--u:1.16}}
+@media (max-width:360px){:root{--fs:.92}}
+@media (min-width:700px){:root{--fs:.94;--mw:820px;--u:1}}
+@media (min-width:1000px){:root{--fs:.94;--mw:940px;--u:1}}
+@media (min-width:1500px){:root{--fs:1;--mw:1000px;--u:1.04}}
 .stone{grid-template-columns:calc(58px * var(--u)) 1fr auto;min-height:calc(64px * var(--u));gap:calc(12px * var(--u))}
 .stone .n{width:calc(56px * var(--u));height:calc(56px * var(--u))}
 .path::before{left:calc(27px * var(--u))}
@@ -477,4 +477,14 @@ h1.kin{white-space:pre-wrap}
 /* laptops: the lesson card fits one screen at 100% zoom; the picture never grows taller than the space beside the text */
 @media (min-width:1000px){.card .body{font-size:calc(17px * var(--fs));line-height:1.55}.card h2{font-size:calc(34px * var(--fs))}}
 /* short laptop screens (1366x768 and the like): a little smaller still, so a lesson card fits at 100% zoom */
-@media (min-width:1000px) and (max-height:780px){:root{--fs:1;--u:1}.cl .art{height:min(22vh,200px)!important}.lesson-top{padding-block:0}.card .body{line-height:1.45}}
+@media (min-width:1000px) and (max-height:780px){:root{--fs:.88;--u:.94}.cl .art{height:min(22vh,200px)!important}.lesson-top{padding-block:0}.card .body{line-height:1.45}}
+
+/* 9 Nov: keep pictures to a calm size so they never grow tall or stretch on big screens */
+.card .art{max-height:min(34vh,260px)}.q-art{max-height:min(20vh,170px)}.res-art,.tool-art{max-height:min(28vh,220px)}.today .art{max-height:260px}
+@media (min-width:640px){.today .art{max-height:none}}
+.stem{font-size:calc(clamp(20px,5.2vw,25px) * var(--fs))}
+.opt{min-height:54px;font-size:calc(clamp(16px,4.4vw,18px) * var(--fs));padding:10px 14px}
+.fb h3{font-size:calc(clamp(19px,5vw,22px) * var(--fs))}.fb p,.fb li{font-size:calc(clamp(15px,4.2vw,17px) * var(--fs))}
+.honour h2{font-size:calc(clamp(26px,6.8vw,34px) * var(--fs))}.honour .lines{font-size:calc(clamp(16px,4.4vw,19px) * var(--fs))}
+.result h2{font-size:calc(clamp(24px,6.4vw,30px) * var(--fs))}
+#qdone,#lcheck,#qnext,.nav .btn{min-height:50px;font-size:calc(17px * var(--fs))}
