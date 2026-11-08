@@ -223,5 +223,7 @@
  "rpAgain": "Xem lại",
  "rpSite": "Một trang bạn chưa từng chọn",
  "rpSeed": "Nó đòi cụm từ khôi phục của bạn",
- "rpSign": "Một chữ ký bạn không định ký"
+ "rpSign": "Một chữ ký bạn không định ký",
+ "openNow": "Đã mở · chưa bắt đầu",
+ "inProgress": "Đang học"
 }

@@ -223,5 +223,7 @@
  "rpAgain": "Tonton lagi",
  "rpSite": "Situs yang tidak pernah kamu pilih",
  "rpSeed": "Situs ini meminta seed phrase-mu",
- "rpSign": "Tanda tangan yang tidak kamu rencanakan"
+ "rpSign": "Tanda tangan yang tidak kamu rencanakan",
+ "openNow": "Terbuka · belum dimulai",
+ "inProgress": "Sedang berjalan"
 }

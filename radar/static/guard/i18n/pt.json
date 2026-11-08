@@ -223,5 +223,7 @@
  "rpAgain": "Ver de novo",
  "rpSite": "Um site que você nunca escolheu",
  "rpSeed": "Ele pede sua frase semente",
- "rpSign": "Uma assinatura que você não planejou"
+ "rpSign": "Uma assinatura que você não planejou",
+ "openNow": "Aberta · não iniciada",
+ "inProgress": "Em andamento"
 }

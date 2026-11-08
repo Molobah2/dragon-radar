@@ -223,5 +223,7 @@
  "rpAgain": "Revoir",
  "rpSite": "Un site que tu n'as jamais choisi",
  "rpSeed": "Il demande ta phrase secrète",
- "rpSign": "Une signature que tu n'avais pas prévue"
+ "rpSign": "Une signature que tu n'avais pas prévue",
+ "openNow": "Ouverte · pas commencée",
+ "inProgress": "En cours"
 }

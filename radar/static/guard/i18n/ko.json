@@ -223,5 +223,7 @@
  "rpAgain": "다시 보기",
  "rpSite": "직접 고른 적 없는 사이트",
  "rpSeed": "시드 문구를 요구해요",
- "rpSign": "계획하지 않은 서명"
+ "rpSign": "계획하지 않은 서명",
+ "openNow": "열림 · 시작 전",
+ "inProgress": "진행 중"
 }

@@ -41,7 +41,7 @@ const store = {
 };
 // EP: the course start every device shares. 8 Nov 2026 is day 1 for everyone: progress saved before it starts fresh
 // (the notice already read and the timer choice are kept).
-const EP = 1;
+const EP = 2;
 const fresh = () => ({ v: 1, ep: EP, id: Math.random().toString(36).slice(2, 10), seen: 0, mods: {}, items: {}, days: {}, checks: {}, drills: {}, timer: "", quiz: null, first: localKey() });
 let S = store.get() || fresh();
 if (!S.v) S = fresh();
@@ -170,7 +170,7 @@ function home() {
   for (let m = 1; m <= N; m++) {
     const s = st(m), open = isOpen(m);
     const cls = !open ? "locked" : s.done && !s.need ? "done" : s.need ? "need" : m === tm ? "open today" : "open";
-    const status = !open ? T("opensOn", "Opens {d}", { d: fmtDate(opensAt(m)) }) : s.done && !s.need ? T("doneLbl", "Done") : s.need ? T("needs", "Needs review") : s.read ? T("quizNext", "Quiz next") : "";
+    const status = !open ? T("opensOn", "Opens {d}", { d: fmtDate(opensAt(m)) }) : s.done && !s.need ? T("doneLbl", "Done") : s.need ? T("needs", "Needs review") : s.read ? T("quizNext", "Quiz next") : s.started ? T("inProgress", "In progress") : T("openNow", "Open now · not started");
     const mt = meta(m);
     const inner = `<span class="n">${s.done && !s.need ? "✓" : m}</span><span class="t"><b>${esc(mt.title)}</b><small>${esc(mt.tag)} · ${esc(T("min", "{n} min", { n: mt.minutes }))}</small></span><span class="s">${esc(status)}</span>`;
     path += open ? `<li><a class="stone ${cls}" href="#m${m}">${inner}</a></li>` : `<li><div class="stone ${cls}" aria-disabled="true">${inner}</div></li>`;

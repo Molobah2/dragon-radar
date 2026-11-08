@@ -223,5 +223,7 @@
  "rpAgain": "Tekrar izle",
  "rpSite": "Hiç seçmediğin bir site",
  "rpSeed": "Kurtarma ifadeni istiyor",
- "rpSign": "Planlamadığın bir imza"
+ "rpSign": "Planlamadığın bir imza",
+ "openNow": "Açık · başlanmadı",
+ "inProgress": "Devam ediyor"
 }

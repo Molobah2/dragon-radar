@@ -223,5 +223,7 @@
  "rpAgain": "Verlo otra vez",
  "rpSite": "Un sitio que nunca elegiste",
  "rpSeed": "Te pide tu frase semilla",
- "rpSign": "Una firma que no planeabas"
+ "rpSign": "Una firma que no planeabas",
+ "openNow": "Abierta · sin empezar",
+ "inProgress": "En curso"
 }

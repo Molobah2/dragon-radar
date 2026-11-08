@@ -461,3 +461,5 @@ h1.kin{white-space:pre-wrap}
 @keyframes scoreIn{from{opacity:0;transform:scale(1.5)}}
 .res-art{position:relative;overflow:hidden}
 .embers{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+/* the path tells open lessons apart from finished ones: open ones say so in torch orange, finished ones keep the green tick */
+.stone.open .s{color:var(--torch)}
