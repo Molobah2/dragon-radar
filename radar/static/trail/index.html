@@ -2509,7 +2509,9 @@ const KTL = (() => {
   let card = null;
   const val = (k) => { const c = card || DEMO; if (k === 'badges') k = 'followers';
     if (k === 'initials') return (c.name || '').split(/\s+/).filter(Boolean).map(s => [...s][0]).join('').slice(0, 2).toUpperCase();
+    if (k === 'views' && c.viewsN != null && c.viewsN !== '' && isFinite(+c.viewsN)) return views2(+c.viewsN);   // two decimal places (8 Nov, Jon and Shiv)
     const v = c[k]; return v == null ? '' : String(v); };
+  const views2 = (n) => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e4 ? (n / 1e3).toFixed(2) + 'K' : Math.round(n).toLocaleString('en-US');
   const img = (src) => new Promise((ok, no) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => ok(i); i.onerror = no; i.src = src; });
   const canvasOf = (im) => { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext('2d', { willReadFrequently: true }).drawImage(im, 0, 0); return c; };   // a CPU canvas: encoding it never waits on the graphics card
   const caseOf = (s, tt) => tt === 'uppercase' ? s.toUpperCase() : tt === 'lowercase' ? s.toLowerCase() : s;
@@ -2552,36 +2554,11 @@ const KTL = (() => {
     const room = Math.max(10, b.hi - b.lo), k = W > room ? room / W : 1; W *= k;
     let px = b.anchor === 'r' ? b.x1 - W : b.anchor === 'c' ? (b.x0 + b.x1) / 2 - W / 2 : b.x0;
     px = Math.max(b.lo, Math.min(px, b.hi - W));
-    const numX = px;
     if (b.box && !ink) {   // the bubble behind the words grows and shrinks with them
       const bw = W + b.box.pl + b.box.pr, by = b.box.rect[1], bh = b.box.rect[3];
       x.fillStyle = b.box.bg; rrect(x, px - b.box.pl, by, bw, bh, b.box.r); x.fill();
     }
     parts.forEach(p => { px += p.gap * k; put(x, p.str, p.g, k, px, p.g.y, ink); px += p.w * k; });
-    const vs = b.anchor === 'r' && b.segs.find(g => g.k === 'views'); if (vs) milestone(x, b, numX, vs, ink);
-  }
-  // the views tile: the space between the label and the number shows the road to the next views milestone (8 Nov, Jon)
-  const MILES = [100, 250, 500, 1e3, 2.5e3, 5e3, 1e4, 2.5e4, 5e4, 1e5, 2.5e5, 5e5, 1e6, 2.5e6, 5e6, 1e7, 2.5e7, 5e7, 1e8];
-  const shortN = (n) => n >= 1e6 ? (n / 1e6).toFixed(n % 1e6 ? 1 : 0).replace(/\.0$/, '') + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n % 1e3 ? 1 : 0).replace(/\.0$/, '') + 'K' : String(n);
-  function viewsNum() { const c = card || DEMO; if (+c.viewsN >= 0 && c.viewsN !== '' && c.viewsN != null) return +c.viewsN;
-    const m = String(c.views || '').replace(/,/g, '').match(/^([\d.]+)\s*([KkMm]?)/); return m ? parseFloat(m[1]) * (/k/i.test(m[2]) ? 1e3 : /m/i.test(m[2]) ? 1e6 : 1) : 0; }
-  function milestone(x, b, numX, g, ink) {
-    const v = viewsNum(), next = MILES.find(m => m > v) || MILES[MILES.length - 1], q = Math.max(0.03, Math.min(1, v / next));
-    const fs = parseFloat((g.f.match(/([\d.]+)px/) || [0, 190])[1]), base = g.y, mid = base - fs * 0.36;
-    const x0 = b.lo + 96, x1 = numX - 44, room = x1 - x0; if (room < 120) return;           // clear of the label; a long number leaves no space, so nothing is squeezed in
-    const w = Math.min(room, 460), bx = x0 + (room - w) / 2, by = mid + 10, bh = 16;
-    const col = ink || (g.fill && !/rgba\([^)]*,\s*0\)$/.test(g.fill) ? g.fill : g.col) || '#fff';
-    const rgb = (a) => { const m = String(col).match(/rgba?\(([^)]+)\)/); if (!m) return col; const p = m[1].split(',').slice(0, 3).join(','); return `rgba(${p},${a})`; };
-    x.save();
-    x.fillStyle = rgb(ink ? 1 : 0.18); rrect(x, bx, by, w, bh, bh / 2); x.fill();
-    x.fillStyle = rgb(ink ? 1 : 0.88); rrect(x, bx, by, Math.max(bh, w * q), bh, bh / 2); x.fill();
-    const label = 'NEXT ' + shortN(next), pct = Math.floor(q * 100) + '%', both = w >= 300;
-    let fz = 26; x.font = `600 ${fz}px Pop, system-ui, sans-serif`; const tw = (str) => x.measureText(str).width + 3.5 * [...str].length;
-    if (tw(label) > w) { fz = Math.max(16, Math.floor(fz * w / tw(label))); x.font = `600 ${fz}px Pop, system-ui, sans-serif`; }   // a narrow gap: smaller words, never past the bar
-    x.textBaseline = 'alphabetic';
-    const say = (str, at, right) => { let cx = right ? at - tw(str) : at; for (const ch of str) { x.fillText(ch, cx, by - 18); cx += x.measureText(ch).width + 3.5; } };
-    x.fillStyle = rgb(ink ? 1 : 0.72); say(label, bx, false); if (both) say(pct, bx + w, true);
-    x.restore();
   }
   function heat(x, h) {
     const r = (card || DEMO).rhythm || [];
