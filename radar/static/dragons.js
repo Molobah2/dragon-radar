@@ -821,21 +821,22 @@
   };
   let swapArm = 0;
   let swapArmR = 0;
+  // the swap rows always show (8 Nov: a Keeper saw the swap once and thought it was gone): ready, how many spares
+  // are still needed, or that every dragon of that kind is already found
   function renderSwap() {
-    const box = $("dex-swap");
-    if (box) {
-      const give = swapPick(), n = spareCount();
-      box.hidden = !give || !swapMissing().length;
-      if (!box.hidden) { $("dex-swap-text").textContent = `You have ${n} spare dragons. Swap ${nameList(give)} for a dragon you have not found yet.`; $("dex-swap-btn").textContent = "Swap 3 spares"; }
-      swapArm = 0;
-    }
-    const boxR = $("dex-swap-r");
-    if (boxR) {
-      const give = swapPick("rare"), n = spareCount("rare");
-      boxR.hidden = !give || !swapMissing("rare").length;
-      if (!boxR.hidden) { $("dex-swap-r-text").textContent = `You have ${n} spare holo dragons. Swap ${nameList(give)} for a holo you have not found yet.`; $("dex-swap-r-btn").textContent = "Swap 3 holos"; }
-      swapArmR = 0;
-    }
+    const row = (box, txt, btn, tier, ready, label) => {
+      if (!box) return;
+      const give = swapPick(tier), n = spareCount(tier), left = swapMissing(tier).length;
+      box.hidden = false; btn.textContent = label; btn.disabled = !(give && left);
+      box.classList.toggle("ready", !btn.disabled);
+      txt.textContent = !left ? (tier === "rare" ? "You have found every holo dragon. Nothing left to swap for." : "You have found every common dragon. Nothing left to swap for.")
+        : give ? ready(n, give)
+        : tier === "rare" ? `Spare holos: ${Math.min(n, SWAP)} of 3. Three spare holos swap for a holo you have not found yet.`
+        : `Spare dragons: ${Math.min(n, SWAP)} of 3. Three spare dragons swap for a dragon you have not found yet.`;
+    };
+    row($("dex-swap"), $("dex-swap-text"), $("dex-swap-btn"), "common", (n, give) => `You have ${n} spare dragons. Swap ${nameList(give)} for a dragon you have not found yet.`, "Swap 3 spares");
+    row($("dex-swap-r"), $("dex-swap-r-text"), $("dex-swap-r-btn"), "rare", (n, give) => `You have ${n} spare holo dragons. Swap ${nameList(give)} for a holo you have not found yet.`, "Swap 3 holos");
+    swapArm = 0; swapArmR = 0;
   }
   function doSwap(tier = "common") {
     const give = swapPick(tier), missing = swapMissing(tier);

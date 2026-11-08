@@ -1375,3 +1375,5 @@ body.dark-sky .side-new-list a:hover, html.theme-dark .side-new-list a:hover { b
 @media (max-width: 760px) {
   html:not([lang="en"]) .rail .tab { white-space: normal; line-height: 1.15; min-height: 40px; overflow-wrap: anywhere; }
 }
+.dex-swap:not(.ready) { background: rgba(127, 127, 127, .1); }
+.dex-swap .btn:disabled { opacity: .5; cursor: default; }
