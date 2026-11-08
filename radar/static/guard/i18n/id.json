@@ -225,5 +225,7 @@
  "rpSeed": "Situs ini meminta seed phrase-mu",
  "rpSign": "Tanda tangan yang tidak kamu rencanakan",
  "openNow": "Terbuka · belum dimulai",
- "inProgress": "Sedang berjalan"
+ "inProgress": "Sedang berjalan",
+ "resumeQ": "Lanjutkan dari pertanyaan {n}",
+ "netQ": "Pertanyaan tidak termuat. Periksa koneksi dan coba lagi."
 }

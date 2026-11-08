@@ -225,5 +225,7 @@
  "rpSeed": "Nó đòi cụm từ khôi phục của bạn",
  "rpSign": "Một chữ ký bạn không định ký",
  "openNow": "Đã mở · chưa bắt đầu",
- "inProgress": "Đang học"
+ "inProgress": "Đang học",
+ "resumeQ": "Tiếp tục từ câu {n}",
+ "netQ": "Câu hỏi chưa tải được. Hãy kiểm tra kết nối và thử lại."
 }

@@ -225,5 +225,7 @@
  "rpSeed": "Kurtarma ifadeni istiyor",
  "rpSign": "Planlamadığın bir imza",
  "openNow": "Açık · başlanmadı",
- "inProgress": "Devam ediyor"
+ "inProgress": "Devam ediyor",
+ "resumeQ": "{n}. sorudan devam et",
+ "netQ": "Sorular yüklenmedi. Bağlantını kontrol edip tekrar dene."
 }

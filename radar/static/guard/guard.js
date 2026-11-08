@@ -22,6 +22,8 @@ const utcKey = (ms = now()) => new Date(ms).toISOString().slice(0, 10);
 const dayNo = (key) => Math.round(Date.parse(key + "T00:00:00Z") / 864e5);
 const opensAt = (m) => Date.parse(CFG.dates[m] + "T00:00:00Z");
 const isOpen = (m) => now() >= opensAt(m);
+// lessons open at 00:00 UTC; away from UTC the label carries the local time too, so nobody waits on a wrong day
+const whenOpens = (m) => { const ms = opensAt(m), d = new Date(ms); return d.getHours() || d.getMinutes() ? fmtDate(ms, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : fmtDate(ms); };
 const lang = (() => { let l = null; try { l = localStorage.getItem("radar:lang"); } catch (e) {} if (!l) l = (navigator.language || "en").slice(0, 2); return ["en","es","fr","pt","tr","ru","vi","id","ko","zh"].includes(l) ? l : "en"; })();
 const fmtDate = (ms, o = { weekday: "short", day: "numeric", month: "short" }) => { try { return new Intl.DateTimeFormat(lang, o).format(new Date(ms)); } catch (e) { return new Date(ms).toDateString(); } };
 
@@ -31,7 +33,7 @@ const T = (k, en, vars) => { let s = TX[k] || en; if (vars) for (const v in vars
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 /* ---------- storage that never breaks the course ---------- */
-const KEY = "pd:guard";
+const KEY = CFG.now ? "pd:guard:preview" : "pd:guard";   // a test clock never writes fake dates into real progress
 const mem = {};
 let canStore = true;
 try { localStorage.setItem("pd:guard:t", "1"); localStorage.removeItem("pd:guard:t"); } catch (e) { canStore = false; }
@@ -43,10 +45,24 @@ const store = {
 // (the notice already read and the timer choice are kept).
 const EP = 2;
 const fresh = () => ({ v: 1, ep: EP, id: Math.random().toString(36).slice(2, 10), seen: 0, mods: {}, items: {}, days: {}, checks: {}, drills: {}, timer: "", quiz: null, first: localKey() });
-let S = store.get() || fresh();
-if (!S.v) S = fresh();
+const okQuiz = (q) => q && typeof q === "object" && Array.isArray(q.ids) && q.ids.length && q.ids.every((i) => typeof i === "string" && /^m\d+q/.test(i)) && Number.isInteger(q.i) && q.i >= 0 && Array.isArray(q.ans);
+const obj = (x) => x && typeof x === "object" && !Array.isArray(x) ? x : {};
+// whatever comes out of storage or a pasted code is checked field by field, so a broken or hand-made save cannot break the course
+function norm(o) {
+  const f = fresh(); if (!o || typeof o !== "object") return f;
+  return Object.assign(f, { v: 1, ep: o.ep, id: typeof o.id === "string" ? o.id.slice(0, 20) : f.id, seen: o.seen ? 1 : 0, mods: obj(o.mods), items: obj(o.items), days: obj(o.days), checks: obj(o.checks), drills: obj(o.drills), qd: obj(o.qd), timer: ["on", "relaxed", "off", ""].includes(o.timer) ? o.timer : "", quiz: okQuiz(o.quiz) ? o.quiz : null, first: typeof o.first === "string" ? o.first : f.first });
+}
+let S = store.get();
+S = S && S.v ? norm(S) : fresh();
 if (S.ep !== EP) { const keep = { seen: S.seen ? 1 : 0, timer: typeof S.timer === "string" ? S.timer : "", qd: S.qd && typeof S.qd === "object" ? S.qd : {} }; S = Object.assign(fresh(), keep); store.set(S); }
-const save = () => store.set(S);
+const save = () => { const cur = store.get(); if (cur && typeof cur.ep === "number" && cur.ep > EP) { location.reload(); return; } store.set(S); };
+window.addEventListener("storage", (e) => {
+  if (e.key !== KEY || !e.newValue) return;
+  let o = null; try { o = JSON.parse(e.newValue); } catch (err) { return; }
+  if (!o || o.ep !== EP) { location.reload(); return; }
+  if (route === "q" && S.quiz) return;                      // never pull the floor out from under a running quiz
+  S = norm(o); render();
+});
 const touchDay = () => { S.days[localKey()] = 1; };
 function showRibbon() {
   const r = $("#ribbon"); r.hidden = false;
@@ -158,7 +174,7 @@ function home() {
     const mt = meta(tm);
     todayHtml = `<div class="parch today" id="todaycard"><div class="art" style="background-image:url(${art(mt.art)})"></div><div class="body"><span class="eyebrow" style="color:#7a4a16">${esc(T("lessonN", "Lesson {n} of 14", { n: tm }))}</span><h2>${esc(mt.title)}</h2><div class="meta"><span>${esc(T("min", "{n} min", { n: mt.minutes }))} · ${esc(T("then6", "then 6 questions"))}</span>${s.need ? `<span class="chip need">${esc(T("needs", "Needs review"))}</span>` : ""}</div><p class="muted">${esc(mt.takeaway)}</p><a class="btn main wide" href="#${s.read ? "honour/" + tm : "m" + tm}">${esc(label)}</a></div></div>`;
   } else {
-    todayHtml = `<div class="parch today"><div class="art" style="background-image:url(${art("shield")})"></div><div class="body"><span class="eyebrow" style="color:#7a4a16">${esc(T("allDone", "All open lessons done"))}</span><h2>${esc(oc < N ? T("nextOn", "Next lesson opens {d}", { d: fmtDate(opensAt(oc + 1)) }) : T("wellGuarded", "Your hoard is well guarded"))}</h2><p class="muted">${esc(oc < N ? T("comeBack", "Come back then. Until then, practise any lesson again.") : T("weekly", "Keep sharp with the weekly Guard Drill and Check Day."))}</p>${oc >= N || weeklyDue() ? `<a class="btn main wide" href="#honour/drill">${esc(T("drillBtn", "Start the Guard Drill"))}</a>` : ""}</div></div>`;
+    todayHtml = `<div class="parch today"><div class="art" style="background-image:url(${art("shield")})"></div><div class="body"><span class="eyebrow" style="color:#7a4a16">${esc(T("allDone", "All open lessons done"))}</span><h2>${esc(oc < N ? T("nextOn", "Next lesson opens {d}", { d: whenOpens(oc + 1) }) : T("wellGuarded", "Your hoard is well guarded"))}</h2><p class="muted">${esc(oc < N ? T("comeBack", "Come back then. Until then, practise any lesson again.") : T("weekly", "Keep sharp with the weekly Guard Drill and Check Day."))}</p>${oc >= N || weeklyDue() ? `<a class="btn main wide" href="#honour/drill">${esc(T("drillBtn", "Start the Guard Drill"))}</a>` : ""}</div></div>`;
   }
   const drillHtml = drill && oc ? `<div class="panel check"><h3>${esc(T("mintReady", "Mint Ready drill"))}</h3><p>${esc(T("drill_" + dk, drill))} ${esc(T("drillWhy", "Five quick questions to make sure you are ready."))}</p>${S.drills[dk] ? `<p class="chip good">${esc(T("drillDone", "Done for today"))}</p>` : `<a class="btn main" href="#honour/drill">${esc(T("drillGo", "Start the drill"))}</a>`}</div>` : "";
   const qdone = !!(S.qd && S.qd[localKey()]);
@@ -170,7 +186,7 @@ function home() {
   for (let m = 1; m <= N; m++) {
     const s = st(m), open = isOpen(m);
     const cls = !open ? "locked" : s.done && !s.need ? "done" : s.need ? "need" : m === tm ? "open today" : "open";
-    const status = !open ? T("opensOn", "Opens {d}", { d: fmtDate(opensAt(m)) }) : s.done && !s.need ? T("doneLbl", "Done") : s.need ? T("needs", "Needs review") : s.read ? T("quizNext", "Quiz next") : s.started ? T("inProgress", "In progress") : T("openNow", "Open now · not started");
+    const status = !open ? T("opensOn", "Opens {d}", { d: whenOpens(m) }) : s.done && !s.need ? T("doneLbl", "Done") : s.need ? T("needs", "Needs review") : s.read ? T("quizNext", "Quiz next") : s.started ? T("inProgress", "In progress") : T("openNow", "Open now · not started");
     const mt = meta(m);
     const inner = `<span class="n">${s.done && !s.need ? "✓" : m}</span><span class="t"><b>${esc(mt.title)}</b><small>${esc(mt.tag)} · ${esc(T("min", "{n} min", { n: mt.minutes }))}</small></span><span class="s">${esc(status)}</span>`;
     path += open ? `<li><a class="stone ${cls}" href="#m${m}">${inner}</a></li>` : `<li><div class="stone ${cls}" aria-disabled="true">${inner}</div></li>`;
@@ -380,7 +396,7 @@ function Replay(host, simData) {
   }
   // anything that moves the layout (fonts arriving, a resize, the film stage) is measured again
   const again = () => { geo = null; seek(lastT); };
-  if (window.ResizeObserver) new ResizeObserver(() => { geo = null; }).observe(wrap);
+  if (window.ResizeObserver) { let rt = 0; new ResizeObserver(() => { geo = null; clearTimeout(rt); rt = setTimeout(() => { if (wrap.isConnected) again(); }, 120); }).observe(wrap); }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(again);
   window.GUARD_REPLAY = { seek, duration: END, run, measure: again };
   return window.GUARD_REPLAY;
@@ -573,6 +589,14 @@ async function lesson(m, c) {
   window.scrollTo(0, 0);
 }
 
+// a lost connection never leaves a dead button: say so and offer the same screen again
+function netFail() {
+  const old = $("#netfail"); if (old) old.remove();
+  main.insertAdjacentHTML("afterbegin", `<div class="panel" id="netfail" role="alert">${esc(T("netQ", "The questions did not load. Check your connection and try again."))} <button class="btn ghost" type="button" id="netretry">${esc(T("retry", "Try again"))}</button></div>`);
+  $("#netretry").onclick = () => { $("#netfail").remove(); render(); };
+  main.scrollIntoView({ block: "start" });
+}
+
 /* ---------- honour card ---------- */
 function honour(which) {
   const isDaily = which === "daily", isDrill = which === "drill" || isDaily, m = isDrill ? 0 : +which;
@@ -585,10 +609,14 @@ function honour(which) {
   <a class="btn main wide" href="#q" id="swear2">${esc(T("hBtn", "I answer on my own"))}</a>
   ${isDrill ? "" : `<a href="#m${m}">${esc(T("backLesson", "Back to the lesson"))}</a>`}</section>`;
   let chosen = mode;
+  const kindNow = isDaily ? "daily" : "", mNow = isDrill ? "drill" : m;
+  if (S.quiz && S.quiz.m === mNow && (S.quiz.kind || "") === kindNow && S.quiz.i < S.quiz.ids.length) {
+    $("#swear2").insertAdjacentHTML("beforebegin", `<a class="btn ink wide" href="#q" id="resume">${esc(T("resumeQ", "Carry on from question {n}", { n: S.quiz.i + 1 }))}</a>`);
+  }
   main.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => { chosen = b.dataset.mode; main.querySelectorAll("[data-mode]").forEach((x) => x.setAttribute("aria-pressed", x === b)); });
   $("#swear2").onclick = async (e) => {
     e.preventDefault(); S.timer = chosen; save();
-    try { await startQuiz(isDrill ? "drill" : m, chosen, isDaily ? "daily" : ""); } catch (err) { return; }
+    try { await startQuiz(isDrill ? "drill" : m, chosen, isDaily ? "daily" : ""); } catch (err) { netFail(); return; }
     location.hash = "q";
   };
 }
@@ -639,7 +667,7 @@ async function quizView() {
   const Q = S.quiz;
   if (!Q) { go("home"); return; }
   if (Q.i >= Q.ids.length) { finishQuiz(); return; }
-  const q = await qById(Q.ids[Q.i]);
+  let q; try { q = await qById(Q.ids[Q.i]); } catch (e) { netFail(); return; }
   if (!q) { Q.i++; save(); quizView(); return; }
   answered = false; paused = false; plusUsed = false;
   const total = timeFor(q, Q.mode);
@@ -707,7 +735,7 @@ async function answer(q, pick, replay) {
   $("#qfb").innerHTML = `<div class="fb ${ok ? "ok" : "no"}"><h3>${esc(title)}</h3>${correct}<p>${esc(q.why)}</p>${flags}</div><button class="btn main wide" type="button" id="qnext">${esc(Q.i + 1 >= Q.ids.length ? T("seeResult", "See how you did") : T("nextQ", "Next question"))}</button>`;
   say(title + ". " + q.why);
   const pl = $("#plus"); if (pl) pl.hidden = true;
-  $("#qnext").onclick = () => { Q.i++; save(); quizView(); };
+  $("#qnext").onclick = (e) => { if (e.currentTarget.disabled) return; e.currentTarget.disabled = true; Q.i++; save(); quizView().catch(netFail); };
   if (!replay) { $("#qnext").focus({ preventScroll: true }); $("#qfb").scrollIntoView({ behavior: RM.matches ? "auto" : "smooth", block: "nearest" }); }
 }
 document.addEventListener("visibilitychange", () => {
@@ -723,7 +751,10 @@ function leaveSheet() {
   paused = true;
   w.innerHTML = `<div class="panel dlg" role="dialog" aria-modal="true" aria-labelledby="lvh"><h3 id="lvh">${esc(T("leaveQ", "Leave the quiz?"))}</h3><p>${esc(T("leaveWhy", "Your progress is kept. You can carry on later from this question."))}</p><div class="btn-row"><button class="btn main" type="button" id="stay">${esc(T("stay", "Stay"))}</button><button class="btn ghost" type="button" id="leave">${esc(T("leave", "Leave"))}</button></div></div>`;
   w.hidden = false; $("#stay").focus({ preventScroll: true });
-  $("#stay").onclick = () => { w.hidden = true; paused = false; last = performance.now(); };
+  const stay = () => { w.hidden = true; paused = false; last = performance.now(); };
+  $("#stay").onclick = stay;
+  w.onclick = (e) => { if (e.target === w) stay(); };
+  w.onkeydown = (e) => { if (e.key === "Escape") stay(); if (e.key === "Tab") { const a = [$("#stay"), $("#leave")]; const i = a.indexOf(document.activeElement); e.preventDefault(); a[(i + 1) % 2].focus(); } };
   $("#leave").onclick = () => { w.hidden = true; paused = false; clearInterval(tick); leaving = true; quizActive = false; location.hash = "home"; };
 }
 
@@ -799,11 +830,15 @@ async function shareCard() {
   const file = blob && new File([blob], "dragon-guard.png", { type: "image/png" });
   const text = T("shareText", "I am training with Dragon Guard on pdtools: one short safety lesson a day for the Pocket Dragons community. pdtools.xyz/guard");
   if (file && navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text }); tally(0, "share"); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+  if (!blob) return;
   const url = URL.createObjectURL(blob);
   const w = $("#sheet");
   w.innerHTML = `<div class="panel dlg" role="dialog" aria-modal="true" aria-labelledby="sch"><h3 id="sch">${esc(T("yourCard", "Your guard card"))}</h3><img class="share-img" src="${url}" alt="${esc(T("cardAlt", "Dragon Guard card with your rank"))}" width="1200" height="675"><p class="small">${esc(T("longPress", "Press and hold the picture to save it, or right click and save on a computer."))}</p><div class="codebox" id="stx">${esc(text)}</div><div class="btn-row"><button class="btn ghost" type="button" id="cpt">${esc(T("copyText", "Copy the post text"))}</button><button class="btn main" type="button" id="cls">${esc(T("close", "Close"))}</button></div></div>`;
   w.hidden = false; $("#cls").focus({ preventScroll: true });
-  $("#cls").onclick = () => { w.hidden = true; URL.revokeObjectURL(url); };
+  const shut = () => { w.hidden = true; URL.revokeObjectURL(url); };
+  $("#cls").onclick = shut;
+  w.onclick = (e) => { if (e.target === w) shut(); };
+  w.onkeydown = (e) => { if (e.key === "Escape") shut(); };
   $("#cpt").onclick = () => copy(text, $("#cpt"));
   tally(0, "card");
 }
@@ -885,7 +920,7 @@ function progressView() {
   $("#rst").onclick = () => {
     const v = $("#pin").value.replace(/\s+/g, ""), m = v.match(/^DG1\.([A-Za-z0-9+/=]+)\.([0-9a-z]+)$/);
     let ok = false;
-    if (m) { let h = 0; for (const c of m[1]) h = (h * 31 + c.charCodeAt(0)) >>> 0; if (h.toString(36) === m[2]) { try { const o = JSON.parse(decodeURIComponent(escape(atob(m[1])))); if (o && o.v === 1 && o.mods && o.ep === EP) { S = o; save(); ok = true; } } catch (e) {} } }
+    if (m) { let h = 0; for (const c of m[1]) h = (h * 31 + c.charCodeAt(0)) >>> 0; if (h.toString(36) === m[2]) { try { const o = JSON.parse(decodeURIComponent(escape(atob(m[1])))); if (o && o.v === 1 && o.mods && typeof o.mods === "object" && o.ep === EP) { S = norm(o); S.quiz = null; save(); ok = true; } } catch (e) {} } }
     $("#rmsg").textContent = ok ? T("restored", "Restored. Welcome back.") : T("badCode", "That code did not work. Copy it again from the other browser.");
     if (ok) setTimeout(() => go("home"), 900);
   };

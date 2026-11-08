@@ -35,7 +35,7 @@ a{color:var(--torch)}
 .fog{position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,17,14,.15) 0%,rgba(23,17,14,.55) 40%,rgba(23,17,14,.94) 75%,#17110e 100%)}
 
 /* top bar */
-.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:10px max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left));padding-top:max(10px,env(safe-area-inset-top));background:rgba(23,17,14,.92);backdrop-filter:blur(6px);border-bottom:1px solid rgba(197,140,69,.25)}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:10px max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left));padding-top:max(10px,env(safe-area-inset-top));background:rgba(23,17,14,.92);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-bottom:1px solid rgba(197,140,69,.25)}
 .brand img{width:36px;height:36px;border-radius:10px}
 .brand{display:grid;place-items:center;min-width:44px;min-height:44px}
 .word{font:700 calc(22px * var(--fs))/1 var(--fd);letter-spacing:.02em;color:var(--cream);text-decoration:none;display:flex;align-items:center;min-height:44px}
@@ -489,6 +489,11 @@ h1.kin{white-space:pre-wrap}
 .result h2{font-size:calc(clamp(24px,6.4vw,30px) * var(--fs))}
 #qdone,#lcheck,#qnext,.nav .btn{min-height:50px;font-size:calc(17px * var(--fs))}
 /* 8 Nov: desktop 20% smaller again, calmer pictures and buttons */
-@media (min-width:700px){.card .art{max-height:min(24vh,180px)}.q-art{max-height:min(16vh,130px)}.res-art,.tool-art{max-height:min(22vh,160px)}
+@media (min-width:700px) and (min-height:501px){.card .art{max-height:min(24vh,180px)}.q-art{max-height:min(16vh,130px)}.res-art,.tool-art{max-height:min(22vh,160px)}
  .btn{min-height:44px;padding:0 18px}#qdone,#lcheck,#qnext,.nav .btn{min-height:44px}.opt{min-height:46px;padding:8px 12px}.opt .k{width:28px;height:28px}
  .pill{min-height:38px}.word{min-height:38px}}
+/* phones turned sideways keep phone sized words; very large monitors get a little more room */
+@media (orientation:landscape) and (max-height:500px){:root{--fs:.9;--u:.9}}
+@media (min-width:2200px) and (min-height:1000px){:root{--fs:.95;--mw:940px;--u:1}}
+/* sideways phones: the Next bar sits after the card instead of covering half of a short screen */
+@media (orientation:landscape) and (max-height:500px){.nav{position:static;background:none;padding-bottom:12px}.cl .art,.card .art{max-height:42vh;width:100%}}

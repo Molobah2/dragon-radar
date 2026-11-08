@@ -225,5 +225,7 @@
  "rpSeed": "Il demande ta phrase secrète",
  "rpSign": "Une signature que tu n'avais pas prévue",
  "openNow": "Ouverte · pas commencée",
- "inProgress": "En cours"
+ "inProgress": "En cours",
+ "resumeQ": "Reprendre à la question {n}",
+ "netQ": "Les questions ne se sont pas chargées. Vérifie ta connexion et réessaie."
 }

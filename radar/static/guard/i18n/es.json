@@ -225,5 +225,7 @@
  "rpSeed": "Te pide tu frase semilla",
  "rpSign": "Una firma que no planeabas",
  "openNow": "Abierta · sin empezar",
- "inProgress": "En curso"
+ "inProgress": "En curso",
+ "resumeQ": "Seguir desde la pregunta {n}",
+ "netQ": "Las preguntas no cargaron. Revisa tu conexión e inténtalo de nuevo."
 }
