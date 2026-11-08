@@ -202,7 +202,7 @@ function scrollNotice(first) {
   $("#swear").onclick = close;
   w.onclick = (e) => { if (e.target === w) close(); };
   w.onkeydown = (e) => { if (e.key === "Escape") close(); if (e.key === "Tab") { e.preventDefault(); $("#swear").focus(); } };
-  setTimeout(() => $("#swear").focus(), RM.matches ? 0 : 600);
+  setTimeout(() => $("#swear").focus({ preventScroll: true }), RM.matches ? 0 : 600);
 }
 $("#scroll-again").onclick = () => scrollNotice(false);
 
@@ -454,7 +454,7 @@ function leaveSheet() {
   const w = $("#sheet");
   paused = true;
   w.innerHTML = `<div class="panel dlg" role="dialog" aria-modal="true" aria-labelledby="lvh"><h3 id="lvh">${esc(T("leaveQ", "Leave the quiz?"))}</h3><p>${esc(T("leaveWhy", "Your progress is kept. You can carry on later from this question."))}</p><div class="btn-row"><button class="btn main" type="button" id="stay">${esc(T("stay", "Stay"))}</button><button class="btn ghost" type="button" id="leave">${esc(T("leave", "Leave"))}</button></div></div>`;
-  w.hidden = false; $("#stay").focus();
+  w.hidden = false; $("#stay").focus({ preventScroll: true });
   $("#stay").onclick = () => { w.hidden = true; paused = false; last = performance.now(); };
   $("#leave").onclick = () => { w.hidden = true; paused = false; clearInterval(tick); leaving = true; quizActive = false; location.hash = "home"; };
 }
@@ -530,7 +530,7 @@ async function shareCard() {
   const url = URL.createObjectURL(blob);
   const w = $("#sheet");
   w.innerHTML = `<div class="panel dlg" role="dialog" aria-modal="true" aria-labelledby="sch"><h3 id="sch">${esc(T("yourCard", "Your guard card"))}</h3><img class="share-img" src="${url}" alt="${esc(T("cardAlt", "Dragon Guard card with your rank"))}" width="1200" height="675"><p class="small">${esc(T("longPress", "Press and hold the picture to save it, or right click and save on a computer."))}</p><div class="codebox" id="stx">${esc(text)}</div><div class="btn-row"><button class="btn ghost" type="button" id="cpt">${esc(T("copyText", "Copy the post text"))}</button><button class="btn main" type="button" id="cls">${esc(T("close", "Close"))}</button></div></div>`;
-  w.hidden = false; $("#cls").focus();
+  w.hidden = false; $("#cls").focus({ preventScroll: true });
   $("#cls").onclick = () => { w.hidden = true; URL.revokeObjectURL(url); };
   $("#cpt").onclick = () => copy(text, $("#cpt"));
   tally(0, "card");
@@ -564,7 +564,7 @@ function linksView() {
 $("#links-btn").onclick = () => {
   const w = $("#sheet");
   w.innerHTML = `<div class="parch dlg" role="dialog" aria-modal="true" aria-labelledby="lh"><h3 id="lh">${esc(T("links", "Trusted links"))}</h3>${linksHtml()}<button class="btn ink" type="button" id="lclose">${esc(T("close", "Close"))}</button></div>`;
-  w.hidden = false; wireCopy(w); $("#lclose").focus();
+  w.hidden = false; wireCopy(w); $("#lclose").focus({ preventScroll: true });
   const close = () => { w.hidden = true; $("#links-btn").focus(); };
   $("#lclose").onclick = close; w.onclick = (e) => { if (e.target === w) close(); }; w.onkeydown = (e) => { if (e.key === "Escape") close(); };
 };
