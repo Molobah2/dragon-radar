@@ -339,6 +339,8 @@
     sfT11: "Fake jobs, fake calls and deepfakes target Keepers. Never run a file or app someone sends you.",
     sfT12: "An address that looks almost right is a trap. Check the whole address, not just the start and the end.",
     xDexHowGuard: "Finish the daily goal to hatch your eggs: open 10 Keeper posts, answer the Dragon Guard questions and follow 1 new Keeper. Every egg brings a dragon you do not have yet, and on some days the goal opens more than one egg, so a Keeper who keeps showing up can find all 35 before mint. Rare holo dragons need a 2 day goal streak and golden legends need 4, and in the last 5 days before mint nothing is held back. Three spare dragons can be swapped for one you have not found yet. Your dragons live on this device, and the code in My progress moves them to another one.",
+    xSwapHolos: "Swap 3 holos",
+    pzSparesR: "You have {n} spare holo dragons. Swap {s} for a holo you have not found yet.",
   };
 
   const T = {
@@ -669,6 +671,8 @@
       sfT11: "Trabajos falsos, llamadas falsas y deepfakes apuntan a los Keepers. Nunca abras un archivo o app que alguien te envíe.",
       sfT12: "Una dirección que parece casi correcta es una trampa. Revisa la dirección completa, no solo el inicio y el final.",
       xDexHowGuard: "Completa la meta diaria para abrir tus huevos: abre 10 publicaciones de Keepers, responde las preguntas de Dragon Guard y sigue a 1 Keeper nuevo. Cada huevo trae un dragón que aún no tienes, y algunos días la meta abre más de un huevo, así que un Keeper constante puede encontrar los 35 antes del mint. Los dragones holo raros necesitan una racha de metas de 2 días y las leyendas doradas 4, y en los últimos 5 días antes del mint no se guarda nada. Tres dragones repetidos se pueden cambiar por uno que aún no hayas encontrado. Tus dragones viven en este dispositivo, y el código de Mi progreso los lleva a otro.",
+      xSwapHolos: "Cambiar 3 holos",
+      pzSparesR: "Tienes {n} dragones holo repetidos. Cambia {s} por un holo que aún no has encontrado.",
     },
     fr: {
       amLib: "Bibliothèque des AMA", amKick: "Chaque appel, au même endroit", amLede: "Tu as raté un AMA de Pocket Dragons ? Rattrape chaque appel ici : l'enregistrement, ce qui a été partagé et comment la salle a grandi semaine après semaine.", amSoFar: "AMA pour l'instant", amFriday: "Chaque vendredi", amOnDiscord: "sur Discord", amPeak: "record en direct", amGrew: "Comment la salle a grandi", amNotShared: "non partagé", amSoon: "bientôt", amCountsNote: "Les chiffres en direct ont été partagés par l'équipe pendant chaque appel.", amIdea: "Cette bibliothèque est une idée d'Ismail.", amThanks: "Merci", amThanks2: "de l'avoir aidée à venir sur pdtools.", amLatest: "Dernier", amWatch: "Voir l'enregistrement sur X", amSoonLong: "L'enregistrement est prêt. Un court résumé de cet appel arrive bientôt.", amFoot: "Partagé par l'équipe à chaque appel. Les plans peuvent changer, donc l'appel le plus récent fait toujours foi.", amCard: "Tous les AMA de Pocket Dragons au même endroit : les enregistrements, ce qui a été partagé et comment la salle a grandi.", amNew: "Nouveau",
@@ -997,6 +1001,8 @@
       sfT11: "Faux emplois, faux appels et deepfakes visent les Keepers. N'ouvre jamais un fichier ou une app qu'on t'envoie.",
       sfT12: "Une adresse presque identique est un piège. Vérifie l'adresse entière, pas seulement le début et la fin.",
       xDexHowGuard: "Termine l'objectif du jour pour faire éclore tes œufs : ouvre 10 posts de Keepers, réponds aux questions Dragon Guard et suis 1 nouveau Keeper. Chaque œuf apporte un dragon que tu n'as pas encore, et certains jours l'objectif ouvre plus d'un œuf, donc un Keeper régulier peut trouver les 35 avant le mint. Les dragons holo rares demandent une série d'objectifs de 2 jours et les légendes dorées 4, et pendant les 5 derniers jours avant le mint rien n'est retenu. Trois dragons en double peuvent être échangés contre un que tu n'as pas encore trouvé. Tes dragons vivent sur cet appareil, et le code de Ma progression les emmène sur un autre.",
+      xSwapHolos: "Échanger 3 holos",
+      pzSparesR: "Tu as {n} dragons holo en double. Échange {s} contre un holo que tu n'as pas encore trouvé.",
     },
     pt: {
       amLib: "Biblioteca de AMAs", amKick: "Cada chamada, num só lugar", amLede: "Perdeu um AMA do Pocket Dragons? Veja cada chamada aqui: a gravação, o que foi compartilhado e como a sala cresceu semana a semana.", amSoFar: "AMAs até agora", amFriday: "Toda sexta", amOnDiscord: "no Discord", amPeak: "recorde ao vivo", amGrew: "Como a sala cresceu", amNotShared: "não compartilhado", amSoon: "em breve", amCountsNote: "Os números ao vivo foram compartilhados pela equipe em cada chamada.", amIdea: "Esta biblioteca foi ideia do Ismail.", amThanks: "Obrigado", amThanks2: "por ajudar a trazê-la ao pdtools.", amLatest: "Mais recente", amWatch: "Ver a gravação no X", amSoonLong: "A gravação já está disponível. Um resumo curto desta chamada está a caminho.", amFoot: "Compartilhado pela equipe em cada chamada. Os planos podem mudar, então a chamada mais recente é sempre a palavra final.", amCard: "Todos os AMAs do Pocket Dragons num só lugar: as gravações, o que foi compartilhado e como a sala cresceu.", amNew: "Novo",
@@ -1325,6 +1331,8 @@
       sfT11: "Vagas falsas, chamadas falsas e deepfakes miram os Keepers. Nunca abra um arquivo ou app que alguém te enviar.",
       sfT12: "Um endereço quase igual é uma armadilha. Confira o endereço inteiro, não só o começo e o fim.",
       xDexHowGuard: "Complete a meta diária para chocar seus ovos: abra 10 posts de Keepers, responda às perguntas do Dragon Guard e siga 1 novo Keeper. Cada ovo traz um dragão que você ainda não tem, e em alguns dias a meta abre mais de um ovo, então um Keeper que aparece sempre pode encontrar os 35 antes do mint. Dragões holo raros precisam de uma sequência de metas de 2 dias e lendas douradas de 4, e nos últimos 5 dias antes do mint nada fica preso. Três dragões repetidos podem ser trocados por um que você ainda não encontrou. Seus dragões ficam neste aparelho, e o código em Meu progresso leva eles para outro.",
+      xSwapHolos: "Trocar 3 holos",
+      pzSparesR: "Você tem {n} dragões holo repetidos. Troque {s} por um holo que você ainda não encontrou.",
     },
     tr: {
       amLib: "AMA Kütüphanesi", amKick: "Her yayın tek bir yerde", amLede: "Bir Pocket Dragons AMA'sını mı kaçırdın? Her yayını buradan yakala: kayıt, paylaşılanlar ve odanın hafta hafta nasıl büyüdüğü.", amSoFar: "AMA şimdiye kadar", amFriday: "Her cuma", amOnDiscord: "Discord'da", amPeak: "canlı rekor", amGrew: "Oda nasıl büyüdü", amNotShared: "paylaşılmadı", amSoon: "yakında", amCountsNote: "Canlı sayılar her yayında ekip tarafından paylaşıldı.", amIdea: "Bu kütüphane Ismail'in fikriydi.", amThanks: "Teşekkürler", amThanks2: "pdtools'a getirmeye yardım ettiğin için.", amLatest: "En yeni", amWatch: "Kaydı X'te izle", amSoonLong: "Kayıt izlemeye hazır. Bu yayının kısa bir özeti yolda.", amFoot: "Her yayında ekip tarafından paylaşıldı. Planlar değişebilir, bu yüzden en yeni yayın her zaman son sözdür.", amCard: "Tüm Pocket Dragons AMA'ları tek bir yerde: kayıtlar, paylaşılanlar ve odanın nasıl büyüdüğü.", amNew: "Yeni",
@@ -1653,6 +1661,8 @@
       sfT11: "Sahte işler, sahte aramalar ve deepfake'ler Keeper'ları hedef alır. Birinin gönderdiği dosyayı veya uygulamayı asla çalıştırma.",
       sfT12: "Neredeyse doğru görünen bir adres tuzaktır. Sadece başını ve sonunu değil, adresin tamamını kontrol et.",
       xDexHowGuard: "Yumurtalarını çıkarmak için günlük hedefini tamamla: 10 Keeper gönderisi aç, Dragon Guard sorularını cevapla ve 1 yeni Keeper'ı takip et. Her yumurta henüz sahip olmadığın bir ejderha getirir ve bazı günler hedef birden fazla yumurta açar, yani düzenli gelen bir Keeper mint'ten önce 35'inin hepsini bulabilir. Nadir holo ejderhalar 2 günlük hedef serisi, altın efsaneler 4 gün ister, mint'ten önceki son 5 günde ise hiçbir şey beklemez. Üç yedek ejderhayı henüz bulmadığın bir ejderhayla takas edebilirsin. Ejderhaların bu cihazda yaşar, İlerlemem bölümündeki kod onları başka bir cihaza taşır.",
+      xSwapHolos: "3 holo takas et",
+      pzSparesR: "{n} yedek holo ejderhan var. {s} ejderhalarını henüz bulmadığın bir holo ile takas et.",
     },
     ru: {
       amLib: "Библиотека AMA", amKick: "Все эфиры в одном месте", amLede: "Пропустили AMA Pocket Dragons? Наверстайте здесь: запись, что рассказали и как росла аудитория неделя за неделей.", amSoFar: "AMA на данный момент", amFriday: "Каждую пятницу", amOnDiscord: "в Discord", amPeak: "рекорд в эфире", amGrew: "Как росла аудитория", amNotShared: "не сообщалось", amSoon: "скоро", amCountsNote: "Число зрителей в эфире сообщала команда во время каждого эфира.", amIdea: "Эта библиотека была идеей Исмаила.", amThanks: "Спасибо", amThanks2: "за помощь в её появлении на pdtools.", amLatest: "Последний", amWatch: "Смотреть запись в X", amSoonLong: "Запись уже доступна. Краткий обзор этого эфира скоро появится.", amFoot: "Рассказано командой на каждом эфире. Планы могут меняться, поэтому последний эфир всегда главный.", amCard: "Все AMA Pocket Dragons в одном месте: записи, что рассказали и как росла аудитория.", amNew: "Новое",
@@ -1981,6 +1991,8 @@
       sfT11: "Фальшивые вакансии, звонки и дипфейки нацелены на Кипперов. Никогда не запускайте файл или приложение, которое вам прислали.",
       sfT12: "Адрес, который выглядит почти правильно, это ловушка. Проверяйте весь адрес, а не только начало и конец.",
       xDexHowGuard: "Выполните дневную цель, чтобы вылупить свои яйца: откройте 10 постов Кипперов, ответьте на вопросы Dragon Guard и подпишитесь на 1 нового Киппера. Каждое яйцо приносит дракона, которого у тебя ещё нет, а в некоторые дни цель открывает больше одного яйца, так что Киппер, который заходит постоянно, успеет найти всех 35 до минта. Редким голо драконам нужна серия целей в 2 дня, а золотым легендам 4, а в последние 5 дней перед минтом ничего не ждёт. Три запасных дракона можно обменять на дракона, которого ещё нет в твоей коллекции. Твои драконы живут на этом устройстве, а код в разделе Мой прогресс переносит их на другое.",
+      xSwapHolos: "Обменять 3 голо",
+      pzSparesR: "У вас {n} запасных голо драконов. Обменяйте {s} на голо, которого у вас ещё нет.",
     },
     vi: {
       amLib: "Thư viện AMA", amKick: "Mọi buổi, ở một nơi", amLede: "Lỡ một buổi AMA của Pocket Dragons? Xem lại mọi buổi tại đây: bản ghi, những gì được chia sẻ và phòng đã lớn lên thế nào qua từng tuần.", amSoFar: "AMA đến nay", amFriday: "Mỗi thứ Sáu", amOnDiscord: "trên Discord", amPeak: "kỷ lục trực tiếp", amGrew: "Phòng đã lớn lên thế nào", amNotShared: "không chia sẻ", amSoon: "sắp có", amCountsNote: "Số người trực tiếp do đội ngũ chia sẻ trong mỗi buổi.", amIdea: "Thư viện này là ý tưởng của Ismail.", amThanks: "Cảm ơn", amThanks2: "đã giúp đưa nó lên pdtools.", amLatest: "Mới nhất", amWatch: "Xem bản ghi trên X", amSoonLong: "Bản ghi đã sẵn sàng. Tóm tắt ngắn của buổi này sắp có.", amFoot: "Do đội ngũ chia sẻ trong mỗi buổi. Kế hoạch có thể thay đổi, nên buổi mới nhất luôn là lời cuối cùng.", amCard: "Mọi buổi AMA của Pocket Dragons ở một nơi: bản ghi, những gì được chia sẻ và phòng đã lớn lên thế nào.", amNew: "Mới",
@@ -2309,6 +2321,8 @@
       sfT11: "Việc làm giả, cuộc gọi giả và deepfake nhắm vào Keeper. Đừng bao giờ chạy tệp hay ứng dụng ai đó gửi cho bạn.",
       sfT12: "Một địa chỉ trông gần đúng là cái bẫy. Kiểm tra toàn bộ địa chỉ, không chỉ phần đầu và phần cuối.",
       xDexHowGuard: "Hoàn thành mục tiêu hằng ngày để nở trứng của bạn: mở 10 bài của Keeper, trả lời các câu hỏi Dragon Guard và theo dõi 1 Keeper mới. Mỗi quả trứng mang đến một con rồng bạn chưa có, và có những ngày mục tiêu mở nhiều hơn một quả trứng, nên Keeper ghé đều đặn có thể tìm đủ 35 con trước đợt mint. Rồng holo hiếm cần chuỗi mục tiêu 2 ngày và huyền thoại vàng cần 4 ngày, còn trong 5 ngày cuối trước mint thì không có gì bị giữ lại. Ba con rồng dư có thể đổi lấy một con bạn chưa tìm thấy. Rồng của bạn sống trên thiết bị này, và mã trong Tiến độ của tôi sẽ chuyển chúng sang thiết bị khác.",
+      xSwapHolos: "Đổi 3 holo",
+      pzSparesR: "Bạn có {n} rồng holo dư. Đổi {s} lấy một holo bạn chưa tìm thấy.",
     },
     id: {
       amLib: "Perpustakaan AMA", amKick: "Setiap sesi, di satu tempat", amLede: "Ketinggalan AMA Pocket Dragons? Kejar setiap sesi di sini: rekamannya, apa yang dibagikan dan bagaimana ruangan tumbuh minggu demi minggu.", amSoFar: "AMA sejauh ini", amFriday: "Setiap Jumat", amOnDiscord: "di Discord", amPeak: "rekor live", amGrew: "Bagaimana ruangan tumbuh", amNotShared: "tidak dibagikan", amSoon: "segera", amCountsNote: "Jumlah penonton live dibagikan oleh tim di setiap sesi.", amIdea: "Perpustakaan ini adalah ide Ismail.", amThanks: "Terima kasih", amThanks2: "sudah membantu menghadirkannya di pdtools.", amLatest: "Terbaru", amWatch: "Tonton rekaman di X", amSoonLong: "Rekamannya sudah bisa ditonton. Ringkasan singkat sesi ini segera hadir.", amFoot: "Dibagikan oleh tim di setiap sesi. Rencana bisa berubah, jadi sesi terbaru selalu menjadi kata terakhir.", amCard: "Semua AMA Pocket Dragons di satu tempat: rekaman, apa yang dibagikan dan bagaimana ruangan tumbuh.", amNew: "Baru",
@@ -2637,6 +2651,8 @@
       sfT11: "Lowongan palsu, panggilan palsu, dan deepfake mengincar Keeper. Jangan pernah menjalankan file atau aplikasi yang dikirim orang.",
       sfT12: "Alamat yang terlihat hampir benar adalah jebakan. Cek seluruh alamat, bukan hanya awal dan akhirnya.",
       xDexHowGuard: "Selesaikan target harian untuk menetaskan telurmu: buka 10 postingan Keeper, jawab pertanyaan Dragon Guard, dan follow 1 Keeper baru. Setiap telur membawa naga yang belum kamu punya, dan di beberapa hari target membuka lebih dari satu telur, jadi Keeper yang rajin datang bisa menemukan semua 35 sebelum mint. Naga holo langka butuh runtunan target 2 hari dan legenda emas butuh 4, dan di 5 hari terakhir sebelum mint tidak ada yang ditahan. Tiga naga cadangan bisa ditukar dengan satu naga yang belum kamu temukan. Nagamu tinggal di perangkat ini, dan kode di Progres saya memindahkannya ke perangkat lain.",
+      xSwapHolos: "Tukar 3 holo",
+      pzSparesR: "Kamu punya {n} naga holo cadangan. Tukar {s} dengan holo yang belum kamu temukan.",
     },
     ko: {
       amLib: "AMA 라이브러리", amKick: "모든 방송을 한곳에", amLede: "Pocket Dragons AMA를 놓치셨나요? 여기서 모든 방송을 따라잡으세요: 녹화, 공유된 내용, 매주 방이 어떻게 커졌는지.", amSoFar: "개의 AMA", amFriday: "매주 금요일", amOnDiscord: "Discord에서", amPeak: "최고 동시 접속", amGrew: "방이 커진 과정", amNotShared: "공개 안 됨", amSoon: "곧", amCountsNote: "실시간 인원은 매 방송 중 팀이 공유했어요.", amIdea: "이 라이브러리는 Ismail의 아이디어예요.", amThanks: "고마워요", amThanks2: "pdtools에 오도록 도와줘서.", amLatest: "최신", amWatch: "X에서 녹화 보기", amSoonLong: "녹화를 볼 수 있어요. 이 방송의 짧은 요약이 곧 올라와요.", amFoot: "매 방송에서 팀이 공유한 내용이에요. 계획은 바뀔 수 있으니 가장 최근 방송이 항상 최신 정보예요.", amCard: "모든 Pocket Dragons AMA를 한곳에: 녹화, 공유된 내용, 방이 커진 과정.", amNew: "새로움",
@@ -2965,6 +2981,8 @@
       sfT11: "가짜 채용, 가짜 통화, 딥페이크가 키퍼를 노려요. 누가 보낸 파일이나 앱은 절대 실행하지 마세요.",
       sfT12: "거의 맞아 보이는 주소는 함정이에요. 앞뒤만 보지 말고 주소 전체를 확인하세요.",
       xDexHowGuard: "일일 목표를 완료하면 오늘의 알이 부화해요. 키퍼 게시물 10개 열기, Dragon Guard 질문 답하기, 새 키퍼 1명 팔로우. 알마다 아직 없는 드래곤이 나오고, 어떤 날은 목표를 마치면 알이 두 개 이상 열려요. 그래서 꾸준히 들르는 키퍼는 민트 전에 35마리를 모두 찾을 수 있어요. 희귀 홀로 드래곤은 목표 2일 연속, 황금 전설은 4일 연속이 필요하고, 민트 전 마지막 5일에는 아무것도 막히지 않아요. 남는 드래곤 3마리는 아직 찾지 못한 드래곤 1마리로 교환할 수 있어요. 드래곤은 이 기기에 살고, 내 진행 상황의 코드로 다른 기기로 옮길 수 있어요.",
+      xSwapHolos: "홀로 3마리 교환",
+      pzSparesR: "남는 홀로 드래곤이 {n}마리 있어요. {s}을(를) 아직 못 찾은 홀로와 교환하세요.",
     },
     zh: {
       amLib: "AMA 资料库", amKick: "每一场，都在这里", amLede: "错过了 Pocket Dragons 的 AMA？在这里补上每一场：录像、分享的内容，以及每周房间人数的增长。", amSoFar: "场 AMA", amFriday: "每周五", amOnDiscord: "在 Discord", amPeak: "最高在线", amGrew: "房间人数的增长", amNotShared: "未公布", amSoon: "即将", amCountsNote: "在线人数由团队在每场 AMA 中公布。", amIdea: "这个资料库是 Ismail 的点子。", amThanks: "感谢", amThanks2: "帮助把它带到 pdtools。", amLatest: "最新", amWatch: "在 X 上观看录像", amSoonLong: "录像已可观看。这场的简短回顾即将上线。", amFoot: "内容由团队在每场 AMA 中分享。计划可能变化，最新一场永远是最新的说法。", amCard: "所有 Pocket Dragons AMA 都在这里：录像、分享的内容和房间人数的增长。", amNew: "新",
@@ -3293,6 +3311,8 @@
       sfT11: "假招聘、假通话和深度伪造都在瞄准 Keeper。永远不要运行别人发给你的文件或应用。",
       sfT12: "看起来几乎正确的地址是陷阱。检查完整地址，而不只是开头和结尾。",
       xDexHowGuard: "完成每日目标就能孵化当天的蛋：打开 10 条 Keeper 帖子、回答 Dragon Guard 问题、新关注 1 位 Keeper。每颗蛋都会带来一条你还没有的龙，有些日子完成目标会打开不止一颗蛋，所以坚持每天来的 Keeper 能在 mint 前集齐全部 35 条。稀有闪卡龙需要目标连续 2 天，黄金传说需要 4 天，mint 前最后 5 天不再有任何限制。3 条多余的龙可以换 1 条你还没找到的龙。你的龙住在这台设备上，我的进度里的代码可以把它们带到另一台设备。",
+      xSwapHolos: "交换 3 条闪卡龙",
+      pzSparesR: "你有 {n} 条多余的闪卡龙。用 {s} 交换一条你还没找到的闪卡龙。",
     },
   };
 

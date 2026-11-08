@@ -55,7 +55,7 @@
     // the relic tally: older saves start from the feed history once, after that only the daily allowance counts
     out.e = d && Number.isFinite(d.e) ? d.e | 0 : past;
     out.ed = d && d.ed && typeof d.ed === "object" ? d.ed : { day: null, n: 0 };
-    out.sw = d && Array.isArray(d.sw) ? d.sw.filter((x) => x && Array.isArray(x.give) && typeof x.got === "string") : [];
+    out.sw = d && Array.isArray(d.sw) ? d.sw.filter((x) => x && Array.isArray(x.give) && typeof x.got === "string") : [];   // r: 1 marks a holo swap
     return out;
   }
   let dex = load();
@@ -67,18 +67,20 @@
   const owned = (e) => ((dex.have[e.sp.id] || {})[TK[e.tier]] || 0) > 0;
   const found = () => ENTRIES.filter(owned).length;
   const foundIn = (tier) => ENTRIES.filter((e) => e.tier === tier && owned(e)).length;
-  // swaps: three spare common dragons for one not found yet. The spares stay counted in "have" (so merging two
-  // devices never loses or doubles a dragon); every swap is logged once and its three count as spent.
-  const SWAP = 3;
+  // swaps: three spare dragons for one not found yet, commons for a common and (8 Nov) rare holos for a rare holo.
+  // The spares stay counted in "have" (so merging two devices never loses or doubles a dragon); every swap is logged
+  // once with its tier (r: 1 for holos) and its three count as spent.
+  const SWAP = 3, SWAPS = ["common", "rare"];
   const swapLog = () => (Array.isArray(dex.sw) ? dex.sw : []);
-  function spentOf(id) { let n = 0; for (const x of swapLog()) for (const g of x.give || []) if (g === id) n++; return n; }
-  function countOf(e) { const h = (dex.have[e.sp.id] || {})[TK[e.tier]] || 0; return e.tier === "common" && h > 0 ? Math.max(1, h - spentOf(e.sp.id)) : h; }
-  const spareCount = () => ENTRIES.reduce((a, e) => a + (e.tier === "common" ? Math.max(0, countOf(e) - 1) : 0), 0);
+  const swapTier = (x) => (x && x.r ? "rare" : "common");
+  function spentOf(id, tier) { let n = 0; for (const x of swapLog()) if (swapTier(x) === tier) for (const g of x.give || []) if (g === id) n++; return n; }
+  function countOf(e) { const h = (dex.have[e.sp.id] || {})[TK[e.tier]] || 0; return SWAPS.includes(e.tier) && h > 0 ? Math.max(1, h - spentOf(e.sp.id, e.tier)) : h; }
+  const spareCount = (tier = "common") => ENTRIES.reduce((a, e) => a + (e.tier === tier ? Math.max(0, countOf(e) - 1) : 0), 0);
   // never the dragon already waiting in today's unopened egg
   const eggKey = () => { const p = store.get("pd:dexEgg", null); return p && p.day === today() ? p.k : ""; };
-  const swapMissing = () => ENTRIES.filter((e) => e.tier === "common" && !owned(e) && e.key !== eggKey());
-  function swapPick() {   // the three spares to give: always from the dragons with the most copies
-    const left = ENTRIES.filter((e) => e.tier === "common").map((e) => ({ e, n: countOf(e) - 1 })).filter((x) => x.n > 0);
+  const swapMissing = (tier = "common") => ENTRIES.filter((e) => e.tier === tier && !owned(e) && e.key !== eggKey());
+  function swapPick(tier = "common") {   // the three spares to give: always from the dragons with the most copies
+    const left = ENTRIES.filter((e) => e.tier === tier).map((e) => ({ e, n: countOf(e) - 1 })).filter((x) => x.n > 0);
     const give = [];
     while (give.length < SWAP && left.length) { left.sort((a, b) => b.n - a.n); give.push(left[0].e); if (!--left[0].n) left.shift(); }
     return give.length === SWAP ? give : null;
@@ -818,21 +820,29 @@
     return a.length > 1 ? `${a.slice(0, -1).join(", ")} and ${a[a.length - 1]}` : a[0];
   };
   let swapArm = 0;
+  let swapArmR = 0;
   function renderSwap() {
-    const box = $("dex-swap"); if (!box) return;
-    const give = swapPick(), n = spareCount();
-    box.hidden = !give || !swapMissing().length;
-    if (box.hidden) return;
-    $("dex-swap-text").textContent = `You have ${n} spare dragons. Swap ${nameList(give)} for a dragon you have not found yet.`;
-    $("dex-swap-btn").textContent = "Swap 3 spares";
-    swapArm = 0;
+    const box = $("dex-swap");
+    if (box) {
+      const give = swapPick(), n = spareCount();
+      box.hidden = !give || !swapMissing().length;
+      if (!box.hidden) { $("dex-swap-text").textContent = `You have ${n} spare dragons. Swap ${nameList(give)} for a dragon you have not found yet.`; $("dex-swap-btn").textContent = "Swap 3 spares"; }
+      swapArm = 0;
+    }
+    const boxR = $("dex-swap-r");
+    if (boxR) {
+      const give = swapPick("rare"), n = spareCount("rare");
+      boxR.hidden = !give || !swapMissing("rare").length;
+      if (!boxR.hidden) { $("dex-swap-r-text").textContent = `You have ${n} spare holo dragons. Swap ${nameList(give)} for a holo you have not found yet.`; $("dex-swap-r-btn").textContent = "Swap 3 holos"; }
+      swapArmR = 0;
+    }
   }
-  function doSwap() {
-    const give = swapPick(), missing = swapMissing();
+  function doSwap(tier = "common") {
+    const give = swapPick(tier), missing = swapMissing(tier);
     if (!give || !missing.length) return null;
-    const entry = rand(missing);
-    const h = dex.have[entry.sp.id] || {}; h.c = (h.c || 0) + 1; dex.have[entry.sp.id] = h;
-    dex.sw = [...swapLog(), { t: Date.now(), give: give.map((e) => e.sp.id), got: entry.sp.id }].slice(-300);
+    const entry = rand(missing), k = TK[tier];
+    const h = dex.have[entry.sp.id] || {}; h[k] = (h[k] || 0) + 1; dex.have[entry.sp.id] = h;
+    dex.sw = [...swapLog(), { t: Date.now(), give: give.map((e) => e.sp.id), got: entry.sp.id, ...(tier === "rare" ? { r: 1 } : {}) }].slice(-300);
     save(); track("swap", entry.key);
     return { entry, give };
   }
@@ -855,6 +865,17 @@
       return;
     }
     const r = doSwap(); renderDex();
+    if (!r) return;
+    closeSheet(dexEl); setTimeout(() => openSwap(r), 260);
+  });
+  if ($("dex-swap-r-btn")) $("dex-swap-r-btn").addEventListener("click", () => {
+    const b = $("dex-swap-r-btn");
+    if (Date.now() - swapArmR > 5000) {   // the same second tap as the common swap
+      swapArmR = Date.now(); b.textContent = "Tap again to swap";
+      setTimeout(() => { if (swapArmR && Date.now() - swapArmR >= 5000) renderSwap(); }, 5100);
+      return;
+    }
+    const r = doSwap("rare"); renderDex();
     if (!r) return;
     closeSheet(dexEl); setTimeout(() => openSwap(r), 260);
   });
@@ -1155,7 +1176,7 @@
   (function waitReady(t) { if (document.body.classList.contains("ready") || t >= 20) autoHatch(1400); else setTimeout(() => waitReady(t + 1), 500); })(0);
   addEventListener("pd:goalshow", refreshGoal);
   addEventListener("pd:dexchange", () => { dex = load(); renderDex(); refreshGoal(); });
-  addEventListener("storage", (e) => { if (["pd:dex", "pd:goal", "pd:dle", "pd:guard", "radar:followed", "radar:pending"].includes(e.key)) { dex = load(); refreshGoal(); } });
+  addEventListener("storage", (e) => { if (["pd:dex", "pd:goal", "pd:dle", "pd:guard", "pd:guardDay", "radar:followed", "radar:pending"].includes(e.key)) { dex = load(); refreshGoal(); } });
   refreshGoal();
 
   async function todayHatch() {

@@ -513,7 +513,7 @@
     // duplicate swaps: joined by their time, so a swap made on either device is kept once
     const swaps = new Map();
     for (const x of [...(Array.isArray(mine.sw) ? mine.sw : []), ...(Array.isArray(inc.sw) ? inc.sw : [])]) {
-      if (x && Number.isFinite(x.t) && Array.isArray(x.give) && x.give.length === 3 && typeof x.got === "string" && !swaps.has(x.t)) swaps.set(x.t, { t: x.t, give: x.give.map(String), got: x.got });
+      if (x && Number.isFinite(x.t) && Array.isArray(x.give) && x.give.length === 3 && typeof x.got === "string" && !swaps.has(x.t)) swaps.set(x.t, { t: x.t, give: x.give.map(String), got: x.got, ...(x.r ? { r: 1 } : {}) });
     }
     const sw = [...swaps.values()].sort((a, b) => a.t - b.t).slice(-300);
     store.set("pd:dex", { ...mine, have, last, n, g, e, s: sOut, sw, log: Array.isArray(mine.log) ? mine.log : [] });
@@ -548,9 +548,13 @@
     return firstEgg() ? STARTER : GOAL;
   }
   // today's Dragon Guard questions: any Dragon Guard quiz finished today on this device (pdtools.xyz/guard keeps it)
+  // pd:guardDay is the device's own date of the last finished guard quiz (8 Nov: kept apart from the course progress,
+  // so a course restart never takes the step away). On 8 Nov, the day the course was restarted twice, opening
+  // Dragon Guard counts too, so nobody loses the egg they had earned that morning.
   function guardDone() {
     const gs = store.obj("pd:guard"), qd = gs.qd && typeof gs.qd === "object" ? gs.qd : {};
-    return qd[today()] === 1;
+    if (qd[today()] === 1 || store.get("pd:guardDay", "") === today()) return true;
+    return today() === "2026-11-08" && !!(gs.days && gs.days[today()]);
   }
   // today's Dragon Quiz: every answer saved on this device (the set changes at midnight UTC)
   function dleDone() {
@@ -652,7 +656,7 @@
     document.addEventListener("click", (e) => { if (!steps.hidden && !steps.contains(e.target) && !$("goal").contains(e.target)) closeSteps(); });
     addEventListener("keydown", (e) => { if (e.key === "Escape") closeSteps(); });
     // finished on another page or tab (the Dragon Quiz, the Keepers directory): the goal catches up straight away
-    addEventListener("storage", (e) => { if (["pd:dle", "pd:guard", "radar:followed", "radar:pending", "radar:tapped", "pd:goal", "radar:kleft"].includes(e.key)) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
+    addEventListener("storage", (e) => { if (["pd:dle", "pd:guard", "pd:guardDay", "radar:followed", "radar:pending", "radar:tapped", "pd:goal", "radar:kleft"].includes(e.key)) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) { goal = readGoal(); if (goal.day !== today()) goal = { day: today(), n: 0, d: false, f: false }; showGoal(); } });
   }
   function closeSteps() { if (steps && !steps.hidden) { steps.hidden = true; $("goal").setAttribute("aria-expanded", "false"); steps.parentElement.classList.remove("gs-open"); } }

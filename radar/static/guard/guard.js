@@ -45,7 +45,7 @@ const EP = 2;
 const fresh = () => ({ v: 1, ep: EP, id: Math.random().toString(36).slice(2, 10), seen: 0, mods: {}, items: {}, days: {}, checks: {}, drills: {}, timer: "", quiz: null, first: localKey() });
 let S = store.get() || fresh();
 if (!S.v) S = fresh();
-if (S.ep !== EP) { const keep = { seen: S.seen ? 1 : 0, timer: typeof S.timer === "string" ? S.timer : "" }; S = Object.assign(fresh(), keep); store.set(S); }
+if (S.ep !== EP) { const keep = { seen: S.seen ? 1 : 0, timer: typeof S.timer === "string" ? S.timer : "", qd: S.qd && typeof S.qd === "object" ? S.qd : {} }; S = Object.assign(fresh(), keep); store.set(S); }
 const save = () => store.set(S);
 const touchDay = () => { S.days[localKey()] = 1; };
 function showRibbon() {
@@ -741,7 +741,9 @@ function finishQuiz() {
     tally(Q.m, "done", score);
   }
   touchDay();
-  S.qd = S.qd || {}; S.qd[localKey()] = 1;     // any guard quiz finished today fills the Dragon Guard step of the pdtools daily goal
+  S.qd = S.qd || {}; S.qd[localKey()] = 1;
+  // the pdtools daily goal reads this one, on the device's own date, apart from the course progress
+  try { const d = new Date(); localStorage.setItem("pd:guardDay", JSON.stringify(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`)); } catch (e) {}     // any guard quiz finished today fills the Dragon Guard step of the pdtools daily goal
   lastResult = { m: Q.m, score, n, missed, mode: Q.mode, kind: Q.kind };
   S.quiz = null; quizActive = false; save();
   leaving = true; location.replace("#done");
