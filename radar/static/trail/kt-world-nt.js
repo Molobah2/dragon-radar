@@ -509,9 +509,12 @@ window.SKY_L = (() => {
     // Skip: the rest of the flight at four times the pace
     if (!still.user || AP.fast) AP.s = Math.min(AP_END, AP.s + dt * (AP.fast ? 4 : 1));
     target = Math.max(target, apAt(AP.s));
+    if (window.KT_QUICK && !AP.q) { AP.q = true; AP.fast = true; if (AP.s < AP.START) AP.s = AP.START; }   // been here before: a short glide straight to the Hatchery
+    // the card starts building at the last stop before the Hatchery (the flight rests there), so the door is ready when you reach it
+    if (!AP.near && target >= (STOPS - 1) / STOPS - .002) { AP.near = true; try { (window.KT_NEAR_GATE || (() => {}))(); } catch (e) {} }
     if (AP.s >= AP_END && !AP.landed) { AP.landed = true; try { (window.KT_AT_GATE || (() => {}))(); } catch (e) {} }
-    if (AP.s >= AP_END - AP.MOVE * .5 && !AP.hid) { AP.hid = true; const b = $('skip'); if (b) b.classList.add('gone'); } };   // nearly there: nothing left to skip
-  { const b = $('skip'); if (b) b.addEventListener('click', (e) => { e.stopPropagation(); AP.fast = true; if (AP.s < AP.START) AP.s = AP.START; b.classList.add('gone'); }); }
+    if (AP.s >= AP_END - AP.MOVE * .5 && !AP.hid && !window.KT_QUICK) { AP.hid = true; const b = $('skip'); if (b) b.classList.add('gone'); } };   // a returning Keeper keeps "See the whole journey"   // nearly there: nothing left to skip
+  { const b = $('skip'); if (b) b.addEventListener('click', (e) => { e.stopPropagation(); if (window.KT_QUICK) { location.href = location.pathname + '?journey=1'; return; } AP.fast = true; if (AP.s < AP.START) AP.s = AP.START; b.classList.add('gone'); }); }
   let mx = 0, my = 0, cmx = 0, cmy = 0;
   addEventListener('pointermove', (e) => { if (stopped || DOOR.t0) return; if (e.pointerType === 'mouse') { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; } });
 
@@ -653,7 +656,7 @@ window.SKY_L = (() => {
         const xs = pts.map((p) => (p.x + 1) / 2 * innerWidth), ys = pts.map((p) => (1 - p.y) / 2 * innerHeight), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
         const w = Math.max(56, (x1 - x0) * 1.5), h = Math.max(72, (y1 - y0) * 1.15), cx = (x0 + x1) / 2;   // never smaller than a finger
         dh.style.left = Math.round(cx - w / 2) + 'px'; dh.style.top = Math.round(y1 - h) + 'px'; dh.style.width = Math.round(w) + 'px'; dh.style.height = Math.round(h) + 'px';
-        if (dh.getAttribute('aria-label') !== H_.label) dh.setAttribute('aria-label', H_.label); dh.classList.toggle('prep', H_.label === L_('hPrep')); }
+        if (dh.getAttribute('aria-label') !== H_.label) dh.setAttribute('aria-label', H_.label); dh.classList.toggle('prep', H_.gate === 'open' && !document.body.classList.contains('ready')); }   // still building: a soft glow; ready: the door blazes
       if (dh && dh.classList.contains('on') !== ready) { dh.classList.toggle('on', ready); dh.tabIndex = ready ? 0 : -1; dh.setAttribute('aria-hidden', String(!ready)); } }
     if (cap) { const want = near ? at : 0; const wk = want === 3 ? 3 + 10 * HS.state : want; if (wk !== capAt) { capAt = wk; cap.classList.remove('on'); if (want) { cap.textContent = want === 3 && HS.state ? CAP3[HS.state] : CAP[want - 1]; void cap.offsetWidth; cap.classList.add('on'); } } }
   }
