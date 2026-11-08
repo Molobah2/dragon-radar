@@ -216,5 +216,12 @@
  "dailyWhy": "Ba câu hỏi nhanh từ các bài bạn đã mở. Bất kỳ bài quiz Dragon Guard nào bạn làm xong hôm nay đều hoàn thành bước Dragon Guard trong mục tiêu hằng ngày của bạn trên pdtools.",
  "dailyBtn": "Trả lời 3 câu hỏi",
  "dailyGoal": "Bước Dragon Guard của bạn trên pdtools đã xong hôm nay.",
- "toFeed": "Quay lại Blinky's Friends"
+ "toFeed": "Quay lại Blinky's Friends",
+ "rpStop": "DỪNG",
+ "rpCount": "{n} dấu hiệu nguy hiểm",
+ "rpCount1": "1 dấu hiệu nguy hiểm",
+ "rpAgain": "Xem lại",
+ "rpSite": "Một trang bạn chưa từng chọn",
+ "rpSeed": "Nó đòi cụm từ khôi phục của bạn",
+ "rpSign": "Một chữ ký bạn không định ký"
 }

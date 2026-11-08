@@ -216,5 +216,12 @@
  "dailyWhy": "Tres preguntas rápidas de las lecciones que ya abriste. Cualquier quiz de Dragon Guard que termines hoy completa el paso de Dragon Guard de tu meta diaria en pdtools.",
  "dailyBtn": "Responder 3 preguntas",
  "dailyGoal": "Tu paso de Dragon Guard en pdtools está hecho por hoy.",
- "toFeed": "Volver a Blinky's Friends"
+ "toFeed": "Volver a Blinky's Friends",
+ "rpStop": "ALTO",
+ "rpCount": "{n} señales de alerta",
+ "rpCount1": "1 señal de alerta",
+ "rpAgain": "Verlo otra vez",
+ "rpSite": "Un sitio que nunca elegiste",
+ "rpSeed": "Te pide tu frase semilla",
+ "rpSign": "Una firma que no planeabas"
 }

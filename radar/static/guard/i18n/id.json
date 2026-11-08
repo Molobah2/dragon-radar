@@ -216,5 +216,12 @@
  "dailyWhy": "Tiga pertanyaan singkat dari pelajaran yang sudah kamu buka. Kuis Dragon Guard apa pun yang kamu selesaikan hari ini mengisi langkah Dragon Guard di target harianmu di pdtools.",
  "dailyBtn": "Jawab 3 pertanyaan",
  "dailyGoal": "Langkah Dragon Guard-mu di pdtools sudah selesai hari ini.",
- "toFeed": "Kembali ke Blinky's Friends"
+ "toFeed": "Kembali ke Blinky's Friends",
+ "rpStop": "STOP",
+ "rpCount": "{n} tanda bahaya",
+ "rpCount1": "1 tanda bahaya",
+ "rpAgain": "Tonton lagi",
+ "rpSite": "Situs yang tidak pernah kamu pilih",
+ "rpSeed": "Situs ini meminta seed phrase-mu",
+ "rpSign": "Tanda tangan yang tidak kamu rencanakan"
 }

@@ -176,7 +176,7 @@ function home() {
     path += open ? `<li><a class="stone ${cls}" href="#m${m}">${inner}</a></li>` : `<li><div class="stone ${cls}" aria-disabled="true">${inner}</div></li>`;
   }
   main.innerHTML = `
-  <section class="hero"><span class="eyebrow">pdtools · ${esc(T("course", "Safety course"))}</span><h1>${esc(T("title", "Dragon Guard"))}</h1><p>${esc(T("tag", "One short lesson a day. Spot the scams before they reach your dragons."))}</p></section>
+  <section class="hero"><span class="eyebrow">pdtools · ${esc(T("course", "Safety course"))}</span><h1 class="kin" aria-label="${esc(T("title", "Dragon Guard"))}">${kinetic(T("title", "Dragon Guard"))}</h1><p>${esc(T("tag", "One short lesson a day. Spot the scams before they reach your dragons."))}</p></section>
   <div class="stack-l">
     ${inAppHtml}${checkHtml}${drillHtml}${todayHtml}${dailyHtml}
     <section class="stack" aria-labelledby="calh"><h3 id="calh">${esc(T("calendar", "Mint calendar"))}</h3><div class="cal">${cal}</div><p class="small muted">${esc(T("calNote", "From the official Pocket Dragons mint post. Trust only links from the official accounts, checked on two channels. pdtools will never post a mint link."))}</p></section>
@@ -192,6 +192,29 @@ function home() {
 }
 function weeklyDue() { const wk = isoWeek(); return modsDone() >= N && !S.drills["w" + wk]; }
 function isoWeek(ms = now()) { const d = new Date(ms); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7)); const w1 = new Date(d.getFullYear(), 0, 4); return d.getFullYear() + "-" + (1 + Math.round(((d - w1) / 864e5 - 3 + ((w1.getDay() + 6) % 7)) / 7)); }
+
+// kinetic type: each letter its own span, staggered in by CSS (once per visit, never under reduced motion)
+let kinDone = false;
+function kinetic(s) {
+  const on = !kinDone && !RM.matches; kinDone = true;
+  let i = 0;
+  return s.split(" ").map((w) => `<span class="kword" aria-hidden="true">${[...w].map((ch) => `<span class="kl${on ? " go" : ""}" style="--i:${i++}">${esc(ch)}</span>`).join("")}</span>`).join(" ");
+}
+// embers rising behind a passed result (a small canvas, stops by itself)
+function embers(host) {
+  if (RM.matches) return; const c = document.createElement("canvas"); c.className = "embers"; c.setAttribute("aria-hidden", "true"); host.appendChild(c);
+  const x = c.getContext("2d"), dpr = Math.min(2, devicePixelRatio || 1); let W = 0, H = 0;
+  const size = () => { W = c.clientWidth; H = c.clientHeight; c.width = W * dpr; c.height = H * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0); }; size();
+  const P = Array.from({ length: 46 }, (_, i) => ({ x: Math.random(), y: 1 + Math.random() * .3, v: .12 + Math.random() * .22, r: 1.2 + Math.random() * 2.6, w: Math.random() * 6.28, d: Math.random() * 1.2 }));
+  const s0 = performance.now(); let raf = 0;
+  const step = (now) => { if (!c.isConnected) return; const t = (now - s0) / 1000; x.clearRect(0, 0, W, H);
+    for (const p of P) { const tt = Math.max(0, t - p.d), y = (p.y - tt * p.v) * H, xx = (p.x + Math.sin(tt * 2 + p.w) * .02) * W, a = Math.max(0, Math.min(1, tt * 2)) * Math.max(0, 1 - (t - 3.2) / 1.2);
+      if (y < -10 || a <= 0) continue; x.globalAlpha = a; x.fillStyle = p.r > 2.6 ? "#ffd59a" : "#ffb257"; x.beginPath(); x.arc(xx, y, p.r, 0, 6.29); x.fill(); }
+    if (t < 4.6) raf = requestAnimationFrame(step); else c.remove(); };
+  raf = requestAnimationFrame(step);
+}
+// a number counting up to its value
+function countUp(el, to, ms = 900) { if (!el || RM.matches) return; const s0 = performance.now(); const step = (now) => { const p = Math.min(1, (now - s0) / ms); el.firstChild.nodeValue = String(Math.round(to * easeOut(p))); if (p < 1) requestAnimationFrame(step); }; el.firstChild.nodeValue = "0"; requestAnimationFrame(step); }
 
 /* ---------- the scroll notice ---------- */
 function scrollNotice(first) {
@@ -222,7 +245,7 @@ function segs(arr, mode, sid) {
     const id = `${sid}-${i}`;
     if (mode === "flag") return `<button type="button" class="seg" data-seg="${id}" data-flag="${s.flag ? 1 : 0}" aria-pressed="false">${esc(s.t)}</button>`;
     if (mode === "reveal" && s.flag) return `<span class="seg ok-flag" data-seg="${id}">${esc(s.t)}</span>`;
-    return `<span class="seg plain" data-seg="${id}">${esc(s.t)}</span>`;
+    return `<span class="seg plain" data-seg="${id}"${s.flag ? ` data-flag="1" data-lab="${esc(s.label || "")}"` : ""}>${esc(s.t)}</span>`;
   }).join("");
 }
 let simN = 0;
@@ -254,6 +277,239 @@ function allSegs(x, out = []) {
   if (x.kind === "call") push(x.lines);
   if (x.kind === "compare") { allSegs(x.left, out); allSegs(x.right, out); }
   return out;
+}
+/* ---------- scam replays (8 Nov): the scene at the top of each lesson plays out like a screen recording. The practice
+   screen builds itself (messages arrive, the address types in, the wallet popup rises), a cursor heads for the trap,
+   everything freezes on STOP and each red flag lights up with its name. Every frame comes from seek(t), so the same
+   replay can be filmed frame by frame for the daily video. Reduced motion shows the last frame straight away. ---------- */
+const clamp01 = (x) => x < 0 ? 0 : x > 1 ? 1 : x;
+const easeOut = (x) => 1 - Math.pow(1 - x, 3);
+const easeIO = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const spring = (x) => x >= 1 ? 1 : 1 - Math.exp(-6 * x) * Math.cos(9 * x);
+function Replay(host, simData) {
+  const frames = [...host.querySelectorAll(".practice")]; if (!frames.length) return null;
+  const items = [], flags = [];
+  let t0 = 0;
+  const add = (el, kind, dur) => { if (!el) return; items.push({ el, kind, at: t0, dur }); t0 += kind === "type" ? dur : dur * 0.55; };
+  frames.forEach((fr) => {
+    const kind = fr.closest(".phone") ? "wallet" : fr.querySelector(".chat") ? "dm" : fr.querySelector(".seeds") ? "seedpage" : fr.querySelector(".post") ? "post" : fr.querySelector(".call") ? "call" : "browser";
+    if (kind === "wallet") { add(fr.closest(".phone"), "rise", 0.7); fr.querySelectorAll(".wal .hd, .wal .row, .wal .note, .wal .bts").forEach((e) => add(e, "in", 0.42)); }
+    else if (kind === "dm") { add(fr.querySelector(".chat .hd"), "in", 0.45); fr.querySelectorAll(".bub").forEach((e) => { t0 += e.classList.contains("me") ? 0.1 : 0.55; add(e, e.classList.contains("me") ? "pop" : "msg", 0.45); }); }
+    else if (kind === "post") { add(fr.querySelector(".post"), "rise", 0.6); }
+    else if (kind === "call") { add(fr.querySelector(".call .tile"), "ring", 0.9); add(fr.querySelector(".call .cap"), "in", 0.5); add(fr.querySelector(".call .pop"), "pop", 0.5); }
+    else {
+      const u = fr.querySelector(".urlbar .u"); if (u) add(u, "type", Math.min(1.4, 0.35 + (u.textContent.length * 0.035)));
+      fr.querySelectorAll(".page > *").forEach((e) => add(e, "in", 0.4));
+      fr.querySelectorAll(".seeds span").forEach((e) => { items.push({ el: e, kind: "pop", at: t0, dur: 0.3 }); t0 += 0.05; });
+    }
+    fr.querySelectorAll(".seg[data-flag='1']").forEach((e) => flags.push({ el: e, lab: e.dataset.lab || "", fr }));
+    if (kind === "seedpage") { flags.push({ el: fr.querySelector(".urlbar .u"), lab: T("rpSite", "A site you never chose"), fr }); flags.push({ el: fr.querySelector(".seeds"), lab: T("rpSeed", "It asks for your seed phrase"), fr }); }
+    if (kind === "wallet" && !fr.querySelector(".seg[data-flag='1']")) flags.push({ el: fr.querySelector(".wal .bts span:last-child"), lab: T("rpSign", "A signature you did not plan"), fr });
+  });
+  if (!flags.length) return null;
+  // the trap the cursor heads for: the button that would do the harm, else the first red flag
+  const link = flags.find((f) => f.el && /\.example|\.test/.test(f.el.textContent || ""));
+  const trap = host.querySelector(".fakebtn") || host.querySelector(".wal .bts span:last-child") || (link && link.el) || flags[0].el;
+  const T_CUR = t0 + 0.3, T_CLICK = T_CUR + 1.25, T_STOP = T_CLICK + 0.35, T_FLAG = T_STOP + 0.75, GAP = 0.85;
+  const END = T_FLAG + flags.length * GAP + 0.6;
+  // the layer drawn over the practice frames
+  const wrap = host.querySelector(".cmp") || frames[0].closest(".phone") || frames[0];
+  wrap.classList.add("rp-host");
+  const layer = document.createElement("div"); layer.className = "rp-layer"; layer.setAttribute("aria-hidden", "true");
+  layer.innerHTML = `<svg class="rp-cur" viewBox="0 0 24 24" width="30" height="30"><path d="M4 2l16 9-7 2-3 7z" fill="#fff" stroke="#111" stroke-width="1.6" stroke-linejoin="round"/></svg><i class="rp-ring"></i><b class="rp-stop">${esc(T("rpStop", "STOP"))}</b>`
+    + flags.map((f, i) => `<b class="rp-num">${i + 1}</b>`).join("");
+  wrap.appendChild(layer);
+  const cur = layer.querySelector(".rp-cur"), ring = layer.querySelector(".rp-ring"), stop = layer.querySelector(".rp-stop"), nums = [...layer.querySelectorAll(".rp-num")];
+  // the red flags, named in a numbered list under the screen as each one lights up
+  const list = document.createElement("div"); list.className = "rp-list";
+  list.innerHTML = `<p class="rp-count">${esc(flags.length === 1 ? T("rpCount1", "1 red flag") : T("rpCount", "{n} red flags", { n: flags.length }))}</p><ol>${flags.map((f, i) => `<li><b>${i + 1}</b><span>${esc(f.lab)}</span></li>`).join("")}</ol>`;
+  wrap.insertAdjacentElement("afterend", list);
+  const labs = [...list.querySelectorAll("li")], count = list.querySelector(".rp-count");
+  const bar = document.createElement("div"); bar.className = "rp-bar";
+  bar.innerHTML = `<button class="btn ghost" type="button">${ico.replay || "↻"} ${esc(T("rpAgain", "Watch it again"))}</button>`;
+  list.insertAdjacentElement("afterend", bar);
+  const rel = (el) => { const rs = el.getClientRects(), a = rs.length ? rs[0] : el.getBoundingClientRect(), b = wrap.getBoundingClientRect(); return { x: a.left - b.left, y: a.top - b.top, w: a.width, h: a.height, W: b.width, H: b.height }; };
+  let geo = null;
+  const measure = () => { const saved = items.map((it) => it.el.style.cssText); items.forEach((it) => { it.el.style.opacity = ""; it.el.style.transform = ""; it.el.style.clipPath = ""; });
+    geo = { trap: rel(trap), flags: flags.map((f) => rel(f.el)) }; items.forEach((it, i) => { it.el.style.cssText = saved[i]; }); };
+  let lastT = 0;
+  function seek(t) {
+    lastT = t;
+    if (!geo) measure();
+    for (const it of items) {
+      const p = clamp01((t - it.at) / it.dur), s = it.el.style;
+      if (it.kind === "type") { s.clipPath = p >= 1 ? "" : `inset(0 ${(100 - p * 100).toFixed(1)}% 0 0)`; s.opacity = t < it.at ? "0" : "1"; continue; }
+      if (it.kind === "ring") { s.opacity = String(clamp01(p * 3)); s.transform = p >= 1 ? "" : `scale(${(1 + Math.sin(p * 18) * 0.02 * (1 - p)).toFixed(4)})`; continue; }
+      const e = it.kind === "pop" ? spring(p) : easeOut(p);
+      s.opacity = String(clamp01(p * 1.6));
+      s.transform = p >= 1 ? "" : it.kind === "rise" ? `translateY(${((1 - e) * 60).toFixed(1)}px)` : it.kind === "pop" ? `scale(${(0.6 + 0.4 * e).toFixed(4)})` : it.kind === "msg" ? `translateY(${((1 - e) * 14).toFixed(1)}px) scale(${(0.94 + 0.06 * e).toFixed(4)})` : `translateY(${((1 - e) * 10).toFixed(1)}px)`;
+      if (it.kind === "msg" || it.kind === "pop") s.transformOrigin = it.el.classList.contains("me") ? "right bottom" : "left bottom";
+    }
+    // the cursor glides in from the corner to the trap and presses it
+    const g = geo.trap, tx = g.x + g.w * 0.62, ty = g.y + g.h * 0.55, sx = g.W * 0.82, sy = g.H * 0.94;
+    const pc = easeIO(clamp01((t - T_CUR) / 1.15)), press = clamp01((t - T_CLICK) / 0.25);
+    const cx = sx + (tx - sx) * pc + Math.sin(pc * Math.PI) * -24, cy = sy + (ty - sy) * pc - Math.sin(pc * Math.PI) * 30;
+    cur.style.opacity = t < T_CUR ? "0" : String(clamp01((T_STOP + 0.6 - t) / 0.4) * clamp01((t - T_CUR) / 0.2));
+    cur.style.transform = `translate(${cx.toFixed(1)}px,${cy.toFixed(1)}px) scale(${(1 - 0.18 * Math.sin(press * Math.PI)).toFixed(3)})`;
+    ring.style.opacity = press > 0 && press < 1 ? String(1 - press) : "0";
+    ring.style.transform = `translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px) scale(${(0.3 + press * 1.6).toFixed(3)})`;
+    // STOP slams in over the frame, then each red flag lights up with its name
+    const ps = clamp01((t - T_STOP) / 0.45);
+    wrap.classList.toggle("rp-frozen", t >= T_STOP);
+    stop.style.opacity = t < T_STOP ? "0" : String(clamp01(ps * 2) * (1 - clamp01((t - T_FLAG + 0.1) / 0.4)));
+    stop.style.transform = `translate(-50%,-50%) rotate(-8deg) scale(${(2.2 - 1.2 * spring(ps)).toFixed(3)})`;
+    flags.forEach((f, i) => {
+      const at = T_FLAG + i * GAP, p = clamp01((t - at) / 0.4), r = geo.flags[i], L = labs[i], N = nums[i];
+      f.el && f.el.classList.toggle("rp-hit", t >= at);
+      L.style.opacity = String(clamp01(p * 2)); L.style.transform = p >= 1 ? "" : `translateX(${((1 - easeOut(p)) * -16).toFixed(1)}px)`;
+      N.style.opacity = String(clamp01(p * 2));
+      N.style.transform = `translate(${(r.x - 10).toFixed(1)}px,${(r.y - 12).toFixed(1)}px) scale(${(0.4 + 0.6 * spring(p)).toFixed(3)})`;
+    });
+    const pk = clamp01((t - T_FLAG + 0.3) / 0.3); count.style.opacity = String(pk); list.classList.toggle("on", t >= T_FLAG - 0.3);
+  }
+  let raf = 0, start = 0, played = false;
+  const run = () => { cancelAnimationFrame(raf); geo = null; measure(); start = performance.now(); played = true;
+    const step = (now) => { if (!wrap.isConnected) return; const t = (now - start) / 1000; seek(Math.min(t, END)); if (t < END) raf = requestAnimationFrame(step); }; raf = requestAnimationFrame(step); };
+  bar.querySelector("button").onclick = run;
+  if (RM.matches) { requestAnimationFrame(() => { measure(); seek(END); }); }
+  else {
+    seek(0);
+    if (/[?&]rpstill/.test(location.search)) { window.GUARD_REPLAY = { seek, duration: END, run, measure: () => { geo = null; seek(lastT); }, beats: { stop: T_STOP, flags: flags.map((_, i) => T_FLAG + i * GAP) } }; return window.GUARD_REPLAY; }   // filming: frames come from seek(t) only
+    const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting) && !played) { io.disconnect(); setTimeout(run, 250); } }, { threshold: 0.35 });
+    io.observe(wrap);
+  }
+  // anything that moves the layout (fonts arriving, a resize, the film stage) is measured again
+  const again = () => { geo = null; seek(lastT); };
+  if (window.ResizeObserver) new ResizeObserver(() => { geo = null; }).observe(wrap);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(again);
+  window.GUARD_REPLAY = { seek, duration: END, run, measure: again };
+  return window.GUARD_REPLAY;
+}
+/* ---------- moving diagrams (8 Nov): the hardest ideas drawn as short animations on their lesson cards. Same rule as
+   the replays: every frame from seek(t), autoplay once when seen, "Watch it again", reduced motion shows the end. ---------- */
+const NS = "http://www.w3.org/2000/svg";
+const lerp = (a, b, p) => a + (b - a) * p;
+const ph = (t, a, d) => clamp01((t - a) / d);
+function svgEl(tag, at, kids) { const e = document.createElementNS(NS, tag); for (const k in at || {}) e.setAttribute(k, at[k]); (kids || []).forEach((c) => e.appendChild(typeof c === "string" ? document.createTextNode(c) : c)); return e; }
+const C = { bg: "#241a15", stone: "#3a2e27", line: "#6a5442", cream: "#f7ecd5", soft: "#d9c7a6", bronze: "#c58c45", torch: "#ffb257", red: "#e0533c", green: "#58b28a", ink: "#2b1d12" };
+const txt = (x, y, s, o = {}) => svgEl("text", Object.assign({ x, y, fill: C.cream, "font-size": 20, "font-weight": 800, "text-anchor": "middle", "font-family": "Nunito, system-ui, sans-serif" }, o), [s]);
+const box = (x, y, w, h, o = {}) => svgEl("rect", Object.assign({ x, y, width: w, height: h, rx: 18, fill: C.stone, stroke: C.line, "stroke-width": 3 }, o));
+const coin = (o = {}) => svgEl("g", o, [svgEl("circle", { r: 13, fill: C.torch, stroke: "#8a4a12", "stroke-width": 3 }), svgEl("text", { y: 5, "text-anchor": "middle", "font-size": 14, "font-weight": 900, fill: "#5a2a00", "font-family": "Nunito, sans-serif" }, ["◆"])]);
+const egg = (o = {}) => svgEl("g", o, [svgEl("ellipse", { rx: 13, ry: 17, fill: "#7fd0a0", stroke: "#2f6b4c", "stroke-width": 3 }), svgEl("circle", { cx: 4, cy: -4, r: 3, fill: "#2f6b4c" })]);
+const op = (e, v) => e.setAttribute("opacity", Math.max(0, Math.min(1, v)).toFixed(3));
+const mv = (e, x, y, s = 1, r = 0) => e.setAttribute("transform", `translate(${x.toFixed(1)},${y.toFixed(1)})${s !== 1 ? ` scale(${s.toFixed(3)})` : ""}${r ? ` rotate(${r.toFixed(1)})` : ""}`);
+const DIAGRAMS = {
+  // Lesson 3: the vault keeps the dragons and never connects; the mint wallet holds only what mint needs
+  "3/1": { end: 9, build(g) {
+    const vault = svgEl("g", {}, [box(40, 70, 220, 200, { stroke: C.green }), txt(150, 110, "Vault"), txt(150, 252, "never connects", { "font-size": 15, fill: C.soft, "font-weight": 700 })]);
+    const mint = svgEl("g", {}, [box(380, 70, 220, 200, { stroke: C.torch }), txt(490, 110, "Mint wallet"), txt(490, 252, "only what you need", { "font-size": 15, fill: C.soft, "font-weight": 700 })]);
+    const eggs = [0, 1, 2, 3].map((i) => egg({})), coins = [0, 1, 2, 3, 4].map(() => coin({}));
+    const site = svgEl("g", {}, [box(-70, -24, 140, 48, { rx: 24, fill: "#5a2018", stroke: C.red }), txt(0, 7, "scam site", { "font-size": 17 })]);
+    const shield = svgEl("circle", { cx: 150, cy: 170, r: 98, fill: "none", stroke: C.green, "stroke-width": 5 });
+    const cut = txt(490, 320, "Only the small amount is at risk", { fill: C.torch, "font-size": 19 });
+    const safe = txt(150, 320, "Your dragons stay safe", { fill: C.green, "font-size": 19 });
+    [vault, mint, shield, ...eggs, ...coins, site, cut, safe].forEach((e) => g.appendChild(e));
+    return (t) => {
+      op(vault, ph(t, 0, .5)); op(mint, ph(t, .4, .5));
+      eggs.forEach((e, i) => { op(e, ph(t, .8 + i * .15, .3)); mv(e, 75 + i * 50, 205, 0.6 + 0.4 * spring(ph(t, .8 + i * .15, .5))); });
+      coins.forEach((c, i) => { const p = easeIO(ph(t, 2 + i * .12, 1)); const moving = i < 2; op(c, ph(t, 1.6, .3) * (moving || t < 2 ? 1 : 1)); const x0 = 80 + i * 35, y0 = 150; mv(c, moving ? lerp(x0, 450 + i * 50, p) : x0, moving ? lerp(y0, 180, p) - Math.sin(p * Math.PI) * 50 : y0); if (!moving) op(c, ph(t, 1.6, .3)); });
+      const ps = easeOut(ph(t, 4, .8)); op(site, ph(t, 4, .3)); mv(site, lerp(700, 490, ps), 160);
+      const dr = ph(t, 5.2, .9); coins.slice(0, 2).forEach((c, i) => { if (dr > 0) { mv(c, lerp(450 + i * 50, 490, dr), lerp(180, 160, dr), 1 - dr * 0.8); op(c, 1 - dr); } });
+      op(shield, ph(t, 5.6, .4) * (0.6 + 0.4 * Math.sin(t * 4))); op(cut, ph(t, 6.2, .5)); op(safe, ph(t, 6.6, .5));
+    }; } },
+  // Lesson 4: one swapped letter in the address
+  "4/1": { end: 8, build(g) {
+    const real = "pocketdragons.example", fake = "pocketdragoms.example", k = real.split("").findIndex((c, i) => c !== fake[i]);
+    const row = (y) => real.split("").map((c, i) => { const e = txt(80 + i * 23.5, y, c, { "font-family": "ui-monospace, Menlo, monospace", "font-size": 30, "font-weight": 700 }); g.appendChild(e); return e; });
+    const top = row(120), bot = row(230);
+    const l1 = txt(320, 70, "The real site", { fill: C.green, "font-size": 18 }), l2 = txt(320, 180, "The fake", { fill: C.red, "font-size": 18 });
+    const ring = svgEl("circle", { r: 26, fill: "none", stroke: C.red, "stroke-width": 4 }), note = txt(320, 300, "One letter. That is all it takes.", { fill: C.torch, "font-size": 20 });
+    [l1, l2, ring, note].forEach((e) => g.appendChild(e));
+    return (t) => {
+      op(l1, ph(t, 0, .4)); op(l2, ph(t, 1.6, .4));
+      top.forEach((e, i) => { const p = ph(t, .2 + i * .04, .25); op(e, p); mv(e, 0, (1 - easeOut(p)) * 12); });
+      bot.forEach((e, i) => { const p = ph(t, 1.8 + i * .04, .25); op(e, p); mv(e, 0, (1 - easeOut(p)) * 12); });
+      const sw = ph(t, 3.4, .5); bot[k].textContent = sw > .5 ? fake[k] : real[k]; bot[k].setAttribute("fill", sw > .5 ? C.red : C.cream); mv(bot[k], 0, 0, 1 + 0.5 * Math.sin(sw * Math.PI));
+      const pr = ph(t, 4.2, .5); op(ring, pr); mv(ring, 80 + k * 23.5, 220, 0.5 + 0.5 * spring(pr));
+      op(note, ph(t, 5, .5));
+    }; } },
+  // Lesson 6: three steps, rising danger
+  "6/1": { end: 8, build(g) {
+    const steps = [["Connect", "sees your address", C.green], ["Sign", "words with power", C.torch], ["Send", "money moves", C.red]];
+    const els = steps.map(([a, b, c], i) => { const e = svgEl("g", {}, [box(30 + i * 200, 90, 180, 150, { stroke: c }), txt(120 + i * 200, 155, a, { "font-size": 26 }), txt(120 + i * 200, 190, b, { "font-size": 15, fill: C.soft, "font-weight": 700 })]); g.appendChild(e); return e; });
+    const meter = svgEl("rect", { x: 30, y: 280, height: 16, rx: 8, fill: C.red }), track = box(30, 280, 580, 16, { rx: 8, fill: "#1a1310", "stroke-width": 0 });
+    const lab = txt(320, 330, "Read each step before you press", { fill: C.torch, "font-size": 19 });
+    g.insertBefore(track, g.firstChild); [meter, lab].forEach((e) => g.appendChild(e));
+    const grad = svgEl("linearGradient", { id: "dgm", x1: 0, x2: 1 }, [svgEl("stop", { offset: 0, "stop-color": C.green }), svgEl("stop", { offset: .5, "stop-color": C.torch }), svgEl("stop", { offset: 1, "stop-color": C.red })]);
+    g.appendChild(svgEl("defs", {}, [grad])); meter.setAttribute("fill", "url(#dgm)");
+    return (t) => { els.forEach((e, i) => { const p = ph(t, .3 + i * 1.3, .5); op(e, p); mv(e, 0, (1 - spring(p)) * 30); });
+      meter.setAttribute("width", (580 * easeIO(ph(t, .5, 4))).toFixed(1)); op(lab, ph(t, 4.8, .5)); }; } },
+  // Lesson 7: a Permit costs no gas, then the tokens walk out on their own
+  "7/1": { end: 9, build(g) {
+    const wal = svgEl("g", {}, [box(40, 80, 220, 190), txt(150, 118, "Your wallet")]);
+    const spender = svgEl("g", {}, [box(400, 120, 200, 110, { stroke: C.red }), txt(500, 165, "Spender", { "font-size": 22 }), txt(500, 195, "0x7a3f…91c2", { "font-size": 15, fill: C.soft, "font-family": "ui-monospace, monospace" })]);
+    const sig = svgEl("g", {}, [box(-95, -26, 190, 52, { rx: 26, fill: "#3b3a5c", stroke: "#8f8cd6" }), txt(0, 7, "Sign Permit", { "font-size": 18 })]);
+    const free = txt(150, 300, "No gas. Felt like a login.", { fill: C.soft, "font-size": 17 });
+    const pipe = svgEl("path", { d: "M260 175 C 320 175, 340 175, 400 175", stroke: C.red, "stroke-width": 6, fill: "none", "stroke-dasharray": "10 10" });
+    const coins = [0, 1, 2, 3, 4, 5].map(() => coin()), note = txt(500, 300, "Later, without you", { fill: C.red, "font-size": 19 });
+    [wal, spender, pipe, sig, free, ...coins, note].forEach((e) => g.appendChild(e));
+    return (t) => { op(wal, ph(t, 0, .4)); op(sig, ph(t, .8, .3) * (1 - ph(t, 2.6, .4))); const pp = ph(t, 1.6, .35); mv(sig, 150, 244, 1 - 0.12 * Math.sin(pp * Math.PI)); op(free, ph(t, 1.9, .4));
+      op(spender, ph(t, 2.8, .4)); op(pipe, ph(t, 3.2, .4)); pipe.setAttribute("stroke-dashoffset", (-t * 40).toFixed(1));
+      coins.forEach((c, i) => { const x0 = 95 + (i % 3) * 55, y0 = 150 + Math.floor(i / 3) * 42, p = easeIO(ph(t, 4.4 + i * .35, .9)); op(c, ph(t, .3, .3) * (1 - ph(t, 4.4 + i * .35 + .8, .2))); mv(c, lerp(x0, 500, p), lerp(y0, 175, p) - Math.sin(p * Math.PI) * 40); });
+      op(note, ph(t, 5, .5)); }; } },
+  // Lesson 8: Disconnect leaves the approval in place; only revoke cuts it
+  "8/1": { end: 9, build(g) {
+    const site = svgEl("g", {}, [box(40, 100, 200, 120), txt(140, 168, "A site", { "font-size": 22 })]), you = svgEl("g", {}, [box(400, 100, 200, 120), txt(500, 168, "Your wallet", { "font-size": 22 })]);
+    const conn = svgEl("path", { d: "M240 140 L400 140", stroke: C.soft, "stroke-width": 5 }), appr = svgEl("path", { d: "M240 185 L400 185", stroke: C.red, "stroke-width": 6, "stroke-dasharray": "10 8" });
+    const lc = txt(320, 128, "connected", { "font-size": 14, fill: C.soft }), la = txt(320, 210, "approval", { "font-size": 14, fill: C.red });
+    const b1 = svgEl("g", {}, [box(-80, -22, 160, 44, { rx: 22, fill: "#4b3c32" }), txt(0, 7, "Disconnect", { "font-size": 17 })]), b2 = svgEl("g", {}, [box(-70, -22, 140, 44, { rx: 22, fill: "#24533f", stroke: C.green }), txt(0, 7, "Revoke", { "font-size": 17 })]);
+    const n1 = txt(320, 320, "Disconnect leaves the approval", { fill: C.red, "font-size": 18 }), n2 = txt(320, 320, "Revoke cuts it", { fill: C.green, "font-size": 20 });
+    [site, you, conn, appr, lc, la, b1, b2, n1, n2].forEach((e) => g.appendChild(e));
+    return (t) => { op(site, ph(t, 0, .4)); op(you, ph(t, .2, .4)); op(conn, ph(t, .6, .4) * (1 - ph(t, 2.4, .3))); op(lc, ph(t, .6, .4) * (1 - ph(t, 2.4, .3))); op(appr, ph(t, 1, .4) * (1 - ph(t, 5.6, .3))); op(la, ph(t, 1, .4) * (1 - ph(t, 5.6, .3)));
+      appr.setAttribute("stroke-dashoffset", (-t * 30).toFixed(1));
+      op(b1, ph(t, 1.6, .3) * (1 - ph(t, 3.4, .3))); mv(b1, 320, 270, 1 - .1 * Math.sin(ph(t, 2.2, .3) * Math.PI));
+      op(n1, ph(t, 2.8, .4) * (1 - ph(t, 4.4, .3))); op(b2, ph(t, 4.4, .3)); mv(b2, 320, 270, 1 - .1 * Math.sin(ph(t, 5.2, .3) * Math.PI)); op(n2, ph(t, 6, .4)); }; } },
+  // Lesson 10: one confirm fans out into several actions
+  "10/1": { end: 8, build(g) {
+    const btn = svgEl("g", {}, [box(-80, -28, 160, 56, { rx: 28, fill: "#3b3a5c", stroke: "#8f8cd6" }), txt(0, 8, "Confirm", { "font-size": 20 })]);
+    const acts = [["Approve all NFTs", C.red], ["Send your dragons", C.red], ["Send your tokens", C.red]].map(([s, c], i) => { const e = svgEl("g", {}, [box(380, 50 + i * 90, 230, 64, { stroke: c }), txt(495, 90 + i * 90, s, { "font-size": 17 })]); return e; });
+    const lines = [0, 1, 2].map((i) => svgEl("path", { d: `M220 180 C 300 180, 300 ${82 + i * 90}, 380 ${82 + i * 90}`, stroke: C.red, "stroke-width": 4, fill: "none", "stroke-dasharray": "300", "stroke-dashoffset": "300" }));
+    const note = txt(320, 335, "One confirm, many actions", { fill: C.torch, "font-size": 20 });
+    [...lines, btn, ...acts, note].forEach((e) => g.appendChild(e));
+    return (t) => { op(btn, ph(t, 0, .4)); mv(btn, 140, 180, 1 - .12 * Math.sin(ph(t, 1.2, .3) * Math.PI));
+      lines.forEach((l, i) => l.setAttribute("stroke-dashoffset", (300 * (1 - easeOut(ph(t, 1.6 + i * .3, .7)))).toFixed(1)));
+      acts.forEach((a, i) => { const p = ph(t, 2.1 + i * .3, .4); op(a, p); mv(a, (1 - spring(p)) * 30, 0); }); op(note, ph(t, 3.8, .5)); }; } },
+  // Lesson 13: a poisoned address starts and ends the same
+  "13/1": { end: 9, build(g) {
+    const A = "0x7a3f9c41d2e8b5a6f0c3e9d1b47c91c2", B = "0x7a3f02be77c1d90f3a5e8b2c6d1f91c2";
+    const row = (y, s, lab, col) => { const items = s.split("").map((c, i) => { const e = txt(48 + i * 16.5, y, c, { "font-family": "ui-monospace, Menlo, monospace", "font-size": 21, "font-weight": 700 }); g.appendChild(e); return e; }); const l = txt(320, y - 34, lab, { fill: col, "font-size": 16 }); g.appendChild(l); return { items, l }; };
+    const r1 = row(110, A, "The address you use", C.green), r2 = row(220, B, "Dropped in your history", C.red);
+    const short1 = txt(320, 110, "0x7a3f…91c2", { "font-family": "ui-monospace, monospace", "font-size": 30 }), short2 = txt(320, 220, "0x7a3f…91c2", { "font-family": "ui-monospace, monospace", "font-size": 30 });
+    const note = txt(320, 310, "Check the whole address, not the ends", { fill: C.torch, "font-size": 19 });
+    [short1, short2, note].forEach((e) => g.appendChild(e));
+    return (t) => { op(r1.l, ph(t, 0, .4)); op(r2.l, ph(t, 1, .4));
+      const ex = ph(t, 3, .8); op(short1, ph(t, .2, .4) * (1 - ex)); op(short2, ph(t, 1.2, .4) * (1 - ex));
+      [r1, r2].forEach((r, j) => r.items.forEach((e, i) => { const p = ph(t, 3 + i * .02, .5); op(e, p); const diff = A[i] !== B[i]; e.setAttribute("fill", diff && t > 4.4 ? (j ? C.red : C.green) : C.cream); mv(e, 0, diff && t > 4.4 ? -4 * Math.sin(ph(t, 4.4, .4) * Math.PI) : 0); }));
+      op(note, ph(t, 5.2, .5)); }; } },
+};
+function Diagram(host, key) {
+  const D = DIAGRAMS[key]; if (!D) return null;
+  const fig = document.createElement("figure"); fig.className = "dg";
+  const svg = svgEl("svg", { viewBox: "0 0 640 360", role: "img" }); svg.appendChild(svgEl("rect", { width: 640, height: 360, rx: 22, fill: C.bg }));
+  const g = svgEl("g"); svg.appendChild(g); fig.appendChild(svg);
+  const seek = D.build(g);
+  const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn ghost dg-again"; btn.textContent = "↻ " + T("rpAgain", "Watch it again");
+  fig.appendChild(btn);
+  const body = host.querySelector(".body"); (body || host).insertAdjacentElement("afterend", fig);
+  let raf = 0, played = false;
+  const run = () => { cancelAnimationFrame(raf); played = true; const s0 = performance.now(); const step = (now) => { if (!fig.isConnected) return; const t = (now - s0) / 1000; seek(Math.min(t, D.end)); if (t < D.end) raf = requestAnimationFrame(step); }; raf = requestAnimationFrame(step); };
+  btn.onclick = run;
+  window.GUARD_DIAGRAM = { seek, duration: D.end, run };
+  if (RM.matches || /[?&]rpstill/.test(location.search)) { seek(D.end); return window.GUARD_DIAGRAM; }
+  seek(0);
+  const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting) && !played) { io.disconnect(); setTimeout(run, 200); } }, { threshold: 0.4 });
+  io.observe(fig);
+  return window.GUARD_DIAGRAM;
 }
 // mark a flag simulator after "Done": right flags green, missed flags dashed, wrong taps crossed
 function markFlags(root) {
@@ -304,6 +560,8 @@ async function lesson(m, c) {
   <div class="nav">${c > 0 ? `<a class="btn ghost" href="#m${m}/${c - 1}">${esc(T("back", "Back"))}</a>` : ""}<a class="btn main" id="next" href="${last ? "#honour/" + m : "#m" + m + "/" + (c + 1)}">${esc(last ? T("toQuiz", "Go to the quiz") : T("next", "Next"))}</a></div>`;
   if (lang !== "en" && c === 0) main.querySelector(".card").insertAdjacentHTML("afterbegin", `<p class="small chip">${esc(T("enOnly", "Lessons are in English for now. Your browser's translator is fine to use."))}</p>`);
   if (last && !st(m).read) { st(m).read = 1; touchDay(); save(); }
+  if (card.type === "scene" && card.sim) Replay(main.querySelector(".card"), card.sim);
+  if (card.type === "teach") Diagram(main.querySelector(".card"), m + "/" + c);
   if (card.type === "sim") {
     const root = $("#lsim"); wireFlags(root);
     $("#lcheck").onclick = () => { const ok = markFlags(root); $("#lcheck").hidden = true; $("#lfb").innerHTML = `<div class="fb ${ok ? "ok" : "no"}"><h3>${esc(ok ? T("allFound", "You found every flag") : T("someMissed", "Here is what to look for"))}</h3>${flagWhy(card.sim, root)}</div>`; say(ok ? T("allFound", "You found every flag") : T("someMissed", "Here is what to look for")); };
@@ -501,11 +759,12 @@ async function resultView() {
   else if (s.tries < 2) next = `<a class="btn main wide" href="#m${R.m}/${(MODS[R.m] ? MODS[R.m].cards.length : 1) - 1}">${esc(T("reread", "Read the summary, then try again"))}</a><a class="btn ghost wide" href="#home">${esc(T("later", "Later"))}</a>`;
   else next = `<p>${esc(T("needsWhy", "This lesson is marked Needs review. Practise now without a timer, or again tomorrow. The next lesson still opens on its day."))}</p><a class="btn main wide" href="#m${R.m}">${esc(T("rereadL", "Read the lesson again"))}</a><button class="btn ghost wide" type="button" id="practise">${esc(T("practiseU", "Practise without a timer"))}</button><a class="btn ghost wide" href="#home">${esc(T("toHall", "Back to the hall"))}</a>`;
   main.innerHTML = `<section class="parch result stack"><div class="res-art" style="background-image:url(${art(pass ? "shield" : "owl")})" aria-hidden="true"></div><div class="stars" role="img" aria-label="${esc(T("starsLbl", "{n} of 3 stars", { n: stars.filter(Boolean).length }))}">${stars.map((x) => `<span class="${x ? "on" : "off"}">${ico.star}</span>`).join("")}</div>
-  <p class="score">${R.score} / ${R.n}</p><h2>${esc(pass ? T("passed", "Well guarded") : R.score <= 2 ? T("almost0", "A new topic. Let us learn it together.") : T("almost", "Good effort. A few to go over."))}</h2>
+  <p class="score"><span id="scn">${R.score}</span> / ${R.n}</p><h2>${esc(pass ? T("passed", "Well guarded") : R.score <= 2 ? T("almost0", "A new topic. Let us learn it together.") : T("almost", "Good effort. A few to go over."))}</h2>
   <p class="muted">${esc(pass ? T("passWhy", "Every right answer is a scam you will spot in real life.") : R.score <= 2 ? T("almostWhy0", "Every answer below explains one scam. They come back in later quizzes so they stick.") : T("almostWhy", "Missing a few here is how you learn. These come back in later quizzes so they stick."))}</p>
   ${msgs.length ? `<div style="text-align:left;width:100%"><h3>${esc(T("youMissed", "You missed these"))}</h3><ul class="stack" style="padding-left:18px">${msgs.join("")}</ul></div>` : ""}
   ${next}</section>`;
   const sh = $("#share"); if (sh) sh.onclick = shareCard;
+  { const sec = main.querySelector(".result"); sec.classList.add(RM.matches ? "still" : "moving"); countUp($("#scn"), R.score); if (pass) embers(sec.querySelector(".res-art")); }
   const pr = $("#practise"); if (pr) pr.onclick = async () => { await startQuiz(R.m, "off", "practice"); location.hash = "q"; };
   if (pass && !RM.matches && R.m !== "drill") confetti();
 }

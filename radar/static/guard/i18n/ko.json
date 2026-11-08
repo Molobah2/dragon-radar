@@ -216,5 +216,12 @@
  "dailyWhy": "이미 연 레슨에서 나오는 짧은 질문 세 개예요. 오늘 끝낸 Dragon Guard 퀴즈는 모두 pdtools 일일 목표의 Dragon Guard 단계를 채워요.",
  "dailyBtn": "3문제 답하기",
  "dailyGoal": "pdtools의 Dragon Guard 단계를 오늘 완료했어요.",
- "toFeed": "Blinky's Friends로 돌아가기"
+ "toFeed": "Blinky's Friends로 돌아가기",
+ "rpStop": "멈춰요",
+ "rpCount": "위험 신호 {n}개",
+ "rpCount1": "위험 신호 1개",
+ "rpAgain": "다시 보기",
+ "rpSite": "직접 고른 적 없는 사이트",
+ "rpSeed": "시드 문구를 요구해요",
+ "rpSign": "계획하지 않은 서명"
 }

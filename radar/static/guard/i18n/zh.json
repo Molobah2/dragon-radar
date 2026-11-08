@@ -216,5 +216,12 @@
  "dailyWhy": "来自你已开启课程的三个快速问题。今天完成的任何 Dragon Guard 测验都会完成你在 pdtools 每日目标中的 Dragon Guard 步骤。",
  "dailyBtn": "回答 3 个问题",
  "dailyGoal": "你今天在 pdtools 的 Dragon Guard 步骤已完成。",
- "toFeed": "返回 Blinky's Friends"
+ "toFeed": "返回 Blinky's Friends",
+ "rpStop": "停",
+ "rpCount": "{n} 个危险信号",
+ "rpCount1": "1 个危险信号",
+ "rpAgain": "再看一遍",
+ "rpSite": "一个你从未选择的网站",
+ "rpSeed": "它要你的助记词",
+ "rpSign": "一个你没打算签的签名"
 }

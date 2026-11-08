@@ -216,5 +216,12 @@
  "dailyWhy": "Trois questions rapides sur les leçons que tu as ouvertes. Tout quiz Dragon Guard terminé aujourd'hui remplit l'étape Dragon Guard de ton objectif du jour sur pdtools.",
  "dailyBtn": "Répondre à 3 questions",
  "dailyGoal": "Ton étape Dragon Guard sur pdtools est faite pour aujourd'hui.",
- "toFeed": "Retour à Blinky's Friends"
+ "toFeed": "Retour à Blinky's Friends",
+ "rpStop": "STOP",
+ "rpCount": "{n} signaux d'alarme",
+ "rpCount1": "1 signal d'alarme",
+ "rpAgain": "Revoir",
+ "rpSite": "Un site que tu n'as jamais choisi",
+ "rpSeed": "Il demande ta phrase secrète",
+ "rpSign": "Une signature que tu n'avais pas prévue"
 }

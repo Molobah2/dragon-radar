@@ -216,5 +216,12 @@
  "dailyWhy": "Açtığın derslerden üç kısa soru. Bugün bitirdiğin her Dragon Guard testi, pdtools'taki günlük hedefinin Dragon Guard adımını tamamlar.",
  "dailyBtn": "3 soruyu cevapla",
  "dailyGoal": "pdtools'taki Dragon Guard adımın bugün için tamam.",
- "toFeed": "Blinky's Friends'e dön"
+ "toFeed": "Blinky's Friends'e dön",
+ "rpStop": "DUR",
+ "rpCount": "{n} tehlike işareti",
+ "rpCount1": "1 tehlike işareti",
+ "rpAgain": "Tekrar izle",
+ "rpSite": "Hiç seçmediğin bir site",
+ "rpSeed": "Kurtarma ifadeni istiyor",
+ "rpSign": "Planlamadığın bir imza"
 }
