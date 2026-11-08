@@ -500,7 +500,8 @@ function Diagram(host, key) {
   const seek = D.build(g);
   const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn ghost dg-again"; btn.textContent = "↻ " + T("rpAgain", "Watch it again");
   fig.appendChild(btn);
-  const body = host.querySelector(".body"); (body || host).insertAdjacentElement("afterend", fig);
+  let col = host.querySelector(".cr"); if (!col) { col = document.createElement("div"); col.className = "cr"; host.appendChild(col); }
+  col.appendChild(fig);
   let raf = 0, played = false;
   const run = () => { cancelAnimationFrame(raf); played = true; const s0 = performance.now(); const step = (now) => { if (!fig.isConnected) return; const t = (now - s0) / 1000; seek(Math.min(t, D.end)); if (t < D.end) raf = requestAnimationFrame(step); }; raf = requestAnimationFrame(step); };
   btn.onclick = run;
@@ -547,7 +548,8 @@ async function lesson(m, c) {
   if (c === 0 && !st(m).started) { st(m).started = 1; save(); tally(m, "start"); }
   let body = "";
   if (card.type === "scene" || card.type === "teach") {
-    body = `${card.art ? `<div class="art" role="img" aria-label="${esc(T("illus", "Illustration"))}" style="background-image:url(${art(card.art)})"></div>` : ""}<h2>${esc(card.title)}</h2><p class="body">${esc(card.body)}</p>${card.points ? `<ul class="points">${card.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}${card.sim ? sim(card.sim, "show") : ""}`;
+    // two columns on laptops: the picture and the words on the left, the moving part (replay or diagram) on the right
+    body = `<div class="cl">${card.art ? `<div class="art" role="img" aria-label="${esc(T("illus", "Illustration"))}" style="background-image:url(${art(card.art)})"></div>` : ""}<h2>${esc(card.title)}</h2><p class="body">${esc(card.body)}</p>${card.points ? `<ul class="points">${card.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}</div>${card.sim ? `<div class="cr">${sim(card.sim, "show")}</div>` : ""}`;
   } else if (card.type === "sim") {
     body = `<span class="eyebrow" style="color:#7a4a16">${esc(T("tryIt", "Try it"))}</span><h2>${esc(card.title)}</h2><p class="body">${esc(card.body)}</p><div id="lsim">${sim(card.sim, "flag")}</div><button class="btn ink" type="button" id="lcheck">${esc(T("doneFlag", "Done flagging"))}</button><div id="lfb"></div>`;
   } else {
