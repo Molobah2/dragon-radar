@@ -39,9 +39,13 @@ const store = {
   get() { try { const v = canStore ? localStorage.getItem(KEY) : mem[KEY]; return v ? JSON.parse(v) : null; } catch (e) { return null; } },
   set(o) { const v = JSON.stringify(o); try { if (canStore) localStorage.setItem(KEY, v); else mem[KEY] = v; } catch (e) { canStore = false; mem[KEY] = v; showRibbon(); } }
 };
-const fresh = () => ({ v: 1, id: Math.random().toString(36).slice(2, 10), seen: 0, mods: {}, items: {}, days: {}, checks: {}, drills: {}, timer: "", quiz: null, first: localKey() });
+// EP: the course start every device shares. 8 Nov 2026 is day 1 for everyone: progress saved before it starts fresh
+// (the notice already read and the timer choice are kept).
+const EP = 1;
+const fresh = () => ({ v: 1, ep: EP, id: Math.random().toString(36).slice(2, 10), seen: 0, mods: {}, items: {}, days: {}, checks: {}, drills: {}, timer: "", quiz: null, first: localKey() });
 let S = store.get() || fresh();
 if (!S.v) S = fresh();
+if (S.ep !== EP) { const keep = { seen: S.seen ? 1 : 0, timer: typeof S.timer === "string" ? S.timer : "" }; S = Object.assign(fresh(), keep); store.set(S); }
 const save = () => store.set(S);
 const touchDay = () => { S.days[localKey()] = 1; };
 function showRibbon() {
@@ -618,7 +622,7 @@ function progressView() {
   $("#rst").onclick = () => {
     const v = $("#pin").value.replace(/\s+/g, ""), m = v.match(/^DG1\.([A-Za-z0-9+/=]+)\.([0-9a-z]+)$/);
     let ok = false;
-    if (m) { let h = 0; for (const c of m[1]) h = (h * 31 + c.charCodeAt(0)) >>> 0; if (h.toString(36) === m[2]) { try { const o = JSON.parse(decodeURIComponent(escape(atob(m[1])))); if (o && o.v === 1 && o.mods) { S = o; save(); ok = true; } } catch (e) {} } }
+    if (m) { let h = 0; for (const c of m[1]) h = (h * 31 + c.charCodeAt(0)) >>> 0; if (h.toString(36) === m[2]) { try { const o = JSON.parse(decodeURIComponent(escape(atob(m[1])))); if (o && o.v === 1 && o.mods && o.ep === EP) { S = o; save(); ok = true; } } catch (e) {} } }
     $("#rmsg").textContent = ok ? T("restored", "Restored. Welcome back.") : T("badCode", "That code did not work. Copy it again from the other browser.");
     if (ok) setTimeout(() => go("home"), 900);
   };

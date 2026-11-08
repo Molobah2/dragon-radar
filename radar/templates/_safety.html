@@ -66,7 +66,7 @@
   if (hid === day) return;
   const tips = [...box.querySelectorAll(".sfn-tips li")]; if (!tips.length) return;
   // one tip a day, the same for everyone on a given date; "Next tip" walks on from there
-  let i = Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(2026, 10, 1)) / 864e5);
+  let i = Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(2026, 10, 8)) / 864e5);    // 8 Nov, the day Dragon Guard opened, is tip 1
   i = ((i % tips.length) + tips.length) % tips.length;
   const show = (k) => tips.forEach((li, j) => { li.hidden = j !== k; li.classList.toggle("on", j === k); });
   show(i); box.hidden = false;

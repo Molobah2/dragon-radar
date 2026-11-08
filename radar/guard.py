@@ -45,7 +45,7 @@ SAFETY_TIPS = [
     "Official accounts can get hacked. Check any mint news on two official channels before you click.",
     "Read every wallet popup. If you do not understand what you are signing, do not sign it.",
     "A permit or an approval can hand over your tokens without a transfer. Approve only what you understand.",
-    "Check your wallet approvals on Check Day and revoke the ones you no longer use.",
+    "Check your wallet approvals and revoke the ones you no longer use.",
     "A rushed presale or auction link is a lure. Urgency is the red flag.",
     "One signature can carry many actions. Slow down whenever a site asks you to sign.",
     "Fake jobs, fake calls and deepfakes target Keepers. Never run a file or app someone sends you.",
