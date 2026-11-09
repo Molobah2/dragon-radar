@@ -149,3 +149,21 @@ html.gv3 .dots i { background: url("/static/v3/art/stone-s.webp") center / conta
 html.gv3 .dots i.on { background-image: url("/static/v3/art/coin-s.webp"); opacity: 1; }
 html.gv3 .dots i.done { background-image: url("/static/v3/art/wax-s.webp"); opacity: 1; }
 html.gv3 .dots i { width: calc(13px * var(--u)); height: calc(13px * var(--u)); }
+
+/* the guard tower armoury: the opening of the hall is a painted room. Speed sits on the right beside the red button
+   he will not press; the title stands on the quiet stone wall to his left. */
+html.gv3 .hall { display: none; }
+html.gv3 .hero { position: relative; isolation: isolate; overflow: hidden; min-height: clamp(300px, 30vw, 380px); align-content: center;
+  margin: 16px 0 10px; padding: 32px 46% 32px 30px; border-radius: 26px;
+  background: #160f0b url("/static/v3/art/room-guard-m.webp") 70% 40% / cover no-repeat;
+  background-image: image-set(url("/static/v3/art/room-guard-m.avif") type("image/avif"), url("/static/v3/art/room-guard-m.webp") type("image/webp"));
+  box-shadow: 0 26px 50px -26px rgba(0, 0, 0, .9), inset 0 0 0 1px rgba(197, 140, 69, .35); }
+html.gv3 .hero::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(18, 12, 9, .88) 0%, rgba(18, 12, 9, .7) 38%, rgba(18, 12, 9, .15) 60%, transparent 75%); }
+html.gv3 .hero h1 { text-shadow: 0 2px 16px rgba(0, 0, 0, .7); }
+@media (max-width: 640px) {
+  html.gv3 .hero { min-height: 0; padding: 64% 18px 18px; border-radius: 22px;
+    background: #160f0b url("/static/v3/art/room-guard-tall.webp") center top / 100% auto no-repeat;
+    background-image: image-set(url("/static/v3/art/room-guard-tall.avif") type("image/avif"), url("/static/v3/art/room-guard-tall.webp") type("image/webp")); }
+  html.gv3 .hero::before { background: linear-gradient(180deg, transparent 0, transparent calc((100vw - 40px) * .48), rgba(22, 15, 11, .92) calc((100vw - 40px) * .78), #160f0b 100%); }
+}
