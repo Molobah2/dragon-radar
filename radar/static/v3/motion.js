@@ -71,6 +71,25 @@
     }
   };
 
+  /* ---- Feed: an opened post folds into a sealed letter and flies into the letter tray ---- */
+  v3.letterAway = function (card, done) {
+    var tray = document.getElementById("left"), chip = tray && tray.closest(".chip");
+    if (still || !chip || !card.isConnected) { card.classList.add("leaving"); setTimeout(done, 360); return; }
+    var r = card.getBoundingClientRect(), t = chip.getBoundingClientRect();
+    var L = document.createElement("img");
+    L.src = "/static/v3/art/letter-s.webp"; L.alt = ""; L.className = "v3-letter";
+    var w = Math.min(150, r.width * 0.42);
+    L.style.width = w + "px"; L.style.left = (r.left + r.width / 2 - w / 2) + "px"; L.style.top = (r.top + r.height / 2 - w * 0.37) + "px";
+    document.body.appendChild(L);
+    var dx = (t.left + 34) - (r.left + r.width / 2), dy = (t.top + t.height / 2) - (r.top + r.height / 2);
+    gsap.timeline({ onComplete: function () { L.remove(); done(); } })
+      .to(card, { scaleY: 0.12, autoAlpha: 0, duration: 0.3, ease: "power2.in", transformOrigin: "50% 50%" })
+      .fromTo(L, { scale: 0.5, autoAlpha: 0, rotation: -6 }, { scale: 1, autoAlpha: 1, duration: 0.22, ease: "back.out(2)" }, 0.12)
+      .to(L, { x: dx, y: dy, scale: 0.28, rotation: 10, duration: 0.6, ease: "power2.in" })
+      .to(L, { autoAlpha: 0, duration: 0.12 }, "-=0.08")
+      .fromTo(chip, { scale: 1 }, { scale: 1.06, duration: 0.12, yoyo: true, repeat: 1, ease: "power1.out" }, "-=0.1");
+  };
+
   function ready() { reveals(); holds(); }
   v3.refresh = ready;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ready); else ready();

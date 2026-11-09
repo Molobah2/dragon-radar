@@ -168,6 +168,8 @@
     counts(true);
     if (!card) return;
     if (showOpened || pinnedIds.has(id)) { card.classList.add("opened"); setFoot(card, id); return; }
+    // v3: the post folds into a sealed letter and flies into the letter tray at the top
+    if (window.v3 && window.v3.letterAway) { window.v3.letterAway(card, render); return; }
     setTimeout(() => { card.classList.add("leaving"); setTimeout(render, 360); }, 120);
   }
   // the support itself: goal, streak, dragons, Book of Friends and the server count, once per post per day
