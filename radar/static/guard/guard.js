@@ -87,7 +87,8 @@ const ico = {
   helm: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3zm-1 6h2v3h3v2h-3v5h-2v-5H8v-2h3z"/></svg>'
 };
 /* the guard seal: drawn, so it is sharp at any size and costs nothing */
-const seal = (cls = "seal") => `<svg class="${cls}" viewBox="0 0 120 120" aria-hidden="true"><defs><radialGradient id="sg" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#e2574a"/><stop offset=".6" stop-color="#9e2418"/><stop offset="1" stop-color="#5e130b"/></radialGradient></defs><path d="M60 4c7 0 9 6 15 8s12-1 16 4 1 11 4 16 9 6 9 14-6 9-8 15 2 12-3 16-11 1-16 4-7 9-14 9-9-6-15-8-12 1-16-4-1-11-4-16-9-7-9-14 6-9 8-15-2-12 3-16 11-1 16-4S53 4 60 4z" fill="url(#sg)"/><circle cx="60" cy="60" r="36" fill="none" stroke="#f3b6a6" stroke-opacity=".55" stroke-width="2"/><path d="M60 30 38 39v17c0 14 9 26 22 31 13-5 22-17 22-31V39z" fill="#f6c9b9" fill-opacity=".9"/><path d="M60 40c-6 4-10 9-10 15 0 3 2 6 5 7-1-3 0-6 3-8 0 4 2 7 6 8 2-2 3-5 2-8 3 2 4 5 3 8 3-1 5-4 5-7 0-6-6-11-14-15z" fill="#8f2015"/></svg>`;
+const seal = (cls = "seal") => CFG.v3 ? `<picture class="${cls} real"><source type="image/avif" srcset="/static/v3/art/seal-s.avif 160w, /static/v3/art/seal-l.avif 320w" sizes="96px"><img src="/static/v3/art/seal-s.webp" alt="" width="160" height="158" decoding="async"></picture>` : seal0(cls);
+const seal0 = (cls = "seal") => `<svg class="${cls}" viewBox="0 0 120 120" aria-hidden="true"><defs><radialGradient id="sg" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#e2574a"/><stop offset=".6" stop-color="#9e2418"/><stop offset="1" stop-color="#5e130b"/></radialGradient></defs><path d="M60 4c7 0 9 6 15 8s12-1 16 4 1 11 4 16 9 6 9 14-6 9-8 15 2 12-3 16-11 1-16 4-7 9-14 9-9-6-15-8-12 1-16-4-1-11-4-16-9-7-9-14 6-9 8-15-2-12 3-16 11-1 16-4S53 4 60 4z" fill="url(#sg)"/><circle cx="60" cy="60" r="36" fill="none" stroke="#f3b6a6" stroke-opacity=".55" stroke-width="2"/><path d="M60 30 38 39v17c0 14 9 26 22 31 13-5 22-17 22-31V39z" fill="#f6c9b9" fill-opacity=".9"/><path d="M60 40c-6 4-10 9-10 15 0 3 2 6 5 7-1-3 0-6 3-8 0 4 2 7 6 8 2-2 3-5 2-8 3 2 4 5 3 8 3-1 5-4 5-7 0-6-6-11-14-15z" fill="#8f2015"/></svg>`;
 
 /* ---------- content ---------- */
 const MODS = {};
@@ -238,16 +239,23 @@ function countUp(el, to, ms = 900) { if (!el || RM.matches) return; const s0 = p
 /* ---------- the scroll notice ---------- */
 function scrollNotice(first) {
   const w = $("#sheet");
-  w.innerHTML = `<div class="scroll ${RM.matches ? "" : "unroll"}" role="dialog" aria-modal="true" aria-labelledby="ave"><div class="rod"></div><div class="paper">
-    ${seal()}<p class="tag">${esc(T("sTag", "A notice from pdtools"))}</p><h2 class="ave" id="ave">${esc(T("sAve", "Ave, Keeper."))}</h2>
+  const words = `<p class="tag">${esc(T("sTag", "A notice from pdtools"))}</p><h2 class="ave" id="ave">${esc(T("sAve", "Ave, Keeper."))}</h2>
     <p class="ln"><b>${esc(T("s1", "Dragon Guard trains you to see the scams that empty wallets before they reach you."))}</b></p>
     <p class="ln">${esc(T("s2", "Each day brings one short lesson, then a quick quiz you take on your honour, without AI."))}</p>
     <p class="ln">${esc(T("s3", "Twice a week, Check Day reminds you to review your wallet approvals."))}</p>
     <p class="ln"><b>${esc(T("s4", "pdtools will never ask for your wallet, your seed phrase or a signature."))}</b></p>
-    <p class="motto">${esc(T("s5", "Guard daily. Stay sharp. Keep your hoard."))}</p>
+    <p class="motto">${esc(T("s5", "Guard daily. Stay sharp. Keep your hoard."))}</p>`;
+  const close = () => { w.hidden = true; w.innerHTML = ""; S.seen = 1; save(); if (first) tally(0, "seen"); $("#main").focus(); };
+  // v3: the real scroll, sealed the first time. The Keeper breaks the seal, reads, then holds to press their own.
+  if (CFG.v3 && window.GuardV3 && window.gsap) {
+    window.GuardV3.scroll(w, { first, words, btn: T("sBtn", "I will guard my hoard"), breakLabel: T("sBreak", "Break the seal"),
+      holdHint: T("sHold", "Press and hold"), still: RM.matches, onDone: close });
+    return;
+  }
+  w.innerHTML = `<div class="scroll ${RM.matches ? "" : "unroll"}" role="dialog" aria-modal="true" aria-labelledby="ave"><div class="rod"></div><div class="paper">
+    ${seal()}${words}
     <button class="btn ink" type="button" id="swear">${esc(T("sBtn", "I will guard my hoard"))}</button></div><div class="rod b"></div></div>`;
   w.hidden = false;
-  const close = () => { w.hidden = true; w.innerHTML = ""; S.seen = 1; save(); if (first) tally(0, "seen"); $("#main").focus(); };
   $("#swear").onclick = close;
   w.onclick = (e) => { if (e.target === w) close(); };
   w.onkeydown = (e) => { if (e.key === "Escape") close(); if (e.key === "Tab") { e.preventDefault(); $("#swear").focus(); } };

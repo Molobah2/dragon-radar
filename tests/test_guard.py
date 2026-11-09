@@ -149,3 +149,15 @@ def test_no_dashes_in_what_people_read():
         bits += [q["stem"] + " " + q["why"] + " " + " ".join(q.get("options", [])) for q in m["questions"]]
         for t in bits:
             assert not re.search(r"[–—]| - ", t), (m["id"], t)
+
+
+def test_v3_scroll_only_on_preview_or_after_v3_switch(tmp_path):
+    from radar.config import Config
+    from radar.web import create_app
+    c = Config(); c.database_url = f"sqlite:///{tmp_path / 'g.db'}"; c.guard_public = True; c.secret_key = "t"
+    app = create_app(c); cl = app.test_client()
+    body = cl.get("/guard/").get_data(as_text=True)
+    assert "guard-v3.js" not in body and '"v3"' not in body
+    c.v3_public = True
+    body = cl.get("/guard/").get_data(as_text=True)
+    assert "guard-v3.js" in body and '"v3": 1' in body and "/*VER*/" not in body

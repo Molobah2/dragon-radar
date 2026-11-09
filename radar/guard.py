@@ -97,6 +97,11 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
             abort(404)
         return redirect("/guard/")
 
+    V3_HEAD = ('<link rel="preload" href="/static/v3/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin>'
+               '<link rel="stylesheet" href="/guard/v3/guard-v3.css?v=/*VER*/">'
+               '<script src="/static/v3/vendor/gsap.min.js" defer></script>'
+               '<script src="/guard/v3/guard-v3.js?v=/*VER*/" defer></script>')
+
     @app.get("/guard/")
     def guard_page():
         if not allowed():
@@ -112,6 +117,10 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
         now = request.args.get("now", "")
         if now and has_preview and has_preview() and re.match(r"^\d{4}-\d{2}-\d{2}T[\d:.]+Z$", now):
             conf["now"] = now
+        # v3 (Area 3): the real scroll, seal, cards and tiles, on preview devices until V3_PUBLIC=1
+        if getattr(cfg, "v3_public", False) or (has_preview and has_preview()):
+            conf["v3"] = 1
+            page = page.replace("</head>", V3_HEAD + "</head>", 1)
         page = page.replace("/*GUARD_CFG*/{}", json.dumps(conf).replace("</", "<\\/")).replace("/*VER*/", conf["ver"])
         resp = Response(page, mimetype="text/html")
         resp.headers["Cache-Control"] = "private, no-cache"
