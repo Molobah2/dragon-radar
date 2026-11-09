@@ -6,7 +6,7 @@
 {% block main %}
 {% set held = amas | selectattr("points") | list %}
 <section class="ama-hero">
-  <div class="ama-hero-main ama-rise">
+  <div class="ama-hero-main ama-rise{% if v3_open %} room-ama{% endif %}">
     <p class="ama-kicker"><span class="ama-live-dot" aria-hidden="true"></span>Every call, in one place</p>
     <h1 data-i18n-html="zAmaH1">The AMA <span class="pop">Library</span></h1>
     <p class="lede">Missed a Pocket Dragons AMA? Catch up on every call here: the recording, what was shared and how the room grew week by week.</p>

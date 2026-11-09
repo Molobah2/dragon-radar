@@ -312,3 +312,26 @@ html.v3 .sx-head.room-create { background-image: image-set(url("/static/v3/art/r
 html.v3 .hero.room-stage.room-keepers { background-image: image-set(url("/static/v3/art/room-keepers-m.avif") type("image/avif"), url("/static/v3/art/room-keepers-m.webp") type("image/webp")); }
 @media (min-width: 1500px) { html.v3 .hero.room-stage.room-keepers { background-image: image-set(url("/static/v3/art/room-keepers-l.avif") type("image/avif"), url("/static/v3/art/room-keepers-l.webp") type("image/webp")); } }
 @media (max-width: 760px) { html.v3 .hero.room-stage.room-keepers { background-image: image-set(url("/static/v3/art/room-keepers-tall.avif") type("image/avif"), url("/static/v3/art/room-keepers-tall.webp") type("image/webp")); } }
+
+/* ---------- sheets (My progress, ideas, the Book of Friends): Hatchery panels in v3 even where the v2 dark sheet is not loaded ---------- */
+html.v3 .sheet { background: var(--d-card); color: var(--h-parch);
+  box-shadow: inset 0 1px 0 rgba(255, 210, 122, .08), inset 0 0 0 1px var(--h-rim), 0 30px 70px -20px rgba(0, 0, 0, .8); }
+html.v3 .sheet-wrap.open { background: rgba(10, 7, 5, .62); }
+html.v3 .sheet-sub, html.v3 .sheet .muted { color: var(--h-quiet); }
+html.v3 .sheet-grip { background: rgba(255, 210, 122, .25); }
+
+/* ---------- AMA Library: the broadcast loft. Speed tells the room the big news at the brass microphone ---------- */
+html.v3 .ama-watch { background: rgba(255, 210, 122, .1) !important; color: var(--h-parch) !important; box-shadow: inset 0 0 0 1px var(--h-rim) !important; }
+html.v3 .ama-hero-main.room-ama { position: relative; isolation: isolate; overflow: hidden; min-height: 380px; padding-right: 52%;
+  background: #160f0b url("/static/v3/art/room-ama-m.webp") 84% 40% / cover no-repeat !important;
+  background-image: image-set(url("/static/v3/art/room-ama-m.avif") type("image/avif"), url("/static/v3/art/room-ama-m.webp") type("image/webp")) !important;
+  backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: 0 28px 56px -28px rgba(0, 0, 0, .9), inset 0 0 0 1px var(--h-rim) !important; }
+html.v3 .ama-hero-main.room-ama::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(20, 14, 10, .92) 0%, rgba(20, 14, 10, .82) 40%, rgba(20, 14, 10, .1) 52%, transparent 60%); }
+html.v3 .ama-hero-main.room-ama h1 { text-shadow: 0 2px 18px rgba(0, 0, 0, .7); }
+@media (max-width: 760px) {
+  html.v3 .ama-hero-main.room-ama { min-height: 0; padding: 64% 20px 22px;
+    background: #160f0b url("/static/v3/art/room-ama-tall.webp") center top / 100% auto no-repeat !important;
+    background-image: image-set(url("/static/v3/art/room-ama-tall.avif") type("image/avif"), url("/static/v3/art/room-ama-tall.webp") type("image/webp")) !important; }
+  html.v3 .ama-hero-main.room-ama::before { background: linear-gradient(180deg, transparent 0, transparent calc((100vw - 32px) * .48), rgba(22, 15, 11, .92) calc((100vw - 32px) * .78), #160f0b 100%); }
+}
