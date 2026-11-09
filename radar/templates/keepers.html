@@ -4,7 +4,7 @@
 {% block body_class %}ready static-page{% endblock %}
 {% block header_right %}<a class="btn btn-soft" data-i18n-html="back" href="{{ url_for('feed') }}"><span class="wide-only">Back to the </span>feed</a>{% endblock %}
 {% block main %}
-  <section class="hero keepers-hero">
+  <section class="hero keepers-hero{% if v3_open %} room-stage room-keepers{% endif %}">
     <div class="hero-main">
       <h1 data-i18n-html="h1Keepers">Every dragon<br>knows <span class="pop">its own.</span></h1>
       <p class="lede">Blue tick Keepers who wear the 🐉 in their name. Open a profile, follow who you vibe with.</p>
