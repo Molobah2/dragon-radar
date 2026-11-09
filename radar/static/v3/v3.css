@@ -190,4 +190,52 @@ html.v3 .hero-main::after { content: ""; position: absolute; top: -8px; right: 1
   background: url("/static/v3/art/lantern-s.webp") center / contain no-repeat; filter: drop-shadow(0 0 22px rgba(255, 171, 61, .45)) drop-shadow(0 8px 10px rgba(0, 0, 0, .5)); }
 
 html.v3 .hot-title span { font-family: var(--h-body); text-transform: none; letter-spacing: 0; color: var(--h-quiet); }
-html.v3 .post .card-head { padding-right: 34px; }
+/* your day and the community pulse share one folded strip, so the posts come sooner */
+html.v3 .v3-fold { margin: 0 0 14px; border-radius: 18px; background: var(--glass-hi); border: 1px solid var(--h-rim); box-shadow: var(--lift); }
+html.v3 .v3-fold > summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; min-height: 56px; }
+html.v3 .v3-fold > summary::-webkit-details-marker { display: none; }
+html.v3 .v3-fold-ico .ico { width: 34px; height: 34px; }
+html.v3 .v3-fold-text { flex: 1; min-width: 0; display: grid; gap: 2px; }
+html.v3 .v3-fold-text b { font: 600 17px/1.2 var(--h-disp); color: var(--h-parch); }
+html.v3 .v3-fold-text small { font: 700 13px/1.3 var(--h-body); color: var(--h-quiet); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.v3 .v3-fold[open] .smb-chev { transform: rotate(-135deg); }
+html.v3 .v3-fold > .progress-strip, html.v3 .v3-fold > .pulse { margin: 0 10px 10px; box-shadow: none; }
+
+/* ---------- Feed arrangement (from a blind critic's review): posts sooner, tools after them ---------- */
+html.v3 aside.side { grid-row: auto; }                 /* My tools and How it works come after the posts */
+html.v3 .v3-more { display: contents; }
+html.v3 .v3-more > summary { display: none; }
+@media (max-width: 760px) {
+  html.v3 .v3-more { display: block; width: 100%; }
+  html.v3 .v3-more > summary { display: inline-flex; align-items: center; gap: 8px; list-style: none; cursor: pointer; min-height: 40px; padding: 0 14px;
+    border-radius: 999px; font: 800 13.5px/1 var(--h-body); color: var(--h-gold); background: rgba(255, 210, 122, .08); border: 1px solid var(--h-rim); }
+  html.v3 .v3-more > summary::-webkit-details-marker { display: none; }
+  html.v3 .v3-more > summary::after { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); }
+  html.v3 .v3-more[open] > summary::after { transform: rotate(-135deg); }
+  html.v3 .v3-more .toggles { margin-top: 10px; }
+  /* the opening card is shorter so the filters show on the first screen */
+  html.v3 .hero .hero-main { padding: 20px 18px; }
+  html.v3 .hero h1 { font-size: clamp(30px, 9vw, 40px); line-height: 1.05; }
+  html.v3 .hero .lede { font-size: 15.5px; }
+  html.v3 .hero-main::after { width: 50px; top: -4px; right: 10px; }
+  html.v3 .tally { align-items: stretch; }
+  html.v3 .tally .chip { padding-block: 12px; }
+  html.v3 .tally .chip b { font-size: 34px; }
+}
+html.v3 .tally .chip { align-self: stretch; }
+/* a row that scrolls sideways says so with a soft fade at its edge */
+html.v3 .days-row { -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent); mask-image: linear-gradient(90deg, #000 86%, transparent); }
+/* the team's pinned row sits on its own darker band */
+html.v3 .pinned-row { padding: 14px 12px 4px; margin-inline: -12px; border-radius: 22px; background: rgba(8, 5, 3, .42); box-shadow: inset 0 0 0 1px var(--h-rim-soft); }
+/* readable names in New in the hatchery, visible rating stars */
+html.v3 .welcome .nc b, html.v3 .welcome .nc-name, html.v3 .welcome b { color: var(--h-parch); }
+html.v3 .welcome small, html.v3 .welcome .nc-line { color: var(--h-quiet); }
+html.v3 .star { color: rgba(255, 210, 122, .35); }
+html.v3 .star[aria-checked="true"], html.v3 .star:hover { color: var(--h-gold); }
+/* names keep their room: the report flag and X mark take less */
+html.v3 .post .card-head { padding-right: 18px; }
+html.v3 .newbie { background: var(--glass-hi) !important; border: 1px solid var(--h-rim) !important; box-shadow: var(--lift) !important; color: var(--h-parch); }
+html.v3 .newbie-who, html.v3 .newbie-who b { color: var(--h-parch) !important; }
+html.v3 .newbie-text, html.v3 .newbie small { color: var(--h-quiet) !important; }
+html.v3 .newbie-text b { color: var(--h-parch) !important; }
+html.v3 .post.team .xmark { margin-right: 30px; }

@@ -107,11 +107,13 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
       </div>
       <input type="hidden" name="who" value="{{ filters.who }}" disabled id="who-keep">
       <input class="kp-search feed-search" id="f-search" type="search" placeholder="Search posts or @handle" autocomplete="off" enterkeyhint="search" aria-label="Search posts">
+      {% if v3_open %}<details class="v3-more"><summary>More filters</summary>{% endif %}
       <div class="toggles">
       <label class="switch"><input type="hidden" name="quotes" value="0"><input type="checkbox" name="quotes" value="1" id="quotes" {% if filters.quotes == "1" %}checked{% endif %}>Quotes</label>
       <label class="switch" title="Posts no visitor has opened yet"><input type="checkbox" id="needsLove">Needs love</label>
       <label class="switch"><input type="checkbox" id="showOpened">Show opened</label>
       </div>
+      {% if v3_open %}</details>{% endif %}
     </div>
   </form>
 
@@ -126,6 +128,10 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
     </div>
   </section>
 
+  {% if v3_open %}{% include "_safety.html" %}
+  <details class="v3-fold" id="v3-fold">
+    <summary><span class="v3-fold-ico" aria-hidden="true">{{ ico("hourglass", 30) }}</span><span class="v3-fold-text"><b>Your day and the community pulse</b><small id="v3-fold-sum">Tap to open</small></span><i class="smb-chev" aria-hidden="true"></i></summary>
+  {% endif %}
   <div class="progress-strip">
     {{ ico("hourglass", 30) }}<strong>Your day so far</strong>
     <span id="progress-text">Nothing opened yet in this range.</span>
@@ -135,7 +141,7 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
     <button class="goal" id="goal" type="button" title="{{ ('Daily goal: 10 Keeper posts, the Dragon Guard questions and 1 new follow' if guard_open else 'Daily goal: 10 Keeper posts, the Dragon Quiz and 1 new follow') if (v2 and v21_open) else ('Daily goal: open 20 posts from fellow Keepers' if v2 else 'Daily goal: open 5 posts that need love') }}"><span class="goal-egg" id="goal-egg" aria-hidden="true"></span><span id="goal-text">{% if v2 and v21_open %}Daily goal 0%{% else %}{{ '0/20 Keeper posts' if v2 else '0/5 quiet posts' }} today{% endif %}</span></button>
   </div>
 
-  {% include "_safety.html" %}
+  {% if not v3_open %}{% include "_safety.html" %}{% endif %}
 
   <section class="pulse" id="pulse" aria-label="Community pulse">
     <div class="pulse-head">
@@ -155,6 +161,16 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
       <div class="bars-foot"><span id="p-start"></span><span id="p-peak"></span><span id="p-end"></span></div>
     </div>
   </section>
+  {% if v3_open %}</details>
+  <script>(function(){ /* the folded strip shows the day's numbers on its closed line */
+    var s=document.getElementById("v3-fold-sum"); if(!s) return;
+    function up(){ var d=document.getElementById("m-done"), p=document.getElementById("p-posts"), r=document.getElementById("pulse-range");
+      var v=(d?d.textContent:"")+(p&&p.textContent?" · "+p.textContent+" posts "+(r?r.textContent.toLowerCase():""):"");
+      if (s.textContent!==v) s.textContent=v; }
+    // watch only the numbers it copies (watching the whole page would also see its own change and never stop)
+    var mo=new MutationObserver(up);
+    ["m-done","p-posts","pulse-range"].forEach(function(id){ var n=document.getElementById(id); if(n) mo.observe(n,{subtree:true,childList:true,characterData:true}); });
+    up(); })();</script>{% endif %}
 
   <div class="layout" id="feed">
     <main>
