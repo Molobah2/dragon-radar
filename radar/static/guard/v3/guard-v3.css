@@ -82,3 +82,42 @@ html.gv3 .opt.right .k { background: #1f7a5a; color: #fff; }
 html.gv3 .opt.wrongpick .k { background: #a63a28; color: #fff; }
 /* lessons passed carry a small seal instead of a tick */
 html.gv3 .stone.done .n { font-size: 0; background: url("/static/v3/art/seal-s.webp") center / 110% no-repeat; border: 0; box-shadow: none; }
+
+/* ---------- practice screens: a real walnut frame with brass plates, so the warning is part of the object ---------- */
+html.gv3 .practice {
+  background: none; box-shadow: none; border-radius: 0;
+  border: 26px solid transparent; padding: 4px 0;
+  border-image: url("/static/v3/art/frame-l.webp") 265 / 26px stretch;
+  border-image: image-set(url("/static/v3/art/frame-l.avif") type("image/avif"), url("/static/v3/art/frame-l.webp") type("image/webp")) 265 / 26px stretch;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .45));
+}
+html.gv3 .practice::before, html.gv3 .practice::after {
+  padding: 6px 30px 5px; border-radius: 3px; color: #3a2410;
+  background: url("/static/v3/art/plaque-s.webp") center / 100% 100% no-repeat;
+  font: 800 10.5px/1.15 "Nunito Sans", system-ui, sans-serif; letter-spacing: .06em;
+  text-shadow: 0 1px 0 rgba(255, 240, 200, .55); box-shadow: 0 2px 4px rgba(0, 0, 0, .35); z-index: 2;
+}
+html.gv3 .practice::before { top: -23px; }
+html.gv3 .practice::after { bottom: -23px; }
+html.gv3 .practice .scr { border-radius: 4px; }
+
+/* red flags: numbered red wax drops on the screen, and parchment tags for the list */
+html.gv3 .rp-num {
+  background: url("/static/v3/art/wax-s.webp") center / contain no-repeat; box-shadow: none; border-radius: 0;
+  width: calc(25px * var(--u)); height: calc(25px * var(--u));
+  color: #fff3dc; font: 700 calc(12.5px * var(--fs))/1 "Fraunces", Georgia, serif; text-shadow: 0 1px 1px rgba(60, 10, 5, .6);
+  filter: drop-shadow(0 2px 2px rgba(40, 10, 5, .5));
+}
+html.gv3 .rp-list .rp-count { font: 600 calc(19px * var(--fs))/1.2 "Fraunces", Georgia, serif; letter-spacing: 0; text-transform: none; color: #8a2a18; }
+html.gv3 .rp-list li {
+  background: none; box-shadow: none; border-radius: 0; color: #3a2010;
+  border: 12px solid transparent; border-width: 12px 54px 12px 12px; padding: 0 2px;
+  border-image: url("/static/v3/art/tag-l.webp") 36 260 36 36 fill / 12px 54px 12px 12px stretch;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .3));
+}
+html.gv3 .rp-list li b { background: url("/static/v3/art/wax-s.webp") center / contain no-repeat; color: #fff3dc; font-family: "Fraunces", Georgia, serif; text-shadow: 0 1px 1px rgba(60, 10, 5, .6); }
+html.gv3 .rp-bar .btn, html.gv3 .btn.main {
+  color: #2e1206; background: linear-gradient(180deg, #ffc061, #e9952f); border: 1px solid #ffd27a;
+  box-shadow: 0 3px 0 #8a4f16, inset 0 1px 0 rgba(255, 255, 255, .45);
+}
+html.gv3 .rp-bar .btn:active, html.gv3 .btn.main:active { transform: translateY(2px); box-shadow: 0 1px 0 #8a4f16; }
