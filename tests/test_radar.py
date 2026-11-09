@@ -3535,3 +3535,14 @@ def test_prune_drops_old_visits_and_rejected_art_but_keeps_recent(Session):
         assert [d.day for d in s.query(DailyCount)] == [new]
         assert [v.vid for v in s.query(Visitor)] == ["d" * 32]
         assert sorted(a.status for a in s.query(ArtEntry)) == ["approved", "rejected"]
+
+
+def test_v3_frame_only_where_v3_is_open(cfg):
+    app = create_app(cfg)
+    c = app.test_client()
+    for path in ("/", "/help", "/friends"):
+        assert "v3/v3.css" not in c.get(path).get_data(as_text=True)
+    cfg.v3_public = True
+    for path in ("/", "/help", "/friends"):
+        body = c.get(path).get_data(as_text=True)
+        assert "v3/v3.css" in body and "v3/motion.js" in body

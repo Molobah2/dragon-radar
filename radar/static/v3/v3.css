@@ -1,0 +1,128 @@
+/* pdtools v3: the Hatchery at night, lit by torches.
+   Loaded only where v3 is open (preview devices until Dec 1, everyone after V3_PUBLIC=1).
+   Everything here is scoped to html.v3, so the live site is untouched. Area 1 sets the frame:
+   colours, the two fonts, buttons, focus, the dock, header and footer. Each page gets its own
+   composition in its own area. */
+
+@font-face { font-family: "Fraunces"; src: url("fonts/fraunces-latin.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Nunito Sans"; src: url("fonts/nunitosans-latin.woff2") format("woff2"); font-weight: 400 800; font-style: normal; font-display: swap; }
+
+html.v3 {
+  /* the locked Hatchery palette (Nov 9) */
+  --h-bg: #1c1610; --h-panel: #2a2118; --h-stone: #4b3c32;
+  --h-gold: #ffd27a; --h-line: #f0b94a; --h-parch: #fff3dc;
+  --h-torch: #ffab3d; --h-ember: #d4602a; --h-night: #6f8fb8; --h-quiet: #d9c9a3; --h-btnink: #2e1206;
+  --h-rim: rgba(240, 185, 74, .35); --h-rim-soft: rgba(240, 185, 74, .18);
+  --h-disp: "Fraunces", Georgia, "Times New Roman", serif;
+  --h-body: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --h-ease: cubic-bezier(.22, .8, .24, 1);
+
+  /* the older systems read their own names: point them all at the Hatchery */
+  --ink: var(--h-parch); --ink-soft: var(--h-quiet); --soft: var(--h-quiet); --mute: #bfae8c;
+  --gold: var(--h-gold); --gold2: var(--h-torch); --plum: var(--h-gold);
+  --line: var(--h-rim-soft);
+  --glass: rgba(42, 33, 24, .86); --glass-strong: rgba(42, 33, 24, .95); --glass2: rgba(255, 210, 122, .08);
+  --glass-hi: linear-gradient(170deg, #31271c 0%, #2a2118 60%, #241c14 100%);
+  --rim: inset 0 1px 0 rgba(255, 210, 122, .08), inset 0 0 0 1px var(--h-rim);
+  --lift: 0 1px 2px rgba(0, 0, 0, .35), 0 14px 30px -16px rgba(0, 0, 0, .7);
+  --d-card: linear-gradient(170deg, #31271c 0%, #2a2118 60%, #241c14 100%);
+  --d-raise: #33291e; --d-field: #1f1812;
+  --on-sky: var(--h-parch); --on-sky-soft: var(--h-quiet);
+  --font-display: var(--h-disp); --font-body: var(--h-body);
+  --disp: var(--h-disp); --body: var(--h-body);
+  color-scheme: dark;
+}
+
+html.v3 body {
+  background: var(--h-bg);
+  color: var(--h-parch);
+  font-family: var(--h-body);
+}
+/* torchlight until the real hall pictures arrive in Area 2: one warm source upper left, a cool night edge right */
+html.v3 body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(70% 45% at 10% -5%, rgba(255, 171, 61, .17), transparent 70%),
+    radial-gradient(55% 40% at 105% 35%, rgba(111, 143, 184, .08), transparent 70%),
+    var(--h-bg);
+}
+/* the daytime meadow and the day/night and dark switches belong to the old look */
+html.v3 .scene, html.v3 .sky-wrap, html.v3 #theme-btn { display: none !important; }
+
+html.v3 h1, html.v3 h2, html.v3 h3 { font-family: var(--h-disp); font-weight: 600; letter-spacing: -.01em; }
+html.v3 h1 { font-weight: 600; }
+html.v3 a { color: inherit; }
+html.v3 p a, html.v3 li a { color: var(--h-gold); text-underline-offset: 3px; }
+html.v3 ::selection { background: rgba(255, 171, 61, .35); }
+
+/* focus: one clear gold ring everywhere */
+html.v3 :focus-visible { outline: 3px solid var(--h-gold) !important; outline-offset: 2px; }
+
+/* ---------- buttons: a bronze plate you press ---------- */
+html.v3 .btn-go, html.v3 .btn.go, html.v3 .pd-pop-go, html.v3 .v3-btn {
+  color: var(--h-btnink) !important; background: linear-gradient(180deg, #ffc061, #e9952f) !important;
+  border: 1px solid var(--h-gold) !important; border-radius: 10px;
+  box-shadow: 0 3px 0 #8a4f16, inset 0 1px 0 rgba(255, 255, 255, .45) !important;
+  font-family: var(--h-body); font-weight: 800; text-shadow: none;
+  transition: transform .12s var(--h-ease), box-shadow .12s var(--h-ease), filter .2s;
+}
+html.v3 .btn-go:hover, html.v3 .btn.go:hover, html.v3 .pd-pop-go:hover, html.v3 .v3-btn:hover { filter: brightness(1.05); }
+html.v3 .btn-go:active, html.v3 .btn.go:active, html.v3 .pd-pop-go:active, html.v3 .v3-btn:active {
+  transform: translateY(2px); box-shadow: 0 1px 0 #8a4f16, inset 0 1px 0 rgba(255, 255, 255, .3) !important;
+}
+html.v3 .btn-soft, html.v3 .btn.soft, html.v3 .home-pill, html.v3 .lang-pick {
+  color: var(--h-gold) !important; background: rgba(42, 33, 24, .85) !important;
+  border: 1px solid var(--h-rim) !important; box-shadow: none !important;
+}
+html.v3 .btn-soft:hover, html.v3 .home-pill:hover { border-color: var(--h-gold) !important; }
+
+/* ---------- cards and panels: dark panels with a gold hairline ---------- */
+html.v3 .panel, html.v3 .help-card, html.v3 .card, html.v3 .kp-card {
+  background: var(--glass-hi) !important; border: 1px solid var(--h-rim) !important;
+  box-shadow: var(--lift) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  color: var(--h-parch);
+}
+html.v3 .help-kicker { color: var(--h-quiet); letter-spacing: 0; text-transform: none; font-size: 14px; }
+html.v3 .lede { color: var(--h-quiet); }
+html.v3 .pop { color: var(--h-gold); background: none; }
+html.v3 input, html.v3 textarea, html.v3 select { background: var(--d-field); color: var(--h-parch); border-color: var(--h-rim); }
+
+/* ---------- header ---------- */
+html.v3 .bar, html.v3 .v-bar { color: var(--h-parch); }
+html.v3 .brand, html.v3 .v-brand { font-family: var(--h-disp); color: var(--h-gold); }
+
+/* ---------- the dock ---------- */
+html.v3 .pdnav {
+  background: rgba(34, 27, 19, .96); font-family: var(--h-body);
+  box-shadow: 0 16px 36px -14px rgba(0, 0, 0, .8), inset 0 0 0 1px var(--h-rim);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+html.v3 .pd-s { color: var(--h-quiet); }
+html.v3 .pd-s.on { color: var(--h-btnink); background: linear-gradient(180deg, #ffc061, #e9952f); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4); }
+html.v3 .pd-s:hover:not(.on) { color: var(--h-parch); background: rgba(255, 210, 122, .08); }
+html.v3 .pd-tabs { border-bottom-color: var(--h-rim-soft); }
+html.v3 .pd-t { color: var(--h-parch); background: rgba(255, 210, 122, .08); }
+html.v3 .pd-t.on { color: var(--h-btnink); background: var(--h-gold); }
+html.v3 .pd-pop { background: var(--h-panel); box-shadow: 0 22px 44px -16px rgba(0, 0, 0, .85), inset 0 0 0 1px var(--h-rim); }
+html.v3 .pd-pop b { font-family: var(--h-disp); }
+html.v3 .pd-pop p { color: var(--h-quiet); }
+html.v3 .pd-pop-who small { color: var(--h-gold); letter-spacing: 0; text-transform: none; font-size: 12px; }
+html.v3 .pd-pop-links a { background: rgba(255, 210, 122, .08); }
+html.v3 .pd-me.signed .pd-ava, html.v3 .pd-pop-who img { box-shadow: 0 0 0 2px var(--h-gold); }
+/* nothing hides under the dock: its real height plus breathing room, on every page that has it */
+html.v3 body.has-pdnav { padding-bottom: calc(var(--pdnav-h, 80px) + 32px + env(safe-area-inset-bottom, 0px)); }
+
+/* ---------- footer ---------- */
+html.v3 footer, html.v3 .v21-foot, html.v3 .dc-foot { color: var(--h-quiet); border-top-color: var(--h-rim-soft); }
+html.v3 footer strong, html.v3 .v21-by, html.v3 .v21-credit b { color: var(--h-gold); }
+
+/* ---------- the gold logo loader: draws itself while the page really loads, never longer ---------- */
+.v3-loader { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: var(--h-bg); pointer-events: none; }
+.v3-loader svg { width: 72px; height: 72px; overflow: visible; }
+.v3-loader path { fill: none; stroke: var(--h-gold); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.v3-loader .fill { fill: var(--h-gold); stroke: none; opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .v3-loader { display: none; } }
+
+/* ---------- hold to confirm: a gold fill grows while you hold ---------- */
+html.v3 .v3-hold { position: relative; overflow: hidden; isolation: isolate; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+html.v3 .v3-hold-fill { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(255, 243, 220, .55), rgba(255, 210, 122, .75)); pointer-events: none; }

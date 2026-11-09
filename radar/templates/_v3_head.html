@@ -1,0 +1,13 @@
+{# v3 (Area 1): the Hatchery frame. Only where v3 is open: Jon's preview devices until Dec 1, everyone after
+   V3_PUBLIC=1. Included last in every page head, so its colours win over the page's own. #}
+{% if v3_open %}
+  <link rel="preload" href="{{ url_for('static', filename='v3/fonts/fraunces-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='v3/fonts/nunitosans-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ asset('v3/v3.css') }}">
+  <meta name="theme-color" content="#1c1610">
+  <script>(function(){var r=document.documentElement;r.classList.add("v3","theme-dark");
+    new MutationObserver(function(){if(!r.classList.contains("theme-dark"))r.classList.add("theme-dark");}).observe(r,{attributes:true,attributeFilter:["class"]});})();</script>
+  <script src="{{ asset('v3/vendor/gsap.min.js') }}" defer></script>
+  <script src="{{ asset('v3/vendor/ScrollTrigger.min.js') }}" defer></script>
+  <script src="{{ asset('v3/motion.js') }}" defer></script>
+{% endif %}
