@@ -139,7 +139,7 @@ html.v3 .post {
 html.v3 .post .text, html.v3 .post .name { color: #2b1d12; }
 html.v3 .post .handle, html.v3 .post time, html.v3 .post .reach { color: #6a4a2a; }
 html.v3 .post.team { filter: drop-shadow(0 0 0 #000) drop-shadow(0 10px 18px rgba(0, 0, 0, .45)); }
-html.v3 .post.team::before { content: ""; position: absolute; top: -18px; right: -12px; width: 46px; height: 46px; z-index: 2;
+html.v3 .post.team::before { content: ""; position: absolute; top: -6px; right: -4px; width: 40px; height: 40px; z-index: 2;
   background: url("/static/v3/art/seal-s.webp") center / contain no-repeat; filter: drop-shadow(0 3px 3px rgba(60, 20, 10, .45)); }
 html.v3 .post.opened { opacity: .62; filter: grayscale(.5) drop-shadow(0 6px 10px rgba(0, 0, 0, .35)); }
 html.v3 .tag { font-family: var(--h-body); font-size: 12px; font-weight: 800; letter-spacing: 0; text-transform: none;
@@ -177,3 +177,17 @@ html.v3 .tab[aria-pressed="true"] { background: var(--h-gold) !important; color:
 html.v3 .switch input { background: rgba(255, 210, 122, .14); }
 html.v3 .switch input::after { background: var(--h-parch); }
 html.v3 .switch input:checked { background: #e9952f; }
+
+/* rare things wear gold foil, not the purple-blue AI gradient */
+html.v3 .hatch-tag.rare, html.v3 .dex-badge.rare { color: var(--h-btnink) !important;
+  background: linear-gradient(110deg, #c9922f 0%, #fff3dc 38%, #f0b94a 55%, #ffd27a 72%, #b97a22 100%) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5); }
+html.v3 .dex-card.rare.have { background: linear-gradient(#2a2118, #2a2118) padding-box, linear-gradient(120deg, #b97a22, #fff3dc 35%, #f0b94a 55%, #ffd27a 75%, #8a5a18) border-box !important; }
+html.v3 .dex-sec.rare { color: var(--h-gold) !important; }
+
+/* the feed's opening card gets a real lantern hanging in its corner */
+html.v3 .hero-main { position: relative; }
+html.v3 .hero-main::after { content: ""; position: absolute; top: -8px; right: 14px; width: clamp(54px, 14vw, 84px); aspect-ratio: 767 / 1554; pointer-events: none;
+  background: url("/static/v3/art/lantern-s.webp") center / contain no-repeat; filter: drop-shadow(0 0 22px rgba(255, 171, 61, .45)) drop-shadow(0 8px 10px rgba(0, 0, 0, .5)); }
+
+html.v3 .hot-title span { font-family: var(--h-body); text-transform: none; letter-spacing: 0; color: var(--h-quiet); }
+html.v3 .post .card-head { padding-right: 34px; }

@@ -1,3 +1,4 @@
 {% macro ico(name, size=40, cls="") -%}
-{%- if cfg.icon(name) %}<img class="ico {{ cls }}" src="{{ cfg.icon(name, size) }}" alt="" width="{{ size }}" height="{{ size }}" loading="lazy" decoding="async">{% endif -%}
+{%- if v3_open and name in ["book","bulb","chat","crown","egg","flame","globe","hatch","hourglass","letter","lock","paw","pin","plus","pulse","quote","shield","sparkle"] %}<img class="ico v3-ico {{ cls }}" src="/static/v3/art/ico/{{ name }}-{{ 96 if size <= 48 else 160 }}.webp" alt="" width="{{ size }}" height="{{ size }}" loading="lazy" decoding="async">
+{%- elif cfg.icon(name) %}<img class="ico {{ cls }}" src="{{ cfg.icon(name, size) }}" alt="" width="{{ size }}" height="{{ size }}" loading="lazy" decoding="async">{% endif -%}
 {%- endmacro %}

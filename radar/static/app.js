@@ -786,7 +786,9 @@
     if (p.tier) chips.unshift(el("span", { class: `tag tier tier-${p.tier}`, title: "Signed Blinky's Book of Friends" },
       p.tier === "gold" ? "Gold friend" : p.tier === "silver" ? "Silver friend" : "Bronze friend"));
     const avatar = p.avatar
-      ? el("img", { class: "avatar", src: p.avatar, alt: "", loading: "lazy", referrerpolicy: "no-referrer" })
+      ? el("img", { class: "avatar", src: p.avatar, alt: "", loading: "lazy", referrerpolicy: "no-referrer",
+          // a picture that fails to load (deleted or renamed account) shows the first letter instead of a broken image
+          onerror: function () { this.replaceWith(el("span", { class: "avatar blank" }, (p.name || p.user || "?").slice(0, 1))); } })
       : el("span", { class: "avatar blank" }, (p.name || "?").slice(0, 1));
     // one line posts get a bigger, quote style text so the card never looks half empty
     const short = (text || "").length <= 60 && !(text || "").includes("\n");
