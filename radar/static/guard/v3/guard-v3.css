@@ -1,6 +1,4 @@
 /* Dragon Guard v3: the real scroll notice. Loaded only where v3 is open. */
-@font-face { font-family: "Fraunces"; src: url("/static/v3/fonts/fraunces-latin.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
-@font-face { font-family: "Nunito Sans"; src: url("/static/v3/fonts/nunitosans-latin.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
 
 .sheet-wrap:has(.gs3) { background: radial-gradient(70% 50% at 50% 30%, rgba(255, 171, 61, .12), transparent 70%), rgba(14, 10, 7, .86); }
 .gs3 { position: relative; width: min(460px, 92vw); margin: 24px auto; -webkit-user-select: none; user-select: none; }
@@ -13,21 +11,21 @@
 .gs3-shadow { position: absolute; left: 8%; right: 8%; height: 40px; z-index: 0; background: radial-gradient(closest-side, rgba(0, 0, 0, .6), transparent); }
 
 .gs3-words { position: absolute; z-index: 2; display: grid; gap: 10px; text-align: center; color: #3a2412; -webkit-user-select: text; user-select: text; }
-.gs3-words .tag { margin: 0; font: 700 13px/1.2 "Nunito Sans", system-ui, sans-serif; letter-spacing: 0; color: #7a4a16; }
-.gs3-words .ave { margin: 0; font: 600 clamp(26px, 7.4vw, 34px)/1.05 "Fraunces", Georgia, serif; letter-spacing: -.01em; color: #6e1f14; }
-.gs3-words .ln { margin: 0; font: 600 15.5px/1.5 "Nunito Sans", system-ui, sans-serif; color: #3f2a18; }
+.gs3-words .tag { margin: 0; font: 700 13px/1.2 Nunito, system-ui, sans-serif; letter-spacing: 0; color: #7a4a16; }
+.gs3-words .ave { margin: 0; font: 700 clamp(26px, 7.4vw, 34px)/1.05 Fredoka, Nunito, system-ui, sans-serif; letter-spacing: -.01em; color: #6e1f14; }
+.gs3-words .ln { margin: 0; font: 600 15.5px/1.5 Nunito, system-ui, sans-serif; color: #3f2a18; }
 .gs3-words .ln b { font-weight: 800; color: #2b1a0d; }
-.gs3-words .motto { margin: 2px 0 0; font: 600 17px/1.3 "Fraunces", Georgia, serif; font-style: italic; color: #6e1f14; }
+.gs3-words .motto { margin: 2px 0 0; font: 700 17px/1.3 Fredoka, Nunito, system-ui, sans-serif; color: #6e1f14; }
 
 .gs3-pledge { display: grid; justify-items: center; gap: 6px; margin-top: 6px; }
 .gs3-hold { position: relative; overflow: hidden; isolation: isolate; min-height: 48px; padding: 0 22px; border-radius: 10px; cursor: pointer;
-  font: 800 16px/1 "Nunito Sans", system-ui, sans-serif; color: #2e1206; background: linear-gradient(180deg, #ffc061, #e9952f);
+  font: 800 16px/1 Nunito, system-ui, sans-serif; color: #2e1206; background: linear-gradient(180deg, #ffc061, #e9952f);
   border: 1px solid #ffd27a; box-shadow: 0 3px 0 #8a4f16, inset 0 1px 0 rgba(255, 255, 255, .45); touch-action: manipulation; }
 .gs3-hold:active { transform: translateY(2px); box-shadow: 0 1px 0 #8a4f16; }
 .gs3-hold:focus-visible, .gs3-seal:focus-visible { outline: 3px solid #6e1f14; outline-offset: 3px; }
 .gs3-hold span { position: relative; z-index: 1; }
 .gs3-fill { position: absolute; inset: 0; z-index: 0; background: linear-gradient(90deg, #d4602a, #a8321c); }
-.gs3-hint { font: 700 12px/1 "Nunito Sans", system-ui, sans-serif; color: #7a4a16; }
+.gs3-hint { font: 700 12px/1 Nunito, system-ui, sans-serif; color: #7a4a16; }
 
 .gs3-pledge { position: relative; }
 .gs3-stamp { position: absolute; left: 50%; top: 50%; width: 96px; margin: -48px 0 0 -48px; z-index: 3; pointer-events: none; }
@@ -39,7 +37,7 @@
 .gs3-half { position: absolute; inset: 0; display: block; }
 .gs3-half.l { clip-path: polygon(0 0, 52% 0, 46% 22%, 55% 41%, 47% 60%, 54% 80%, 49% 100%, 0 100%); }
 .gs3-half.r { clip-path: polygon(52% 0, 100% 0, 100% 100%, 49% 100%, 54% 80%, 47% 60%, 55% 41%, 46% 22%); }
-.gs3-tap { position: absolute; left: 0; right: 0; z-index: 6; margin: 0; text-align: center; font: 700 14px/1 "Nunito Sans", system-ui, sans-serif; color: #ffd27a; text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }
+.gs3-tap { position: absolute; left: 0; right: 0; z-index: 6; margin: 0; text-align: center; font: 700 14px/1 Nunito, system-ui, sans-serif; color: #ffd27a; text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }
 
 /* the seal used elsewhere in the course */
 picture.seal.real { display: block; width: 82px; justify-self: center; margin: 0 auto; }
@@ -47,7 +45,7 @@ picture.seal.real img { width: 100%; height: auto; display: block; filter: drop-
 @media (prefers-reduced-motion: reduce) { .gs3-tap { display: none; } }
 
 /* the Keeper's name, written under the pledge */
-.gs3-sign { margin: 4px 0 0; font: 600 italic 22px/1.1 "Fraunces", Georgia, serif; color: #3a2412; }
+.gs3-sign { margin: 4px 0 0; font: 700 22px/1.1 Fredoka, Nunito, system-ui, sans-serif; color: #3a2412; }
 
 /* a lesson passed: the seal stamped on the result card */
 .result { position: relative; }
@@ -63,7 +61,7 @@ html.gv3 .parch {
   filter: drop-shadow(0 12px 22px rgba(0, 0, 0, .5));
   color: #2b1d12;
 }
-html.gv3 .parch h1, html.gv3 .parch h2, html.gv3 .parch h3 { font-family: "Fraunces", Georgia, serif; font-weight: 600; letter-spacing: -.01em; }
+html.gv3 .parch h1, html.gv3 .parch h2, html.gv3 .parch h3 { font-family: Fredoka, Nunito, system-ui, sans-serif; font-weight: 700; letter-spacing: -.01em; }
 html.gv3 .opt {
   position: relative; background: none; color: #2a1708; font-weight: 800;
   border: 9px solid transparent; border-radius: 4px; padding: 8px 10px; min-height: 60px;
@@ -94,7 +92,7 @@ html.gv3 .practice {
 html.gv3 .practice::before, html.gv3 .practice::after {
   padding: 6px 30px 5px; border-radius: 3px; color: #3a2410;
   background: url("/static/v3/art/plaque-s.webp") center / 100% 100% no-repeat;
-  font: 800 10.5px/1.15 "Nunito Sans", system-ui, sans-serif; letter-spacing: .06em;
+  font: 800 10.5px/1.15 Nunito, system-ui, sans-serif; letter-spacing: .06em;
   text-shadow: 0 1px 0 rgba(255, 240, 200, .55); box-shadow: 0 2px 4px rgba(0, 0, 0, .35); z-index: 2;
 }
 html.gv3 .practice::before { top: -23px; }
@@ -105,17 +103,17 @@ html.gv3 .practice .scr { border-radius: 4px; }
 html.gv3 .rp-num {
   background: url("/static/v3/art/wax-s.webp") center / contain no-repeat; box-shadow: none; border-radius: 0;
   width: calc(25px * var(--u)); height: calc(25px * var(--u));
-  color: #fff3dc; font: 700 calc(12.5px * var(--fs))/1 "Fraunces", Georgia, serif; text-shadow: 0 1px 1px rgba(60, 10, 5, .6);
+  color: #fff3dc; font: 700 calc(12.5px * var(--fs))/1 Fredoka, Nunito, system-ui, sans-serif; text-shadow: 0 1px 1px rgba(60, 10, 5, .6);
   filter: drop-shadow(0 2px 2px rgba(40, 10, 5, .5));
 }
-html.gv3 .rp-list .rp-count { font: 600 calc(19px * var(--fs))/1.2 "Fraunces", Georgia, serif; letter-spacing: 0; text-transform: none; color: #8a2a18; }
+html.gv3 .rp-list .rp-count { font: 700 calc(19px * var(--fs))/1.2 Fredoka, Nunito, system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: #8a2a18; }
 html.gv3 .rp-list li {
   background: none; box-shadow: none; border-radius: 0; color: #3a2010;
   border: 12px solid transparent; border-width: 12px 54px 12px 12px; padding: 0 2px;
   border-image: url("/static/v3/art/tag-l.webp") 36 260 36 36 fill / 12px 54px 12px 12px stretch;
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .3));
 }
-html.gv3 .rp-list li b { background: url("/static/v3/art/wax-s.webp") center / contain no-repeat; color: #fff3dc; font-family: "Fraunces", Georgia, serif; text-shadow: 0 1px 1px rgba(60, 10, 5, .6); }
+html.gv3 .rp-list li b { background: url("/static/v3/art/wax-s.webp") center / contain no-repeat; color: #fff3dc; font-family: Fredoka, Nunito, system-ui, sans-serif; text-shadow: 0 1px 1px rgba(60, 10, 5, .6); }
 html.gv3 .rp-bar .btn, html.gv3 .btn.main {
   color: #2e1206; background: linear-gradient(180deg, #ffc061, #e9952f); border: 1px solid #ffd27a;
   box-shadow: 0 3px 0 #8a4f16, inset 0 1px 0 rgba(255, 255, 255, .45);
@@ -133,14 +131,14 @@ html.gv3 .stars .off { filter: grayscale(1) brightness(.75); opacity: .4; }
 html.gv3 .ring { width: auto; height: 56px; display: flex; align-items: center; gap: 6px; }
 html.gv3 .ring svg { display: none; }
 html.gv3 .ring::before { content: ""; width: 30px; height: 54px; background: url("/static/v3/art/hourglass-s.webp") center / contain no-repeat; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .45)); }
-html.gv3 .ring b { position: static; display: block; min-width: 1.6em; font: 600 calc(26px * var(--fs))/1 "Fraunces", Georgia, serif; color: #ffd27a; }
+html.gv3 .ring b { position: static; display: block; min-width: 1.6em; font: 700 calc(26px * var(--fs))/1 Fredoka, Nunito, system-ui, sans-serif; color: #ffd27a; }
 html.gv3 .ring.low::before { animation: g3-tilt 1s ease-in-out infinite alternate; }
 html.gv3 .ring.low b { color: #ff9a6a; }
 @keyframes g3-tilt { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
 @media (prefers-reduced-motion: reduce) { html.gv3 .ring.low::before { animation: none; } }
 
 html.gv3 .stone .n { background: url("/static/v3/art/stone-s.webp") center / contain no-repeat; border: 0; border-radius: 0; color: #2b1d12;
-  font-family: "Fraunces", Georgia, serif; font-weight: 600; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .4)); }
+  font-family: Fredoka, Nunito, system-ui, sans-serif; font-weight: 700; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .4)); }
 html.gv3 .stone.locked .n { filter: brightness(.6) drop-shadow(0 3px 4px rgba(0, 0, 0, .4)); }
 html.gv3 .stone.done .n { font-size: 0; background: url("/static/v3/art/seal-s.webp") center / 104% no-repeat; }
 html.gv3 .path::before { background: repeating-linear-gradient(180deg, rgba(240, 185, 74, .35) 0 6px, transparent 6px 14px); }

@@ -50,7 +50,7 @@ body { background: radial-gradient(1200px 700px at 20% -10%, #4b2a6e, transparen
     </div>
   </header>
   <main class="sx-main">
-    <div class="sx-head">
+    <div class="sx-head{% if v3_open %} room room-{{ sec.key }}{% endif %}">
       <span class="kick">pdtools</span>
       <h1>{{ sec.name }}</h1>
       <p>{{ sec.line }}</p>

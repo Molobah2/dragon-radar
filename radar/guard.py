@@ -97,7 +97,7 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
             abort(404)
         return redirect("/guard/")
 
-    V3_HEAD = ('<link rel="preload" href="/static/v3/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin>'
+    V3_HEAD = (''
                '<link rel="stylesheet" href="/guard/v3/guard-v3.css?v=/*VER*/">'
                '<script src="/static/v3/vendor/gsap.min.js" defer></script>'
                '<script src="/guard/v3/guard-v3.js?v=/*VER*/" defer></script>')

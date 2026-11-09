@@ -4,8 +4,6 @@
    colours, the two fonts, buttons, focus, the dock, header and footer. Each page gets its own
    composition in its own area. */
 
-@font-face { font-family: "Fraunces"; src: url("fonts/fraunces-latin.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
-@font-face { font-family: "Nunito Sans"; src: url("fonts/nunitosans-latin.woff2") format("woff2"); font-weight: 400 800; font-style: normal; font-display: swap; }
 
 html.v3 {
   /* the locked Hatchery palette (Nov 9) */
@@ -13,14 +11,15 @@ html.v3 {
   --h-gold: #ffd27a; --h-line: #f0b94a; --h-parch: #fff3dc;
   --h-torch: #ffab3d; --h-ember: #d4602a; --h-night: #6f8fb8; --h-quiet: #d9c9a3; --h-btnink: #2e1206;
   --h-rim: rgba(240, 185, 74, .35); --h-rim-soft: rgba(240, 185, 74, .18);
-  --h-disp: "Fraunces", Georgia, "Times New Roman", serif;
-  --h-body: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --h-disp: "Fredoka", "Trebuchet MS", system-ui, sans-serif;  /* the plain pdtools fonts (Jon, 9 Nov) */
+  --h-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
   --h-ease: cubic-bezier(.22, .8, .24, 1);
 
   /* the older systems read their own names: point them all at the Hatchery */
   --ink: var(--h-parch); --ink-soft: var(--h-quiet); --soft: var(--h-quiet); --mute: #bfae8c;
   --gold: var(--h-gold); --gold2: var(--h-torch); --plum: var(--h-gold);
   --line: var(--h-rim-soft);
+  --card: #2a2118; --bg: #241c14; --bg-2: #2a2118; --teal: var(--h-gold);   /* the Home page's own names */
   --glass: rgba(42, 33, 24, .86); --glass-strong: rgba(42, 33, 24, .95); --glass2: rgba(255, 210, 122, .08);
   --glass-hi: linear-gradient(170deg, #31271c 0%, #2a2118 60%, #241c14 100%);
   --rim: inset 0 1px 0 rgba(255, 210, 122, .08), inset 0 0 0 1px var(--h-rim);
@@ -49,7 +48,7 @@ html.v3 body::before {
 /* the daytime meadow and the day/night and dark switches belong to the old look */
 html.v3 .scene, html.v3 .sky-wrap, html.v3 #theme-btn { display: none !important; }
 
-html.v3 h1, html.v3 h2, html.v3 h3 { font-family: var(--h-disp); font-weight: 600; letter-spacing: -.01em; }
+html.v3 h1, html.v3 h2, html.v3 h3 { font-family: var(--h-disp); font-weight: 600; letter-spacing: 0; }
 html.v3 h1 { font-weight: 600; }
 html.v3 a { color: inherit; }
 html.v3 p a, html.v3 li a { color: var(--h-gold); text-underline-offset: 3px; }
@@ -185,8 +184,8 @@ html.v3 .dex-card.rare.have { background: linear-gradient(#2a2118, #2a2118) padd
 html.v3 .dex-sec.rare { color: var(--h-gold) !important; }
 
 /* the feed's opening card gets a real lantern hanging in its corner */
-html.v3 .hero-main { position: relative; }
-html.v3 .hero-main::after { content: ""; position: absolute; top: -8px; right: 14px; width: clamp(54px, 14vw, 84px); aspect-ratio: 767 / 1554; pointer-events: none;
+html.v3 .room-feed .hero-main { position: relative; }
+html.v3 .room-feed .hero-main::after { content: ""; position: absolute; top: -8px; right: 14px; width: clamp(54px, 14vw, 84px); aspect-ratio: 767 / 1554; pointer-events: none;
   background: url("/static/v3/art/lantern-s.webp") center / contain no-repeat; filter: drop-shadow(0 0 22px rgba(255, 171, 61, .45)) drop-shadow(0 8px 10px rgba(0, 0, 0, .5)); }
 
 html.v3 .hot-title span { font-family: var(--h-body); text-transform: none; letter-spacing: 0; color: var(--h-quiet); }
@@ -214,10 +213,10 @@ html.v3 .v3-more > summary { display: none; }
   html.v3 .v3-more[open] > summary::after { transform: rotate(-135deg); }
   html.v3 .v3-more .toggles { margin-top: 10px; }
   /* the opening card is shorter so the filters show on the first screen */
-  html.v3 .hero .hero-main { padding: 20px 18px; }
-  html.v3 .hero h1 { font-size: clamp(30px, 9vw, 40px); line-height: 1.05; }
-  html.v3 .hero .lede { font-size: 15.5px; }
-  html.v3 .hero-main::after { width: 50px; top: -4px; right: 10px; }
+  html.v3 .hero.room-feed .hero-main { padding: 20px 18px; }
+  html.v3 .hero.room-feed h1 { font-size: clamp(30px, 9vw, 40px); line-height: 1.05; }
+  html.v3 .hero.room-feed .lede { font-size: 15.5px; }
+  html.v3 .room-feed .hero-main::after { width: 50px; top: -4px; right: 10px; }
   html.v3 .tally { align-items: stretch; }
   html.v3 .tally .chip { padding-block: 12px; }
   html.v3 .tally .chip b { font-size: 34px; }
@@ -241,27 +240,70 @@ html.v3 .newbie-text b { color: var(--h-parch) !important; }
 html.v3 .post.team .xmark { margin-right: 30px; }
 
 /* ---------- Feed room: the Hatchery post room. Blinky posts a letter on the left; the welcome sits on the quiet wall ---------- */
-html.v3 .hero { position: relative; isolation: isolate; grid-template-columns: minmax(0, 40fr) minmax(0, 60fr); align-items: center; gap: 0;
+html.v3 .hero.room-feed { position: relative; isolation: isolate; grid-template-columns: minmax(0, 40fr) minmax(0, 60fr); align-items: center; gap: 0;
   min-height: clamp(400px, 38vw, 520px); margin-block: 22px 26px; padding: 34px 34px 34px 0; border-radius: 30px; overflow: hidden;
   background: #1a120c url("/static/v3/art/room-feed-m.webp") 28% 26% / cover no-repeat;
   background-image: image-set(url("/static/v3/art/room-feed-m.avif") type("image/avif"), url("/static/v3/art/room-feed-m.webp") type("image/webp"));
   box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .9), inset 0 0 0 1px var(--h-rim); }
-@media (min-width: 1500px) { html.v3 .hero {
+@media (min-width: 1500px) { html.v3 .hero.room-feed {
   background-image: image-set(url("/static/v3/art/room-feed-l.avif") type("image/avif"), url("/static/v3/art/room-feed-l.webp") type("image/webp")); } }
 /* the wall behind the words is darkened so every line keeps its contrast; Blinky stays in full light */
-html.v3 .hero::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+html.v3 .hero.room-feed::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: linear-gradient(90deg, transparent 0%, transparent 30%, rgba(22, 15, 10, .62) 46%, rgba(22, 15, 10, .86) 62%, rgba(22, 15, 10, .9) 100%); }
-html.v3 .hero > .hero-main, html.v3 .hero > .tally { grid-column: 2; }
-html.v3 .hero .hero-main { padding: 0; background: none !important; box-shadow: none !important; border: 0 !important; backdrop-filter: none; -webkit-backdrop-filter: none; }
-html.v3 .hero .hero-main::before, html.v3 .hero-main::after { display: none; }
-html.v3 .hero h1 { text-shadow: 0 2px 18px rgba(0, 0, 0, .6); }
-html.v3 .hero .tally { margin-top: 22px; }
+html.v3 .hero.room-feed > .hero-main, html.v3 .hero.room-feed > .tally { grid-column: 2; }
+html.v3 .hero.room-feed .hero-main { padding: 0; background: none !important; box-shadow: none !important; border: 0 !important; backdrop-filter: none; -webkit-backdrop-filter: none; }
+html.v3 .hero.room-feed .hero-main::before, html.v3 .room-feed .hero-main::after { display: none; }
+html.v3 .hero.room-feed h1 { text-shadow: 0 2px 18px rgba(0, 0, 0, .6); }
+html.v3 .hero.room-feed .tally { margin-top: 22px; }
 @media (max-width: 760px) {
   /* phones: Blinky stands at the top of the room, the words sit on the floor below him */
-  html.v3 .hero { display: block; min-height: 0; margin-block: 14px 18px; padding: 64% 18px 18px; border-radius: 24px;
+  html.v3 .hero.room-feed { display: block; min-height: 0; margin-block: 14px 18px; padding: 64% 18px 18px; border-radius: 24px;
     background: #1a120c url("/static/v3/art/room-feed-tall.webp") center top / 100% auto no-repeat; /* 5:4 crop */
     background-image: image-set(url("/static/v3/art/room-feed-tall.avif") type("image/avif"), url("/static/v3/art/room-feed-tall.webp") type("image/webp")); }
-  html.v3 .hero::before { background: linear-gradient(180deg, transparent 0, transparent calc((100vw - 50px) * .5), rgba(26, 18, 12, .92) calc((100vw - 50px) * .8), #1a120c 100%); }
-  html.v3 .hero .hero-main { padding: 0; }
-  html.v3 .hero .tally { margin-top: 16px; }
+  html.v3 .hero.room-feed::before { background: linear-gradient(180deg, transparent 0, transparent calc((100vw - 50px) * .5), rgba(26, 18, 12, .92) calc((100vw - 50px) * .8), #1a120c 100%); }
+  html.v3 .hero.room-feed .hero-main { padding: 0; }
+  html.v3 .hero.room-feed .tally { margin-top: 16px; }
+}
+
+/* ---------- Home: the hatch stage is kept (Jon, 9 Nov). In v3 it is the same Hatchery at golden dusk:
+   one still wash over the stage (no filter on the moving canvases, so nothing slows down), deepening toward the page below. ---------- */
+html.v3 .v22-stage::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background: linear-gradient(180deg, rgba(46, 24, 58, .52) 0%, rgba(96, 46, 26, .30) 40%, rgba(64, 34, 18, .34) 66%, rgba(28, 22, 16, .7) 100%); }
+html.v3 body.v22 { background-color: var(--h-bg); }
+html.v3 header.v22-head { background: linear-gradient(rgba(28, 22, 16, .7), rgba(28, 22, 16, 0)); }
+/* the cards after the stage are Hatchery panels, not cream paper */
+html.v3 .hub-news { background: var(--glass) !important; border: 1px solid var(--h-rim) !important; color: var(--h-parch); }
+html.v3 .music { background: var(--glass-hi) !important; border: 1px solid var(--h-rim) !important; box-shadow: var(--lift); }
+html.v3 .music-title { color: var(--h-parch); }
+html.v3 .music-title .mt-note { color: var(--h-gold); }
+html.v3 .music-lede { color: var(--h-quiet); }
+html.v3 .maker { background: rgba(255, 210, 122, .05); border-color: var(--h-rim-soft); color: var(--h-parch); }
+html.v3 .maker.playing { background: linear-gradient(135deg, rgba(255, 210, 122, .16), rgba(255, 210, 122, .04)); border-color: var(--h-rim); }
+html.v3 .mk-av { box-shadow: 0 0 0 3px #2a2118, 0 8px 18px -8px rgba(0, 0, 0, .6); }
+html.v3 .mk-x { color: var(--h-gold); }
+html.v3 .mk-songs i { color: var(--h-torch); }
+html.v3 .mk-play { color: var(--h-btnink); background: linear-gradient(180deg, #ffc061, #e9952f); box-shadow: 0 8px 16px -8px rgba(233, 149, 47, .7); }
+html.v3 .mk-now { background: var(--h-gold); color: var(--h-btnink); }
+
+/* ---------- section pages (Community, Learn, Create): each opens on its own painted room.
+   .room-left puts the dragon on the left and the words on the right; the default is dragons right, words left. ---------- */
+html.v3 .sx-head.room { position: relative; isolation: isolate; overflow: hidden; align-content: center; min-height: clamp(300px, 30vw, 400px);
+  padding: 34px 50% 34px 34px; border-radius: 28px; background: #160f0b no-repeat; background-size: cover; background-position: 70% 40%;
+  box-shadow: 0 28px 56px -28px rgba(0, 0, 0, .9), inset 0 0 0 1px var(--h-rim); }
+html.v3 .sx-head.room::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(20, 14, 10, .88) 0%, rgba(20, 14, 10, .7) 38%, rgba(20, 14, 10, .12) 62%, transparent 76%); }
+html.v3 .sx-head.room h1 { text-shadow: 0 2px 18px rgba(0, 0, 0, .7); }
+html.v3 .sx-head.room p { color: var(--h-quiet); }
+html.v3 .sx-head.room-learn { padding: 34px 34px 34px 50%; justify-items: start; background-position: 30% 40%; }
+html.v3 .sx-head.room-learn::before { background: linear-gradient(270deg, rgba(20, 14, 10, .88) 0%, rgba(20, 14, 10, .7) 38%, rgba(20, 14, 10, .12) 62%, transparent 76%); }
+html.v3 .sx-head.room-community { background-image: image-set(url("/static/v3/art/room-community-m.avif") type("image/avif"), url("/static/v3/art/room-community-m.webp") type("image/webp")); }
+html.v3 .sx-head.room-learn { background-image: image-set(url("/static/v3/art/room-learn-m.avif") type("image/avif"), url("/static/v3/art/room-learn-m.webp") type("image/webp")); }
+html.v3 .sx-head.room-create { background-image: image-set(url("/static/v3/art/room-create-m.avif") type("image/avif"), url("/static/v3/art/room-create-m.webp") type("image/webp")); }
+@media (max-width: 640px) {
+  html.v3 .sx-head.room, html.v3 .sx-head.room-learn { min-height: 0; padding: 64% 18px 18px; border-radius: 22px; background-size: 100% auto; background-position: center top; }
+  html.v3 .sx-head.room::before, html.v3 .sx-head.room-learn::before {
+    background: linear-gradient(180deg, transparent 0, transparent calc((100vw - 32px) * .48), rgba(22, 15, 11, .92) calc((100vw - 32px) * .78), #160f0b 100%); }
+  html.v3 .sx-head.room-community { background-image: image-set(url("/static/v3/art/room-community-tall.avif") type("image/avif"), url("/static/v3/art/room-community-tall.webp") type("image/webp")); }
+  html.v3 .sx-head.room-learn { background-image: image-set(url("/static/v3/art/room-learn-tall.avif") type("image/avif"), url("/static/v3/art/room-learn-tall.webp") type("image/webp")); }
+  html.v3 .sx-head.room-create { background-image: image-set(url("/static/v3/art/room-create-tall.avif") type("image/avif"), url("/static/v3/art/room-create-tall.webp") type("image/webp")); }
 }
