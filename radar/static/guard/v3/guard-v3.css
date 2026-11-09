@@ -121,3 +121,31 @@ html.gv3 .rp-bar .btn, html.gv3 .btn.main {
   box-shadow: 0 3px 0 #8a4f16, inset 0 1px 0 rgba(255, 255, 255, .45);
 }
 html.gv3 .rp-bar .btn:active, html.gv3 .btn.main:active { transform: translateY(2px); box-shadow: 0 1px 0 #8a4f16; }
+
+/* ---------- the last drawn parts become objects: helmet, coins, hourglass, stones ---------- */
+html.gv3 .rank .badge { background: url("/static/v3/art/helmet-s.webp") center / contain no-repeat; box-shadow: none; border-radius: 0; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .45)); }
+html.gv3 .rank .badge svg { display: none; }
+
+html.gv3 .stars span { width: 46px; height: 46px; background: url("/static/v3/art/coin-s.webp") center / contain no-repeat; filter: drop-shadow(0 3px 4px rgba(60, 30, 5, .35)); }
+html.gv3 .stars span svg { display: none; }
+html.gv3 .stars .off { filter: grayscale(1) brightness(.75); opacity: .4; }
+
+html.gv3 .ring { width: auto; height: 56px; display: flex; align-items: center; gap: 6px; }
+html.gv3 .ring svg { display: none; }
+html.gv3 .ring::before { content: ""; width: 30px; height: 54px; background: url("/static/v3/art/hourglass-s.webp") center / contain no-repeat; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .45)); }
+html.gv3 .ring b { position: static; display: block; min-width: 1.6em; font: 600 calc(26px * var(--fs))/1 "Fraunces", Georgia, serif; color: #ffd27a; }
+html.gv3 .ring.low::before { animation: g3-tilt 1s ease-in-out infinite alternate; }
+html.gv3 .ring.low b { color: #ff9a6a; }
+@keyframes g3-tilt { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+@media (prefers-reduced-motion: reduce) { html.gv3 .ring.low::before { animation: none; } }
+
+html.gv3 .stone .n { background: url("/static/v3/art/stone-s.webp") center / contain no-repeat; border: 0; border-radius: 0; color: #2b1d12;
+  font-family: "Fraunces", Georgia, serif; font-weight: 600; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .4)); }
+html.gv3 .stone.locked .n { filter: brightness(.6) drop-shadow(0 3px 4px rgba(0, 0, 0, .4)); }
+html.gv3 .stone.done .n { font-size: 0; background: url("/static/v3/art/seal-s.webp") center / 104% no-repeat; }
+html.gv3 .path::before { background: repeating-linear-gradient(180deg, rgba(240, 185, 74, .35) 0 6px, transparent 6px 14px); }
+
+html.gv3 .dots i { background: url("/static/v3/art/stone-s.webp") center / contain no-repeat; opacity: .55; border-radius: 0; }
+html.gv3 .dots i.on { background-image: url("/static/v3/art/coin-s.webp"); opacity: 1; }
+html.gv3 .dots i.done { background-image: url("/static/v3/art/wax-s.webp"); opacity: 1; }
+html.gv3 .dots i { width: calc(13px * var(--u)); height: calc(13px * var(--u)); }
