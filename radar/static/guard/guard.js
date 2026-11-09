@@ -820,6 +820,7 @@ async function resultView() {
   { const sec = main.querySelector(".result"); sec.classList.add(RM.matches ? "still" : "moving"); countUp($("#scn"), R.score); if (pass) embers(sec.querySelector(".res-art")); }
   const pr = $("#practise"); if (pr) pr.onclick = async () => { await startQuiz(R.m, "off", "practice"); location.hash = "q"; };
   if (pass && !RM.matches && R.m !== "drill") confetti();
+  if (pass && R.m !== "drill" && CFG.v3 && window.GuardV3 && window.gsap) window.GuardV3.stamp(main.querySelector(".result"), RM.matches);
 }
 function confetti() { /* a few embers rise, quietly */
   const c = document.createElement("canvas"); c.width = innerWidth; c.height = innerHeight; c.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:30"; document.body.appendChild(c);

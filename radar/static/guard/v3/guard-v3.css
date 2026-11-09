@@ -45,3 +45,40 @@
 picture.seal.real { display: block; width: 82px; justify-self: center; margin: 0 auto; }
 picture.seal.real img { width: 100%; height: auto; display: block; filter: drop-shadow(0 3px 4px rgba(60, 20, 10, .4)); }
 @media (prefers-reduced-motion: reduce) { .gs3-tap { display: none; } }
+
+/* the Keeper's name, written under the pledge */
+.gs3-sign { margin: 4px 0 0; font: 600 italic 22px/1.1 "Fraunces", Georgia, serif; color: #3a2412; }
+
+/* a lesson passed: the seal stamped on the result card */
+.result { position: relative; }
+.g3-pass-seal { position: absolute; top: 10px; right: 10px; width: 78px; z-index: 3; pointer-events: none; }
+.g3-pass-seal img { width: 100%; height: auto; display: block; filter: drop-shadow(0 3px 4px rgba(60, 20, 10, .45)); }
+
+/* ---------- the course in v3: real parchment for every panel you read, oak tiles for answers ---------- */
+html.gv3 .parch {
+  background: none; box-shadow: none;
+  border: 26px solid transparent; padding: 4px 6px;
+  border-image: url("/static/v3/art/card-l.webp") 90 fill / 26px stretch;
+  border-image: image-set(url("/static/v3/art/card-l.avif") type("image/avif"), url("/static/v3/art/card-l.webp") type("image/webp")) 90 fill / 26px stretch;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, .5));
+  color: #2b1d12;
+}
+html.gv3 .parch h1, html.gv3 .parch h2, html.gv3 .parch h3 { font-family: "Fraunces", Georgia, serif; font-weight: 600; letter-spacing: -.01em; }
+html.gv3 .opt {
+  position: relative; background: none; color: #2a1708; font-weight: 800;
+  border: 9px solid transparent; border-radius: 4px; padding: 8px 10px; min-height: 60px;
+  border-image: url("/static/v3/art/tile-l.webp") 22 fill / 9px stretch;
+  border-image: image-set(url("/static/v3/art/tile-l.avif") type("image/avif"), url("/static/v3/art/tile-l.webp") type("image/webp")) 22 fill / 9px stretch;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .35));
+  transition: transform .12s, filter .2s;
+}
+html.gv3 .opt:hover:not(:disabled) { transform: translateY(-1px); filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .4)) brightness(1.04); }
+html.gv3 .opt:active:not(:disabled) { transform: translateY(1px); }
+html.gv3 .opt .k { background: rgba(46, 18, 6, .82); color: #ffd27a; }
+html.gv3 .opt::after { content: ""; position: absolute; inset: -3px; border-radius: 3px; pointer-events: none; }
+html.gv3 .opt.right::after { background: rgba(31, 122, 90, .30); box-shadow: inset 0 0 0 3px #1f7a5a; }
+html.gv3 .opt.wrongpick::after { background: rgba(166, 58, 40, .28); box-shadow: inset 0 0 0 3px #a63a28; }
+html.gv3 .opt.right .k { background: #1f7a5a; color: #fff; }
+html.gv3 .opt.wrongpick .k { background: #a63a28; color: #fff; }
+/* lessons passed carry a small seal instead of a tick */
+html.gv3 .stone.done .n { font-size: 0; background: url("/static/v3/art/seal-s.webp") center / 110% no-repeat; border: 0; box-shadow: none; }

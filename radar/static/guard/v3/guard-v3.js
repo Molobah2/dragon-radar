@@ -18,6 +18,18 @@
       '" src="' + A + 'seal-s.webp" alt="" decoding="async" draggable="false"></picture>';
   }
 
+  // the Keeper's X name, if this device signed Blinky's Book of Friends; empty otherwise
+  function keeperName() {
+    try {
+      var c = JSON.parse(sessionStorage.getItem("pd:me") || "null");
+      if (c && c.st === "confirmed" && /^[A-Za-z0-9_]{1,15}$/.test(c.h || "")) return Promise.resolve(c.h);
+      var v = localStorage.getItem("pd:vid") || "";
+      if (!/^[a-f0-9]{32}$/.test(v)) return Promise.resolve("");
+      return fetch("/api/book/me?vid=" + v, { headers: { Accept: "application/json" } }).then(function (r) { return r.json(); })
+        .then(function (j) { return j && j.status === "confirmed" && /^[A-Za-z0-9_]{1,15}$/.test(j.handle || "") ? j.handle : ""; }).catch(function () { return ""; });
+    } catch (e) { return Promise.resolve(""); }
+  }
+
   function scroll(wrap, o) {
     var gsap = window.gsap, still = !!o.still;
     wrap.innerHTML =
@@ -40,7 +52,8 @@
       top = st.querySelector(".gs3-top"), bot = st.querySelector(".gs3-bot"), shadow = st.querySelector(".gs3-shadow"),
       hold = st.querySelector("#swear"), stamp = st.querySelector(".gs3-stamp"), brk = st.querySelector("#gs3-break"),
       tap = st.querySelector(".gs3-tap");
-    var geo = {}, o2 = { open: 0 }, busy = false;
+    var geo = {}, o2 = { open: 0 }, busy = false, who = "";
+    keeperName().then(function (h) { who = h; });
 
     function layout() {
       var W = st.clientWidth, u = W / SRC.w;
@@ -126,6 +139,8 @@
       done = true; busy = true; hold.disabled = true;
       gsap.timeline()
         .to([hold, st.querySelector(".gs3-hint")], { autoAlpha: 0, duration: still ? 0 : 0.15 })
+        .add(function () { signName(); })
+        .to({}, { duration: who && !still ? 0.95 : 0 })
         .fromTo(stamp, { autoAlpha: 0, scale: 1.8, rotation: -14 }, { autoAlpha: 1, scale: 1, rotation: -6, duration: still ? 0 : 0.28, ease: "power3.in" })
         .to(st, { x: 3, duration: 0.04, yoyo: true, repeat: still ? 0 : 3, ease: "none" })
         .to({}, { duration: still ? 0 : 0.7 })
@@ -135,6 +150,14 @@
         .add(function () { gsap.killTweensOf([o2, st]); o.onDone(); });
     }
 
+    // the Keeper's name writes itself under the pledge, left to right, like a pen
+    function signName() {
+      if (!who) return;
+      var p = document.createElement("p"); p.className = "gs3-sign"; p.textContent = "@" + who;
+      st.querySelector(".gs3-pledge").appendChild(p);
+      if (still) return;
+      gsap.fromTo(p, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.9, ease: "power1.inOut" });
+    }
     wrap.onkeydown = function (e) {
       if (e.key === "Escape" && !busy) { o.onDone(); }
       if (e.key === "Tab") { e.preventDefault(); (brk && brk.isConnected ? brk : hold).focus(); }
@@ -143,5 +166,15 @@
     window.addEventListener("resize", rs, { passive: true });
   }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-  window.GuardV3 = { scroll: scroll };
+  // a lesson passed: the egg seal stamps onto the result card
+  function stamp(card, still) {
+    if (!card) return;
+    var s = document.createElement("div"); s.className = "g3-pass-seal"; s.setAttribute("aria-hidden", "true"); s.innerHTML = sealPic("");
+    card.appendChild(s);
+    if (still) return;
+    window.gsap.fromTo(s, { autoAlpha: 0, scale: 1.9, rotation: -18 }, { autoAlpha: 1, scale: 1, rotation: -8, duration: 0.3, delay: 0.5, ease: "power3.in",
+      onComplete: function () { window.gsap.fromTo(card, { x: -2 }, { x: 0, duration: 0.25, ease: "elastic.out(1, 0.3)" }); } });
+  }
+  document.documentElement.classList.add("gv3");
+  window.GuardV3 = { scroll: scroll, stamp: stamp };
 })();
