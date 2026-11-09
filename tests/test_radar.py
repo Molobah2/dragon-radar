@@ -3500,3 +3500,38 @@ def test_quick_discord_check_saves_what_it_finds(client, cfg, Session, monkeypat
         assert s.get(Post, "777") is not None
         run = s.scalars(select(CollectorRun).where(CollectorRun.status == "discord")).first()
         assert run is not None and run.posts_new == 1
+
+
+def test_privacy_page_waits_for_v3_then_is_linked_from_the_footer(cfg):
+    app = create_app(cfg)
+    c = app.test_client()
+    assert c.get("/privacy").status_code == 404
+    assert 'href="/privacy"' not in c.get("/help").get_data(as_text=True)
+    cfg.v3_public = True
+    r = c.get("/privacy")
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert "What pdtools keeps" in body and "12 months" in body and "30 days after review" in body
+    assert 'href="/privacy"' in c.get("/help").get_data(as_text=True)
+
+
+def test_prune_drops_old_visits_and_rejected_art_but_keeps_recent(Session):
+    from datetime import date, timedelta
+    from radar.db import ArtEntry, DailyCount, VisitDay, Visitor
+    from radar.events import prune
+    today = date(2026, 11, 9)
+    old, new = today - timedelta(days=400), today - timedelta(days=10)
+    with Session() as s:
+        s.add_all([VisitDay(day=old, vid="a" * 32), VisitDay(day=new, vid="b" * 32),
+                   DailyCount(day=old, key="v:home", count=3), DailyCount(day=new, key="v:home", count=4),
+                   Visitor(vid="c" * 32, last_seen=datetime(2025, 1, 1)), Visitor(vid="d" * 32, last_seen=datetime(2026, 11, 1)),
+                   ArtEntry(week=new, key="k", username="k", status="rejected", reviewed_at=datetime(2026, 9, 1)),
+                   ArtEntry(week=new, key="k", username="k", status="rejected", reviewed_at=datetime(2026, 11, 1)),
+                   ArtEntry(week=old, key="k", username="k", status="approved", reviewed_at=datetime(2025, 1, 1))])
+        s.commit()
+        prune(s, today)
+        s.commit()
+        assert [v.day for v in s.query(VisitDay)] == [new]
+        assert [d.day for d in s.query(DailyCount)] == [new]
+        assert [v.vid for v in s.query(Visitor)] == ["d" * 32]
+        assert sorted(a.status for a in s.query(ArtEntry)) == ["approved", "rejected"]

@@ -81,3 +81,4 @@ img { max-width: 100%; }
   .v-tools .scene-pick button { padding: 0 7px; font-size: 12px; }
   .v-tools .pill svg { display: none; }
 }
+.v21-by.privacy-link { font: 700 13px/1 var(--disp); color: var(--mute); text-decoration: underline; text-underline-offset: 3px; }

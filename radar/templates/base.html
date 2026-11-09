@@ -88,6 +88,7 @@
           {% for m in credits %}<span class="mc-row"><button class="mc-song" type="button" data-song="{{ m.track }}" title="Play this song">{{ m.track }}</button> by {% if m.x %}<a href="https://x.com/{{ m.x }}" target="_blank" rel="noopener">{{ m.by }}</a> <button class="mc-all" type="button" data-music data-music-by="{{ m.x }}">All songs</button>{% else %}{{ m.by }}{% endif %}</span>{% endfor %}
         </p>{% endif %}
         <a class="by-link" href="https://x.com/{{ cfg.author_x }}" target="_blank" rel="noopener"><strong>Built by Jon Wynn</strong> <span class="by-x">@{{ cfg.author_x }} on X</span></a>
+        {% if v3_open %}<a class="privacy-link" href="/privacy">Privacy</a>{% endif %}
       </footer>
     </div></div>
   </div>

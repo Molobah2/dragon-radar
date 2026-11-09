@@ -290,6 +290,7 @@ body { background: #0f1d1f; }
         <label class="pick" for="f-image"><span class="prev" id="f-prev" aria-hidden="true">+</span><span><b style="display:block;font:700 16px/1.2 var(--disp)" id="f-pick-t">Pick your picture</b><small>A photo or scan of your art (JPG, PNG or WebP). It is made smaller on your phone before it is sent.</small></span>
           <input type="file" id="f-image" accept="image/jpeg,image/png,image/webp"></label>
         <label class="pledge"><input type="checkbox" id="f-pledge"><span>I made this myself, by hand. No AI was used for any part of it.</span></label>
+        {% if v3_open %}<p class="pv-note"><small>What is kept with your art, and for how long: <a href="/privacy">privacy</a>.</small></p>{% endif %}
         <div class="acts" style="margin:0"><button class="btn go" type="submit" id="f-send">Send for checking</button></div>
         <p class="msg" id="f-msg" role="status" aria-live="polite"></p>
       </form>

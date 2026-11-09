@@ -52,6 +52,7 @@ class Config:
     # v2.2 (the Sunrise Hatchery home, the new nests, dragons that react): only Jon's own unlocked devices see it
     # until launch day (V22_PUBLIC=1). Everyone else gets today's home, with no trace of v2.2.
     v22_public: bool = field(default_factory=lambda: _bool("V22_PUBLIC", "0"))
+    v3_public: bool = field(default_factory=lambda: _bool("V3_PUBLIC", "0"))   # v3: preview devices only until Dec 1
     # Dragon Circle launch switch: CIRCLE_PUBLIC=1 opens /circle to everyone. Jon's own tools (/lab/creator,
     # /lab/dragondle) and the tester bar stay with the devices he unlocked.
     circle_public: bool = field(default_factory=lambda: _bool("CIRCLE_PUBLIC", "0"))

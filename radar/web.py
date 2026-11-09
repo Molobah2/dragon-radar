@@ -157,6 +157,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                 "v22_live": _v22_live(),
                 "live_clips": live_clips,
                 "guard_open": cfg.guard_public,
+                "v3_open": cfg.v3_public or getattr(g, "circle", False),
                 "safety_news": _guard_safety(cfg, datetime.now(timezone.utc).strftime("%Y-%m-%d")), "safety_tips": _GUARD_TIPS, "safety_until": _GUARD_UNTIL,
                 "nav": nav_for(request.path if has_request_context() else "/", cfg.v21_public or getattr(g, "circle", False), getattr(g, "circle", False) or cfg.circle_public, cfg.guard_public)}
 
@@ -345,7 +346,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             resp.headers.add("Vary", "Cookie")    # a preview page is never handed to someone else
             if (getattr(g, "v2", False) and not cfg.v2_public) or (g.get("v22_page") and not cfg.v22_public):
                 resp.headers["Cache-Control"] = "private, no-store"
-        if cfg.noindex or request.path.startswith(("/preview", "/lab")):
+        if cfg.noindex or request.path.startswith(("/preview", "/lab")) or (request.path == "/privacy" and not cfg.v3_public):
             resp.headers["X-Robots-Tag"] = "noindex, nofollow"
         # Safety headers on every answer: no other site can show pdtools inside a frame (so nobody can trick a
         # click on the admin page), browsers never guess a file type, and links to other sites only share the address
@@ -2255,6 +2256,13 @@ def create_app(cfg: Config | None = None) -> Flask:
     def help_page():
         return render_template("help.html", cfg=cfg, og_title="Help · pdtools",
                                og_desc="How to open pdtools, keep your dragons in one place, and answers to the questions Keepers ask most.")
+
+    @app.get("/privacy")
+    def privacy_page():
+        if not (cfg.v3_public or g.get("circle")):      # part of v3: preview devices only until Dec 1
+            abort(404)
+        return render_template("privacy.html", cfg=cfg, og_title="Privacy · pdtools",
+                               og_desc="What pdtools keeps about Keepers, why, and for how long.")
 
     @app.get("/friends/keepers")
     def keepers_page():

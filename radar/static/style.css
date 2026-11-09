@@ -1377,3 +1377,13 @@ body.dark-sky .side-new-list a:hover, html.theme-dark .side-new-list a:hover { b
 }
 .dex-swap:not(.ready) { background: rgba(127, 127, 127, .1); }
 .dex-swap .btn:disabled { opacity: .5; cursor: default; }
+
+/* ---------- Privacy page ---------- */
+.privacy-link { color: inherit; font-size: 13px; font-weight: 700; opacity: .8; text-decoration: underline; text-underline-offset: 3px; }
+.privacy-link:hover { opacity: 1; }
+.pv-list { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; line-height: 1.5; }
+.pv-rows { display: grid; gap: 10px; }
+.pv-row { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); }
+.pv-what { margin: 0 0 6px; font-weight: 700; line-height: 1.45; }
+.pv-meta { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 14px; line-height: 1.45; color: var(--ink-soft); }
+.pv-note { margin: 0; }

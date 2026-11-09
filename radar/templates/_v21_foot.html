@@ -5,6 +5,7 @@
       <span>Free, no login, no wallet. Every post links back to X.</span>
     </div>
     <a class="v21-by" href="https://x.com/{{ cfg.author_x }}" target="_blank" rel="noopener">Built by Jon Wynn</a>
+    {% if v3_open %}<a class="v21-by privacy-link" href="/privacy">Privacy</a>{% endif %}
   </footer>
 
 {% if v22_live %}<script>window.PD_LIVE = {{ live_clips()|tojson }};</script><script src="/v22/a/live.js?v={{ asset_version }}" defer></script>{% endif %}

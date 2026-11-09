@@ -9,7 +9,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 
-from .db import Event, Keeper, Post, Report, ReportConn, ReportStatus, VisitDay, Visitor, utcnow
+from .db import ArtEntry, DailyCount, Event, Keeper, Post, Report, ReportConn, ReportStatus, VisitDay, Visitor, utcnow
 
 VID = re.compile(r"^[a-f0-9]{32}$")
 REF = re.compile(r"^[a-z0-9_-]{0,32}$")
@@ -17,6 +17,8 @@ KINDS = {"open", "popen", "goal", "share", "save", "install", "hatch", "arrive",
 # hatch: an egg hatched (ref is the tier). arrive: someone landed from a shared link (ref says which kind)
 REASONS = {"spam": "Spam or scam", "offtopic": "Not about Pocket Dragons", "harm": "Rude or harmful"}
 KEEP_DAYS = 70          # events older than this are deleted, ten weeks is plenty for trends
+VISIT_KEEP_DAYS = 365   # visit counts are kept 12 months (the privacy page promises this)
+REJECTED_ART_DAYS = 30  # artwork Jon did not approve is deleted 30 days after his review
 HABIT_OPENS = 5         # the north star: Keepers who open this many posts in a week
 AUTO_HIDE_AT = 3        # distinct returning visitors before a post steps aside until Jon looks
 REPORTS_PER_DAY = 10    # per browser
@@ -37,8 +39,18 @@ def record(s, day: date, vid: str, kind: str, ref: str = "") -> bool:
 
 
 def prune(s, today: date) -> int:
-    res = s.execute(delete(Event).where(Event.day < today - timedelta(days=KEEP_DAYS)))
-    return res.rowcount or 0
+    """Once a day: delete what the privacy page says we stop keeping. Moments after 70 days, visit counts and
+    browsers not seen for 12 months, and artwork that was not approved 30 days after Jon's review."""
+    n = s.execute(delete(Event).where(Event.day < today - timedelta(days=KEEP_DAYS))).rowcount or 0
+    year_ago = today - timedelta(days=VISIT_KEEP_DAYS)
+    n += s.execute(delete(VisitDay).where(VisitDay.day < year_ago)).rowcount or 0
+    n += s.execute(delete(DailyCount).where(DailyCount.day < year_ago)).rowcount or 0
+    cutoff = datetime.combine(year_ago, datetime.min.time())
+    n += s.execute(delete(Visitor).where(Visitor.last_seen < cutoff)).rowcount or 0
+    art_cut = datetime.combine(today - timedelta(days=REJECTED_ART_DAYS), datetime.min.time())
+    n += s.execute(delete(ArtEntry).where(ArtEntry.status == "rejected", ArtEntry.reviewed_at.is_not(None),
+                                          ArtEntry.reviewed_at < art_cut)).rowcount or 0
+    return n
 
 
 def habit_keepers(s, end: date) -> int:

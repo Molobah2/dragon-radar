@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Privacy · {{ cfg.site_name }}{% endblock %}
+{% block body_class %}ready static-page{% endblock %}
+{% block header_right %}<a class="btn btn-soft" href="{{ url_for('feed') }}"><span class="wide-only">Back to the </span>feed</a>{% endblock %}
+{% block main %}
+<section class="help-card help-hero">
+  <p class="help-kicker">Privacy</p>
+  <h1>What pdtools keeps, and why</h1>
+  <p class="lede">pdtools is a free, unofficial community tool for Pocket Dragons Keepers, built by Jon Wynn. It is not run by the Pocket Dragons team. This page lists everything it stores about you.</p>
+  <p class="help-note">Last updated 9 November 2026.</p>
+</section>
+
+<section class="help-card" aria-labelledby="pv-short">
+  <h2 id="pv-short">In short</h2>
+  <ul class="pv-list">
+    <li>No wallet, no password and no email address is ever asked for.</li>
+    <li>Most of your progress stays in your own browser, on your own device.</li>
+    <li>When you sign in with X, pdtools reads who you are and hands the sign in back to X straight away. It never posts for you.</li>
+    <li>Nothing is sold, and there are no ads or ad trackers.</li>
+  </ul>
+</section>
+
+<section class="help-card" aria-labelledby="pv-what">
+  <h2 id="pv-what">What is stored</h2>
+  <div class="pv-rows">
+    <div class="pv-row"><p class="pv-what">A random number your browser makes for itself, your device type (phone or computer), where your visit came from (for example X or Discord) and page counts. No name, X account or IP address.</p><p class="pv-meta"><span><b>Why:</b> To count visitors and see which pages help</span><span><b>Kept:</b> 12 months</span></p></div>
+    <div class="pv-row"><p class="pv-what">Moments like opening a post, finishing the daily goal or sharing a card, tied only to that random number</p><p class="pv-meta"><span><b>Why:</b> To check the site works</span><span><b>Kept:</b> 70 days</span></p></div>
+    <div class="pv-row"><p class="pv-what">Reports on posts: the random number and a salted fingerprint of your connection, never the address itself</p><p class="pv-meta"><span><b>Why:</b> To hide spam, so one person cannot report many times</span><span><b>Kept:</b> Until you ask for removal</span></p></div>
+    <div class="pv-row"><p class="pv-what">Book of Friends: your X handle, display name, the post that proved the handle is yours and who invited you</p><p class="pv-meta"><span><b>Why:</b> To show you are a real Keeper</span><span><b>Kept:</b> Until you ask for removal</span></p></div>
+    <div class="pv-row"><p class="pv-what">Your Keeper book page: handle, counts and the picture you chose to share</p><p class="pv-meta"><span><b>Why:</b> Your public page at pdtools.xyz/k/yourname</span><span><b>Kept:</b> Until you ask for removal</span></p></div>
+    <div class="pv-row"><p class="pv-what">Keeper Art: your handle, the artwork, its title, making of link, medium and your line about it</p><p class="pv-meta"><span><b>Why:</b> The weekly art gallery, shown only after approval</span><span><b>Kept:</b> Approved: until you ask for removal. Not approved: 30 days after review</span></p></div>
+    <div class="pv-row"><p class="pv-what">Keepers Trail: your X id, name, username, profile picture, public follower counts and your card</p><p class="pv-meta"><span><b>Why:</b> To make your Trail card from your public posts</span><span><b>Kept:</b> Until you ask for removal</span></p></div>
+    <div class="pv-row"><p class="pv-what">A move code with your opened posts and dates</p><p class="pv-meta"><span><b>Why:</b> To carry progress to another device without a login</span><span><b>Kept:</b> Until you ask for removal</span></p></div>
+    <div class="pv-row"><p class="pv-what">Ratings and comments you send, with the page and device type</p><p class="pv-meta"><span><b>Why:</b> To improve the site</span><span><b>Kept:</b> Until you ask for removal</span></p></div>
+    <div class="pv-row"><p class="pv-what">Dragon Guard: counts only, for example how many people finished a lesson</p><p class="pv-meta"><span><b>Why:</b> To see where learners get stuck</span><span><b>Kept:</b> Counts only, nothing about you</span></p></div>
+    <div class="pv-row"><p class="pv-what">Public posts on X and posts shared in the Pocket Dragons Discord that mention Pocket Dragons</p><p class="pv-meta"><span><b>Why:</b> To show them in Blinky's Friends, always linked back to X</span><span><b>Kept:</b> Until the author asks for removal</span></p></div>
+  </div>
+</section>
+
+<section class="help-card" aria-labelledby="pv-cookies">
+  <h2 id="pv-cookies">Cookies and your browser</h2>
+  <p>pdtools uses a few small cookies to keep you signed in, to protect forms from misuse, to remember your settings and to let preview testers see new pages early. Your opened posts, streak, dragons and language are saved in your own browser storage. Clearing your browser removes them.</p>
+  <p>Your IP address is used for a short time to stop floods of requests. It is not saved with your activity. The companies that host pdtools may keep it in their own logs.</p>
+</section>
+
+<section class="help-card" aria-labelledby="pv-who">
+  <h2 id="pv-who">Services that help run pdtools</h2>
+  <ul class="pv-list">
+    <li><b>Render</b> hosts the website.</li>
+    <li><b>Cloudflare</b> sits in front of the site to keep it fast and safe.</li>
+    <li><b>Supabase</b> holds the database and runs the timers that check for new posts.</li>
+    <li><b>X</b> handles sign in and supplies public posts.</li>
+    <li><b>Discord</b> supplies posts shared in the Pocket Dragons content channel.</li>
+    <li><b>Cloudinary</b> serves some images and sounds.</li>
+  </ul>
+</section>
+
+<section class="help-card" aria-labelledby="pv-you">
+  <h2 id="pv-you">Your choices</h2>
+  <p>You can ask to see what pdtools holds about you, or to have any of it removed, at any time. Send a direct message to <a href="https://x.com/{{ cfg.author_x }}" target="_blank" rel="noopener">@{{ cfg.author_x }} on X</a> from the account it is about. Requests are handled as soon as possible.</p>
+  <p>pdtools is not meant for children under 13.</p>
+  <p>If this page changes, the date at the top changes with it.</p>
+</section>
+{% endblock %}
