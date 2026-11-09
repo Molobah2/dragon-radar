@@ -2637,7 +2637,8 @@ def create_app(cfg: Config | None = None) -> Flask:
         try:
             with Session() as s:
                 now = utcnow()
-                run = CollectorRun(started_at=now, status="discord")
+                run = CollectorRun(started_at=now, status="discord", pages=0, posts_returned=0, posts_new=0, posts_skipped=0,
+                                  users_returned=0, est_cost_usd=0.0)   # counters set here: the row is only added to the session at the end
                 added = collect_discord(s, cfg, run, now, client=XClient(cfg.x_bearer_token) if cfg.x_bearer_token else None)
                 if added or run.est_cost_usd:
                     run.finished_at = utcnow()
@@ -2671,7 +2672,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                             .order_by(CollectorRun.started_at.desc()).limit(1))
         if last and utcnow() - last < timedelta(minutes=10):
             return {"started": False, "reason": "too soon"}, 200
-        if not collect_lock.acquire(blocking=False):
+        if not collect_lock.acquire(timeout=45):        # a quick Discord check may hold it for a few seconds: wait, never skip the run
             return {"started": False, "reason": "already running"}, 200
         threading.Thread(target=collect_in_background, daemon=True).start()
         return {"started": True}, 202

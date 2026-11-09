@@ -423,8 +423,9 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
         with Session() as s:
             row = s.get(TrailCard, u["id"])
             saved = json.loads(row.card) if row else None
-            fresh = row is not None and not row.partial and now - row.fetched_at < timedelta(hours=cfg.trail_cache_hours) \
-                and (saved or {}).get("v") == CARD_V
+            # one card per X account (9 Nov, Jon: to save X credits): once a card is made it is the Keeper's card for
+            # good. It is never read from X again, on any day, even if it was cut short or an older card version.
+            fresh = row is not None and saved is not None
             left = cfg.trail_daily_cap_usd - spent_today(s, today())
             # others to compare with: Keepers who walked the trail, their counts also from X
             others = [] if fresh else list(s.scalars(select(TrailCard.posts).where(TrailCard.user_id != u["id"])))

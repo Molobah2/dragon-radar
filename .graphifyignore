@@ -1,0 +1,4 @@
+radar/static/vendor/
+*.min.js
+radar/static/trail/kt-world-nt.js
+graphify-out/

@@ -194,16 +194,6 @@ def test_compute_rhythm_and_weeks():
     assert c["ahead"] == "67"
 
 
-def test_an_old_saved_card_is_made_again(cfg, monkeypatch):
-    fake = FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}, {"data": [tw("1", "2026-09-08")], "meta": {}}])
-    app, c = make(cfg, fake, monkeypatch)
-    sign_in(c)
-    c.get("/api/trail/me")
-    with make_session_factory(cfg.database_url)() as s:
-        row = s.get(trail.TrailCard, "42"); j = json.loads(row.card); j["v"] = 1; row.card = json.dumps(j); s.commit()
-    assert c.get("/api/trail/me").get_json()["cached"] is False
-
-
 def test_everything_comes_from_x_and_ahead_compares_trail_keepers(cfg, monkeypatch):
     fake = FakeX(pages=[{"data": [tw("1", "2026-09-08"), tw("2", "2026-09-09")], "meta": {}}])
     app, c = make(cfg, fake, monkeypatch)
@@ -265,3 +255,22 @@ def test_without_a_window_the_trail_stays_open(cfg, monkeypatch):
     assert trail.event_phase(cfg, datetime(2030, 1, 1)) is None and trail.event_json(cfg) is None
     cfg.trail_opens, cfg.trail_closes = "2026-11-07T15:00:00+01:00", "2026-11-07T20:00:00Z"
     assert trail.event_window(cfg) == (datetime(2026, 11, 7, 14, 0), datetime(2026, 11, 7, 20, 0))
+
+
+
+def test_one_card_per_account_never_read_from_x_again(cfg, monkeypatch):
+    """9 Nov: once a Keeper has a card it is theirs for good. Days later, cut short or an older version, X is never read again."""
+    fake = FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}])
+    app, c = make(cfg, fake, monkeypatch)
+    sign_in(c)
+    first = c.get("/api/trail/me").get_json()
+    assert first["cached"] is False
+    n = len(fake.calls)
+    with make_session_factory(cfg.database_url)() as s:
+        row = s.get(trail.TrailCard, "42")
+        row.fetched_at = row.fetched_at - timedelta(days=30)
+        row.partial = True
+        card = json.loads(row.card); card["v"] = -1; row.card = json.dumps(card)
+        s.commit()
+    again = c.get("/api/trail/me").get_json()
+    assert again["cached"] is True and len(fake.calls) == n

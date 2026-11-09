@@ -28,7 +28,7 @@ from flask import Response, abort, jsonify, redirect, request, send_from_directo
 from .visits import bump
 
 GUARD_DIR = Path(__file__).parent / "static" / "guard"
-EVENTS = {"start", "quiz", "done", "check", "seen", "share", "card"}
+EVENTS = {"start", "quiz", "done", "check", "seen", "share", "card", "leave", "netfail", "jserr"}   # the last three find where people get stuck
 DATES = {1: "2026-11-08", 2: "2026-11-08", 3: "2026-11-09", 4: "2026-11-10", 5: "2026-11-11", 6: "2026-11-12",
          7: "2026-11-14", 8: "2026-11-15", 9: "2026-11-17", 10: "2026-11-18", 11: "2026-11-19", 12: "2026-11-20",
          13: "2026-11-21", 14: "2026-11-22"}

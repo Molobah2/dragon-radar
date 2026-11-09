@@ -73,6 +73,9 @@ const inApp = /Twitter|FBAN|FBAV|Instagram|Discord|Telegram|Line\//i.test(naviga
 
 /* ---------- tiny helpers ---------- */
 const tally = (m, ev, s) => { try { const b = JSON.stringify({ m, ev, s }); if (navigator.sendBeacon) navigator.sendBeacon(CFG.tally, new Blob([b], { type: "application/json" })); } catch (e) {} };
+// a script error anywhere is counted (no details leave the device), so a stuck screen shows up in the daily numbers
+let jsErrs = 0; const onErr = () => { if (jsErrs++ < 3) tally(0, "jserr"); };
+addEventListener("error", onErr); addEventListener("unhandledrejection", onErr);
 const say = (t) => { const l = $("#live"); l.textContent = ""; setTimeout(() => { l.textContent = t; }, 40); };
 function rng(seed) { let a = 0; for (const c of String(seed)) a = Math.imul(a ^ c.charCodeAt(0), 2654435761) >>> 0; return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const shuffle = (arr, r) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -590,8 +593,15 @@ async function lesson(m, c) {
 }
 
 // a lost connection never leaves a dead button: say so and offer the same screen again
+let netFails = 0;
 function netFail() {
+  netFails++; tally(0, "netfail");
   const old = $("#netfail"); if (old) old.remove();
+  if (netFails >= 2 && S.quiz && route === "q") {          // the same quiz will not open twice in a row: set it aside so nothing can loop
+    S.quiz = null; save(); netFails = 0;
+    main.innerHTML = `<div class="panel" id="netfail" role="alert">${esc(T("netQ", "The questions did not load. Check your connection and try again."))} <a class="btn main" href="#home">${esc(T("toHome", "Back to the hall"))}</a></div>`;
+    return;
+  }
   main.insertAdjacentHTML("afterbegin", `<div class="panel" id="netfail" role="alert">${esc(T("netQ", "The questions did not load. Check your connection and try again."))} <button class="btn ghost" type="button" id="netretry">${esc(T("retry", "Try again"))}</button></div>`);
   $("#netretry").onclick = () => { $("#netfail").remove(); render(); };
   main.scrollIntoView({ block: "start" });
@@ -642,7 +652,7 @@ async function startQuiz(m, mode, kind) {
     const reviews = [];
     const due = Object.entries(S.items).filter(([k, v]) => !k.startsWith("m" + m + "q") && v.due && v.due.some((x) => x <= today)).sort((a, b) => Math.min(...a[1].due) - Math.min(...b[1].due)).map(([k]) => k);
     reviews.push(...due.slice(0, 2));
-    const doneMods = Object.keys(S.mods).map(Number).filter((k) => k !== m && S.mods[k].done);
+    const doneMods = Object.keys(S.mods).map(Number).filter((k) => Number.isInteger(k) && k >= 1 && k <= N && k !== m && S.mods[k] && S.mods[k].done);   // never a stray key
     while (reviews.length < 2 && doneMods.length) {
       const k = doneMods[Math.floor(r() * doneMods.length)];
       const dd = await mod(k); const q = dd.questions[Math.floor(r() * dd.questions.length)];
@@ -755,7 +765,7 @@ function leaveSheet() {
   $("#stay").onclick = stay;
   w.onclick = (e) => { if (e.target === w) stay(); };
   w.onkeydown = (e) => { if (e.key === "Escape") stay(); if (e.key === "Tab") { const a = [$("#stay"), $("#leave")]; const i = a.indexOf(document.activeElement); e.preventDefault(); a[(i + 1) % 2].focus(); } };
-  $("#leave").onclick = () => { w.hidden = true; paused = false; clearInterval(tick); leaving = true; quizActive = false; location.hash = "home"; };
+  $("#leave").onclick = () => { w.hidden = true; paused = false; clearInterval(tick); leaving = true; quizActive = false; tally(typeof S.quiz.m === "number" ? S.quiz.m : 0, "leave"); location.hash = "home"; };
 }
 
 /* ---------- result ---------- */

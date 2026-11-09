@@ -3476,3 +3476,27 @@ def test_discord_share_tries_again_when_x_does_not_know_a_fresh_post_yet(cfg, Se
 def test_quick_discord_check_runs_alone_and_is_not_spammable(client, cfg):
     cfg.discord_bot_token, cfg.discord_channel_ids = "", ""
     assert client.post("/cron/discord").status_code == 503                   # off until the bot is set up
+
+
+def test_quick_discord_check_saves_what_it_finds(client, cfg, Session, monkeypatch):
+    """9 Nov: the quick check's run row is only added at the end, so its counters must start at 0 (they were None and every
+    run that found a post crashed before saving it)."""
+    import time
+    import radar.discord_share as ds
+
+    def fake(s, cfg_, run, now, client=None, http=None):
+        run.posts_new += 1
+        s.add(Post(id="777", author_username="ann", text="egg", author_id="u:ann", created_at=now))
+        return 1
+    monkeypatch.setattr(ds, "collect_discord", fake)
+    cfg.discord_bot_token, cfg.discord_channel_ids = "tok", "123"
+    assert client.post("/cron/discord").status_code == 202
+    for _ in range(50):
+        with Session() as s:
+            if s.get(Post, "777"):
+                break
+        time.sleep(0.05)
+    with Session() as s:
+        assert s.get(Post, "777") is not None
+        run = s.scalars(select(CollectorRun).where(CollectorRun.status == "discord")).first()
+        assert run is not None and run.posts_new == 1

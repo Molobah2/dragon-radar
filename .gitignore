@@ -7,3 +7,6 @@ __pycache__/
 # delivery packages and design scratch, never pushed
 *.tgz
 _design/
+
+# Graphify code map (rebuild with: graphify update . && python tools/pagemap.py)
+graphify-out/
