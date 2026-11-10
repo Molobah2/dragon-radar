@@ -3568,3 +3568,14 @@ def test_keepers_trail_card_sits_in_create_wherever_the_trail_opens(cfg, Session
     app3 = create_app(cfg); app3.config["TESTING"] = True
     public = app3.test_client().get("/create").get_data(as_text=True)
     assert "Keepers Trail" not in public and 'href="/trail/"' not in public
+
+
+def test_every_page_wears_the_pd_tools_badge(cfg, Session):
+    """The Keepers Trail page names the PD Tools badge as its icon, and /favicon.ico answers with the badge for any
+    page that names none, so no browser tab shows a blank globe."""
+    from pathlib import Path
+    html = (Path(__file__).resolve().parents[1] / "radar" / "static" / "trail" / "index.html").read_text()
+    assert 'rel="icon" href="/static/brand/badge-64.png"' in html and html.count("<title>") == 1
+    app = create_app(cfg); app.config["TESTING"] = True
+    r = app.test_client().get("/favicon.ico")
+    assert r.status_code == 301 and "brand/badge-64.png" in r.headers["Location"]

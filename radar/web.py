@@ -2623,6 +2623,11 @@ def create_app(cfg: Config | None = None) -> Flask:
         resp.headers["Service-Worker-Allowed"] = "/"
         return resp
 
+    @app.get("/favicon.ico")
+    def favicon():
+        # browsers ask for /favicon.ico on pages that name no icon of their own: answer with the PD Tools badge
+        return redirect(url_for("static", filename="brand/badge-64.png"), code=301)
+
     @app.get("/healthz")
     def healthz():
         # "via" tells Jon which header carried the visitor address (cf = Cloudflare, so limits cannot be faked)
