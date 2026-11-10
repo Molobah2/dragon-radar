@@ -57,7 +57,7 @@ body { background: radial-gradient(1200px 700px at 20% -10%, #4b2a6e, transparen
     </div>
     {% if sec.key == "community" %}{% include "_safety.html" %}{% endif %}
     <ul class="sx-grid">
-      {% for t in sec.tabs %}{% if v3_open and t.path == "/friends/keepers" %}{% set t = dict(t, bg="v3/art/room-keepers-m.webp", who="") %}{% endif %}<li><a class="sx-card" href="{{ t.path }}">
+      {% for t in sec.tabs %}{% if v3_open and t.path == "/friends/keepers" %}{% set t = dict(t, bg="v3/art/room-keepers-m.webp", who="") %}{% endif %}{% if v3_open and t.path == "/help" %}{% set t = dict(t, bg="v3/art/help-poster.jpg", who="") %}{% endif %}<li><a class="sx-card" href="{{ t.path }}">
         <div class="sx-art{% if not t.bg %} aurora{% endif %}">
           {% if t.bg.startswith("cloud:") %}{% if cfg.scene_base %}<img class="bg" src="{{ cfg.scene_base }}/image/upload/c_fill,g_auto,h_540,w_960/f_auto/q_auto/v1792252414/{{ cfg.scene_folder }}/{{ t.bg[6:] }}" alt="" width="960" height="540" loading="lazy" decoding="async">{% endif %}
           {% elif t.bg %}<img class="bg" src="{{ asset(t.bg) }}" alt="" width="960" height="540" {% if loop.index > 2 %}loading="lazy"{% else %}fetchpriority="high"{% endif %} decoding="async">{% endif %}

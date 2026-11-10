@@ -107,9 +107,9 @@
       el.insertBefore(dust, bg.nextSibling);
       var words = el.querySelectorAll(".kick, .eyebrow, .ama-kicker, h1, .lede, p, .tally .chip, .ama-meta, .hero-go");
       if (still) return;
-      gsap.fromTo(bg, { scale: 1.12, autoAlpha: 0 }, { scale: 1.02, autoAlpha: 1, duration: 1.6, ease: "power2.out" });
-      gsap.to(bg, { scale: 1.06, xPercent: -1.2, duration: 16, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.6 });
-      gsap.from(words, { y: 22, autoAlpha: 0, duration: .8, stagger: .08, delay: .25, ease: "power3.out", clearProps: "transform" });
+      gsap.fromTo(bg, { scale: 1.1 }, { scale: 1.02, duration: 1.6, ease: "power2.out" });   // the room is there from the first frame
+      gsap.to(bg, { scale: 1.09, xPercent: -2, yPercent: -1, duration: 9, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.6 });
+      gsap.from(words, { y: 16, opacity: .25, duration: .7, stagger: .06, ease: "power3.out", clearProps: "transform,opacity" });   // words readable at once, then settle
       dust.querySelectorAll("i").forEach(function (d) {
         var x = gsap.utils.random(4, 96), y = gsap.utils.random(10, 95), s = gsap.utils.random(1.5, 4);
         gsap.set(d, { left: x + "%", top: y + "%", width: s, height: s, autoAlpha: 0 });
@@ -140,6 +140,99 @@
     else setTimeout(go, 1200);
   }
 
+  /* ---- living pictures: every painted picture on a page (card art, the safety coin, the Help film poster)
+     drifts slowly while it is on screen and rests when it is not, so nothing moves off screen ---- */
+  var LIVE = ".sx-art .bg, .sfn-art img, .nests .nest img, .ama-thanks .ama-av img";
+  function living() {
+    if (still || !ST) return;
+    gsap.utils.toArray(LIVE).forEach(function (img, k) {
+      if (img.dataset.v3Live) return; img.dataset.v3Live = "1";
+      var tw = gsap.fromTo(img, { scale: 1.02, xPercent: 0 }, { scale: 1.13, xPercent: k % 2 ? -3 : 3, yPercent: -2,
+        duration: gsap.utils.random(6, 9), ease: "sine.inOut", yoyo: true, repeat: -1, paused: true });
+      ST.create({ trigger: img, start: "top bottom", end: "bottom top", onToggle: function (self) { self.isActive ? tw.play() : tw.pause(); } });
+    });
+    // the safety coin turns and catches the light now and then
+    var coin = document.querySelector(".sfn-art img");
+    if (coin) gsap.to(coin, { rotation: 4, duration: 3.2, ease: "sine.inOut", yoyo: true, repeat: -1 });
+  }
+
+  /* ---- depth while scrolling: card pictures move a little slower than their cards ---- */
+  function depth() {
+    if (still || !ST) return;
+    document.querySelectorAll(".sx-art, .sfn-art").forEach(function (box) {
+      if (box.dataset.v3Depth) return; box.dataset.v3Depth = "1";
+      var inner = box.querySelector("img"); if (!inner) return;
+      gsap.fromTo(box, { "--py": "-14px" }, { "--py": "14px", ease: "none", scrollTrigger: { trigger: box, start: "top bottom", end: "bottom top", scrub: true } });
+    });
+  }
+
+  /* ---- the room's lamp breathes: a warm light that swells and settles on every room ---- */
+  function lamps() {
+    if (still) return;
+    document.querySelectorAll(".v3-room-live, .g3-room-live").forEach(function (el) {
+      if (el.querySelector(".v3-lamp")) return;
+      var l = document.createElement("div"); l.className = "v3-lamp"; l.setAttribute("aria-hidden", "true");
+      var dust = el.querySelector(".v3-dust, .g3-embers"); el.insertBefore(l, dust || null);
+      gsap.to(l, { opacity: .55, duration: 2.6, ease: "sine.inOut", yoyo: true, repeat: -1 });
+      gsap.to(l, { scale: 1.08, duration: 4.1, ease: "sine.inOut", yoyo: true, repeat: -1 });
+    });
+  }
+
+  /* ---- embers drifting up the whole page, behind everything: few, slow, and only while the tab is open ---- */
+  function embers() {
+    if (still || document.querySelector(".v3-page-embers") || document.querySelector(".v22-stage")) return;
+    var box = document.createElement("div"); box.className = "v3-page-embers"; box.setAttribute("aria-hidden", "true");
+    document.body.appendChild(box);
+    var n = innerWidth < 700 ? 8 : 16;
+    for (var i = 0; i < n; i++) (function (d) {
+      box.appendChild(d);
+      (function rise() {
+        gsap.set(d, { left: gsap.utils.random(0, 100) + "%", top: "102%", y: 0, x: 0, opacity: 0, scale: gsap.utils.random(.5, 1.3) });
+        gsap.to(d, { y: -innerHeight * gsap.utils.random(.5, 1.1), x: gsap.utils.random(-60, 60), opacity: gsap.utils.random(.25, .6),
+          duration: gsap.utils.random(9, 16), delay: gsap.utils.random(0, 8), ease: "none",
+          onComplete: function () { gsap.to(d, { opacity: 0, duration: 1, onComplete: rise }); } });
+      })();
+    })(document.createElement("i"));
+  }
+
+  /* ---- clicks and taps answer the finger: whatever is pressed sinks a little and springs back, gold buttons
+     throw a few sparks from the exact spot, and everything else sends out a soft ring. One listener for the page,
+     so buttons added later (posts, sheets) get it too. ---- */
+  var PRESS = "button, .btn, .pill, .pd-s, .pd-t, .sx-card, .chip, .tab, .tabs button, .star, .nest, .maker a, .day-chip, [role=tab], [role=radio], label.toggle, .hg-main, .hg-soft, .hs-btn, .sx-others a";
+  var GOLD = ".btn-go, .btn.go, .hg-main, .mk-play, .pd-s.on, .gs3-btn";
+  function taps() {
+    if (still || document.documentElement.dataset.v3Taps) return; document.documentElement.dataset.v3Taps = "1";
+    var layer = document.createElement("div"); layer.className = "v3-taps"; layer.setAttribute("aria-hidden", "true"); document.body.appendChild(layer);
+    document.addEventListener("pointerdown", function (e) {
+      var el = e.target.closest && e.target.closest(PRESS); if (!el || el.disabled) return;
+      var big = el.matches(".sx-card, .nest, .maker a");
+      gsap.to(el, { scale: big ? .975 : .93, duration: .12, ease: "power2.out", overwrite: "auto" });
+      var up = function () { gsap.to(el, { scale: 1, duration: .55, ease: "elastic.out(1.1, .45)", overwrite: "auto", clearProps: "transform" });
+        el.removeEventListener("pointerup", up); el.removeEventListener("pointerleave", up); el.removeEventListener("pointercancel", up); };
+      el.addEventListener("pointerup", up); el.addEventListener("pointerleave", up); el.addEventListener("pointercancel", up);
+      if (el.matches(GOLD)) sparks(layer, e.clientX, e.clientY); else ring(layer, e.clientX, e.clientY, big);
+    }, { passive: true });
+    // keyboard: Enter or Space on a button gives the same little press
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return; var el = document.activeElement; if (!el || !el.matches || !el.matches(PRESS)) return;
+      gsap.fromTo(el, { scale: .94 }, { scale: 1, duration: .5, ease: "elastic.out(1.1, .45)", overwrite: "auto", clearProps: "transform" });
+    });
+  }
+  function sparks(layer, x, y) {
+    for (var i = 0; i < 9; i++) {
+      var d = document.createElement("i"); d.className = "v3-spark"; layer.appendChild(d);
+      var a = Math.random() * Math.PI * 2, r = gsap.utils.random(26, 64);
+      gsap.set(d, { left: x, top: y, scale: gsap.utils.random(.6, 1.2) });
+      gsap.to(d, { x: Math.cos(a) * r, y: Math.sin(a) * r - 18, opacity: 0, scale: .2, duration: gsap.utils.random(.45, .75), ease: "power2.out",
+        onComplete: (function (n) { return function () { n.remove(); }; })(d) });
+    }
+  }
+  function ring(layer, x, y, big) {
+    var d = document.createElement("i"); d.className = "v3-ring"; layer.appendChild(d);
+    gsap.set(d, { left: x, top: y });
+    gsap.fromTo(d, { scale: .2, opacity: .7 }, { scale: big ? 3.4 : 2.2, opacity: 0, duration: .55, ease: "power2.out", onComplete: function () { d.remove(); } });
+  }
+
   /* ---- scroll reveals for the parts every page already has, so no template has to opt in ---- */
   var AUTO = ".sx-card, .ama-item, .ama-thanks, .ama-chart, .maker, .nests .nest, .hub-news, .help-card, .pv-row, .panel, .safety, .faq details, .start-here";
   function autoReveal() {
@@ -159,7 +252,7 @@
     });
   }
 
-  function ready() { rooms(); autoReveal(); reveals(); holds(); tilt(); }
+  function ready() { rooms(); lamps(); autoReveal(); reveals(); holds(); tilt(); living(); depth(); embers(); taps(); }
   v3.refresh = ready;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ready); else ready();
 })();

@@ -176,7 +176,8 @@ body { background: #1d0e09; }
     <h1 data-i18n-html="wlH1">Be the first to <span>say hello</span></h1>
     <p>New Keepers who just joined the Ancient Hatchery. A kind reply on day one is how a newcomer becomes a friend.</p>
     {% endif %}
-    <div class="stats">
+    {% if not lane %}<p class="wl-quiet">No new Keepers in the last 3 days. The lane fills again as soon as someone joins.</p>{% endif %}
+    <div class="stats"{% if not lane %} hidden{% endif %}>
       <div class="stat"><b data-count="{{ lane|length }}">{{ lane|length }}</b><span>New Keepers, last 3 days</span></div>
       <div class="stat hot"><b data-count="{{ lane|selectattr('opens', 'equalto', 0)|list|length }}">{{ lane|selectattr('opens', 'equalto', 0)|list|length }}</b><span>Still waiting for a first open</span></div>
       <div class="stat"><b id="mine">0</b><span>You welcomed today</span></div>

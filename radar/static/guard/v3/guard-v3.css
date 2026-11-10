@@ -180,3 +180,11 @@ html.gv3 .top .word .w1, html.gv3 .top .word .w2 { font: 800 11px/1 Nunito, syst
 html.gv3 .top .word { flex-direction: row; flex-wrap: wrap; align-content: center; column-gap: 5px; max-width: 160px; }
 html.gv3 .top .word::before { flex-basis: 100%; }
 html.gv3 .top .pill { height: 40px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .22); background: rgba(30, 14, 8, .38); }
+
+/* the armoury is the darkest room on the site: soot brown with an ember glow on Speed's side */
+html.gv3 body { background: #0a0705; }
+html.gv3 .sky { background: radial-gradient(60% 50% at 85% 10%, rgba(255, 110, 40, .14), transparent 70%), radial-gradient(120% 80% at 50% 0%, #1c120c 0%, #0e0907 55%, #080504 100%); }
+/* the lesson pictures pan slowly, like a lantern moving across them */
+html.gv3 .parch .art { animation: g3-pan 11s ease-in-out infinite alternate; }
+@keyframes g3-pan { from { background-position: 40% 45%; } to { background-position: 60% 55%; } }
+@media (prefers-reduced-motion: reduce) { html.gv3 .parch .art { animation: none; } }

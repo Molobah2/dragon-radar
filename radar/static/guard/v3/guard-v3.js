@@ -186,10 +186,12 @@
     var em = document.createElement("div"); em.className = "g3-embers"; em.setAttribute("aria-hidden", "true");
     for (var i = 0; i < 12; i++) em.appendChild(document.createElement("i"));
     el.insertBefore(em, bg.nextSibling);
+    if (!still) { var l = document.createElement("div"); l.className = "v3-lamp g3-lamp"; l.setAttribute("aria-hidden", "true"); el.insertBefore(l, em);
+      g.to(l, { opacity: 0.55, duration: 2.2, ease: "sine.inOut", yoyo: true, repeat: -1 }); g.to(l, { scale: 1.1, duration: 3.7, ease: "sine.inOut", yoyo: true, repeat: -1 }); }
     if (still) return;
-    g.fromTo(bg, { scale: 1.12, autoAlpha: 0 }, { scale: 1.02, autoAlpha: 1, duration: 1.5, ease: "power2.out" });
-    g.to(bg, { scale: 1.06, xPercent: 1, duration: 15, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.5 });
-    g.from(el.querySelectorAll(".eyebrow, h1, p"), { y: 20, autoAlpha: 0, duration: 0.8, stagger: 0.1, delay: 0.3, clearProps: "transform" });
+    g.fromTo(bg, { scale: 1.1 }, { scale: 1.02, duration: 1.5, ease: "power2.out" });
+    g.to(bg, { scale: 1.09, xPercent: 2, yPercent: -1, duration: 9, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.5 });
+    g.from(el.querySelectorAll(".eyebrow, h1, p"), { y: 14, opacity: 0.25, duration: 0.7, stagger: 0.06, clearProps: "transform,opacity" });
     em.querySelectorAll("i").forEach(function (d) {
       (function rise() {
         g.set(d, { left: g.utils.random(55, 95) + "%", top: g.utils.random(60, 100) + "%", x: 0, y: 0, autoAlpha: 0, scale: g.utils.random(0.5, 1.2) });

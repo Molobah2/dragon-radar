@@ -41,8 +41,8 @@ html.v3 body {
 html.v3 body::before {
   content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(70% 45% at 10% -5%, rgba(255, 171, 61, .17), transparent 70%),
-    radial-gradient(55% 40% at 105% 35%, rgba(111, 143, 184, .08), transparent 70%),
+    radial-gradient(70% 45% at 10% -5%, var(--glow-a, rgba(255, 171, 61, .17)), transparent 70%),
+    radial-gradient(55% 40% at 105% 35%, var(--glow-b, rgba(111, 143, 184, .08)), transparent 70%),
     var(--h-bg);
 }
 /* the daytime meadow and the day/night and dark switches belong to the old look */
@@ -413,3 +413,81 @@ html.v3 header.bar { margin-inline: calc(50% - 50vw); padding-inline: max(16px, 
 }
 /* Home: the header that stays on top while the page scrolls is solid enough that nothing reads through it */
 html.v3 header.v22-head { background: linear-gradient(rgba(24, 18, 13, .94), rgba(24, 18, 13, .82)); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+
+/* ---------- small fixes (10 Nov) ---------- */
+/* moving between pages: the old page fades and the new one rises in (browsers without view transitions just load the page) */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: v3-out .22s ease both; }
+::view-transition-new(root) { animation: v3-in .38s cubic-bezier(.22, .8, .24, 1) both; }
+@keyframes v3-out { to { opacity: 0; } }
+@keyframes v3-in { from { opacity: 0; transform: translateY(10px); } }
+@media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none; } }
+/* Keepers: no zeros, a written line instead */
+.tally-empty { display: none; }
+html.v3 .tally.is-empty .chip { display: none; }
+html.v3 .tally.is-empty .tally-empty { display: block; margin: 0; padding: 16px 18px; border-radius: 18px; background: rgba(26, 19, 14, .62); border: 1px solid var(--h-rim-soft); color: var(--h-parch); font-weight: 700; line-height: 1.45; }
+.wl-quiet { margin: 18px auto 0; max-width: 34em; text-align: center; font-weight: 700; }
+html.v3 .wl-quiet { color: var(--h-parch); text-shadow: 0 2px 12px rgba(0, 0, 0, .7); }
+/* Dragon Quiz: a soft dusk behind the title, so "Same for everyone." stays readable over the bright window */
+html.v3 .dl-head { position: relative; isolation: isolate; }
+html.v3 .dl-head::before { content: ""; position: absolute; inset: -20px -12% -10px; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(22, 15, 10, .72), rgba(22, 15, 10, .45) 60%, transparent); }
+html.v3 .dl-head p { color: #f1e4c8; }
+
+/* ---------- every page has its own shade of the Hatchery (Jon, 10 Nov): one family of browns, but each room has its own
+   warmth and depth, and its panels take the same tint. --pan is the panel colour, --h-bg the room behind it. ---------- */
+html.v3[data-room] { --glass-hi: linear-gradient(170deg, color-mix(in srgb, var(--pan) 100%, #fff 4%) 0%, var(--pan) 60%, color-mix(in srgb, var(--pan) 100%, #000 14%) 100%);
+  --d-card: var(--glass-hi); --glass: color-mix(in srgb, var(--pan) 88%, transparent); --glass-strong: color-mix(in srgb, var(--pan) 96%, transparent); }
+html.v3[data-room="home"] { --pan: #2a2118; }
+html.v3[data-room="friends"]         { --h-bg: #24180d; --pan: #35261a; --glow-a: rgba(255, 168, 60, .24); --glow-b: rgba(255, 140, 60, .06); }  /* post room: warm tobacco */
+html.v3[data-room="friends-keepers"] { --h-bg: #250f10; --pan: #381a1a; --glow-a: rgba(220, 70, 55, .22);  --glow-b: rgba(240, 185, 74, .08); }  /* banner hall: wine brown */
+html.v3[data-room="friends-ama"]     { --h-bg: #0f0c0c; --pan: #201a19; --glow-a: rgba(255, 150, 70, .08); --glow-b: rgba(190, 120, 255, .1); }   /* broadcast loft: near black espresso, a plum edge */
+html.v3[data-room="help"]            { --h-bg: #31241a; --pan: #3f2f20; --glow-a: rgba(255, 196, 120, .24); --glow-b: rgba(255, 220, 160, .08); } /* help: the lightest, cocoa */
+html.v3[data-room="privacy"]         { --h-bg: #0a0807; --pan: #181310; --glow-a: rgba(255, 171, 61, .06); --glow-b: transparent; }              /* privacy: the darkest bark */
+html.v3[data-room="community"]       { --h-bg: #15140f; --pan: #25231b; --glow-a: rgba(255, 171, 61, .12); --glow-b: rgba(90, 125, 190, .2); }   /* the gate at dusk: umber with a blue night edge */
+html.v3[data-room="learn"]           { --h-bg: #2a1209; --pan: #3a1d12; --glow-a: rgba(255, 120, 45, .26); --glow-b: rgba(170, 55, 25, .14); }  /* library: mahogany by candlelight */
+html.v3[data-room="create"]          { --h-bg: #36230e; --pan: #48311a; --glow-a: rgba(255, 205, 95, .28); --glow-b: rgba(255, 150, 80, .1); }   /* workshop: warm caramel, the brightest */
+html.v3[data-room] .sx-card { background: var(--glass-hi); }
+
+/* ---------- more motion (Jon, 10 Nov): pictures drift while on screen, lamps breathe, embers rise, gold catches the light.
+   Only transform and opacity move, pictures off screen rest, and reduced motion turns all of it off. ---------- */
+html.v3 .sx-art, html.v3 .sfn-art { overflow: hidden; }
+html.v3 .sx-art .bg, html.v3 .sfn-art img { translate: 0 var(--py, 0px); will-change: transform; }
+html.v3 .v3-lamp { position: absolute; inset: -10%; z-index: -1; pointer-events: none; opacity: .9;
+  background: radial-gradient(38% 42% at var(--lamp-x, 22%) var(--lamp-y, 24%), rgba(255, 176, 80, .22), transparent 70%); }
+html.v3 .room-feed .v3-lamp { --lamp-x: 18%; --lamp-y: 12%; }
+html.v3 .room-keepers .v3-lamp { --lamp-x: 6%; --lamp-y: 20%; }
+html.v3 .room-community .v3-lamp { --lamp-x: 70%; --lamp-y: 40%; }
+html.v3 .room-learn .v3-lamp { --lamp-x: 30%; --lamp-y: 30%; }
+html.v3 .room-create .v3-lamp { --lamp-x: 88%; --lamp-y: 20%; }
+html.v3 .room-ama .v3-lamp { --lamp-x: 12%; --lamp-y: 12%; }
+html.gv3 .g3-lamp { position: absolute; inset: -10%; z-index: -1; pointer-events: none; opacity: .9;
+  background: radial-gradient(40% 45% at 82% 30%, rgba(255, 120, 50, .22), transparent 70%); }
+html.v3 .v3-page-embers { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+html.v3 .v3-page-embers i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #ffc27a; box-shadow: 0 0 6px 2px rgba(255, 160, 70, .5); opacity: 0; }
+/* gold buttons catch the light every few seconds */
+html.v3 .btn-go, html.v3 .btn.go, html.v3 .hg-main, html.v3 .mk-play { position: relative; overflow: hidden; }
+html.v3 .btn-go::after, html.v3 .btn.go::after, html.v3 .hg-main::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .45) 50%, transparent 65%); transform: translateX(-120%);
+  animation: v3-gleam 6.5s ease-in-out infinite; animation-delay: var(--gleam, 1.5s); }
+@keyframes v3-gleam { 0%, 70% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+/* the small objects in the counters are alive: the candle flickers, the tray settles, eggs sway */
+html.v3 .tally .chip.sun .ico, html.v3 .tally .chip.sun img { animation: v3-flicker 3.4s ease-in-out infinite; transform-origin: 50% 90%; }
+html.v3 .tally .chip.hot .ico, html.v3 .tally .chip.hot img { animation: v3-bob 4.6s ease-in-out infinite; }
+html.v3 .nests .nest img { transform-origin: 50% 85%; }
+@keyframes v3-flicker { 0%, 100% { transform: scale(1) rotate(0); filter: brightness(1); } 30% { transform: scale(1.03) rotate(-1.5deg); filter: brightness(1.12); } 55% { transform: scale(.99) rotate(1deg); filter: brightness(.96); } }
+@keyframes v3-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) {
+  html.v3 .v3-page-embers, html.v3 .v3-lamp, html.gv3 .g3-lamp { display: none; }
+  html.v3 .btn-go::after, html.v3 .btn.go::after, html.v3 .hg-main::after, html.v3 .tally .chip .ico, html.v3 .tally .chip img { animation: none; }
+}
+/* the panels are already near solid, so their glass blur is dropped: with embers and lamps moving behind them,
+   re-blurring every frame cost up to 40 fps on the AMA page. Only the dock keeps its blur. */
+html.v3 body *:not(.pdnav):not(.pdnav *) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+
+/* ---------- taps: sparks from gold buttons, a soft ring from everything else (motion.js) ---------- */
+html.v3 .v3-taps { position: fixed; inset: 0; z-index: 300; pointer-events: none; overflow: hidden; }
+html.v3 .v3-spark { position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+  background: #ffe2a0; box-shadow: 0 0 8px 2px rgba(255, 170, 60, .8); }
+html.v3 .v3-ring { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+  border: 2px solid rgba(255, 210, 122, .75); box-shadow: 0 0 12px rgba(255, 171, 61, .35); }

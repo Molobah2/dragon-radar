@@ -3,7 +3,7 @@
 {% if v3_open %}
   <link rel="stylesheet" href="{{ asset('v3/v3.css') }}">
   <meta name="theme-color" content="#1c1610">
-  <script>(function(){var r=document.documentElement;r.classList.add("v3","theme-dark");
+  <script>(function(){var r=document.documentElement;r.classList.add("v3","theme-dark");r.setAttribute("data-room",(location.pathname.replace(/^\/+|\/+$/g,"")||"home").replace(/\//g,"-"));
     new MutationObserver(function(){if(!r.classList.contains("theme-dark"))r.classList.add("theme-dark");}).observe(r,{attributes:true,attributeFilter:["class"]});})();</script>
   <script src="{{ asset('v3/vendor/gsap.min.js') }}" defer></script>
   <script src="{{ asset('v3/vendor/ScrollTrigger.min.js') }}" defer></script>
