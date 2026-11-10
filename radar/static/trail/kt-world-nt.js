@@ -224,7 +224,7 @@ window.SKY_L = (() => {
   CD.cv.width = CD.ink.width = 512; CD.cv.height = CD.ink.height = 512;
   const cdT = new THREE.CanvasTexture(CD.cv), cdI = new THREE.CanvasTexture(CD.ink); cdT.colorSpace = THREE.SRGBColorSpace;
   const CDBOX = { tall: [565 - 300, 925 - 300, 565 + 300, 925 + 300], wide: [565 - 240, 898 - 240, 565 + 240, 898 + 240] };   // 340 or 280 texels square: cap 108 texels on a phone (26 px), 85 on desktop (32 px)
-  const cdM = patch(cdT, null, CDBOX.wide, { name: 'countdown' }); cdM.material.uniforms.uInk.value = cdI; cdM.material.uniforms.uEmit.value = 2;
+  const cdM = patch(cdT, null, CDBOX.wide, { name: 'countdown' }); cdM.material.uniforms.uInk.value = cdI; cdM.material.uniforms.uEmit.value = 1.35;
   const pad2 = (v) => String(v).padStart(2, '0');
   const cdText = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)), d = Math.floor(s / 86400), h = Math.floor(s / 3600) % 24, mi = Math.floor(s / 60) % 60, se = s % 60;
     if (d >= 100) return [d + 'd'];
@@ -236,11 +236,16 @@ window.SKY_L = (() => {
   document.body.appendChild(cdLabel);
   let fontOK = false; (document.fonts ? document.fonts.load('100px Mar') : Promise.resolve()).then(() => { fontOK = true; CD.str = ''; }).catch(() => { fontOK = true; });
   function drawCD(lines, shape) {
-    const k = shape === 'tall' ? 108 : 85, side = (CDBOX[shape][2] - CDBOX[shape][0]), px = 512 / side, cap = k * px, em = cap / .7, x = CD.cv.getContext('2d'), xi = CD.ink.getContext('2d');
+    const k = shape === 'tall' ? 108 : 85, side = (CDBOX[shape][2] - CDBOX[shape][0]), px = 512 / side, x = CD.cv.getContext('2d'), xi = CD.ink.getContext('2d'); let cap = k * px, em = cap / .7;
     x.clearRect(0, 0, 512, 512); xi.clearRect(0, 0, 512, 512);
-    const font = `500 ${em.toFixed(1)}px Mar, Georgia, serif`, gap = cap * .3, tot = lines.length * cap + (lines.length - 1) * gap, top = 256 - tot / 2;
+    let font = `500 ${em.toFixed(1)}px Mar, Georgia, serif`, gap = cap * .3, tot = lines.length * cap + (lines.length - 1) * gap, top = 256 - tot / 2;
     x.font = xi.font = font; x.textAlign = xi.textAlign = 'center'; x.textBaseline = xi.textBaseline = 'alphabetic';
     let wmax = 0; lines.forEach((l) => { wmax = Math.max(wmax, x.measureText(l).width); });
+    // the words always fit inside the cut with room for its dark edge and the ember light: a long line like "20d 04h" shrinks to fit,
+    // so no letter is sliced off at the edge of the stone
+    const fit = shape === 'tall' ? 330 : 360;
+    if (wmax > fit) { const f = fit / wmax; cap *= f; em = cap / .7; font = `500 ${em.toFixed(1)}px Mar, Georgia, serif`; gap = cap * .3;
+      tot = lines.length * cap + (lines.length - 1) * gap; top = 256 - tot / 2; x.font = xi.font = font; wmax = fit; }
     // the cut: the island's own rock, sunk into shadow around the words (its roots and facets stay), so it is stone, not a plate
     const B = CDBOX[shape], rx = Math.min(252, wmax / 2 + cap * (shape === 'tall' ? 1.9 : 1.3)), ry = Math.min(252, tot / 2 + cap * (shape === 'tall' ? 1.25 : .8));
     x.save(); x.drawImage(IMG.hatch, B[0], B[1], B[2] - B[0], B[3] - B[1], 0, 0, 512, 512); x.globalCompositeOperation = 'multiply'; x.fillStyle = 'rgb(70,40,36)'; x.fillRect(0, 0, 512, 512); x.fillRect(0, 0, 512, 512); x.fillStyle = shape === 'tall' ? 'rgb(96,64,58)' : 'rgb(120,80,72)'; x.fillRect(0, 0, 512, 512);
@@ -250,9 +255,9 @@ window.SKY_L = (() => {
       x.globalCompositeOperation = 'destination-in'; x.drawImage(mk, 0, 0); x.drawImage(mk, 0, 0, 512, 512, -2, -2, 516, 516); x.restore(); }
     { const tc = document.createElement('canvas'); tc.width = tc.height = 512; const tx = tc.getContext('2d'); tx.drawImage(IMG.hatch, B[0], B[1], B[2] - B[0], B[3] - B[1], 0, 0, 512, 512); const src = tx.getImageData(0, 0, 512, 512).data, dst = x.getImageData(0, 0, 512, 512), D = dst.data; for (let j = 0; j < 512; j++) { const yy = B[1] + j * (B[3] - B[1]) / 512, top = yy < 800 ? 0 : yy < 830 ? (yy - 800) / 30 : 1; for (let i = 0; i < 512; i++) { const k = (j * 512 + i) * 4, gr = Math.min(1, Math.max(0, (src[k + 1] - src[k] + 6) / 24)); D[k + 3] *= top * (1 - gr); } } x.putImageData(dst, 0, 0); }   // the cut is in the rock only: the grass keeps its own edge
     lines.forEach((l, i) => { const y = top + cap * (i + 1) + gap * i;
-      { const sp = shape === 'tall' ? 3.54 : 2.84; x.save(); x.filter = `blur(${(2.2 * sp).toFixed(1)}px)`; x.strokeStyle = 'rgba(206,98,38,.72)'; x.lineJoin = 'round'; x.lineWidth = 9 * sp; x.strokeText(l, 256, y); x.lineWidth = 4 * sp; x.strokeStyle = 'rgba(232,122,50,.85)'; x.strokeText(l, 256, y); x.restore(); }   // a tight ember halo, a few screen px wide   // ember light spilling from the cut
+      { const sp = shape === 'tall' ? 3.54 : 2.84; x.save(); x.filter = `blur(${(1.4 * sp).toFixed(1)}px)`; x.strokeStyle = 'rgba(206,98,38,.42)'; x.lineJoin = 'round'; x.lineWidth = 5 * sp; x.strokeText(l, 256, y); x.filter = 'none'; x.lineWidth = 1.6 * sp; x.strokeStyle = 'rgba(48,18,8,.9)'; x.strokeText(l, 256, y); x.restore(); }   // a tight ember halo, a few screen px wide   // ember light spilling from the cut
          // the upper lip of the cut, in shadow
-      x.fillStyle = shape === 'tall' ? 'rgb(255,190,132)' : 'rgb(255,176,100)'; x.fillText(l, 256, y); xi.fillStyle = '#fff'; xi.fillText(l, 256, y); });
+      x.fillStyle = shape === 'tall' ? 'rgb(255,214,168)' : 'rgb(255,206,150)'; x.fillText(l, 256, y); xi.fillStyle = '#fff'; xi.fillText(l, 256, y); });
     // the ink box in the overlay's own uv (y up)
     const id = xi.getImageData(0, 0, 512, 512).data; let a0 = 512, a1 = -1, b0 = 512, b1 = -1;
     for (let j = 0; j < 512; j += 2) for (let i = 0; i < 512; i += 2) if (id[(j * 512 + i) * 4 + 3] >= 128) { if (i < a0) a0 = i; if (i > a1) a1 = i; if (j < b0) b0 = j; if (j > b1) b1 = j; }
