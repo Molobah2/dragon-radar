@@ -227,5 +227,7 @@
  "openNow": "Ouverte · pas commencée",
  "inProgress": "En cours",
  "resumeQ": "Reprendre à la question {n}",
- "netQ": "Les questions ne se sont pas chargées. Vérifie ta connexion et réessaie."
+ "netQ": "Les questions ne se sont pas chargées. Vérifie ta connexion et réessaie.",
+ "sBreak": "Brise le sceau",
+ "sHold": "Maintiens appuyé"
 }

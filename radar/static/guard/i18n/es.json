@@ -227,5 +227,7 @@
  "openNow": "Abierta · sin empezar",
  "inProgress": "En curso",
  "resumeQ": "Seguir desde la pregunta {n}",
- "netQ": "Las preguntas no cargaron. Revisa tu conexión e inténtalo de nuevo."
+ "netQ": "Las preguntas no cargaron. Revisa tu conexión e inténtalo de nuevo.",
+ "sBreak": "Rompe el sello",
+ "sHold": "Mantén pulsado"
 }

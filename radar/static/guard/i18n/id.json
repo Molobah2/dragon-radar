@@ -227,5 +227,7 @@
  "openNow": "Terbuka · belum dimulai",
  "inProgress": "Sedang berjalan",
  "resumeQ": "Lanjutkan dari pertanyaan {n}",
- "netQ": "Pertanyaan tidak termuat. Periksa koneksi dan coba lagi."
+ "netQ": "Pertanyaan tidak termuat. Periksa koneksi dan coba lagi.",
+ "sBreak": "Pecahkan segelnya",
+ "sHold": "Tekan dan tahan"
 }

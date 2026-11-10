@@ -227,5 +227,7 @@
  "openNow": "Đã mở · chưa bắt đầu",
  "inProgress": "Đang học",
  "resumeQ": "Tiếp tục từ câu {n}",
- "netQ": "Câu hỏi chưa tải được. Hãy kiểm tra kết nối và thử lại."
+ "netQ": "Câu hỏi chưa tải được. Hãy kiểm tra kết nối và thử lại.",
+ "sBreak": "Phá dấu niêm phong",
+ "sHold": "Nhấn và giữ"
 }

@@ -314,10 +314,10 @@ html.v3 .hero.room-stage.room-keepers { background-image: image-set(url("/static
 @media (max-width: 760px) { html.v3 .hero.room-stage.room-keepers { background-image: image-set(url("/static/v3/art/room-keepers-tall.avif") type("image/avif"), url("/static/v3/art/room-keepers-tall.webp") type("image/webp")); } }
 
 /* ---------- sheets (My progress, ideas, the Book of Friends): Hatchery panels in v3 even where the v2 dark sheet is not loaded ---------- */
-html.v3 .sheet { background: var(--d-card); color: var(--h-parch);
+html.v3 .sheet-wrap > .sheet { background: var(--d-card); color: var(--h-parch);
   box-shadow: inset 0 1px 0 rgba(255, 210, 122, .08), inset 0 0 0 1px var(--h-rim), 0 30px 70px -20px rgba(0, 0, 0, .8); }
 html.v3 .sheet-wrap.open { background: rgba(10, 7, 5, .62); }
-html.v3 .sheet-sub, html.v3 .sheet .muted { color: var(--h-quiet); }
+html.v3 .sheet-wrap .sheet-sub, html.v3 .sheet-wrap .sheet .muted { color: var(--h-quiet); }
 html.v3 .sheet-grip { background: rgba(255, 210, 122, .25); }
 
 /* ---------- AMA Library: the broadcast loft. Speed tells the room the big news at the brass microphone ---------- */
@@ -361,3 +361,7 @@ html.v3 .v3-dust i { position: absolute; border-radius: 50%; background: #ffd9a0
 html.v3 .v3-room-clip { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity .25s; }
 /* phones: the stage shows a 5:4 crop of the room, so the clip is sized and moved to the same crop */
 html.v3 .v3-room-clip.tall { inset: auto; left: 0; top: 0; width: 195.4%; height: auto; object-fit: fill; transform: translate(-2.19%, -6.56%); }
+
+/* ---------- audit fixes (10 Nov): lines laid over busy scenes get a soft dark halo so they stay readable ---------- */
+html.v3 .ch-head p, html.v3 .cv-head p, html.v3 .cv-head .sub, html.v3 .wl-head p, html.v3 .dl-head p, html.v3 .sx-head p { text-shadow: 0 1px 2px rgba(0, 0, 0, .85), 0 2px 14px rgba(0, 0, 0, .7); }
+html.v3 .cv-head p { color: #fff4e2; }

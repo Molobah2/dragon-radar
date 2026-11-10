@@ -227,5 +227,7 @@
  "openNow": "Açık · başlanmadı",
  "inProgress": "Devam ediyor",
  "resumeQ": "{n}. sorudan devam et",
- "netQ": "Sorular yüklenmedi. Bağlantını kontrol edip tekrar dene."
+ "netQ": "Sorular yüklenmedi. Bağlantını kontrol edip tekrar dene.",
+ "sBreak": "Mührü kır",
+ "sHold": "Basılı tut"
 }
