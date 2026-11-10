@@ -83,7 +83,7 @@ html.v3 .panel, html.v3 .help-card, html.v3 .card, html.v3 .kp-card {
 }
 html.v3 .help-kicker { color: var(--h-quiet); letter-spacing: 0; text-transform: none; font-size: 14px; }
 html.v3 .lede { color: var(--h-quiet); }
-html.v3 .pop { color: var(--h-gold); background: none; }
+html.v3 .pop, html.v3 h1 .pop { color: var(--h-gold); background: none; text-shadow: 0 6px 18px rgba(255, 171, 61, .22); }
 html.v3 input, html.v3 textarea, html.v3 select { background: var(--d-field); color: var(--h-parch); border-color: var(--h-rim); }
 
 /* ---------- header ---------- */
@@ -491,3 +491,7 @@ html.v3 .v3-spark { position: absolute; width: 6px; height: 6px; margin: -3px 0 
   background: #ffe2a0; box-shadow: 0 0 8px 2px rgba(255, 170, 60, .8); }
 html.v3 .v3-ring { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
   border: 2px solid rgba(255, 210, 122, .75); box-shadow: 0 0 12px rgba(255, 171, 61, .35); }
+
+/* the Feed room is still: no flicker or bob on its counter objects either */
+html.v3 .room-feed .tally .chip .ico, html.v3 .room-feed .tally .chip img { animation: none !important; }
+html.v3 .room-feed h1 .pop { animation: none !important; }
