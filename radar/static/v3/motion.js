@@ -97,7 +97,10 @@
   function rooms() {
     gsap.utils.toArray(ROOMS).forEach(function (el) {
       if (el.dataset.v3Room) return; el.dataset.v3Room = "1";
-      if (el.matches(".room-feed")) return;   // the Feed room stays a still picture (Jon, 10 Nov)
+      if (el.matches(".room-feed")) {   // the Feed room's picture stays still (Jon, 10 Nov); only its words settle in
+        if (!still) gsap.from(el.querySelectorAll("h1, .lede, .tally .chip"), { y: 16, opacity: .25, duration: .7, stagger: .06, ease: "power3.out", clearProps: "transform,opacity" });
+        return;
+      }
       var cs = getComputedStyle(el), bg = document.createElement("div");
       bg.className = "v3-room-bg"; bg.setAttribute("aria-hidden", "true");
       bg.style.backgroundImage = cs.backgroundImage; bg.style.backgroundPosition = cs.backgroundPosition;
