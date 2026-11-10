@@ -278,6 +278,28 @@ def search_posts(http: requests.Session, bearer: str, username: str, budget: flo
     return list(out.values()), cost, "all", partial
 
 
+PD_BACK = ('<a class="pdt-home" href="/create" aria-label="Back to PD Tools" title="Back to PD Tools">'
+           '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" '
+           'stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>'
+           '<img src="/static/brand/badge-96.webp" width="22" height="22" alt=""><span>PD Tools</span></a>')
+PD_BACK_CSS = ('<style>.corner .pdt-home{height:38px;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:0 12px 0 9px;'
+               'border-radius:999px;text-decoration:none;font:800 12px/1 system-ui;color:var(--ink);background:var(--glass);'
+               '-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 0 0 1px var(--line),0 8px 24px rgba(0,0,0,.18)}'
+               '.corner .pdt-home img{width:22px;height:22px;border-radius:7px}'
+               'body.rv-on .corner .pdt-home{color:#fff;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}'
+               'body.home-on .corner .pdt-home{color:#fff;background:rgba(20,30,16,.42);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3);-webkit-backdrop-filter:none;backdrop-filter:none}'
+               'body.shot .pdt-home{display:none}'
+               # over the sky world the corner sits under the 3D stage, so a floating copy shows there; on the card the corner one shows
+               '.pdt-float{position:fixed;z-index:40;top:calc(14px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));'
+               'height:44px;box-sizing:border-box;display:flex;align-items:center;gap:7px;padding:0 14px 0 10px;border-radius:999px;text-decoration:none;'
+               'font:800 13px/1 system-ui;color:#fff;background:rgba(20,14,24,.78);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 8px 24px rgba(0,0,0,.18)}'
+               '.pdt-float img{width:22px;height:22px;border-radius:7px}'
+               'body.rv-on .pdt-float,body.shot .pdt-float{display:none}'
+               # small phones: the Trail's own caption runs across the top, so the pill keeps to the badge and the arrow
+               '@media (max-width:420px){.pdt-home span{display:none}.pdt-float{padding:0 12px 0 10px}}'
+               '</style>')
+
+
 def register(app, cfg, Session, tz, has_preview=None) -> None:
     http = requests.Session()
     inflight: set[str] = set()
@@ -303,7 +325,14 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
             abort(404)
         if not (TRAIL_DIR / "index.html").exists():
             abort(404)
-        resp = send_from_directory(TRAIL_DIR, "index.html", max_age=0)
+        if getattr(cfg, "v3_public", False) or (has_preview and has_preview()):
+            # v3: a way back to the rest of pdtools from the Trail (the Create section, where its card lives)
+            page = (TRAIL_DIR / "index.html").read_text(encoding="utf-8")
+            page = page.replace('<div class="corner l">', '<div class="corner l">' + PD_BACK, 1).replace("</head>", PD_BACK_CSS + "</head>", 1)
+            page = page.replace("</body>", PD_BACK.replace('class="pdt-home"', 'class="pdt-home pdt-float"', 1) + "</body>", 1)
+            resp = Response(page, mimetype="text/html")
+        else:
+            resp = send_from_directory(TRAIL_DIR, "index.html", max_age=0)
         resp.headers["Cache-Control"] = "private, no-cache"
         resp.headers["X-Robots-Tag"] = "noindex, nofollow"
         return resp

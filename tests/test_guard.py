@@ -161,3 +161,22 @@ def test_v3_scroll_only_on_preview_or_after_v3_switch(tmp_path):
     c.v3_public = True
     body = cl.get("/guard/").get_data(as_text=True)
     assert "guard-v3.js" in body and '"v3": 1' in body and "/*VER*/" not in body
+
+
+def test_v3_guard_and_trail_are_never_dead_ends(tmp_path):
+    """In v3 Dragon Guard carries the same pdtools dock as every other page (it steps aside during a lesson and the
+    quiz), and the Keepers Trail has a way back to PD Tools. Before the v3 switch both pages are unchanged."""
+    from radar.config import Config
+    from radar.web import create_app
+    c = Config(); c.database_url = f"sqlite:///{tmp_path / 'n.db'}"; c.guard_public = True; c.trail_public = True
+    c.v21_public = True; c.secret_key = "t"
+    app = create_app(c); cl = app.test_client()
+    assert 'id="pdnav"' not in cl.get("/guard/").get_data(as_text=True)
+    assert "pdt-home" not in cl.get("/trail/").get_data(as_text=True)
+    c.v3_public = True
+    g = cl.get("/guard/").get_data(as_text=True)
+    assert 'id="pdnav"' in g and 'href="/friends"' in g and 'href="/learn"' in g and g.count("</body>") == 1
+    css = (Path(__file__).resolve().parents[1] / "radar" / "static" / "guard" / "v3" / "guard-v3.css").read_text()
+    assert 'body[data-view="q"] .pdnav' in css
+    t = cl.get("/trail/").get_data(as_text=True)
+    assert 'class="pdt-home" href="/create"' in t

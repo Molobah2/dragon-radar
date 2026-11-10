@@ -375,7 +375,10 @@ html.v3 .bar .home-pill, html.v3 .bar-right > a.btn { display: none !important; 
 html.v3 .bar-right .lang-pick, html.v3 .bar-right .sound-pill, html.v3 .bar-right .song-pill, html.v3 .v-tools .pill {
   height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .22) !important; background: rgba(30, 14, 8, .38) !important;
   color: var(--h-parch) !important; box-shadow: none !important; display: inline-flex; align-items: center; gap: 7px; }
-@media (max-width: 560px) { html.v3 .v3-brand > span { display: none; } }
+/* phones: the page name stays beside the badge, so you always know where you are (it gives way only on pages with a scene switch) */
+html.v3 .v3-brand > span { white-space: nowrap; }
+@media (max-width: 560px) { html.v3 .v3-brand { font-size: 16px; } html.v3 .v3-brand small { font-size: 10px; letter-spacing: 1.5px; } }
+@media (max-width: 560px) { html.v3 .v-bar:not(:has(.scene-pick)) .v-brand span { display: block; } }
 
 /* ---------- Help: the how-to film hangs in the walnut frame, with a Hatchery poster instead of the old purple one ---------- */
 html.v3 .help-video { padding: 0; background: none !important; box-shadow: none !important; border: 0 !important; }

@@ -23,7 +23,7 @@ import re
 import time
 from pathlib import Path
 
-from flask import Response, abort, jsonify, redirect, request, send_from_directory
+from flask import Response, abort, jsonify, redirect, render_template, request, send_from_directory
 
 from .visits import bump
 
@@ -121,6 +121,11 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
         if getattr(cfg, "v3_public", False) or (has_preview and has_preview()):
             conf["v3"] = 1
             page = page.replace("</head>", V3_HEAD + "</head>", 1)
+            # the pdtools dock, the same one every other page has, so Dragon Guard is never a dead end
+            try:
+                page = page.replace("</body>", render_template("_dock.html") + "</body>", 1)
+            except Exception:   # the lessons must still open if the dock cannot be drawn
+                pass
         page = page.replace("/*GUARD_CFG*/{}", json.dumps(conf).replace("</", "<\\/")).replace("/*VER*/", conf["ver"])
         resp = Response(page, mimetype="text/html")
         resp.headers["Cache-Control"] = "private, no-cache"

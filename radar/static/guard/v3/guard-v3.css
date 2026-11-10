@@ -188,3 +188,22 @@ html.gv3 .sky { background: radial-gradient(60% 50% at 85% 10%, rgba(255, 110, 4
 html.gv3 .parch .art { animation: g3-pan 11s ease-in-out infinite alternate; }
 @keyframes g3-pan { from { background-position: 40% 45%; } to { background-position: 60% 55%; } }
 @media (prefers-reduced-motion: reduce) { html.gv3 .parch .art { animation: none; } }
+
+/* ---------- the pdtools dock on Dragon Guard: the same Hatchery skin as everywhere else.
+   It steps aside during a lesson, the honour pledge and the quiz, where the lesson's own Back and Next sit at the bottom. ---------- */
+html.gv3 .pdnav { background: rgba(26, 18, 12, .97); font-family: Nunito, system-ui, sans-serif; box-shadow: 0 16px 36px -14px rgba(0, 0, 0, .8), inset 0 0 0 1px rgba(240, 185, 74, .35);
+  -webkit-backdrop-filter: none; backdrop-filter: none; }
+html.gv3 .pd-s { color: #d9c9a3; }
+html.gv3 .pd-s.on { color: #2e1206; background: linear-gradient(180deg, #ffc061, #e9952f); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4); }
+html.gv3 .pd-s:hover:not(.on) { color: #fff3dc; background: rgba(255, 210, 122, .08); }
+html.gv3 .pd-tabs { border-bottom-color: rgba(240, 185, 74, .18); }
+html.gv3 .pd-t { color: #fff3dc; background: rgba(255, 210, 122, .08); }
+html.gv3 .pd-t.on { color: #2e1206; background: #ffd27a; }
+html.gv3 .pd-pop { background: #2a2118; box-shadow: 0 22px 44px -16px rgba(0, 0, 0, .85), inset 0 0 0 1px rgba(240, 185, 74, .35); }
+html.gv3 .pd-pop p { color: #d9c9a3; }
+html.gv3 .pd-pop-links a { background: rgba(255, 210, 122, .08); }
+html.gv3 body.has-pdnav { padding-bottom: calc(var(--pdnav-h, 80px) + 28px + env(safe-area-inset-bottom, 0px)); }
+html.gv3 body[data-view^="m"] .pdnav, html.gv3 body[data-view="q"] .pdnav, html.gv3 body[data-view="honour"] .pdnav { display: none; }
+html.gv3 body.has-pdnav[data-view^="m"], html.gv3 body.has-pdnav[data-view="q"], html.gv3 body.has-pdnav[data-view="honour"] { padding-bottom: 0; }
+/* while a sheet is open (the seal scroll, a lesson sheet, trusted links), the dock steps aside so nothing is pressed through it */
+html.gv3 body:has(#sheet:not([hidden])) .pdnav { display: none; }

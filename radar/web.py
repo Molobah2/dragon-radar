@@ -1015,7 +1015,8 @@ def create_app(cfg: Config | None = None) -> Flask:
     def keeper_book(name):
         friend, page = _book_row(name)
         if friend is None:
-            abort(404)
+            return _error_page(404, "This Keeper has no book page yet",
+                               "No Keeper with that name has signed Blinky's Book of Friends. Check the spelling, or find Keepers on the Keepers page.")
         with Session() as s:
             ok_pic = friend.key in book_trusted(s) or bool(g.get("circle"))
         stamp = int(page.updated_at.timestamp()) if page is not None and page.image and ok_pic else 0
