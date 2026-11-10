@@ -147,11 +147,12 @@ def create_app(cfg: Config | None = None) -> Flask:
         return on
 
     def _trail_open() -> bool:
-        """The Trail card shows in Create wherever /trail itself opens: everyone with TRAIL_PUBLIC, else Jon's preview devices."""
+        """The Trail card in Create is part of v3: it shows only where v3 is open (Jon's devices until the V3_PUBLIC switch),
+        and only where /trail itself opens, so it never points at a page that answers 404."""
+        if not has_request_context() or not (cfg.v3_public or getattr(g, "circle", False)):
+            return False
         if cfg.trail_public:
             return True
-        if not has_request_context():
-            return False
         cookie = request.cookies.get(PREVIEW_COOKIE, "")
         return bool(cfg.preview_key and cookie and hmac.compare_digest(cookie, preview_token()))
 

@@ -3549,8 +3549,8 @@ def test_v3_frame_only_where_v3_is_open(cfg):
 
 
 def test_keepers_trail_card_sits_in_create_wherever_the_trail_opens(cfg, Session):
-    """The Keepers Trail has a card in the Create section, but only where /trail itself opens: on Jon's preview
-    devices, or for everyone once TRAIL_PUBLIC is on. It never points anyone at a page that answers 404."""
+    """The Keepers Trail card in Create is part of v3: it shows only where v3 is open, and only where /trail itself
+    opens, so it never points anyone at a page that answers 404."""
     from radar.v21 import nav_for
     assert "trail" not in [t["key"] for s in nav_for("/create", True, False) ["sections"] for t in s["tabs"]]
     tabs = {t["key"]: t for s in nav_for("/create", True, False, False, True)["sections"] for t in s["tabs"]}
@@ -3563,3 +3563,8 @@ def test_keepers_trail_card_sits_in_create_wherever_the_trail_opens(cfg, Session
     app2 = create_app(cfg); app2.config["TESTING"] = True
     c2 = app2.test_client(); c2.get("/preview/secret-preview-phrase-123"); c2.get("/lab/circle/on")
     assert "<b>Keepers Trail</b>" in c2.get("/create").get_data(as_text=True)
+    # it is part of v3: with the Trail public but v3 not switched on, everyone else sees no card
+    cfg.v21_public = True; cfg.v3_public = False
+    app3 = create_app(cfg); app3.config["TESTING"] = True
+    public = app3.test_client().get("/create").get_data(as_text=True)
+    assert "Keepers Trail" not in public and 'href="/trail/"' not in public
