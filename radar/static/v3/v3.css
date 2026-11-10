@@ -365,3 +365,51 @@ html.v3 .v3-room-clip.tall { inset: auto; left: 0; top: 0; width: 195.4%; height
 /* ---------- audit fixes (10 Nov): lines laid over busy scenes get a soft dark halo so they stay readable ---------- */
 html.v3 .ch-head p, html.v3 .cv-head p, html.v3 .cv-head .sub, html.v3 .wl-head p, html.v3 .dl-head p, html.v3 .sx-head p { text-shadow: 0 1px 2px rgba(0, 0, 0, .85), 0 2px 14px rgba(0, 0, 0, .7); }
 html.v3 .cv-head p { color: #fff4e2; }
+
+/* ---------- one header on every page (reviewer, 10 Nov): the badge, "PD Tools" and the page name, then round pills.
+   The dock already carries Home and the section links, so the header's own Home and "Back to the feed" are hidden. ---------- */
+html.v3 .v3-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--h-parch); font: 700 18px/1 var(--h-disp); text-shadow: 0 2px 10px rgba(0, 0, 0, .45); }
+html.v3 .v3-brand img { flex: none; width: 38px; height: 38px; border-radius: 12px; box-shadow: 0 0 0 2px rgba(255, 255, 255, .2), 0 8px 20px -8px #000; }
+html.v3 .v3-brand small { display: block; margin-top: 4px; font: 800 11px/1 var(--h-body); letter-spacing: 2px; text-transform: uppercase; color: var(--h-gold); }
+html.v3 .bar .home-pill, html.v3 .bar-right > a.btn { display: none !important; }
+html.v3 .bar-right .lang-pick, html.v3 .bar-right .sound-pill, html.v3 .bar-right .song-pill, html.v3 .v-tools .pill {
+  height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .22) !important; background: rgba(30, 14, 8, .38) !important;
+  color: var(--h-parch) !important; box-shadow: none !important; display: inline-flex; align-items: center; gap: 7px; }
+@media (max-width: 560px) { html.v3 .v3-brand > span { display: none; } }
+
+/* ---------- Help: the how-to film hangs in the walnut frame, with a Hatchery poster instead of the old purple one ---------- */
+html.v3 .help-video { padding: 0; background: none !important; box-shadow: none !important; border: 0 !important; }
+html.v3 .help-video video { border-radius: 4px; background: #1a120c; border: 26px solid transparent; box-sizing: border-box;
+  border-image: url("/static/v3/art/frame-l.webp") 265 / 26px stretch;
+  border-image: image-set(url("/static/v3/art/frame-l.avif") type("image/avif"), url("/static/v3/art/frame-l.webp") type("image/webp")) 265 / 26px stretch;
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, .55)); }
+html.v3 .help-video .help-cap { text-align: center; color: var(--h-quiet); }
+@media (max-width: 560px) { html.v3 .help-video video { border-width: 16px; border-image-width: 16px; } }
+
+/* ---------- first screens never open on something hidden or empty (reviewer, 10 Nov) ---------- */
+/* Welcome lane: the hero ends above the dock, so its three numbers are seen on the first screen */
+html.v3 .wl-hero { height: clamp(560px, calc(100vh - 116px), 820px); height: clamp(560px, calc(100svh - 116px), 820px); }
+html.v3 .v-tools > a.pill { display: none; }   /* back links: the dock already takes you anywhere */
+
+/* ---------- hover: a card answers the pointer clearly, not just with a colour change ---------- */
+html.v3 .sx-card, html.v3 .maker { transition: transform .35s var(--h-ease), box-shadow .35s var(--h-ease), border-color .35s; }
+html.v3 .sx-card:hover, html.v3 .sx-card:focus-visible { border-color: rgba(255, 210, 122, .7) !important;
+  box-shadow: 0 0 0 1px rgba(255, 210, 122, .5), 0 26px 50px -22px rgba(0, 0, 0, .9), 0 0 40px -6px rgba(255, 171, 61, .35) !important; }
+html.v3 .sx-card:hover .sx-art .bg { transform: scale(1.08); filter: brightness(1.08); }
+html.v3 .sx-go { transition: gap .3s var(--h-ease), color .3s; }
+html.v3 .sx-card:hover .sx-go { gap: 12px; color: #fff3dc; }
+html.v3 .maker:hover { border-color: var(--h-rim) !important; box-shadow: 0 0 30px -8px rgba(255, 171, 61, .35); }
+
+/* ---------- second review (10 Nov) ---------- */
+/* the language picker inside a pill has no box of its own */
+html.v3 .pill select, html.v3 .lang-pick select { background: transparent !important; border: 0 !important; box-shadow: none !important; color: inherit; }
+html.v3 .sample-flag { color: var(--h-btnink) !important; }
+/* the base pages' header spans the full width like every other page, and stays one row on phones */
+html.v3 header.bar { margin-inline: calc(50% - 50vw); padding-inline: max(16px, min(24px, 3vw)); flex-wrap: nowrap; }
+@media (max-width: 760px) {
+  html.v3 header.bar .bar-right { width: auto; flex: 0 1 auto; margin: 0 0 0 auto; padding: 0; overflow: visible; }
+  html.v3 .bar-right .snd-label, html.v3 .bar-right .sp-label { display: none; }
+  html.v3 .bar-right .sound-pill, html.v3 .bar-right .song-pill { padding: 0 12px; }
+}
+/* Home: the header that stays on top while the page scrolls is solid enough that nothing reads through it */
+html.v3 header.v22-head { background: linear-gradient(rgba(24, 18, 13, .94), rgba(24, 18, 13, .82)); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }

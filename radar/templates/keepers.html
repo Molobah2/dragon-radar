@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block crumb_label %}Keepers{% endblock %}
 {% from "_ico.html" import ico with context %}
 {% block title %}Keepers · {{ cfg.site_name }}{% endblock %}
 {% block body_class %}ready static-page{% endblock %}
@@ -10,8 +11,8 @@
       <p class="lede">Blue tick Keepers who wear the 🐉 in their name. Open a profile, follow who you vibe with.</p>
     </div>
     <div class="tally">
-      <div class="chip hot">{{ ico("shield", 56) }}<b id="k-count">0</b><span>Keepers found</span></div>
-      <div class="chip sun">{{ ico("plus", 56) }}<b id="k-left">0</b><span>not followed yet</span></div>
+      <div class="chip hot">{{ ico("shield", 56) }}<b id="k-count">{{ "–" if v3_open else "0" }}</b><span>Keepers found</span></div>
+      <div class="chip sun">{{ ico("plus", 56) }}<b id="k-left">{{ "–" if v3_open else "0" }}</b><span>not followed yet</span></div>
     </div>
   </section>
 

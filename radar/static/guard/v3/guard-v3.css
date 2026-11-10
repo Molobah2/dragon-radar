@@ -171,3 +171,12 @@ html.gv3 .g3-room-bg { position: absolute; inset: 0; z-index: -2; pointer-events
 html.gv3 .g3-embers { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
 html.gv3 .g3-embers i { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #ffb35c; box-shadow: 0 0 8px 3px rgba(255, 140, 50, .6); opacity: 0; }
 @media (prefers-reduced-motion: reduce) { html.gv3 .g3-embers { display: none; } }
+
+/* the same header as every other pdtools page: badge, "PD Tools", the page name in small gold letters */
+html.gv3 .top .brand img { width: 38px; height: 38px; border-radius: 12px; box-shadow: 0 0 0 2px rgba(255, 255, 255, .2), 0 8px 20px -8px #000; }
+html.gv3 .top .word { display: inline-flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; letter-spacing: 0; }
+html.gv3 .top .word::before { content: "PD Tools"; font: 700 18px/1 Fredoka, Nunito, system-ui, sans-serif; color: #fff3dc; }
+html.gv3 .top .word .w1, html.gv3 .top .word .w2 { font: 800 11px/1 Nunito, system-ui, sans-serif; letter-spacing: 2px; text-transform: uppercase; color: #ffd27a; }
+html.gv3 .top .word { flex-direction: row; flex-wrap: wrap; align-content: center; column-gap: 5px; max-width: 160px; }
+html.gv3 .top .word::before { flex-basis: 100%; }
+html.gv3 .top .pill { height: 40px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .22); background: rgba(30, 14, 8, .38); }

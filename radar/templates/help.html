@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block crumb_label %}Help{% endblock %}
 {% from "_ico.html" import ico with context %}
 {% block title %}Help · {{ cfg.site_name }}{% endblock %}
 {% block body_class %}ready static-page{% endblock %}
@@ -11,7 +12,7 @@
 </section>
 
 <section class="help-card help-video">
-  <video controls playsinline preload="none" width="1280" height="720" poster="{{ url_for('static', filename='help/poster.jpg') }}">
+  <video controls playsinline preload="none" width="1280" height="720" poster="{{ url_for('static', filename='v3/art/help-poster.jpg') if v3_open else url_for('static', filename='help/poster.jpg') }}">
     <source src="{{ url_for('static', filename='help/how-to-open.mp4') }}" type="video/mp4">
   </video>
   <p class="help-cap">How to open pdtools, in about half a minute</p>

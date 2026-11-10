@@ -33,14 +33,15 @@
   <div class="site" id="site">
     <div class="shell"><div class="wrap">
       <header class="bar">
-        <nav class="crumbs" aria-label="Site">
+        {% if v3_open %}<a class="v-brand v3-brand" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="38" height="38"><span>PD Tools<small>{% block crumb_label %}{{ cfg.site_name }}{% endblock %}</small></span></a>
+        {% else %}<nav class="crumbs" aria-label="Site">
           <a class="brand" href="{{ url_for('hub') }}" style="text-decoration:none" title="All {{ cfg.hub_name }}">
             <img class="brand-logo" src="{{ asset('brand/pdtools-logo.webp') }}" alt="PD Tools" width="136" height="45">
             <img class="brand-mark" src="{{ asset('brand/badge-96.webp') }}" alt="PD Tools" width="40" height="40">
           </a>
           <span class="crumb-sep" aria-hidden="true">/</span>
           <a class="brand crumb" href="{{ url_for('feed') }}" style="text-decoration:none">{{ cfg.site_name }}</a>
-        </nav>
+        </nav>{% endif %}
         <div class="bar-right">
           <a class="home-pill" href="{{ url_for('hub') }}"><img src="{{ asset('brand/badge-96.webp') }}" alt="" width="20" height="20"><span>Home</span></a>
           <label class="lang-pick" title="Language">

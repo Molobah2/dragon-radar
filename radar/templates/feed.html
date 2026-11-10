@@ -75,8 +75,8 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
       <p class="lede">Every whisper that calls the dragons lands here. Open one and it fades from your sight.</p>
     </div>
     <div class="tally">
-      <div class="chip hot">{{ ico("egg", 56) }}<b id="left">0</b><span>waiting for you</span></div>
-      <div class="chip sun">{{ ico("sparkle", 56) }}<b id="fresh">0</b><span>new since your last visit</span></div>
+      <div class="chip hot">{{ ico("egg", 56) }}<b id="left">{{ "–" if v3_open else "0" }}</b><span>waiting for you</span></div>
+      <div class="chip sun">{{ ico("sparkle", 56) }}<b id="fresh">{{ "–" if v3_open else "0" }}</b><span>new since your last visit</span></div>
     </div>
   </section>
 

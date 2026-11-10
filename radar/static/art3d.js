@@ -179,7 +179,12 @@
       x.textAlign = "center"; x.textBaseline = "alphabetic";
       x.fillStyle = "rgba(122,84,30,.9)"; x.font = "800 34px " + BODY; x.letterSpacing = "10px";
       x.fillText("POCKET DRAGONS · " + (D.label || "").toUpperCase(), W / 2, 190);
-      x.letterSpacing = "0px"; x.fillStyle = "#2d1f15"; x.font = "700 196px " + DISP; x.fillText("Keeper Art", W / 2, 390);
+      x.letterSpacing = "0px"; x.font = "700 196px " + DISP;
+      if (document.documentElement.classList.contains("v3")) {   // v3: gilded letters on the plaster, like a gallery's gold leaf sign
+        var gl = x.createLinearGradient(0, 230, 0, 400); gl.addColorStop(0, "#fff0c2"); gl.addColorStop(.45, "#f0b94a"); gl.addColorStop(1, "#a8661c");
+        x.save(); x.shadowColor = "rgba(60,30,10,.55)"; x.shadowOffsetY = 6; x.shadowBlur = 10; x.fillStyle = gl; x.fillText("Keeper Art", W / 2, 390); x.restore();
+        x.lineWidth = 3; x.strokeStyle = "rgba(90,50,14,.8)"; x.strokeText("Keeper Art", W / 2, 390);
+      } else { x.fillStyle = "#2d1f15"; x.fillText("Keeper Art", W / 2, 390); }
       x.fillStyle = "#6a5444"; x.font = "600 52px " + DISP; x.fillText("Made by hand, by Keepers", W / 2, 478);
       if (D.prompt) { x.fillStyle = "#8a5a1c"; x.font = "800 30px " + BODY; x.letterSpacing = "6px"; x.fillText("THIS WEEK'S THEME", W / 2, 580); x.letterSpacing = "0px";
         x.fillStyle = "#3a2a1d"; x.font = "700 50px " + DISP; fit2(x, "“" + D.prompt + "”", W / 2, 642, W - 160); }
