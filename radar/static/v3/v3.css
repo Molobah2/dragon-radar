@@ -335,3 +335,19 @@ html.v3 .ama-hero-main.room-ama h1 { text-shadow: 0 2px 18px rgba(0, 0, 0, .7); 
     background-image: image-set(url("/static/v3/art/room-ama-tall.avif") type("image/avif"), url("/static/v3/art/room-ama-tall.webp") type("image/webp")) !important; }
   html.v3 .ama-hero-main.room-ama::before { background: linear-gradient(180deg, transparent 0, transparent calc((100vw - 32px) * .48), rgba(22, 15, 11, .92) calc((100vw - 32px) * .78), #160f0b 100%); }
 }
+
+/* ---------- Area 7: the Create pages keep their own scenes (each one is already its own room).
+   v3 only swaps the old purple night for the Hatchery's warm night, so every page shares one palette. ---------- */
+html.v3 body:has(.wp-phone) { background: #17100c; }
+html.v3 .wp-amb::after { background: radial-gradient(90% 70% at 50% 40%, rgba(23, 16, 12, .25), rgba(23, 16, 12, .9) 80%); }
+html.v3 .wp-scenes button { background: #2a2118; }
+html.v3 .wp-scenes span { background: rgba(23, 16, 12, .76); }
+html.v3 .wp-screen { background: #2a2118; }
+html.v3 body:has(.cv-world) { background: #1a130e; }
+html.v3 .cv-world::after { background: radial-gradient(120% 90% at 50% 20%, rgba(26, 19, 14, .25), rgba(26, 19, 14, .84) 70%, #1a130e); }
+html.v3 .stage { background: #2a2118; }
+html.v3 .tray { background: var(--glass-hi); border-color: var(--h-rim-soft); }
+html.v3 .scene-pick, html.v3 .stamp, html.v3 .hint, html.v3 .tools button, html.v3 .tools .sign-in { background: rgba(26, 19, 14, .62); }
+html.v3 .tools button:hover { background: rgba(255, 210, 122, .14); }
+html.v3 .cv-head .kick { background: rgba(26, 19, 14, .55); }
+html.v3 .wp-opts { background: var(--glass-hi); border-color: var(--h-rim-soft); }
