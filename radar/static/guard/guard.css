@@ -159,7 +159,7 @@ a.stone:hover{background:rgba(58,46,39,.6)}
 .sources{font-size:calc(14px * var(--fs));color:var(--ink2);text-align:left;width:100%}
 .sources ul{margin:6px 0 0;padding-left:18px}
 .sources li{margin:0}
-.sources li a{display:inline-block;padding:11px 0}
+.sources li a{display:block;width:fit-content;max-width:100%;padding:11px 0}
 
 /* practice frame: the hatched bronze border is part of every simulator, so no crop can hide it */
 .practice{position:relative;border-radius:20px;padding:30px 10px 30px;background:repeating-linear-gradient(135deg,#7a4d17 0 10px,#c58c45 10px 20px);box-shadow:0 6px 18px rgba(0,0,0,.35)}

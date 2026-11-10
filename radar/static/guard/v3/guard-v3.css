@@ -37,7 +37,7 @@
 .gs3-half { position: absolute; inset: 0; display: block; }
 .gs3-half.l { clip-path: polygon(0 0, 52% 0, 46% 22%, 55% 41%, 47% 60%, 54% 80%, 49% 100%, 0 100%); }
 .gs3-half.r { clip-path: polygon(52% 0, 100% 0, 100% 100%, 49% 100%, 54% 80%, 47% 60%, 55% 41%, 46% 22%); }
-.gs3-tap { position: absolute; left: 0; right: 0; z-index: 6; margin: 0; text-align: center; font: 700 14px/1 Nunito, system-ui, sans-serif; color: #ffd27a; text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }
+.gs3-tap { position: absolute; left: 0; right: 0; z-index: 6; margin: 0; text-align: center; font: 700 14px/1 Nunito, system-ui, sans-serif; color: #ffd27a; text-shadow: 0 1px 6px rgba(0, 0, 0, .7); cursor: pointer; }
 
 /* the seal used elsewhere in the course */
 picture.seal.real { display: block; width: 82px; justify-self: center; margin: 0 auto; }

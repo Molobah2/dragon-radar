@@ -495,3 +495,7 @@ html.v3 .v3-spark { position: absolute; width: 6px; height: 6px; margin: -3px 0 
 html.v3 .v3-ring { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
   border: 2px solid rgba(255, 210, 122, .75); box-shadow: 0 0 12px rgba(255, 171, 61, .35); }
 
+
+/* audit: "Already following" sat cream on the parchment card */
+html.v3 .kp-card .kp-already { color: #6a4a2a; }
+html.v3 .kp-card .kp-already:hover { color: #2b1d12; }

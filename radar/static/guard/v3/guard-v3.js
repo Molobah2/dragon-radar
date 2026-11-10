@@ -107,6 +107,8 @@
       gsap.set(brk, { autoAlpha: 1 });
       if (!still) gsap.from([brk, tap], { scale: 0.6, autoAlpha: 0, duration: 0.4, delay: 0.35, ease: "back.out(2)" });
       setTimeout(function () { brk.focus({ preventScroll: true }); }, still ? 0 : 500);
+      // the words under the seal break it too: people tap what they read
+      if (tap) tap.addEventListener("click", function () { brk.click(); });
       brk.onclick = function () {
         if (busy) return; busy = true;
         var l = brk.querySelector(".l"), r = brk.querySelector(".r");
