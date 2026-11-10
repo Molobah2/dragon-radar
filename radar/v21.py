@@ -428,6 +428,7 @@ SECTIONS = [
         ("wrapped", "Hatchery Wrapped", "/wrapped", "v21", "Your month in the hatchery as a story and a video.", "v21/wrapped-b-s.jpg", "v21/blinky-scope.webp"),
         ("wallpaper", "My Hatchery wallpaper", "/wallpaper", "v21", "Your hatched dragons in a phone wallpaper made for your screen.", "v21/wall/glow-m.jpg", ""),
         ("art", "Keeper Art", "/art", "v21", "Hand made dragon art by Keepers. Vote for your favourite every weekend.", "cloud:v21/art-studio-bg", "v21/dle-pinky-quill.webp"),
+        ("trail", "Keepers Trail", "/trail/", "trail", "Sign in with X, walk the trail with Blinky and crack open your own Keeper card, made from your posts.", "trail/home-wide.webp", ""),
     ]),
 ]
 
@@ -445,9 +446,9 @@ def friend_sites(key: str) -> list:
     return [{"name": n, "url": u, "line": l, "bg": b, "by": h} for k, n, u, l, b, h in FRIEND_SITES if k == key]
 
 
-def nav_for(path: str, v21: bool, circle: bool, guard: bool = False) -> dict:
+def nav_for(path: str, v21: bool, circle: bool, guard: bool = False, trail: bool = False) -> dict:
     """The sections this visitor can see, and which section and tab the page belongs to."""
-    ok = {"": True, "v21": v21, "circle": circle, "guard": guard}
+    ok = {"": True, "v21": v21, "circle": circle, "guard": guard, "trail": trail}
     secs, cur, tab = [], None, None
     for key, name, home, line, tabs in SECTIONS:
         seen = [{"key": t[0], "name": t[1], "path": t[2], "line": t[4], "bg": t[5], "who": t[6]} for t in tabs if ok[t[3]]]

@@ -146,6 +146,15 @@ def create_app(cfg: Config | None = None) -> Flask:
             g.v22_page = True
         return on
 
+    def _trail_open() -> bool:
+        """The Trail card shows in Create wherever /trail itself opens: everyone with TRAIL_PUBLIC, else Jon's preview devices."""
+        if cfg.trail_public:
+            return True
+        if not has_request_context():
+            return False
+        cookie = request.cookies.get(PREVIEW_COOKIE, "")
+        return bool(cfg.preview_key and cookie and hmac.compare_digest(cookie, preview_token()))
+
     @app.context_processor
     def _assets():
         return {"asset": lambda filename: url_for("static", filename=filename, v=version), "asset_version": version,
@@ -159,7 +168,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                 "guard_open": cfg.guard_public,
                 "v3_open": cfg.v3_public or getattr(g, "circle", False),
                 "safety_news": _guard_safety(cfg, datetime.now(timezone.utc).strftime("%Y-%m-%d")), "safety_tips": _GUARD_TIPS, "safety_until": _GUARD_UNTIL,
-                "nav": nav_for(request.path if has_request_context() else "/", cfg.v21_public or getattr(g, "circle", False), getattr(g, "circle", False) or cfg.circle_public, cfg.guard_public)}
+                "nav": nav_for(request.path if has_request_context() else "/", cfg.v21_public or getattr(g, "circle", False), getattr(g, "circle", False) or cfg.circle_public, cfg.guard_public, _trail_open())}
 
     # v2 tools in progress: add {"name", "url", "note"} here as each one is built
     LAB_TOOLS: list[dict] = [
@@ -1755,7 +1764,7 @@ def create_app(cfg: Config | None = None) -> Flask:
     # ---------- the four sections (TJ's feedback): one page per section with its tools side by side ----------
     def section_page(key):
         from .v21 import friend_sites, nav_for
-        nav = nav_for(request.path, True, getattr(g, "circle", False) or cfg.circle_public, cfg.guard_public)
+        nav = nav_for(request.path, True, getattr(g, "circle", False) or cfg.circle_public, cfg.guard_public, _trail_open())
         sec = next((x for x in nav["sections"] if x["key"] == key), None)
         if not sec:
             abort(404)

@@ -3546,3 +3546,20 @@ def test_v3_frame_only_where_v3_is_open(cfg):
     for path in ("/", "/help", "/friends"):
         body = c.get(path).get_data(as_text=True)
         assert "v3/v3.css" in body and "v3/motion.js" in body
+
+
+def test_keepers_trail_card_sits_in_create_wherever_the_trail_opens(cfg, Session):
+    """The Keepers Trail has a card in the Create section, but only where /trail itself opens: on Jon's preview
+    devices, or for everyone once TRAIL_PUBLIC is on. It never points anyone at a page that answers 404."""
+    from radar.v21 import nav_for
+    assert "trail" not in [t["key"] for s in nav_for("/create", True, False) ["sections"] for t in s["tabs"]]
+    tabs = {t["key"]: t for s in nav_for("/create", True, False, False, True)["sections"] for t in s["tabs"]}
+    assert tabs["trail"]["path"] == "/trail/" and nav_for("/trail/", True, False, False, True)["cur"] == "create"
+    cfg.trail_public = False
+    app, c = _v21_client(cfg)
+    page = c.get("/create").get_data(as_text=True)                 # Jon's preview device: the card and the Trail both open
+    assert "<b>Keepers Trail</b>" in page and 'href="/trail/"' in page and c.get("/trail/").status_code == 200
+    cfg.trail_public = True
+    app2 = create_app(cfg); app2.config["TESTING"] = True
+    c2 = app2.test_client(); c2.get("/preview/secret-preview-phrase-123"); c2.get("/lab/circle/on")
+    assert "<b>Keepers Trail</b>" in c2.get("/create").get_data(as_text=True)
