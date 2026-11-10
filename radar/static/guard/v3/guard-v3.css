@@ -165,3 +165,9 @@ html.gv3 .hero h1 { text-shadow: 0 2px 16px rgba(0, 0, 0, .7); }
     background-image: image-set(url("/static/v3/art/room-guard-tall.avif") type("image/avif"), url("/static/v3/art/room-guard-tall.webp") type("image/webp")); }
   html.gv3 .hero::before { background: linear-gradient(180deg, transparent 0, transparent calc((100vw - 40px) * .48), rgba(22, 15, 11, .92) calc((100vw - 40px) * .78), #160f0b 100%); }
 }
+
+html.gv3 .g3-room-live.g3-room-live { background-image: none !important; }
+html.gv3 .g3-room-bg { position: absolute; inset: 0; z-index: -2; pointer-events: none; will-change: transform; transform-origin: 70% 50%; }
+html.gv3 .g3-embers { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+html.gv3 .g3-embers i { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #ffb35c; box-shadow: 0 0 8px 3px rgba(255, 140, 50, .6); opacity: 0; }
+@media (prefers-reduced-motion: reduce) { html.gv3 .g3-embers { display: none; } }

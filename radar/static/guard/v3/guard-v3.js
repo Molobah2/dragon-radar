@@ -175,6 +175,29 @@
     window.gsap.fromTo(s, { autoAlpha: 0, scale: 1.9, rotation: -18 }, { autoAlpha: 1, scale: 1, rotation: -8, duration: 0.3, delay: 0.5, ease: "power3.in",
       onComplete: function () { window.gsap.fromTo(card, { x: -2 }, { x: 0, duration: 0.25, ease: "elastic.out(1, 0.3)" }); } });
   }
+
+  // the armoury on the hall page: the picture eases in on its own layer and drifts slowly, embers rise past Speed
+  function room(el, still) {
+    if (!el || el.dataset.g3Room) return; el.dataset.g3Room = "1";
+    var g = window.gsap, cs = getComputedStyle(el), bg = document.createElement("div");
+    bg.className = "g3-room-bg"; bg.setAttribute("aria-hidden", "true");
+    bg.style.backgroundImage = cs.backgroundImage; bg.style.backgroundPosition = cs.backgroundPosition; bg.style.backgroundSize = cs.backgroundSize; bg.style.backgroundRepeat = cs.backgroundRepeat;
+    el.insertBefore(bg, el.firstChild); el.classList.add("g3-room-live");
+    var em = document.createElement("div"); em.className = "g3-embers"; em.setAttribute("aria-hidden", "true");
+    for (var i = 0; i < 12; i++) em.appendChild(document.createElement("i"));
+    el.insertBefore(em, bg.nextSibling);
+    if (still) return;
+    g.fromTo(bg, { scale: 1.12, autoAlpha: 0 }, { scale: 1.02, autoAlpha: 1, duration: 1.5, ease: "power2.out" });
+    g.to(bg, { scale: 1.06, xPercent: 1, duration: 15, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.5 });
+    g.from(el.querySelectorAll(".eyebrow, h1, p"), { y: 20, autoAlpha: 0, duration: 0.8, stagger: 0.1, delay: 0.3, clearProps: "transform" });
+    em.querySelectorAll("i").forEach(function (d) {
+      (function rise() {
+        g.set(d, { left: g.utils.random(55, 95) + "%", top: g.utils.random(60, 100) + "%", x: 0, y: 0, autoAlpha: 0, scale: g.utils.random(0.5, 1.2) });
+        g.to(d, { y: g.utils.random(-160, -80), x: g.utils.random(-20, 20), autoAlpha: g.utils.random(0.4, 0.9), duration: g.utils.random(3, 6), ease: "sine.out",
+          delay: g.utils.random(0, 3), onComplete: function () { g.to(d, { autoAlpha: 0, duration: 0.8, onComplete: rise }); } });
+      })();
+    });
+  }
   document.documentElement.classList.add("gv3");
-  window.GuardV3 = { scroll: scroll, stamp: stamp };
+  window.GuardV3 = { scroll: scroll, stamp: stamp, room: room };
 })();

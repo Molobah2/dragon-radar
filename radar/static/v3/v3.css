@@ -351,3 +351,13 @@ html.v3 .scene-pick, html.v3 .stamp, html.v3 .hint, html.v3 .tools button, html.
 html.v3 .tools button:hover { background: rgba(255, 210, 122, .14); }
 html.v3 .cv-head .kick { background: rgba(26, 19, 14, .55); }
 html.v3 .wp-opts { background: var(--glass-hi); border-color: var(--h-rim-soft); }
+
+/* ---------- motion layers for the rooms (motion.js moves them; only transform and opacity change) ---------- */
+html.v3 .v3-room-live.v3-room-live.v3-room-live { background-image: none !important; }
+html.v3 .v3-room-bg { position: absolute; inset: 0; z-index: -2; pointer-events: none; will-change: transform; transform-origin: 30% 50%; }
+html.v3 .v3-dust { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+html.v3 .v3-dust i { position: absolute; border-radius: 50%; background: #ffd9a0; box-shadow: 0 0 6px 2px rgba(255, 200, 120, .55); opacity: 0; }
+@media (prefers-reduced-motion: reduce) { html.v3 .v3-dust { display: none; } }
+html.v3 .v3-room-clip { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity .25s; }
+/* phones: the stage shows a 5:4 crop of the room, so the clip is sized and moved to the same crop */
+html.v3 .v3-room-clip.tall { inset: auto; left: 0; top: 0; width: 195.4%; height: auto; object-fit: fill; transform: translate(-2.19%, -6.56%); }

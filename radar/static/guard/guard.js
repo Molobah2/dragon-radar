@@ -157,6 +157,7 @@ function render() {
   main.focus({ preventScroll: true });
   if (v !== "m" && !/^m\d+$/.test(v)) window.scrollTo(0, 0);
   hallOn(v === "home");
+  if (v === "home" && CFG.v3 && window.GuardV3 && window.GuardV3.room && window.gsap) window.GuardV3.room(main.querySelector(".hero"), RM.matches);
 }
 function hallOn(on) {
   const h = $("#hall");

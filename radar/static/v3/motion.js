@@ -90,7 +90,76 @@
       .fromTo(chip, { scale: 1 }, { scale: 1.06, duration: 0.12, yoyo: true, repeat: 1, ease: "power1.out" }, "-=0.1");
   };
 
-  function ready() { reveals(); holds(); }
+    /* ---- rooms: every page's painted room comes alive. The picture moves on its own layer
+     (transform only), the dust drifts in the lamp light, the words rise in, and the room
+     sinks a little as you scroll past it. Nothing here touches layout. ---- */
+  var ROOMS = ".hero.room-stage, .sx-head.room, .ama-hero-main.room-ama";
+  function rooms() {
+    gsap.utils.toArray(ROOMS).forEach(function (el) {
+      if (el.dataset.v3Room) return; el.dataset.v3Room = "1";
+      var cs = getComputedStyle(el), bg = document.createElement("div");
+      bg.className = "v3-room-bg"; bg.setAttribute("aria-hidden", "true");
+      bg.style.backgroundImage = cs.backgroundImage; bg.style.backgroundPosition = cs.backgroundPosition;
+      bg.style.backgroundSize = cs.backgroundSize; bg.style.backgroundRepeat = cs.backgroundRepeat;
+      el.insertBefore(bg, el.firstChild); el.classList.add("v3-room-live");
+      var dust = document.createElement("div"); dust.className = "v3-dust"; dust.setAttribute("aria-hidden", "true");
+      for (var i = 0; i < 14; i++) { var d = document.createElement("i"); dust.appendChild(d); }
+      el.insertBefore(dust, bg.nextSibling);
+      var words = el.querySelectorAll(".kick, .eyebrow, .ama-kicker, h1, .lede, p, .tally .chip, .ama-meta, .hero-go");
+      if (still) return;
+      gsap.fromTo(bg, { scale: 1.12, autoAlpha: 0 }, { scale: 1.02, autoAlpha: 1, duration: 1.6, ease: "power2.out" });
+      gsap.to(bg, { scale: 1.06, xPercent: -1.2, duration: 16, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.6 });
+      gsap.from(words, { y: 22, autoAlpha: 0, duration: .8, stagger: .08, delay: .25, ease: "power3.out", clearProps: "transform" });
+      dust.querySelectorAll("i").forEach(function (d) {
+        var x = gsap.utils.random(4, 96), y = gsap.utils.random(10, 95), s = gsap.utils.random(1.5, 4);
+        gsap.set(d, { left: x + "%", top: y + "%", width: s, height: s, autoAlpha: 0 });
+        (function drift() {
+          gsap.to(d, { x: gsap.utils.random(-40, 40), y: gsap.utils.random(-60, -10), autoAlpha: gsap.utils.random(.25, .8),
+            duration: gsap.utils.random(5, 9), ease: "sine.inOut", onComplete: function () {
+              gsap.to(d, { autoAlpha: 0, duration: 1.4, onComplete: function () { gsap.set(d, { x: 0, y: 0 }); drift(); } }); } });
+        })();
+      });
+      if (ST) gsap.to(bg, { yPercent: 8, ease: "none", scrollTrigger: { trigger: el, start: "top top", end: "bottom top", scrub: true } });
+      clip(el, bg, cs);
+    });
+  }
+
+  /* ---- a room's dragon really moves: a short clip that starts on the room's own picture, plays once when the
+     room is on screen and rests on its last frame. Skipped for reduced motion and data saver. ---- */
+  function clip(el, bg, cs) {
+    var src = el.dataset.v3Clip, c = navigator.connection;
+    if (!src || still || (c && c.saveData)) return;
+    var v = document.createElement("video");
+    v.className = "v3-room-clip" + (/^100%/.test(cs.backgroundSize) ? " tall" : ""); v.muted = true; v.playsInline = true;
+    v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.preload = "auto"; v.setAttribute("aria-hidden", "true");
+    v.style.objectPosition = cs.backgroundPosition; v.src = src; v.style.opacity = "0";
+    bg.appendChild(v);
+    function go() { v.play().then(function () { v.style.opacity = "1"; }).catch(function () { v.remove(); }); }
+    v.addEventListener("ended", function () { v.pause(); }, { once: true });
+    if (ST) ST.create({ trigger: el, start: "top 80%", once: true, onEnter: function () { setTimeout(go, 1200); } });
+    else setTimeout(go, 1200);
+  }
+
+  /* ---- scroll reveals for the parts every page already has, so no template has to opt in ---- */
+  var AUTO = ".sx-card, .ama-item, .ama-thanks, .ama-chart, .maker, .nests .nest, .hub-news, .help-card, .pv-row, .panel, .safety, .faq details, .start-here";
+  function autoReveal() {
+    document.querySelectorAll(AUTO).forEach(function (el) { if (!el.closest(ROOMS) && !el.hasAttribute("data-v3-reveal")) el.setAttribute("data-v3-reveal", ""); });
+  }
+
+  /* ---- cards lean toward the pointer a little (pointer devices only) ---- */
+  function tilt() {
+    if (still || !matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    document.querySelectorAll(".sx-card, .maker, .nests .nest").forEach(function (el) {
+      if (el.dataset.v3Tilt) return; el.dataset.v3Tilt = "1";
+      var rx = gsap.quickTo(el, "rotationX", { duration: .5 }), ry = gsap.quickTo(el, "rotationY", { duration: .5 });
+      gsap.set(el, { transformPerspective: 800 });
+      el.addEventListener("pointermove", function (e) { var r = el.getBoundingClientRect();
+        ry(((e.clientX - r.left) / r.width - .5) * 6); rx(-((e.clientY - r.top) / r.height - .5) * 6); });
+      el.addEventListener("pointerleave", function () { rx(0); ry(0); });
+    });
+  }
+
+  function ready() { rooms(); autoReveal(); reveals(); holds(); tilt(); }
   v3.refresh = ready;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ready); else ready();
 })();
