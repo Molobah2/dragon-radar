@@ -515,7 +515,7 @@
     // duplicate swaps: joined by their time, so a swap made on either device is kept once
     const swaps = new Map();
     for (const x of [...(Array.isArray(mine.sw) ? mine.sw : []), ...(Array.isArray(inc.sw) ? inc.sw : [])]) {
-      if (x && Number.isFinite(x.t) && Array.isArray(x.give) && x.give.length === 3 && typeof x.got === "string" && !swaps.has(x.t)) swaps.set(x.t, { t: x.t, give: x.give.map(String), got: x.got, ...(x.r ? { r: 1 } : {}) });
+      if (x && Number.isFinite(x.t) && Array.isArray(x.give) && x.give.length === 3 && typeof x.got === "string" && !swaps.has(x.t)) swaps.set(x.t, { t: x.t, give: x.give.map(String), got: x.got, ...(x.r ? { r: 1 } : {}), ...(typeof x.m === "string" && /^[cr]{3}$/.test(x.m) ? { m: x.m } : {}) });
     }
     const sw = [...swaps.values()].sort((a, b) => a.t - b.t).slice(-300);
     store.set("pd:dex", { ...mine, have, last, n, g, e, s: sOut, sw, log: Array.isArray(mine.log) ? mine.log : [] });

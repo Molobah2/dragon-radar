@@ -73,16 +73,24 @@
   const SWAP = 3, SWAPS = ["common", "rare"];
   const swapLog = () => (Array.isArray(dex.sw) ? dex.sw : []);
   const swapTier = (x) => (x && x.r ? "rare" : "common");
-  function spentOf(id, tier) { let n = 0; for (const x of swapLog()) if (swapTier(x) === tier) for (const g of x.give || []) if (g === id) n++; return n; }
+  // 11 Nov: a mixed swap (any three spares, dragons and holos together) notes each spare's kind in m, e.g. "ccr"
+  const giveTier = (x, i) => (x && typeof x.m === "string" && x.m.length === 3 ? (x.m[i] === "r" ? "rare" : "common") : swapTier(x));
+  function spentOf(id, tier) { let n = 0; for (const x of swapLog()) (x.give || []).forEach((g, i) => { if (g === id && giveTier(x, i) === tier) n++; }); return n; }
   function countOf(e) { const h = (dex.have[e.sp.id] || {})[TK[e.tier]] || 0; return SWAPS.includes(e.tier) && h > 0 ? Math.max(1, h - spentOf(e.sp.id, e.tier)) : h; }
-  const spareCount = (tier = "common") => ENTRIES.reduce((a, e) => a + (e.tier === tier ? Math.max(0, countOf(e) - 1) : 0), 0);
+  // "mix" is the everyday swap: commons and holos pooled. Eggs always bring a dragon not found yet, so spares are few
+  // and a Keeper could sit at 2 spare dragons and 2 spare holos for weeks with no way to swap (11 Nov)
+  const inTier = (e, tier) => (tier === "mix" ? SWAPS.includes(e.tier) : e.tier === tier);
+  const spareCount = (tier = "common") => ENTRIES.reduce((a, e) => a + (inTier(e, tier) ? Math.max(0, countOf(e) - 1) : 0), 0);
   // never the dragon already waiting in today's unopened egg
   const eggKey = () => { const p = store.get("pd:dexEgg", null); return p && p.day === today() ? p.k : ""; };
-  const swapMissing = (tier = "common") => ENTRIES.filter((e) => e.tier === tier && !owned(e) && e.key !== eggKey());
+  const swapMissing = (tier = "common") => ENTRIES.filter((e) => inTier(e, tier) && !owned(e) && e.key !== eggKey()
+    && (tier !== "mix" || allowed(e.tier, goalStreak())));
   function swapPick(tier = "common") {   // the three spares to give: always from the dragons with the most copies
-    const left = ENTRIES.filter((e) => e.tier === tier).map((e) => ({ e, n: countOf(e) - 1 })).filter((x) => x.n > 0);
+    const left = ENTRIES.filter((e) => inTier(e, tier)).map((e) => ({ e, n: countOf(e) - 1 })).filter((x) => x.n > 0);
     const give = [];
-    while (give.length < SWAP && left.length) { left.sort((a, b) => b.n - a.n); give.push(left[0].e); if (!--left[0].n) left.shift(); }
+    // spare dragons go first and holos only fill the gap, since a holo is worth more
+    const order = (a, b) => (a.e.tier === b.e.tier ? b.n - a.n : a.e.tier === "common" ? -1 : 1);
+    while (give.length < SWAP && left.length) { left.sort(order); give.push(left[0].e); if (!--left[0].n) left.shift(); }
     return give.length === SWAP ? give : null;
   }
 
@@ -813,7 +821,8 @@
   }
   // ---------- swap spares ----------
   const nameList = (es) => {
-    const by = new Map(); for (const e of es) by.set(e.sp.name, (by.get(e.sp.name) || 0) + 1);
+    const mixed = es.some((e) => e.tier === "common") && es.some((e) => e.tier === "rare");
+    const by = new Map(); for (const e of es) { const nm = mixed && e.tier === "rare" ? e.sp.name + " holo" : e.sp.name; by.set(nm, (by.get(nm) || 0) + 1); }
     const a = [...by].map(([nm, k]) => (k > 1 ? `${k} ${nm}` : nm));
     const lang = document.documentElement.lang || "en";   // other languages join the names with their own "and"
     try { if (a.length > 1 && lang !== "en" && window.Intl && Intl.ListFormat) return new Intl.ListFormat(lang, { type: "conjunction" }).format(a); } catch (e) { /* old browser */ }
@@ -829,21 +838,22 @@
       const give = swapPick(tier), n = spareCount(tier), left = swapMissing(tier).length;
       box.hidden = false; btn.textContent = label; btn.disabled = !(give && left);
       box.classList.toggle("ready", !btn.disabled);
-      txt.textContent = !left ? (tier === "rare" ? "You have found every holo dragon. Nothing left to swap for." : "You have found every common dragon. Nothing left to swap for.")
+      txt.textContent = !left ? (tier === "rare" ? "You have found every holo dragon. Nothing left to swap for." : "You have found every dragon and holo you can swap for. Nothing left to swap for.")
         : give ? ready(n, give)
         : tier === "rare" ? `Spare holos: ${Math.min(n, SWAP)} of 3. Three spare holos swap for a holo you have not found yet.`
-        : `Spare dragons: ${Math.min(n, SWAP)} of 3. Three spare dragons swap for a dragon you have not found yet.`;
+        : `Spares: ${Math.min(n, SWAP)} of 3. Any three spares, dragons or holos, swap for one you have not found yet.`;
     };
-    row($("dex-swap"), $("dex-swap-text"), $("dex-swap-btn"), "common", (n, give) => `You have ${n} spare dragons. Swap ${nameList(give)} for a dragon you have not found yet.`, "Swap 3 spares");
+    row($("dex-swap"), $("dex-swap-text"), $("dex-swap-btn"), "mix", (n, give) => `You have ${n} spares. Swap ${nameList(give)} for a dragon or holo you have not found yet.`, "Swap 3 spares");
     row($("dex-swap-r"), $("dex-swap-r-text"), $("dex-swap-r-btn"), "rare", (n, give) => `You have ${n} spare holo dragons. Swap ${nameList(give)} for a holo you have not found yet.`, "Swap 3 holos");
     swapArm = 0; swapArmR = 0;
   }
   function doSwap(tier = "common") {
     const give = swapPick(tier), missing = swapMissing(tier);
     if (!give || !missing.length) return null;
-    const entry = rand(missing), k = TK[tier];
+    const entry = rand(missing), k = TK[entry.tier];   // a mixed swap can bring a dragon or a holo
     const h = dex.have[entry.sp.id] || {}; h[k] = (h[k] || 0) + 1; dex.have[entry.sp.id] = h;
-    dex.sw = [...swapLog(), { t: Date.now(), give: give.map((e) => e.sp.id), got: entry.sp.id, ...(tier === "rare" ? { r: 1 } : {}) }].slice(-300);
+    const kinds = give.map((e) => TK[e.tier]).join("");
+    dex.sw = [...swapLog(), { t: Date.now(), give: give.map((e) => e.sp.id), got: entry.sp.id, ...(tier === "rare" ? { r: 1 } : kinds !== "ccc" ? { m: kinds } : {}) }].slice(-300);
     save(); track("swap", entry.key);
     return { entry, give };
   }
@@ -865,7 +875,7 @@
       setTimeout(() => { if (swapArm && Date.now() - swapArm >= 5000) renderSwap(); }, 5100);
       return;
     }
-    const r = doSwap(); renderDex();
+    const r = doSwap("mix"); renderDex();
     if (!r) return;
     closeSheet(dexEl); setTimeout(() => openSwap(r), 260);
   });

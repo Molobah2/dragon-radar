@@ -1681,7 +1681,7 @@ def test_speed_budget(cfg, Session):
     c = v2_client(cfg)
     # /friends raised on purpose (120k to 124k): the song picker controls and the dragon book; the picker's
     # list itself (music.js) only loads when someone opens it
-    budgets = {"/friends": (137_000, 60_000),   # raised on purpose: swapping spare holos and the Dragon Guard goal step (8 Nov), the Needs love note in the feed (5 Nov), and before that the X app note, its move code button and the safe copy for signed Keepers, the audit fixes (dialog focus, phone layout), the v2.1 daily goal steps, the feed keeping its place (26 Oct), then swapping spare dragons (29 Oct), then the repeat button on the music player (31 Oct), then the keep your dragons safe card and follow marks in backups (31 Oct)
+    budgets = {"/friends": (137_600, 60_000),   # raised on purpose: mixed spare swaps (11 Nov), swapping spare holos and the Dragon Guard goal step (8 Nov), the Needs love note in the feed (5 Nov), and before that the X app note, its move code button and the safe copy for signed Keepers, the audit fixes (dialog focus, phone layout), the v2.1 daily goal steps, the feed keeping its place (26 Oct), then swapping spare dragons (29 Oct), then the repeat button on the music player (31 Oct), then the keep your dragons safe card and follow marks in backups (31 Oct)
                 "/": (15_500, 40_000),   # raised on purpose (31 Oct): the music player repeat button lives in sound.js
                 "/friends/keepers": (61_000, 40_000)}   # keepers raised on purpose (29 Oct): the shared stylesheet gained the dragon swap box, then its waiting look (8 Nov)
     for path, (code_max, html_max) in budgets.items():
@@ -3579,3 +3579,22 @@ def test_every_page_wears_the_pd_tools_badge(cfg, Session):
     app = create_app(cfg); app.config["TESTING"] = True
     r = app.test_client().get("/favicon.ico")
     assert r.status_code == 301 and "brand/badge-64.png" in r.headers["Location"]
+
+
+def test_mixed_and_holo_swaps_keep_their_kind_across_devices(cfg, Session):
+    """11 Nov: spares are few because every egg brings a dragon not found yet, so any three spares (dragons and holos
+    together) can swap. The kind of each swap must survive the safe copy: r for three holos, m ("ccr") for a mixed one."""
+    from radar.db import FriendDevice
+    cfg.v2_public = True
+    with Session() as s:
+        s.add(FriendDevice(vid="c" * 32, key="mia", username="Mia", code="x", confirmed=True)); s.commit()
+    c = create_app(cfg).test_client()
+    holo = {"t": 1762800000000, "give": ["space", "space", "space"], "got": "acid", "r": 1}
+    mix = {"t": 1762800500000, "give": ["shadow", "space", "shadow"], "got": "tiger", "m": "ccr"}
+    bad = {"t": 1762800600000, "give": ["shadow", "space", "shadow"], "got": "tiger", "m": "zz<script>"}
+    body = {"vid": "c" * 32, "dex": {"have": {"space": {"c": 2, "r": 5}, "shadow": {"c": 2, "r": 2}}, "n": 9, "sw": [holo, mix, bad]}}
+    assert c.post("/api/book/progress", json=body).get_json()["ok"]
+    back = c.get("/api/book/progress?vid=" + "c" * 32).get_json()["dex"]["sw"]
+    assert back[0].get("r") == 1 and back[1].get("m") == "ccr" and "m" not in back[2]
+    js = (Path(__file__).parent.parent / "radar" / "static" / "dragons.js").read_text()
+    assert 'doSwap("mix")' in js and "k = TK[entry.tier]" in js and "giveTier(x, i)" in js

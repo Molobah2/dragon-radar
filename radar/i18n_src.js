@@ -355,6 +355,9 @@
     v3Loading: "Loading",
     v3KEmpty: "The Keepers list is filling up. Wear the 🐉 in your X name and you will appear here.",
     v3WQuiet: "No new Keepers in the last 3 days. The lane fills again as soon as someone joins.",
+    pzSparesM: "You have {n} spares. Swap {s} for a dragon or holo you have not found yet.",
+    pzSwapNeedM: "Spares: {n} of 3. Any three spares, dragons or holos, swap for one you have not found yet.",
+    xSwapAllM: "You have found every dragon and holo you can swap for. Nothing left to swap for.",
   };
 
   const T = {
@@ -701,6 +704,9 @@
       v3Loading: "Cargando",
       v3KEmpty: "La lista de Keepers se está llenando. Pon el 🐉 en tu nombre de X y aparecerás aquí.",
       v3WQuiet: "No hay Keepers nuevos en los últimos 3 días. La fila se vuelve a llenar en cuanto alguien se une.",
+      pzSparesM: "Tienes {n} repetidos. Cambia {s} por un dragón u holo que aún no has encontrado.",
+      pzSwapNeedM: "Repetidos: {n} de 3. Tres repetidos cualesquiera, dragones u holos, se cambian por uno que aún no has encontrado.",
+      xSwapAllM: "Ya encontraste todos los dragones y holos que puedes conseguir con un cambio. No queda nada por cambiar.",
     },
     fr: {
       amLib: "Bibliothèque des AMA", amKick: "Chaque appel, au même endroit", amLede: "Tu as raté un AMA de Pocket Dragons ? Rattrape chaque appel ici : l'enregistrement, ce qui a été partagé et comment la salle a grandi semaine après semaine.", amSoFar: "AMA pour l'instant", amFriday: "Chaque vendredi", amOnDiscord: "sur Discord", amPeak: "record en direct", amGrew: "Comment la salle a grandi", amNotShared: "non partagé", amSoon: "bientôt", amCountsNote: "Les chiffres en direct ont été partagés par l'équipe pendant chaque appel.", amIdea: "Cette bibliothèque est une idée d'Ismail.", amThanks: "Merci", amThanks2: "de l'avoir aidée à venir sur pdtools.", amLatest: "Dernier", amWatch: "Voir l'enregistrement sur X", amSoonLong: "L'enregistrement est prêt. Un court résumé de cet appel arrive bientôt.", amFoot: "Partagé par l'équipe à chaque appel. Les plans peuvent changer, donc l'appel le plus récent fait toujours foi.", amCard: "Tous les AMA de Pocket Dragons au même endroit : les enregistrements, ce qui a été partagé et comment la salle a grandi.", amNew: "Nouveau",
@@ -1045,6 +1051,9 @@
       v3Loading: "Chargement",
       v3KEmpty: "La liste des Keepers se remplit. Ajoute le 🐉 à ton nom X et tu apparaîtras ici.",
       v3WQuiet: "Aucun nouveau Keeper ces 3 derniers jours. La file se remplit dès que quelqu'un arrive.",
+      pzSparesM: "Tu as {n} doubles. Échange {s} contre un dragon ou un holo que tu n'as pas encore trouvé.",
+      pzSwapNeedM: "Doubles : {n} sur 3. Trois doubles au choix, dragons ou holos, s'échangent contre un que tu n'as pas encore trouvé.",
+      xSwapAllM: "Tu as trouvé tous les dragons et holos disponibles par échange. Plus rien à échanger.",
     },
     pt: {
       amLib: "Biblioteca de AMAs", amKick: "Cada chamada, num só lugar", amLede: "Perdeu um AMA do Pocket Dragons? Veja cada chamada aqui: a gravação, o que foi compartilhado e como a sala cresceu semana a semana.", amSoFar: "AMAs até agora", amFriday: "Toda sexta", amOnDiscord: "no Discord", amPeak: "recorde ao vivo", amGrew: "Como a sala cresceu", amNotShared: "não compartilhado", amSoon: "em breve", amCountsNote: "Os números ao vivo foram compartilhados pela equipe em cada chamada.", amIdea: "Esta biblioteca foi ideia do Ismail.", amThanks: "Obrigado", amThanks2: "por ajudar a trazê-la ao pdtools.", amLatest: "Mais recente", amWatch: "Ver a gravação no X", amSoonLong: "A gravação já está disponível. Um resumo curto desta chamada está a caminho.", amFoot: "Compartilhado pela equipe em cada chamada. Os planos podem mudar, então a chamada mais recente é sempre a palavra final.", amCard: "Todos os AMAs do Pocket Dragons num só lugar: as gravações, o que foi compartilhado e como a sala cresceu.", amNew: "Novo",
@@ -1389,6 +1398,9 @@
       v3Loading: "Carregando",
       v3KEmpty: "A lista de Keepers está se enchendo. Use o 🐉 no seu nome do X e você aparecerá aqui.",
       v3WQuiet: "Nenhum Keeper novo nos últimos 3 dias. A fila volta a encher assim que alguém entrar.",
+      pzSparesM: "Você tem {n} repetidos. Troque {s} por um dragão ou holo que ainda não encontrou.",
+      pzSwapNeedM: "Repetidos: {n} de 3. Quaisquer três repetidos, dragões ou holos, trocam por um que você ainda não encontrou.",
+      xSwapAllM: "Você já encontrou todos os dragões e holos que dá para trocar. Não sobrou nada para trocar.",
     },
     tr: {
       amLib: "AMA Kütüphanesi", amKick: "Her yayın tek bir yerde", amLede: "Bir Pocket Dragons AMA'sını mı kaçırdın? Her yayını buradan yakala: kayıt, paylaşılanlar ve odanın hafta hafta nasıl büyüdüğü.", amSoFar: "AMA şimdiye kadar", amFriday: "Her cuma", amOnDiscord: "Discord'da", amPeak: "canlı rekor", amGrew: "Oda nasıl büyüdü", amNotShared: "paylaşılmadı", amSoon: "yakında", amCountsNote: "Canlı sayılar her yayında ekip tarafından paylaşıldı.", amIdea: "Bu kütüphane Ismail'in fikriydi.", amThanks: "Teşekkürler", amThanks2: "pdtools'a getirmeye yardım ettiğin için.", amLatest: "En yeni", amWatch: "Kaydı X'te izle", amSoonLong: "Kayıt izlemeye hazır. Bu yayının kısa bir özeti yolda.", amFoot: "Her yayında ekip tarafından paylaşıldı. Planlar değişebilir, bu yüzden en yeni yayın her zaman son sözdür.", amCard: "Tüm Pocket Dragons AMA'ları tek bir yerde: kayıtlar, paylaşılanlar ve odanın nasıl büyüdüğü.", amNew: "Yeni",
@@ -1733,6 +1745,9 @@
       v3Loading: "Yükleniyor",
       v3KEmpty: "Keepers listesi doluyor. X adına 🐉 ekle, burada görüneceksin.",
       v3WQuiet: "Son 3 günde yeni Keeper yok. Biri katılır katılmaz liste yeniden dolar.",
+      pzSparesM: "{n} yedeğin var. {s} vererek henüz bulmadığın bir ejderha ya da holo al.",
+      pzSwapNeedM: "Yedekler: {n}/3. Herhangi üç yedek, ejderha ya da holo, henüz bulmadığın biriyle takas edilir.",
+      xSwapAllM: "Takasla alabileceğin tüm ejderhaları ve holoları buldun. Takas edecek bir şey kalmadı.",
     },
     ru: {
       amLib: "Библиотека AMA", amKick: "Все эфиры в одном месте", amLede: "Пропустили AMA Pocket Dragons? Наверстайте здесь: запись, что рассказали и как росла аудитория неделя за неделей.", amSoFar: "AMA на данный момент", amFriday: "Каждую пятницу", amOnDiscord: "в Discord", amPeak: "рекорд в эфире", amGrew: "Как росла аудитория", amNotShared: "не сообщалось", amSoon: "скоро", amCountsNote: "Число зрителей в эфире сообщала команда во время каждого эфира.", amIdea: "Эта библиотека была идеей Исмаила.", amThanks: "Спасибо", amThanks2: "за помощь в её появлении на pdtools.", amLatest: "Последний", amWatch: "Смотреть запись в X", amSoonLong: "Запись уже доступна. Краткий обзор этого эфира скоро появится.", amFoot: "Рассказано командой на каждом эфире. Планы могут меняться, поэтому последний эфир всегда главный.", amCard: "Все AMA Pocket Dragons в одном месте: записи, что рассказали и как росла аудитория.", amNew: "Новое",
@@ -2077,6 +2092,9 @@
       v3Loading: "Загрузка",
       v3KEmpty: "Список Keepers пополняется. Добавь 🐉 в своё имя в X, и ты появишься здесь.",
       v3WQuiet: "За последние 3 дня новых Keepers нет. Список снова заполнится, как только кто-то присоединится.",
+      pzSparesM: "У вас {n} запасных. Обменяйте {s} на дракона или голо, которого у вас ещё нет.",
+      pzSwapNeedM: "Запасные: {n} из 3. Любые три запасных, драконы или голо, обмениваются на того, кого у вас ещё нет.",
+      xSwapAllM: "Вы нашли всех драконов и голо, доступных для обмена. Меняться больше не на что.",
     },
     vi: {
       amLib: "Thư viện AMA", amKick: "Mọi buổi, ở một nơi", amLede: "Lỡ một buổi AMA của Pocket Dragons? Xem lại mọi buổi tại đây: bản ghi, những gì được chia sẻ và phòng đã lớn lên thế nào qua từng tuần.", amSoFar: "AMA đến nay", amFriday: "Mỗi thứ Sáu", amOnDiscord: "trên Discord", amPeak: "kỷ lục trực tiếp", amGrew: "Phòng đã lớn lên thế nào", amNotShared: "không chia sẻ", amSoon: "sắp có", amCountsNote: "Số người trực tiếp do đội ngũ chia sẻ trong mỗi buổi.", amIdea: "Thư viện này là ý tưởng của Ismail.", amThanks: "Cảm ơn", amThanks2: "đã giúp đưa nó lên pdtools.", amLatest: "Mới nhất", amWatch: "Xem bản ghi trên X", amSoonLong: "Bản ghi đã sẵn sàng. Tóm tắt ngắn của buổi này sắp có.", amFoot: "Do đội ngũ chia sẻ trong mỗi buổi. Kế hoạch có thể thay đổi, nên buổi mới nhất luôn là lời cuối cùng.", amCard: "Mọi buổi AMA của Pocket Dragons ở một nơi: bản ghi, những gì được chia sẻ và phòng đã lớn lên thế nào.", amNew: "Mới",
@@ -2421,6 +2439,9 @@
       v3Loading: "Đang tải",
       v3KEmpty: "Danh sách Keepers đang được lấp đầy. Thêm 🐉 vào tên X của bạn và bạn sẽ xuất hiện ở đây.",
       v3WQuiet: "Không có Keeper mới trong 3 ngày qua. Hàng sẽ đầy lại ngay khi có người tham gia.",
+      pzSparesM: "Bạn có {n} bản dư. Đổi {s} lấy một rồng hoặc holo bạn chưa tìm thấy.",
+      pzSwapNeedM: "Bản dư: {n}/3. Ba bản dư bất kỳ, rồng hoặc holo, đổi được một con bạn chưa tìm thấy.",
+      xSwapAllM: "Bạn đã tìm thấy mọi rồng và holo có thể đổi. Không còn gì để đổi.",
     },
     id: {
       amLib: "Perpustakaan AMA", amKick: "Setiap sesi, di satu tempat", amLede: "Ketinggalan AMA Pocket Dragons? Kejar setiap sesi di sini: rekamannya, apa yang dibagikan dan bagaimana ruangan tumbuh minggu demi minggu.", amSoFar: "AMA sejauh ini", amFriday: "Setiap Jumat", amOnDiscord: "di Discord", amPeak: "rekor live", amGrew: "Bagaimana ruangan tumbuh", amNotShared: "tidak dibagikan", amSoon: "segera", amCountsNote: "Jumlah penonton live dibagikan oleh tim di setiap sesi.", amIdea: "Perpustakaan ini adalah ide Ismail.", amThanks: "Terima kasih", amThanks2: "sudah membantu menghadirkannya di pdtools.", amLatest: "Terbaru", amWatch: "Tonton rekaman di X", amSoonLong: "Rekamannya sudah bisa ditonton. Ringkasan singkat sesi ini segera hadir.", amFoot: "Dibagikan oleh tim di setiap sesi. Rencana bisa berubah, jadi sesi terbaru selalu menjadi kata terakhir.", amCard: "Semua AMA Pocket Dragons di satu tempat: rekaman, apa yang dibagikan dan bagaimana ruangan tumbuh.", amNew: "Baru",
@@ -2765,6 +2786,9 @@
       v3Loading: "Memuat",
       v3KEmpty: "Daftar Keepers sedang terisi. Pakai 🐉 di nama X kamu dan kamu akan muncul di sini.",
       v3WQuiet: "Tidak ada Keeper baru dalam 3 hari terakhir. Antrean terisi lagi begitu ada yang bergabung.",
+      pzSparesM: "Kamu punya {n} cadangan. Tukar {s} dengan naga atau holo yang belum kamu temukan.",
+      pzSwapNeedM: "Cadangan: {n} dari 3. Tiga cadangan apa saja, naga atau holo, ditukar dengan satu yang belum kamu temukan.",
+      xSwapAllM: "Kamu sudah menemukan semua naga dan holo yang bisa ditukar. Tidak ada lagi yang bisa ditukar.",
     },
     ko: {
       amLib: "AMA 라이브러리", amKick: "모든 방송을 한곳에", amLede: "Pocket Dragons AMA를 놓치셨나요? 여기서 모든 방송을 따라잡으세요: 녹화, 공유된 내용, 매주 방이 어떻게 커졌는지.", amSoFar: "개의 AMA", amFriday: "매주 금요일", amOnDiscord: "Discord에서", amPeak: "최고 동시 접속", amGrew: "방이 커진 과정", amNotShared: "공개 안 됨", amSoon: "곧", amCountsNote: "실시간 인원은 매 방송 중 팀이 공유했어요.", amIdea: "이 라이브러리는 Ismail의 아이디어예요.", amThanks: "고마워요", amThanks2: "pdtools에 오도록 도와줘서.", amLatest: "최신", amWatch: "X에서 녹화 보기", amSoonLong: "녹화를 볼 수 있어요. 이 방송의 짧은 요약이 곧 올라와요.", amFoot: "매 방송에서 팀이 공유한 내용이에요. 계획은 바뀔 수 있으니 가장 최근 방송이 항상 최신 정보예요.", amCard: "모든 Pocket Dragons AMA를 한곳에: 녹화, 공유된 내용, 방이 커진 과정.", amNew: "새로움",
@@ -3109,6 +3133,9 @@
       v3Loading: "불러오는 중",
       v3KEmpty: "Keepers 목록이 채워지는 중입니다. X 이름에 🐉를 넣으면 여기에 표시됩니다.",
       v3WQuiet: "지난 3일 동안 새 Keeper가 없습니다. 누군가 합류하면 다시 채워집니다.",
+      pzSparesM: "여분이 {n}개 있어요. {s}을(를) 아직 찾지 못한 드래곤이나 홀로로 교환하세요.",
+      pzSwapNeedM: "여분: {n}/3. 드래곤이든 홀로든 여분 3개를 아직 찾지 못한 하나로 교환할 수 있어요.",
+      xSwapAllM: "교환으로 얻을 수 있는 드래곤과 홀로를 모두 찾았어요. 더 교환할 것이 없어요.",
     },
     zh: {
       amLib: "AMA 资料库", amKick: "每一场，都在这里", amLede: "错过了 Pocket Dragons 的 AMA？在这里补上每一场：录像、分享的内容，以及每周房间人数的增长。", amSoFar: "场 AMA", amFriday: "每周五", amOnDiscord: "在 Discord", amPeak: "最高在线", amGrew: "房间人数的增长", amNotShared: "未公布", amSoon: "即将", amCountsNote: "在线人数由团队在每场 AMA 中公布。", amIdea: "这个资料库是 Ismail 的点子。", amThanks: "感谢", amThanks2: "帮助把它带到 pdtools。", amLatest: "最新", amWatch: "在 X 上观看录像", amSoonLong: "录像已可观看。这场的简短回顾即将上线。", amFoot: "内容由团队在每场 AMA 中分享。计划可能变化，最新一场永远是最新的说法。", amCard: "所有 Pocket Dragons AMA 都在这里：录像、分享的内容和房间人数的增长。", amNew: "新",
@@ -3453,6 +3480,9 @@
       v3Loading: "加载中",
       v3KEmpty: "Keepers 列表正在增加。在你的 X 名字里加上 🐉，你就会出现在这里。",
       v3WQuiet: "过去 3 天没有新的 Keeper。有人加入后这里会再次填满。",
+      pzSparesM: "你有 {n} 个重复。用 {s} 换一个你还没找到的龙或闪卡。",
+      pzSwapNeedM: "重复：{n}/3。任意三个重复，龙或闪卡都可以，换一个你还没找到的。",
+      xSwapAllM: "你已找到所有可交换的龙和闪卡。没有可以交换的了。",
     },
   };
 

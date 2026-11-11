@@ -506,3 +506,4 @@ html.v3 .toggles .switch input { flex: none; }
 html.v3 .post .tag.crew { color: #4a2f8f; background: rgba(110, 80, 200, .14); border-color: rgba(110, 80, 200, .32); }
 html.v3 .post .tag.tier:not(.tier-gold):not(.tier-silver) { color: #7a3f0c; }
 html.v3 .post .tag.tr-link { color: #1d5f94; }
+html.v3 .dex-next { color: #ffcf6b; }

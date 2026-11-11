@@ -2455,7 +2455,14 @@ def create_app(cfg: Config | None = None) -> Flask:
         for x in (dex_in.get("sw") if isinstance(dex_in.get("sw"), list) else [])[-300:]:
             if (isinstance(x, dict) and num(x.get("t"), 10**13) and isinstance(x.get("give"), list) and len(x["give"]) == 3
                     and all(gv in DEX_IDS for gv in x["give"]) and x.get("got") in DEX_IDS):
-                sw.append({"t": num(x["t"], 10**13), "give": list(x["give"]), "got": x["got"]})
+                one = {"t": num(x["t"], 10**13), "give": list(x["give"]), "got": x["got"]}
+                # the kind of swap travels too: r for three holos, m ("ccr") for a mixed one. Without them a
+                # restored holo swap read as a common one and the wrong copies counted as spent
+                if x.get("r"):
+                    one["r"] = 1
+                if isinstance(x.get("m"), str) and re.fullmatch(r"[cr]{3}", x["m"]):
+                    one["m"] = x["m"]
+                sw.append(one)
         if sw:
             dex_out["sw"] = sw
         # today's daily goal count travels too, so a new device shows the same "x/20 Keeper posts today"
