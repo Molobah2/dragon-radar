@@ -83,7 +83,7 @@ def official(raw: str) -> list:
     return out[:8]
 
 
-def register(app, cfg, Session, tz, has_preview=None) -> None:
+def register(app, cfg, Session, tz, has_preview=None, v3_ok=None, too_many=None) -> None:
     def allowed() -> bool:
         return bool(getattr(cfg, "guard_public", False)) or bool(has_preview and has_preview())
 
@@ -118,12 +118,14 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
         if now and has_preview and has_preview() and re.match(r"^\d{4}-\d{2}-\d{2}T[\d:.]+Z$", now):
             conf["now"] = now
         # v3 (Area 3): the real scroll, seal, cards and tiles, on preview devices until V3_PUBLIC=1
-        if getattr(cfg, "v3_public", False) or (has_preview and has_preview()):
+        if (v3_ok() if v3_ok else getattr(cfg, "v3_public", False)):
             conf["v3"] = 1
             page = page.replace("</head>", V3_HEAD + "</head>", 1)
             # the pdtools dock, the same one every other page has, so Dragon Guard is never a dead end
             try:
-                page = page.replace("</body>", render_template("_dock.html") + "</body>", 1)
+                # and in the Keeper's language: the site's language loader, which the dock labels use everywhere else
+                page = page.replace("</body>", render_template("_dock.html")
+                                    + '<script src="/static/i18n.js?v=' + conf["ver"] + '"></script></body>', 1)
             except Exception:   # the lessons must still open if the dock cannot be drawn
                 pass
         page = page.replace("/*GUARD_CFG*/{}", json.dumps(conf).replace("</", "<\\/")).replace("/*VER*/", conf["ver"])
@@ -150,6 +152,8 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
         """Anonymous counts only: which lesson, which moment, and the score. No id, no name, no address."""
         if not allowed():
             abort(404)
+        if too_many and too_many():      # one browser cannot pump the lesson counts
+            return ("", 204)
         try:
             body = json.loads(request.get_data(cache=False, as_text=True)[:200] or "{}")
             m = int(body.get("m", -1)); ev = str(body.get("ev", ""))

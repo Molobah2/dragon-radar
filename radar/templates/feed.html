@@ -165,8 +165,11 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
   <script>(function(){ /* the folded strip shows the day's numbers on its closed line */
     var s=document.getElementById("v3-fold-sum"); if(!s) return;
     function up(){ var d=document.getElementById("m-done"), p=document.getElementById("p-posts"), r=document.getElementById("pulse-range");
-      var v=(d?d.textContent:"")+(p&&p.textContent?" · "+p.textContent+" posts "+(r?r.textContent.toLowerCase():""):"");
-      if (s.textContent!==v) s.textContent=v; }
+      // three pieces, each one whole phrase, so the language pack can translate "{n} posts" on its own
+      var a=d?d.textContent:"", n=p?p.textContent:"", w=r?r.textContent:"", key=a+"|"+n+"|"+w;
+      if (s.dataset.k===key) return; s.dataset.k=key; s.textContent="";
+      var add=function(t){ var e=document.createElement("span"); e.textContent=t; s.appendChild(e); };
+      add(a); if (n) { s.appendChild(document.createTextNode(" · ")); add(n+" posts"); s.appendChild(document.createTextNode(" · ")); add(w); } }
     // watch only the numbers it copies (watching the whole page would also see its own change and never stop)
     var mo=new MutationObserver(up);
     ["m-done","p-posts","pulse-range"].forEach(function(id){ var n=document.getElementById(id); if(n) mo.observe(n,{subtree:true,childList:true,characterData:true}); });

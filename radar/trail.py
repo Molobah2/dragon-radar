@@ -300,7 +300,7 @@ PD_BACK_CSS = ('<style>.corner .pdt-home{height:38px;box-sizing:border-box;displ
                '</style>')
 
 
-def register(app, cfg, Session, tz, has_preview=None) -> None:
+def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
     http = requests.Session()
     inflight: set[str] = set()
     lock = threading.Lock()
@@ -325,7 +325,7 @@ def register(app, cfg, Session, tz, has_preview=None) -> None:
             abort(404)
         if not (TRAIL_DIR / "index.html").exists():
             abort(404)
-        if getattr(cfg, "v3_public", False) or (has_preview and has_preview()):
+        if (v3_ok() if v3_ok else getattr(cfg, "v3_public", False)):
             # v3: a way back to the rest of pdtools from the Trail (the Create section, where its card lives)
             page = (TRAIL_DIR / "index.html").read_text(encoding="utf-8")
             page = page.replace('<div class="corner l">', '<div class="corner l">' + PD_BACK, 1).replace("</head>", PD_BACK_CSS + "</head>", 1)

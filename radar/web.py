@@ -1044,6 +1044,14 @@ def create_app(cfg: Config | None = None) -> Flask:
         r.headers["Cache-Control"] = "public, max-age=300" if public else "private, no-store"   # unchecked pictures stay out of shared caches
         return r
 
+    # The cron doors answer only the scheduler once CRON_SECRET is set on Render (header X-Cron-Key)
+    @app.before_request
+    def _cron_key():
+        if request.path.startswith("/cron/"):
+            want = os.environ.get("CRON_SECRET", "")
+            if want and not hmac.compare_digest(request.headers.get("X-Cron-Key", ""), want):
+                abort(403)
+
     # ---------- Discord daily drop (off until DROP_CHANNEL_ID is set on Render) ----------
     @app.post("/cron/discord-drop")
     def cron_discord_drop():
@@ -2863,7 +2871,11 @@ def create_app(cfg: Config | None = None) -> Flask:
         # Jon's own preview pass only: pdtools v2 is public, so g.v2 is true for everyone and cannot hide the trail
         cookie = request.cookies.get(PREVIEW_COOKIE, "")
         return bool(cfg.preview_key and cookie and hmac.compare_digest(cookie, preview_token()))
-    trail_mod.register(app, cfg, Session, tz, has_preview)
+    def v3_ok() -> bool:
+        # v3 everywhere uses the same pass: v3 public, or a preview device Jon unlocked for the Circle
+        return bool(getattr(cfg, "v3_public", False) or g.get("circle"))
+    trail_mod.register(app, cfg, Session, tz, has_preview, v3_ok)
     from . import guard as guard_mod
-    guard_mod.register(app, cfg, Session, tz, has_preview)
+    guard_mod.register(app, cfg, Session, tz, has_preview, v3_ok,
+                       lambda: _too_many("tally:" + client_ip(), 150, 3600))
     return app

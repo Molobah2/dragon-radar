@@ -499,3 +499,6 @@ html.v3 .v3-ring { position: absolute; width: 34px; height: 34px; margin: -17px 
 /* audit: "Already following" sat cream on the parchment card */
 html.v3 .kp-card .kp-already { color: #6a4a2a; }
 html.v3 .kp-card .kp-already:hover { color: #2b1d12; }
+/* audit: long languages wrap the filter labels instead of spilling past the switch row */
+html.v3 .toggles .switch { white-space: normal; min-width: 0; line-height: 1.2; }
+html.v3 .toggles .switch input { flex: none; }

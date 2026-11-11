@@ -180,3 +180,35 @@ def test_v3_guard_and_trail_are_never_dead_ends(tmp_path):
     assert 'body[data-view="q"] .pdnav' in css
     t = cl.get("/trail/").get_data(as_text=True)
     assert 'class="pdt-home" href="/create"' in t
+
+
+def test_v3_needs_the_full_circle_pass_and_never_leaks_to_the_public(tmp_path):
+    """The preview link alone (pd_v2) is not v3: Guard and the Trail use the same two-cookie pass as the rest of the
+    site. The v3 empty states never reach a public visitor, and the lesson counter cannot be pumped."""
+    from radar.config import Config
+    from radar.web import create_app
+    c = Config(); c.database_url = f"sqlite:///{tmp_path / 'n.db'}"; c.guard_public = True; c.trail_public = True
+    c.v2_public = True; c.v21_public = True; c.secret_key = "t"; c.preview_key = "k" * 24
+    app = create_app(c); cl = app.test_client()
+    cl.get("/preview/" + c.preview_key)                     # the preview link, without the Circle unlock
+    assert '"v3": 1' not in cl.get("/guard/").get_data(as_text=True)
+    assert "pdt-home" not in cl.get("/trail/").get_data(as_text=True)
+    anon = app.test_client()
+    assert "tally-empty" not in anon.get("/friends/keepers").get_data(as_text=True)
+    assert "wl-quiet" not in anon.get("/welcome").get_data(as_text=True)
+    for _ in range(170):
+        r = anon.post("/api/guard/tally", data='{"m":1,"ev":"start"}', headers={"Content-Type": "application/json"})
+        assert r.status_code == 204
+
+
+def test_cron_doors_answer_only_the_scheduler_once_a_secret_is_set(tmp_path, monkeypatch):
+    from radar.config import Config
+    from radar.web import create_app
+    c = Config(); c.database_url = f"sqlite:///{tmp_path / 'n.db'}"; c.secret_key = "t"
+    cl = create_app(c).test_client()
+    monkeypatch.setenv("CRON_SECRET", "s3cret")
+    assert cl.post("/cron/collect").status_code == 403
+    assert cl.post("/cron/collect", headers={"X-Cron-Key": "nope"}).status_code == 403
+    assert cl.post("/cron/collect", headers={"X-Cron-Key": "s3cret"}).status_code != 403
+    monkeypatch.delenv("CRON_SECRET")
+    assert cl.post("/cron/collect").status_code != 403

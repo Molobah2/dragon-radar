@@ -164,7 +164,7 @@
       if (e.key === "Escape" && !busy) { o.onDone(); }
       if (e.key === "Tab") { e.preventDefault(); (brk && brk.isConnected ? brk : hold).focus(); }
     };
-    var rs = function () { if (!wrap.hidden && st.isConnected) layout(); };
+    var rs = function () { if (!st.isConnected) { window.removeEventListener("resize", rs); return; } if (!wrap.hidden) layout(); };
     window.addEventListener("resize", rs, { passive: true });
   }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -182,6 +182,8 @@
   function room(el, still) {
     if (!el || el.dataset.g3Room) return; el.dataset.g3Room = "1";
     var g = window.gsap, cs = getComputedStyle(el), bg = document.createElement("div");
+    // the hall is redrawn on every visit: endless loops stop themselves once their hall has left the page
+    var gone = function () { if (!el.isConnected) this.kill(); };
     bg.className = "g3-room-bg"; bg.setAttribute("aria-hidden", "true");
     bg.style.backgroundImage = cs.backgroundImage; bg.style.backgroundPosition = cs.backgroundPosition; bg.style.backgroundSize = cs.backgroundSize; bg.style.backgroundRepeat = cs.backgroundRepeat;
     el.insertBefore(bg, el.firstChild); el.classList.add("g3-room-live");
@@ -189,13 +191,14 @@
     for (var i = 0; i < 12; i++) em.appendChild(document.createElement("i"));
     el.insertBefore(em, bg.nextSibling);
     if (!still) { var l = document.createElement("div"); l.className = "v3-lamp g3-lamp"; l.setAttribute("aria-hidden", "true"); el.insertBefore(l, em);
-      g.to(l, { opacity: 0.55, duration: 2.2, ease: "sine.inOut", yoyo: true, repeat: -1 }); g.to(l, { scale: 1.1, duration: 3.7, ease: "sine.inOut", yoyo: true, repeat: -1 }); }
+      g.to(l, { opacity: 0.55, duration: 2.2, ease: "sine.inOut", yoyo: true, repeat: -1, onRepeat: gone }); g.to(l, { scale: 1.1, duration: 3.7, ease: "sine.inOut", yoyo: true, repeat: -1, onRepeat: gone }); }
     if (still) return;
     g.fromTo(bg, { scale: 1.1 }, { scale: 1.02, duration: 1.5, ease: "power2.out" });
-    g.to(bg, { scale: 1.09, xPercent: 2, yPercent: -1, duration: 9, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.5 });
+    g.to(bg, { scale: 1.09, xPercent: 2, yPercent: -1, duration: 9, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.5, onRepeat: gone });
     g.from(el.querySelectorAll(".eyebrow, h1, p"), { y: 14, opacity: 0.25, duration: 0.7, stagger: 0.06, clearProps: "transform,opacity" });
     em.querySelectorAll("i").forEach(function (d) {
       (function rise() {
+        if (!el.isConnected) return;
         g.set(d, { left: g.utils.random(55, 95) + "%", top: g.utils.random(60, 100) + "%", x: 0, y: 0, autoAlpha: 0, scale: g.utils.random(0.5, 1.2) });
         g.to(d, { y: g.utils.random(-160, -80), x: g.utils.random(-20, 20), autoAlpha: g.utils.random(0.4, 0.9), duration: g.utils.random(3, 6), ease: "sine.out",
           delay: g.utils.random(0, 3), onComplete: function () { g.to(d, { autoAlpha: 0, duration: 0.8, onComplete: rise }); } });
