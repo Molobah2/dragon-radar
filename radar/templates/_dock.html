@@ -64,7 +64,7 @@
   .pdnav a:focus-visible { outline: 3px solid #ffcf6b; outline-offset: 2px; }
   body.has-pdnav { padding-bottom: calc(var(--pdnav-h, 80px) + 24px); }
   body.sheet-open .pdnav, body.has-pdnav .tabbar { display: none; }
-  @media (min-width: 900px) { .pdnav { width: min(720px, calc(100% - 32px)); } .pd-secs { grid-auto-flow: column; } .pd-s { grid-template-columns: auto auto; justify-content: center; align-items: center; gap: 8px; font-size: 14px; padding: 9px 10px; } .pd-s svg { width: 20px; height: 20px; } }
+  @media (min-width: 900px) { .pdnav { width: min(720px, calc(100% - 32px)); } .pd-secs { grid-auto-flow: column; } .pd-s { grid-template-columns: auto auto; justify-content: center; align-items: center; gap: 8px; font-size: 14px; padding: 9px 10px; } .pd-s svg { width: 20px; height: 20px; } .pd-secs { grid-auto-columns: auto; } .pd-s > span { white-space: nowrap; overflow-wrap: normal; } }
   .pd-me { border: 0; background: none; cursor: pointer; font-family: inherit; }
   .pdnav.pop-open { z-index: 99; }
   .pd-me span { max-width: 10ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
