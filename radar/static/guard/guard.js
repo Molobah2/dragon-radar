@@ -24,7 +24,7 @@ const opensAt = (m) => Date.parse(CFG.dates[m] + "T00:00:00Z");
 const isOpen = (m) => now() >= opensAt(m);
 // lessons open at 00:00 UTC; away from UTC the label carries the local time too, so nobody waits on a wrong day
 const whenOpens = (m) => { const ms = opensAt(m), d = new Date(ms); return d.getHours() || d.getMinutes() ? fmtDate(ms, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : fmtDate(ms); };
-const lang = (() => { let l = null; try { l = localStorage.getItem("radar:lang"); } catch (e) {} if (!l) l = (navigator.language || "en").slice(0, 2); return ["en","es","fr","pt","tr","ru","vi","id","ko","zh"].includes(l) ? l : "en"; })();
+const lang = (() => { let l = null; try { l = localStorage.getItem("radar:lang"); } catch (e) {} if (!l) l = (navigator.language || "en").slice(0, 2); return ["en","es","fr","pt","tr","ru","vi","id","ko","zh"].concat(CFG.v3 ? ["de"] : []).includes(l) ? l : "en"; })();   // German: v3 only for now
 const fmtDate = (ms, o = { weekday: "short", day: "numeric", month: "short" }) => { try { return new Intl.DateTimeFormat(lang, o).format(new Date(ms)); } catch (e) { return new Date(ms).toDateString(); } };
 
 /* ---------- words: English here; other languages load a small pack ---------- */
@@ -949,6 +949,7 @@ function progressView() {
 /* ---------- language ---------- */
 function langPick() {
   const sel = $("#lang"), L = [["en", "English"], ["es", "Español"], ["fr", "Français"], ["pt", "Português"], ["tr", "Türkçe"], ["ru", "Русский"], ["vi", "Tiếng Việt"], ["id", "Indonesia"], ["ko", "한국어"], ["zh", "中文"]];
+  if (CFG.v3) L.splice(1, 0, ["de", "Deutsch"]);
   sel.innerHTML = L.map(([c, n]) => `<option value="${c}" ${c === lang ? "selected" : ""}>${n}</option>`).join("");
   sel.onchange = () => { try { localStorage.setItem("radar:lang", sel.value); } catch (e) {} location.reload(); };
 }

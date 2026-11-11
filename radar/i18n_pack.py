@@ -5,7 +5,7 @@ the text. English readers download no translations at all."""
 from pathlib import Path
 
 SRC = Path(__file__).with_name("i18n_src.js")
-LANGS = ("es", "fr", "pt", "tr", "ru", "vi", "id", "ko", "zh")
+LANGS = ("es", "fr", "pt", "tr", "ru", "vi", "id", "ko", "zh", "de")
 
 
 def _between(text: str, start: str, end: str) -> str:

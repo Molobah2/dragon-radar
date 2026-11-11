@@ -125,7 +125,7 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None, too_many=None)
             try:
                 # and in the Keeper's language: the site's language loader, which the dock labels use everywhere else
                 page = page.replace("</body>", render_template("_dock.html")
-                                    + '<script src="/static/i18n.js?v=' + conf["ver"] + '"></script></body>', 1)
+                                    + '<script>window.PD_V3=1</script><script src="/static/i18n.js?v=' + conf["ver"] + '"></script></body>', 1)
             except Exception:   # the lessons must still open if the dock cannot be drawn
                 pass
         page = page.replace("/*GUARD_CFG*/{}", json.dumps(conf).replace("</", "<\\/")).replace("/*VER*/", conf["ver"])

@@ -7,6 +7,7 @@
     ["en", "English"], ["es", "Español"], ["fr", "Français"], ["pt", "Português"], ["tr", "Türkçe"],
     ["ru", "Русский"], ["vi", "Tiếng Việt"], ["id", "Indonesia"], ["ko", "한국어"], ["zh", "中文"],
   ];
+  if (document.documentElement.classList.contains("v3") || window.PD_V3) LANGS.splice(1, 0, ["de", "Deutsch"]);   // German: v3 only for now
   const GT = { zh: "zh-CN" };  // Google Translate codes where they differ
   const codes = LANGS.map((l) => l[0]);
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };

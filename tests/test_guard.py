@@ -212,3 +212,27 @@ def test_cron_doors_answer_only_the_scheduler_once_a_secret_is_set(tmp_path, mon
     assert cl.post("/cron/collect", headers={"X-Cron-Key": "s3cret"}).status_code != 403
     monkeypatch.delenv("CRON_SECRET")
     assert cl.post("/cron/collect").status_code != 403
+
+
+def test_german_is_in_v3_only(tmp_path):
+    """German (11 Nov) ships with v3: every page, Dragon Guard and the Trail can show it where v3 is open, and the
+    public site keeps its ten languages until the v3 switch."""
+    from radar.config import Config
+    from radar.web import create_app
+    from radar.i18n_pack import build
+    root = Path(__file__).resolve().parents[1] / "radar"
+    packs = build()
+    assert "de" in packs and "Tagesziel" in packs["de"]
+    loader = (root / "static" / "i18n.js").read_text()
+    assert 'classList.contains("v3") || window.PD_V3) LANGS.splice(1, 0, ["de", "Deutsch"])' in loader
+    es = json.loads((root / "static" / "guard" / "i18n" / "es.json").read_text())
+    de = json.loads((root / "static" / "guard" / "i18n" / "de.json").read_text())
+    assert set(de) == set(es) and all(de.values())
+    assert 'concat(CFG.v3 ? ["de"] : [])' in (root / "static" / "guard" / "guard.js").read_text()
+    assert "if (window.PD_V3) NAMES.splice(1, 0, ['de', 'Deutsch'])" in (root / "static" / "trail" / "index.html").read_text()
+    c = Config(); c.database_url = f"sqlite:///{tmp_path / 'n.db'}"; c.guard_public = True; c.trail_public = True
+    c.v21_public = True; c.secret_key = "t"
+    cl = create_app(c).test_client()
+    assert "window.PD_V3=1" not in cl.get("/guard/").get_data(as_text=True) and "window.PD_V3=1" not in cl.get("/trail/").get_data(as_text=True)
+    c.v3_public = True
+    assert "window.PD_V3=1" in cl.get("/guard/").get_data(as_text=True) and "window.PD_V3=1" in cl.get("/trail/").get_data(as_text=True)

@@ -507,3 +507,13 @@ html.v3 .post .tag.crew { color: #4a2f8f; background: rgba(110, 80, 200, .14); b
 html.v3 .post .tag.tier:not(.tier-gold):not(.tier-silver) { color: #7a3f0c; }
 html.v3 .post .tag.tr-link { color: #1d5f94; }
 html.v3 .dex-next { color: #ffcf6b; }
+/* audit: on phones the language pill made the header too wide, pushing Songs off the screen in every language */
+@media (max-width: 420px) {
+  html.v3 header.bar .bar-right { gap: 6px; }
+  html.v3 .bar-right .lang-pick { padding-inline: 10px; }
+  html.v3 .bar-right .lang-pick > .ico { display: none; }
+  html.v3 .bar-right .lang-pick select { max-width: 4.6em; text-overflow: ellipsis; }
+  /* a long page name ("Bibliothèque des AMA") shortens with … instead of pushing the header off the screen */
+  html.v3 .v3-brand { min-width: 0; flex: 0 1 auto; }
+  html.v3 .v3-brand > span, html.v3 .v3-brand small { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+}

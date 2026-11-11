@@ -1876,7 +1876,7 @@ def test_every_language_pack_is_consistent():
     pair = _re.compile(r'(?:^|[\s,{])([A-Za-z][A-Za-z0-9_]*): "((?:[^"\\]|\\.)*)"')
     ph = lambda v: sorted(set(_re.findall(r"\{([nahs])\}", v)))
     en = dict(pair.findall(blocks["en"]))
-    assert len(blocks) == 10
+    assert len(blocks) == 11   # ten languages plus German in v3 (11 Nov)
     for lang, blk in blocks.items():
         found = pair.findall(blk)
         twice = [k for k, n in Counter(k for k, _ in found).items() if n > 1]
@@ -2076,7 +2076,7 @@ def test_mailbox_ideas_refresh_and_already_following():
     assert 'id="refresh"' in feed
     src = open("radar/i18n_src.js", encoding="utf-8").read()
     for k in ("kAlready:", "fRefresh:", "fRefreshL:", "fCaught:"):
-        assert src.count(k) == 10, k
+        assert src.count(k) == 11, k
 
 
 def test_follow_asks_before_marking_followed():
@@ -2088,7 +2088,7 @@ def test_follow_asks_before_marking_followed():
     assert "Did you follow?" in ks and "Yes, followed" in ks and "Not yet" in ks
     src = open("radar/i18n_src.js", encoding="utf-8").read()
     for k in ("kAskQ:", "kAskYes:", "kAskNo:"):
-        assert src.count(k) == 10, k
+        assert src.count(k) == 11, k
 
 
 def test_weekly_keepers_only_leaves_the_team_out(cfg, Session):
@@ -2109,7 +2109,7 @@ def test_weekly_keepers_only_leaves_the_team_out(cfg, Session):
         js = open(f"radar/static/{f}", encoding="utf-8").read()
         assert "who=${who}" in js and "pd:weeklyWho" in js and "THE TEAM LEFT OUT" in js
     assert 'data-wkwho="keepers"' in open("radar/templates/feed.html", encoding="utf-8").read()
-    assert open("radar/i18n_src.js", encoding="utf-8").read().count("wkKeepers:") == 10
+    assert open("radar/i18n_src.js", encoding="utf-8").read().count("wkKeepers:") == 11
 
 
 def test_new_dragon_art_reaches_everyone():
@@ -2153,7 +2153,7 @@ def test_days_strip_lists_each_of_the_last_7_days(cfg, Session):
     html = open("radar/templates/feed.html", encoding="utf-8").read()
     assert 'id="days-row"' in html and 'id="days-skip"' in html
     assert 'id="hub-catchup"' in open("radar/templates/hub.html", encoding="utf-8").read()
-    assert open("radar/i18n_src.js", encoding="utf-8").read().count("daysTitle:") == 10
+    assert open("radar/i18n_src.js", encoding="utf-8").read().count("daysTitle:") == 11
 
 
 def test_home_links_to_jons_discord_and_x(cfg, Session):

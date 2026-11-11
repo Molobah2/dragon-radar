@@ -328,7 +328,7 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         if (v3_ok() if v3_ok else getattr(cfg, "v3_public", False)):
             # v3: a way back to the rest of pdtools from the Trail (the Create section, where its card lives)
             page = (TRAIL_DIR / "index.html").read_text(encoding="utf-8")
-            page = page.replace('<div class="corner l">', '<div class="corner l">' + PD_BACK, 1).replace("</head>", PD_BACK_CSS + "</head>", 1)
+            page = page.replace('<div class="corner l">', '<div class="corner l">' + PD_BACK, 1).replace("</head>", PD_BACK_CSS + "<script>window.PD_V3=1</script></head>", 1)
             page = page.replace("</body>", PD_BACK.replace('class="pdt-home"', 'class="pdt-home pdt-float"', 1) + "</body>", 1)
             resp = Response(page, mimetype="text/html")
         else:

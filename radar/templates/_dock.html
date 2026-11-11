@@ -49,10 +49,11 @@
   .pdnav { position: fixed; z-index: 92; left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: min(640px, calc(100% - 16px));
     display: grid; gap: 4px; padding: 6px; border-radius: 22px; background: rgba(24, 16, 44, .9); color: #fff; font-family: "Nunito", system-ui, sans-serif;
     box-shadow: 0 16px 36px -14px rgba(0, 0, 0, .75), inset 0 0 0 1px rgba(255, 255, 255, .08); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
-  .pd-secs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px; }
-  .pd-s > span { max-width: 100%; text-align: center; overflow-wrap: anywhere; }
-  /* small phones in long languages: one line per label, shortened with … rather than pushed off the screen */
-  @media (max-width: 359px) { .pd-s { padding: 6px 1px 5px; font-size: 10.5px; } .pd-s > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }
+  .pd-secs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; }
+  .pd-s > span { max-width: 100%; text-align: center; }
+  /* small phones in long languages: equal columns and one line per label, shortened with … rather than pushed off
+     the screen (a word is never split in the middle: "Commun / ity") */
+  @media (max-width: 359px) { .pd-secs { grid-auto-columns: minmax(0, 1fr); } .pd-s { padding: 6px 1px 5px; font-size: 10.5px; } .pd-s > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }
   .pd-s { display: grid; justify-items: center; gap: 2px; padding: 6px 4px 5px; border-radius: 16px; color: rgba(255, 255, 255, .72); text-decoration: none; font-weight: 800; font-size: 11.5px; line-height: 1.1; }
   .pd-s svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
   .pd-s.on { color: #2a1606; background: linear-gradient(180deg, #ffe08f, #ffb85c); }
@@ -64,7 +65,7 @@
   .pdnav a:focus-visible { outline: 3px solid #ffcf6b; outline-offset: 2px; }
   body.has-pdnav { padding-bottom: calc(var(--pdnav-h, 80px) + 24px); }
   body.sheet-open .pdnav, body.has-pdnav .tabbar { display: none; }
-  @media (min-width: 900px) { .pdnav { width: min(720px, calc(100% - 32px)); } .pd-secs { grid-auto-flow: column; } .pd-s { grid-template-columns: auto auto; justify-content: center; align-items: center; gap: 8px; font-size: 14px; padding: 9px 10px; } .pd-s svg { width: 20px; height: 20px; } .pd-secs { grid-auto-columns: auto; } .pd-s > span { white-space: nowrap; overflow-wrap: normal; } }
+  @media (min-width: 900px) { .pdnav { width: min(720px, calc(100% - 32px)); } .pd-secs { grid-auto-flow: column; } .pd-s { grid-template-columns: auto auto; justify-content: center; align-items: center; gap: 8px; font-size: 14px; padding: 9px 10px; } .pd-s svg { width: 20px; height: 20px; } .pd-s > span { white-space: nowrap; } }
   .pd-me { border: 0; background: none; cursor: pointer; font-family: inherit; }
   .pdnav.pop-open { z-index: 99; }
   .pd-me span { max-width: 10ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
