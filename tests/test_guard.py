@@ -236,3 +236,23 @@ def test_german_is_in_v3_only(tmp_path):
     assert "window.PD_V3=1" not in cl.get("/guard/").get_data(as_text=True) and "window.PD_V3=1" not in cl.get("/trail/").get_data(as_text=True)
     c.v3_public = True
     assert "window.PD_V3=1" in cl.get("/guard/").get_data(as_text=True) and "window.PD_V3=1" in cl.get("/trail/").get_data(as_text=True)
+
+
+def test_counters_never_collide(tmp_path):
+    """Two beacons for the same lesson at the same moment both inserted the day's first row and one failed with a
+    duplicate key (seen live, 11 Nov). bump is one upsert now, and every hit counts."""
+    import threading
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from datetime import date
+    from radar.db import Base, DailyCount
+    from radar.visits import bump
+    eng = create_engine(f"sqlite:///{tmp_path / 'c.db'}", connect_args={"timeout": 30})
+    Base.metadata.create_all(eng); S = sessionmaker(eng)
+    def one():
+        with S() as s:
+            bump(s, date(2026, 11, 13), "guard_1_start"); s.commit()
+    ts = [threading.Thread(target=one) for _ in range(20)]
+    [t.start() for t in ts]; [t.join() for t in ts]
+    with S() as s:
+        assert s.get(DailyCount, (date(2026, 11, 13), "guard_1_start")).count == 20

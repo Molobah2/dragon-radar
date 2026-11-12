@@ -38,6 +38,17 @@ def source_of(ref: str, own_host: str) -> str:
 
 
 def bump(s, day: date, key: str) -> None:
+    """One more for (day, key), in a single statement: two requests at the same moment (two Dragon Guard beacons,
+    two page views) used to both insert the first row of the day and one failed with a duplicate key (11 Nov)."""
+    name = s.get_bind().dialect.name
+    if name in ("postgresql", "sqlite"):
+        if name == "postgresql":
+            from sqlalchemy.dialects.postgresql import insert
+        else:
+            from sqlalchemy.dialects.sqlite import insert
+        q = insert(DailyCount).values(day=day, key=key, count=1)
+        s.execute(q.on_conflict_do_update(index_elements=["day", "key"], set_={"count": DailyCount.count + 1}))
+        return
     row = s.get(DailyCount, (day, key))
     if row is None:
         s.add(DailyCount(day=day, key=key, count=1))
