@@ -63,7 +63,10 @@
   const sealed = (e) => !!dex.s[e.sp.id];
   // the secret marks, kept unreadable on purpose
   const MARK = [3974678, 11828366, 24034322].map((v) => ((v ^ 0x2A5F3) - 104729) / 7919);
-  function sealDue() { return SECRETS.find((e, i) => !sealed(e) && dex.e >= MARK[i]) || null; }
+  // gift days (Jon, 12 Nov): on that day every Keeper who finishes the daily goal is given that relic
+  const GIFTS = [{ day: "2026-11-13", i: 1 }];   // 13 Nov 2026: the second relic, the Ember Warden
+  const giftDue = () => { const g = GIFTS.find((x) => x.day === today()); const e = g && SECRETS[g.i]; return e && !sealed(e) && goalDone() ? e : null; };
+  function sealDue() { return SECRETS.find((e, i) => !sealed(e) && dex.e >= MARK[i]) || giftDue() || null; }
   const owned = (e) => ((dex.have[e.sp.id] || {})[TK[e.tier]] || 0) > 0;
   const found = () => ENTRIES.filter(owned).length;
   const foundIn = (tier) => ENTRIES.filter((e) => e.tier === tier && owned(e)).length;
@@ -938,6 +941,11 @@
     dex.e = (dex.e | 0) + 1; save();
     if (sealDue()) setTimeout(offerSeal, 900);
   });
+  // a gift day: the relic appears once the goal is done, after any egg has hatched and the sheets are closed
+  if (GIFTS.some((x) => x.day === today())) {
+    addEventListener("pd:goaldone", () => setTimeout(offerSeal, 1600));
+    setInterval(() => { if (giftDue() && document.body.classList.contains("ready")) offerSeal(); }, 20000);
+  }
 
   // ---------- the book: turning pages ----------
   const book = $("dex-book"), dots = $("dex-dots") ? [...$("dex-dots").children] : [];
