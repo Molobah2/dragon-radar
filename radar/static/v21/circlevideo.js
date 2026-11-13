@@ -60,8 +60,8 @@
     // the sky: drawn once, at the output size
     const sky = document.createElement("canvas"); sky.width = W * S; sky.height = H * S;
     const s = sky.getContext("2d"); s.scale(S, S);
-    const g = s.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#130b29"); g.addColorStop(1, "#2a1640"); s.fillStyle = g; s.fillRect(0, 0, W, H);
-    const rg = s.createRadialGradient(CX, CY, 40, CX, CY, 760); rg.addColorStop(0, "rgba(170, 80, 140, .55)"); rg.addColorStop(.55, "rgba(110, 50, 120, .22)"); rg.addColorStop(1, "rgba(40, 20, 70, 0)");
+    const g = s.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#140c06"); g.addColorStop(1, "#3a2412"); s.fillStyle = g; s.fillRect(0, 0, W, H);
+    const rg = s.createRadialGradient(CX, CY, 40, CX, CY, 760); rg.addColorStop(0, "rgba(200, 120, 50, .5)"); rg.addColorStop(.55, "rgba(140, 80, 30, .22)"); rg.addColorStop(1, "rgba(40, 24, 10, 0)");
     s.fillStyle = rg; s.fillRect(0, 0, W, H);
     let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const stars = Array.from({ length: 220 }, () => ({ x: rnd() * W, y: rnd() * H, r: .5 + rnd() * 1.8, p: rnd() * 6.28, sp: .6 + rnd() * 1.6, d: .2 + rnd() * .8 }));
@@ -71,14 +71,14 @@
       const x = c.getContext("2d"), r = size / 2, m = w / 2; x.scale(S, S); x.imageSmoothingQuality = "high";
       x.save(); x.beginPath(); x.arc(m, m, r, 0, 6.2832); x.closePath(); x.clip();
       if (img) { x.drawImage(img, m - r, m - r, size, size); }
-      else { x.fillStyle = "#5c408c"; x.fillRect(0, 0, c.width, c.height); x.fillStyle = "#ffecd2"; x.font = `700 ${Math.round(size * .46)}px Fredoka, system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(letter || "?", m, m + 3); }
+      else { x.fillStyle = "#7a4e26"; x.fillRect(0, 0, c.width, c.height); x.fillStyle = "#ffecd2"; x.font = `700 ${Math.round(size * .46)}px Fredoka, system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(letter || "?", m, m + 3); }
       x.restore(); return { c, w, ring, size };
     }
     const meDisc = disc(o.me && o.me.img, o.me && o.me.letter, SME, "#ff9f6e");
     const spots = ppl.map((p, i) => {
       const inner = i < INNER, n = inner ? Math.min(INNER, ppl.length) : Math.max(1, ppl.length - INNER), j = inner ? i : i - INNER;
       const ang = -Math.PI / 2 + (j / n) * Math.PI * 2 + (inner ? 0 : .26);
-      return { ang, r: inner ? R1 : R2, d: disc(p.img, p.letter, inner ? S1 : S2, inner ? "#ffc45c" : "#c4aaff"), rank: i + 1,
+      return { ang, r: inner ? R1 : R2, d: disc(p.img, p.letter, inner ? S1 : S2, inner ? "#ffc45c" : "#d9a45e"), rank: i + 1,
         t0: inner ? 1.0 + j * .1 : 1.75 + j * .065, inner };
     });
     const handle = "@" + (o.handle || "");
@@ -159,8 +159,8 @@
         const bx = px + sp.d.size * .36, by = py - sp.d.size * .5 + 10 * (1 - out3(k));
         x.globalAlpha = out3(k);
         x.fillStyle = "#ffd65c"; x.beginPath(); x.arc(bx, by, 27, 0, 6.2832); x.fill();
-        x.lineWidth = 4.5; x.strokeStyle = "#3c1e50"; x.stroke();
-        x.fillStyle = "#321a3c"; x.font = "700 34px Fredoka, system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(sp.rank), bx, by + 2);
+        x.lineWidth = 4.5; x.strokeStyle = "#3c2410"; x.stroke();
+        x.fillStyle = "#2b1a0b"; x.font = "700 34px Fredoka, system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(sp.rank), bx, by + 2);
         x.globalAlpha = 1;
       }
       // the words, wiped in from the left
@@ -170,7 +170,7 @@
         x.save(); x.beginPath(); x.rect(0, 0, 96 + 820 * kw, H); x.clip();
         const dy = 18 * (1 - kw);
         x.fillStyle = "#ffc45c"; rrect(x, 96, 342 + dy, 404, 74, 37); x.fill();
-        x.fillStyle = "#281636"; x.font = "700 38px Fredoka, system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("DRAGON CIRCLE", 298, 380 + dy);
+        x.fillStyle = "#2b1a0b"; x.font = "700 38px Fredoka, system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("DRAGON CIRCLE", 298, 380 + dy);
         let fs = 112; x.font = `700 ${fs}px Fredoka, system-ui, sans-serif`; while (x.measureText(handle).width > 760 && fs > 56) { fs -= 4; x.font = `700 ${fs}px Fredoka, system-ui, sans-serif`; }
         x.textAlign = "left"; x.fillStyle = "#fff6e4"; x.shadowColor = "rgba(0, 0, 0, .35)"; x.shadowBlur = 18 * S; x.fillText(handle, 96, 528 + dy);
         x.shadowBlur = 0; x.fillStyle = "#ffd696"; x.font = "700 51px Fredoka, system-ui, sans-serif"; x.fillText(count, 96, 656 + dy);
@@ -179,7 +179,7 @@
       const ks = out3((t - 3.6) / .6);
       if (ks > 0) { x.globalAlpha = ks * .86; x.fillStyle = "#fff6e4"; x.font = "700 42px Fredoka, system-ui, sans-serif"; x.textAlign = "right"; x.textBaseline = "middle"; x.fillText("pdtools.xyz", W - 58, H - 48); x.globalAlpha = 1; }
       // a soft fade in at the very start
-      if (t < .35) { x.fillStyle = `rgba(10, 6, 20, ${1 - t / .35})`; x.fillRect(0, 0, W, H); }
+      if (t < .35) { x.fillStyle = `rgba(10, 6, 2, ${1 - t / .35})`; x.fillRect(0, 0, W, H); }
     };
   }
   function rrect(x, X, Y, w, h, r) { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); }
