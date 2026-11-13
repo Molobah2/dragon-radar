@@ -257,3 +257,17 @@ def test_counters_never_collide(tmp_path):
     [t.start() for t in ts]; [t.join() for t in ts]
     with S() as s:
         assert s.get(DailyCount, (date(2026, 11, 13), "guard_1_start")).count == 20
+
+
+def test_every_script_parses():
+    """13 Nov: a // comment slipped into a one-line function and the whole Dragon Guard page stopped working.
+    Every script the site serves must at least parse."""
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    if not node:
+        return
+    root = Path(__file__).resolve().parents[1] / "radar" / "static"
+    for f in [root / "guard" / "guard.js", root / "guard" / "v3" / "guard-v3.js", root / "app.js", root / "dragons.js", root / "v3" / "motion.js"]:
+        r = subprocess.run([node, "--check", str(f)], capture_output=True, text=True)
+        assert r.returncode == 0, (f.name, r.stderr[:300])
