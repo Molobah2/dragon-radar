@@ -31,7 +31,8 @@ GUARD_DIR = Path(__file__).parent / "static" / "guard"
 EVENTS = {"start", "quiz", "done", "check", "seen", "share", "card", "leave", "netfail", "jserr"}   # the last three find where people get stuck
 DATES = {1: "2026-11-08", 2: "2026-11-08", 3: "2026-11-09", 4: "2026-11-10", 5: "2026-11-11", 6: "2026-11-12",
          7: "2026-11-14", 8: "2026-11-15", 9: "2026-11-17", 10: "2026-11-18", 11: "2026-11-19", 12: "2026-11-20",
-         13: "2026-11-21", 14: "2026-11-22"}
+         13: "2026-11-21", 14: "2026-11-22",
+         15: "2026-11-23"}   # 15 (13 Nov, from Vaynard): search ads and fake sites, next in the daily order
 DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 # Mint month safety news (8 Nov 2026): one tip a day on the feed and the community pages until the month is over.
@@ -159,7 +160,7 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None, too_many=None)
             m = int(body.get("m", -1)); ev = str(body.get("ev", ""))
         except (ValueError, TypeError, AttributeError):
             return ("", 204)
-        if not (0 <= m <= 14) or ev not in EVENTS:
+        if not (0 <= m <= 15) or ev not in EVENTS:
             return ("", 204)
         from datetime import datetime
         day = datetime.now(tz).date()

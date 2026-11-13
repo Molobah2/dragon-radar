@@ -497,3 +497,13 @@ h1.kin{white-space:pre-wrap}
 @media (min-width:2200px) and (min-height:1000px){:root{--fs:.95;--mw:940px;--u:1}}
 /* sideways phones: the Next bar sits after the card instead of covering half of a short screen */
 @media (orientation:landscape) and (max-height:500px){.nav{position:static;background:none;padding-bottom:12px}.cl .art,.card .art{max-height:42vh;width:100%}}
+
+/* lesson 15: a practice search results page (13 Nov) */
+.page.serp{display:grid;gap:12px;text-align:left}
+.sres{display:grid;gap:3px;padding-bottom:10px;border-bottom:1px solid #e3e0d9}
+.sres:last-child{border-bottom:0;padding-bottom:0}
+.sres-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font:600 calc(13px * var(--fs))/1.3 ui-monospace,Menlo,Consolas,monospace;color:#3d5f3a;word-break:break-all}
+.sres-ad{font:800 calc(12px * var(--fs))/1 var(--f);color:#24160a}
+.sres-ad .seg.plain{background:#f1e6c8;border-radius:6px;padding:3px 6px}
+.sres h5{margin:0;font:800 calc(17px * var(--fs))/1.25 var(--f);color:#1a0dab}
+.sres p{margin:0;font-size:calc(14px * var(--fs));color:#4d4943}

@@ -1,6 +1,6 @@
 {
  "ribbon": "이 브라우저는 진행 상황을 저장하지 않아요. 아래쪽의 내 진행 상황 옮기기를 사용해 보관하세요.",
- "lessonN": "14개 중 {n}번째 레슨",
+ "lessonN": "15개 중 {n}번째 레슨",
  "soon": "곧 열려요",
  "firstOn": "첫 레슨 오픈: {d}",
  "firstOn2": "첫날에는 레슨 두 개, 그 뒤로는 하루에 하나씩 열려요. 그날 다시 와서 경계를 시작하세요.",
@@ -120,7 +120,7 @@
  "cardEyebrow": "POCKET DRAGONS 커뮤니티",
  "cardTitle": "나는 경계 중",
  "rankIs": "계급: {r}",
- "cardLine": "Dragon Guard 레슨 14개 중 {n}개 완료",
+ "cardLine": "Dragon Guard 레슨 15개 중 {n}개 완료",
  "cardLine2": "사기가 내 드래곤에게 닿기 전에 알아봐요.",
  "cardSafe": "받을 배지 없음. NFT 없음. 지갑 단계 없음.",
  "shareText": "pdtools의 Dragon Guard로 훈련 중이에요: Pocket Dragons 커뮤니티를 위한 하루 한 번의 짧은 보안 레슨. pdtools.xyz/guard",

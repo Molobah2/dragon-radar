@@ -4,7 +4,7 @@
 (() => {
 "use strict";
 const CFG = Object.assign({
-  dates: {1:"2026-11-08",2:"2026-11-08",3:"2026-11-09",4:"2026-11-10",5:"2026-11-11",6:"2026-11-12",7:"2026-11-14",8:"2026-11-15",9:"2026-11-17",10:"2026-11-18",11:"2026-11-19",12:"2026-11-20",13:"2026-11-21",14:"2026-11-22"},
+  dates: {1:"2026-11-08",2:"2026-11-08",3:"2026-11-09",4:"2026-11-10",5:"2026-11-11",6:"2026-11-12",7:"2026-11-14",8:"2026-11-15",9:"2026-11-17",10:"2026-11-18",11:"2026-11-19",12:"2026-11-20",13:"2026-11-21",14:"2026-11-22",15:"2026-11-23"},
   drills: {"2026-11-13":"Raffle closes and the top 500 snapshot is taken today at 1 PM UTC.","2026-11-16":"The community presale opens today at 1 PM UTC.","2026-11-30":"The public auction runs today from 1 PM UTC for 24 hours."},
   events: [["2026-11-13","Raffle closes · snapshot"],["2026-11-16","Community presale"],["2026-11-30","Public auction"]],
   official: [], serverNow: 0, now: "", tally: "/api/guard/tally", ver: "1", base: "/guard/"
@@ -81,6 +81,7 @@ function rng(seed) { let a = 0; for (const c of String(seed)) a = Math.imul(a ^ 
 const shuffle = (arr, r) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const art = (k, w = 640) => `${CFG.base}art/${k}-${w}.webp`;
 const ico = {
+  search: '<svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.6 11.2l4.6 4.6-1.4 1.4-4.6-4.6A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>',
   back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.4 5.4 14 4l-8 8 8 8 1.4-1.4L8.8 12z"/></svg>',
   star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.6 2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.5l-5.9 3.1 1.2-6.5L2.5 9.5l6.6-.9z"/></svg>',
   lock: '<svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-7-2a2 2 0 0 1 4 0v2h-4z"/></svg>',
@@ -98,9 +99,9 @@ async function mod(m) {
   if (!r.ok) throw new Error("content " + m);
   return (MODS[m] = await r.json());
 }
-let IDX = [];   // titles, tags and takeaways for all 14, from one small file
+let IDX = [];   // titles, tags and takeaways for all 15, from one small file
 async function loadIdx() { try { const r = await fetch(`${CFG.base}content/index.json?v=${CFG.ver}`); if (r.ok) IDX = await r.json(); } catch (e) {} }
-const meta = (m) => IDX[m - 1] || { title: T("lessonN", "Lesson {n} of 14", { n: m }), tag: "", minutes: 5, art: "shield", takeaway: "" };
+const meta = (m) => IDX[m - 1] || { title: T("lessonN", "Lesson {n} of 15", { n: m }), tag: "", minutes: 5, art: "shield", takeaway: "" };
 
 /* ---------- progress, rank, check days ---------- */
 const st = (m) => S.mods[m] || (S.mods[m] = { read: 0, tries: 0, best: -1, done: 0, need: 0, swift: 0, pass: 0 });
@@ -177,7 +178,7 @@ function home() {
     const s = st(tm);
     const label = s.read ? T("takeQuiz", "Take the quiz") : T("startLesson", "Start the lesson");
     const mt = meta(tm);
-    todayHtml = `<div class="parch today" id="todaycard"><div class="art" style="background-image:url(${art(mt.art)})"></div><div class="body"><span class="eyebrow" style="color:#7a4a16">${esc(T("lessonN", "Lesson {n} of 14", { n: tm }))}</span><h2>${esc(mt.title)}</h2><div class="meta"><span>${esc(T("min", "{n} min", { n: mt.minutes }))} · ${esc(T("then6", "then 6 questions"))}</span>${s.need ? `<span class="chip need">${esc(T("needs", "Needs review"))}</span>` : ""}</div><p class="muted">${esc(mt.takeaway)}</p><a class="btn main wide" href="#${s.read ? "honour/" + tm : "m" + tm}">${esc(label)}</a></div></div>`;
+    todayHtml = `<div class="parch today" id="todaycard"><div class="art" style="background-image:url(${art(mt.art)})"></div><div class="body"><span class="eyebrow" style="color:#7a4a16">${esc(T("lessonN", "Lesson {n} of 15", { n: tm }))}</span><h2>${esc(mt.title)}</h2><div class="meta"><span>${esc(T("min", "{n} min", { n: mt.minutes }))} · ${esc(T("then6", "then 6 questions"))}</span>${s.need ? `<span class="chip need">${esc(T("needs", "Needs review"))}</span>` : ""}</div><p class="muted">${esc(mt.takeaway)}</p><a class="btn main wide" href="#${s.read ? "honour/" + tm : "m" + tm}">${esc(label)}</a></div></div>`;
   } else {
     todayHtml = `<div class="parch today"><div class="art" style="background-image:url(${art("shield")})"></div><div class="body"><span class="eyebrow" style="color:#7a4a16">${esc(T("allDone", "All open lessons done"))}</span><h2>${esc(oc < N ? T("nextOn", "Next lesson opens {d}", { d: whenOpens(oc + 1) }) : T("wellGuarded", "Your hoard is well guarded"))}</h2><p class="muted">${esc(oc < N ? T("comeBack", "Come back then. Until then, practise any lesson again.") : T("weekly", "Keep sharp with the weekly Guard Drill and Check Day."))}</p>${oc >= N || weeklyDue() ? `<a class="btn main wide" href="#honour/drill">${esc(T("drillBtn", "Start the Guard Drill"))}</a>` : ""}</div></div>`;
   }
@@ -287,6 +288,7 @@ function sim(x, mode = "show") {
   switch (x.kind) {
     case "dm": return fr(`<div class="chat"><div class="hd">${av(x.from.name)}<div><div class="nm">${esc(x.from.name)} ${vf(x.from.badge)}</div><div class="hn">@${esc(x.from.handle)}</div></div></div><div class="msgs">${x.messages.map((m) => `<div class="bub ${m.who === "me" ? "me" : ""}">${sub(m.seg)}</div>`).join("")}</div></div>`);
     case "browser": return fr(`<div class="urlbar">${ico.lock}<span class="u">${sub(x.url)}</span></div><div class="page"><h4>${esc(x.page.title)}</h4>${(x.page.lines || []).map((l) => `<p>${esc(l)}</p>`).join("")}${x.page.button ? `<span class="fakebtn" aria-hidden="true">${esc(x.page.button)}</span>` : ""}</div>`);
+    case "search": return fr(`<div class="urlbar">${ico.search}<span class="u">${esc(x.query)}</span></div><div class="page serp">${(x.results || []).map((r) => `<div class="sres${r.ad ? " ad" : ""}"><div class="sres-top">${r.ad ? `<span class="sres-ad">${sub(r.badge || ["Sponsored"])}</span>` : ""}<span class="sres-url">${sub(r.url)}</span></div><h5>${esc(r.title)}</h5><p>${esc(r.desc || "")}</p></div>`).join("")}</div>`);
     case "seedpage": return fr(`<div class="urlbar">${ico.lock}<span class="u">${esc(x.site)}</span></div><div class="page"><h4>${esc(x.title)}</h4><div class="seeds" aria-label="${esc(T("seedBoxes", "Twelve empty word boxes"))}">${Array.from({ length: x.words || 12 }, (_, i) => `<span>${esc(T("word", "word"))} ${i + 1}</span>`).join("")}</div><span class="fakebtn" aria-hidden="true">${esc(T("continue", "Continue"))}</span></div>`);
     case "wallet": return `<div class="phone">${fr(`<div class="wal"><div class="hd"><span class="site">${esc(x.site)}</span><span class="ttl">${esc(x.title)}</span></div><dl>${x.rows.map((r) => `<div class="row"><dt>${esc(r.label)}</dt><dd>${sub(r.value)}</dd></div>`).join("")}</dl>${x.note ? `<p class="note">${esc(x.note)}</p>` : ""}<div class="bts" aria-hidden="true">${(x.buttons || ["Reject", "Sign"]).map((b) => `<span>${esc(b)}</span>`).join("")}</div></div>`)}</div>`;
     case "post": return fr(`<div class="post"><div class="hd2">${av(x.account.name)}<div><div class="nm">${esc(x.account.name)} ${vf(x.account.badge)}</div><div class="hn">@${esc(x.account.handle)}</div></div><span class="tm">${esc(x.time || "")}</span></div><div>${sub(x.seg)}</div></div>`);
@@ -300,6 +302,7 @@ function allSegs(x, out = []) {
   const push = (a) => (a || []).forEach((s) => { if (typeof s !== "string") out.push(s); });
   if (x.kind === "dm") x.messages.forEach((m) => push(m.seg));
   if (x.kind === "browser") push(x.url);
+  if (x.kind === "search") (x.results || []).forEach((r) => { push(r.badge); push(r.url); });
   if (x.kind === "wallet") x.rows.forEach((r) => push(r.value));
   if (x.kind === "post") push(x.seg);
   if (x.kind === "call") push(x.lines);
@@ -585,7 +588,7 @@ async function lesson(m, c) {
   }
   const dots = cards.map((_, i) => `<i class="${i === c ? "on" : i < c ? "done" : ""}"></i>`).join("");
   const last = c === n - 1;
-  main.innerHTML = `<div class="lesson-top"><a class="back" href="#home" aria-label="${esc(T("toHome", "Back to the hall"))}">${ico.back}</a><div><span class="eyebrow">${esc(T("lessonN", "Lesson {n} of 14", { n: m }))}</span><div style="font-weight:800">${esc(d.title)}</div></div><div class="dots" role="img" aria-label="${esc(T("cardOf", "Card {a} of {b}", { a: c + 1, b: n }))}">${dots}</div></div>
+  main.innerHTML = `<div class="lesson-top"><a class="back" href="#home" aria-label="${esc(T("toHome", "Back to the hall"))}">${ico.back}</a><div><span class="eyebrow">${esc(T("lessonN", "Lesson {n} of 15", { n: m }))}</span><div style="font-weight:800">${esc(d.title)}</div></div><div class="dots" role="img" aria-label="${esc(T("cardOf", "Card {a} of {b}", { a: c + 1, b: n }))}">${dots}</div></div>
   <article class="parch card" aria-live="polite">${body}</article>
   <div class="nav">${c > 0 ? `<a class="btn ghost" href="#m${m}/${c - 1}">${esc(T("back", "Back"))}</a>` : ""}<a class="btn main" id="next" href="${last ? "#honour/" + m : "#m" + m + "/" + (c + 1)}">${esc(last ? T("toQuiz", "Go to the quiz") : T("next", "Next"))}</a></div>`;
   if (lang !== "en" && c === 0) main.querySelector(".card").insertAdjacentHTML("afterbegin", `<p class="small chip">${esc(T("enOnly", "Lessons are in English for now. Your browser's translator is fine to use."))}</p>`);
@@ -841,7 +844,7 @@ async function shareCard() {
   x.fillStyle = "#f7ecd5"; x.font = "700 86px Fredoka, sans-serif"; x.fillText(T("cardTitle", "I stand guard"), 72, 205, 1050);
   x.font = "700 46px Fredoka, sans-serif"; x.fillStyle = "#ffcf7f"; x.fillText(T("rankIs", "Rank: {r}", { r: rk.name }), 72, 290, 1050);
   x.font = "700 30px Nunito, sans-serif"; x.fillStyle = "#e9dcc2";
-  x.fillText(T("cardLine", "{n} of 14 Dragon Guard lessons done", { n: modsDone() }), 72, 350, 1050);
+  x.fillText(T("cardLine", "{n} of 15 Dragon Guard lessons done", { n: modsDone() }), 72, 350, 1050);
   x.fillText(T("cardLine2", "I spot scams before they reach my dragons."), 72, 395, 1050);
   x.font = "800 24px Nunito, sans-serif"; x.fillStyle = "#f7ecd5"; x.fillText(T("cardSafe", "No badge to claim. No NFT. No wallet step."), 72, 520, 1050);
   x.fillStyle = "#ffb257"; x.font = "800 30px Nunito, sans-serif"; x.fillText("pdtools.xyz/guard", 72, 575);

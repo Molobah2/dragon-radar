@@ -102,7 +102,7 @@ def visible(seg_list):
 
 def test_fourteen_lessons_with_ten_questions_each():
     ms = lessons()
-    assert [m["id"] for m in ms] == list(range(1, 15))
+    assert [m["id"] for m in ms] == list(range(1, 16))   # 15: search ads and fake sites (13 Nov)
     for m in ms:
         assert len(m["questions"]) == 10 and m["cards"][-1]["type"] == "rule" and m["sources"]
         for q in m["questions"]:
@@ -133,7 +133,8 @@ def shown_strings(x, out):
     return out
 
 
-REAL = {"revoke.cash", "etherscan.io", "chainabuse.com", "ethereum.org", "pdtools.xyz", "pdtools.xyz/guard", "x.com"}
+REAL = {"revoke.cash", "etherscan.io", "chainabuse.com", "ethereum.org", "pdtools.xyz", "pdtools.xyz/guard", "x.com",
+        "google.com", "sites.google.com", "docs.google.com"}   # lesson 15 names where scam pages hide; never a link
 
 
 def test_fake_domains_are_reserved_and_no_contract_addresses():

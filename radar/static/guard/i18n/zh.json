@@ -1,6 +1,6 @@
 {
  "ribbon": "此浏览器不会保存你的进度。请使用页面底部的“转移我的进度”来保留进度。",
- "lessonN": "第 {n} 课，共 14 课",
+ "lessonN": "第 {n} 课，共 15 课",
  "soon": "即将开放",
  "firstOn": "首批课程开放时间：{d}",
  "firstOn2": "第一天两节课，之后每天一节。到时回来，开始你的守卫吧。",
@@ -120,7 +120,7 @@
  "cardEyebrow": "POCKET DRAGONS 社区",
  "cardTitle": "我在守卫",
  "rankIs": "军衔：{r}",
- "cardLine": "已完成 {n} 节 Dragon Guard 课程，共 14 节",
+ "cardLine": "已完成 {n} 节 Dragon Guard 课程，共 15 节",
  "cardLine2": "我能在骗局接近我的龙之前识破它。",
  "cardSafe": "没有徽章可领取。没有 NFT。没有钱包操作。",
  "shareText": "我正在 pdtools 上用 Dragon Guard 训练：为 Pocket Dragons 社区准备的每日一节安全短课。pdtools.xyz/guard",

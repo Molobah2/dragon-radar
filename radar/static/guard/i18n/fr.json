@@ -1,6 +1,6 @@
 {
  "ribbon": "Ce navigateur n'enregistre pas ta progression. Utilise Déplacer ma progression, en bas de la page, pour la garder.",
- "lessonN": "Leçon {n} sur 14",
+ "lessonN": "Leçon {n} sur 15",
  "soon": "Bientôt ouvert",
  "firstOn": "Les premières leçons ouvrent le {d}",
  "firstOn2": "Deux leçons le premier jour, puis une par jour. Reviens à ce moment et commence ta garde.",
@@ -120,7 +120,7 @@
  "cardEyebrow": "COMMUNAUTÉ POCKET DRAGONS",
  "cardTitle": "Je monte la garde",
  "rankIs": "Rang : {r}",
- "cardLine": "{n} leçons Dragon Guard sur 14 faites",
+ "cardLine": "{n} leçons Dragon Guard sur 15 faites",
  "cardLine2": "Je repère les arnaques avant qu'elles n'atteignent mes dragons.",
  "cardSafe": "Aucun badge à réclamer. Aucun NFT. Aucune étape avec le wallet.",
  "shareText": "Je m'entraîne avec Dragon Guard sur pdtools : une courte leçon de sécurité par jour pour la communauté Pocket Dragons. pdtools.xyz/guard",

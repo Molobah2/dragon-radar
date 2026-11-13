@@ -1,0 +1,370 @@
+{
+ "id": 15,
+ "slug": "search",
+ "title": "Search is not a door",
+ "tag": "Search",
+ "minutes": 5,
+ "art": "m15c0",
+ "takeaway": "Never reach a mint site, wallet or app through search or ads. Use your checked bookmark or type the address yourself.",
+ "cards": [
+  {
+   "type": "scene",
+   "title": "The first result",
+   "body": "It is presale night and you cannot find the link. You search Pocket Dragons mint and the first result has the dragons, the right name and a countdown. In this practice, the real site is pocketdragons.example. Look at what the results really are before you tap.",
+   "sim": {
+    "kind": "search",
+    "query": "pocket dragons mint",
+    "results": [
+     {
+      "ad": true,
+      "badge": [
+       {
+        "t": "Sponsored",
+        "flag": true,
+        "label": "Paid ad",
+        "why": "Anyone can pay for the top spot, scammers included."
+       }
+      ],
+      "url": [
+       {
+        "t": "pocketdragons-mint.example",
+        "flag": true,
+        "label": "Not your bookmark",
+        "why": "An extra word makes a different site."
+       }
+      ],
+      "title": "Pocket Dragons Presale Live | Official Mint",
+      "desc": "Presale is live now. Connect your wallet to secure your spot before it closes."
+     },
+     {
+      "url": [
+       "pocketdragons.example"
+      ],
+      "title": "Pocket Dragons",
+      "desc": "Collect, hatch and burn your dragons."
+     }
+    ]
+   },
+   "art": "m15c0"
+  },
+  {
+   "type": "teach",
+   "title": "Drained this year",
+   "body": "This is not rare. In 2026 fake search ads emptied the wallets of people looking for some of the biggest names in crypto. Each one looked like the real thing and sat at the very top of the results.",
+   "art": "m15c1",
+   "points": [
+    "Uniswap, February: a user lost a wallet worth mid six figures to a fake top result",
+    "March: SEAL blocked 356 scam ad links in 18 days, with over $1.27 million stolen",
+    "Uniswap, May: fake ads stole at least $400,000",
+    "Hyperliquid, August: one user lost about 550,000 USDC after a sponsored ad",
+    "Ledger, August: a fake ad led to a fake device check that stole recovery phrases"
+   ]
+  },
+  {
+   "type": "teach",
+   "title": "The address on an ad can lie",
+   "body": "Researchers found a Ledger scam ad that showed google.com as its address. Others show the real brand name while a hidden frame loads the drainer. Scam pages also hide on trusted sites like sites.google.com, docs.google.com and free hosting, and they show safety checkers a harmless page. So a clean address on an ad proves nothing.",
+   "art": "m15c2",
+   "points": [
+    "The address shown on an ad can be faked",
+    "A page on a big trusted site is not the brand's own site",
+    "Normal results can be fake too, not only ads"
+   ]
+  },
+  {
+   "type": "scene",
+   "title": "The fake device check",
+   "body": "You search for your wallet app and the first result looks official. The page says your device is connected and asks you to confirm your 12 words. If you type them, it says invalid phrase and asks again. Both times, the words go straight to the thief.",
+   "sim": {
+    "kind": "seedpage",
+    "site": "wallet-check.example",
+    "title": "Device connected. Confirm your recovery phrase",
+    "words": 12
+   },
+   "art": "m15c3"
+  },
+  {
+   "type": "teach",
+   "title": "The safe path",
+   "body": "Search is fine for news. It is never the door to a mint site, a wallet or an app. Go in only through the door you checked yourself.",
+   "art": "m15c1",
+   "points": [
+    "Use your bookmark, checked on two official channels",
+    "Or type the address yourself, letter by letter",
+    "Scroll past ads, or use an ad blocker",
+    "Get wallet apps and extensions only from the wallet's own site",
+    "Reached a site through search? Do not connect, sign or type your words"
+   ]
+  },
+  {
+   "type": "sim",
+   "title": "Try it",
+   "body": "In this practice, your checked bookmark is pocketdragons.example. You searched anyway. Tap every red flag in these results, then tap Done flagging.",
+   "task": "flag",
+   "sim": {
+    "kind": "search",
+    "query": "pocket dragons presale",
+    "results": [
+     {
+      "ad": true,
+      "badge": [
+       {
+        "t": "Sponsored",
+        "flag": true,
+        "label": "Paid ad",
+        "why": "A paid spot, open to anyone."
+       }
+      ],
+      "url": [
+       {
+        "t": "pocketdragons.example",
+        "flag": false,
+        "label": "Shown address",
+        "why": "The address on an ad can be faked, so it proves nothing."
+       }
+      ],
+      "title": "Pocket Dragons Official Presale",
+      "desc": "Last spots. Connect now."
+     },
+     {
+      "url": [
+       {
+        "t": "sites.google.example/pocketdragons-presale",
+        "flag": true,
+        "label": "Hosted page",
+        "why": "A page on a big site is not the brand's own site."
+       }
+      ],
+      "title": "Pocket Dragons Presale Guide",
+      "desc": "Step by step: connect, sign and claim your spot."
+     },
+     {
+      "url": [
+       {
+        "t": "pocketdragons-claim.example",
+        "flag": true,
+        "label": "Lookalike domain",
+        "why": "An extra word makes it a different site."
+       }
+      ],
+      "title": "Claim your Pocket Dragons presale spot",
+      "desc": "Spots are going fast."
+     }
+    ]
+   }
+  },
+  {
+   "type": "rule",
+   "title": "Remember this"
+  }
+ ],
+ "questions": [
+  {
+   "id": "m15q1",
+   "kind": "choice",
+   "stem": "You search Pocket Dragons mint and the top result is a sponsored ad with the right name. What do you do?",
+   "sim": null,
+   "options": [
+    "Skip it and open your checked bookmark",
+    "Tap it, ads are checked by the search engine",
+    "Tap it but connect only your mint wallet",
+    "Tap it if the address looks right"
+   ],
+   "answer": 0,
+   "why": "Fake ads have reached the top spot for Uniswap, Hyperliquid and Ledger searches in 2026. Search is never the door to a mint site.",
+   "source": "https://cybersecuritynews.com/malicious-google-ads-target-crypto-users/"
+  },
+  {
+   "id": "m15q2",
+   "kind": "choice",
+   "stem": "An ad shows the address pocketdragons.example, exactly your bookmark. Is it safe to tap?",
+   "sim": null,
+   "options": [
+    "No, the address on an ad can be faked",
+    "Yes, the address matches",
+    "Yes, if it also says Official",
+    "Yes, if it is the first result"
+   ],
+   "answer": 0,
+   "why": "Researchers found a Ledger scam ad that showed google.com as its address. Open your bookmark instead of the ad.",
+   "source": "https://blog.gridinsoft.com/ledger-google-ads-recovery-phrase/"
+  },
+  {
+   "id": "m15q3",
+   "kind": "flag",
+   "stem": "Tap the red flags in these results, then Done.",
+   "sim": {
+    "kind": "search",
+    "query": "pocket dragons mint",
+    "results": [
+     {
+      "ad": true,
+      "badge": [
+       {
+        "t": "Sponsored",
+        "flag": true,
+        "label": "Paid ad",
+        "why": "Anyone can pay for the top spot."
+       }
+      ],
+      "url": [
+       {
+        "t": "pocket-dragons-mint.example",
+        "flag": true,
+        "label": "Lookalike domain",
+        "why": "Extra words and dashes make a different site."
+       }
+      ],
+      "title": "Mint Pocket Dragons Now",
+      "desc": "Official mint is live. Connect wallet."
+     },
+     {
+      "url": [
+       {
+        "t": "pocketdragons.example",
+        "flag": false,
+        "label": "Bookmarked domain",
+        "why": "Exact match with your checked bookmark."
+       }
+      ],
+      "title": "Pocket Dragons",
+      "desc": "Collect, hatch and burn your dragons."
+     }
+    ]
+   },
+   "why": "A paid ad and a lookalike address are both red flags. Only your checked bookmark counts, and you do not need search to open it.",
+   "source": "https://www.ic3.gov/PSA/2022/PSA221221"
+  },
+  {
+   "id": "m15q4",
+   "kind": "choice",
+   "stem": "A page you found through search says your wallet is connected and asks you to confirm your 12 words. What is it?",
+   "sim": null,
+   "options": [
+    "A scam that steals your wallet",
+    "A normal security check",
+    "A step you need for the presale",
+    "A safe check because it shows your device"
+   ],
+   "answer": 0,
+   "why": "A fake Ledger device check showed connection messages, then asked for the recovery phrase. No real wallet or site ever asks for your words.",
+   "source": "https://blog.gridinsoft.com/ledger-google-ads-recovery-phrase/"
+  },
+  {
+   "id": "m15q5",
+   "kind": "choice",
+   "stem": "You typed your words into a page and it said invalid phrase, try again. What does that mean?",
+   "sim": null,
+   "options": [
+    "Your words were stolen, move what is left to a new wallet now",
+    "Nothing was sent because it failed",
+    "You typed one word wrong, try again",
+    "The site is busy, try later"
+   ],
+   "answer": 0,
+   "why": "The fake page sent the words to the thief and then showed an error so you would type them again. Treat the wallet as lost and follow I think I got drained.",
+   "source": "https://blog.gridinsoft.com/ledger-google-ads-recovery-phrase/"
+  },
+  {
+   "id": "m15q6",
+   "kind": "choice",
+   "stem": "A search result is a page on sites.google.com with the Pocket Dragons name and a Connect button. Is it the official site?",
+   "sim": null,
+   "options": [
+    "No, a page on a big site is not the brand's own site",
+    "Yes, Google hosts it so it is checked",
+    "Yes, if it has the logo",
+    "Yes, if it has many visitors"
+   ],
+   "answer": 0,
+   "why": "Scam campaigns in 2026 used sites.google.com and docs.google.com pages to get past ad checks. Anyone can make one.",
+   "source": "https://cybersecuritynews.com/malicious-google-ads-target-crypto-users/"
+  },
+  {
+   "id": "m15q7",
+   "kind": "choice",
+   "stem": "Which is the safest way to open the mint site on mint day?",
+   "sim": null,
+   "options": [
+    "Your bookmark, checked on two official channels",
+    "The first search result",
+    "The top sponsored ad",
+    "A link from a guide you found through search"
+   ],
+   "answer": 0,
+   "why": "Security researchers advise saving trusted addresses as bookmarks and opening them directly, never through search.",
+   "source": "https://cybersecuritynews.com/malicious-google-ads-target-crypto-users/"
+  },
+  {
+   "id": "m15q8",
+   "kind": "choice",
+   "stem": "You need to install a wallet extension. Where do you get it?",
+   "sim": null,
+   "options": [
+    "From a link on the wallet's own official site",
+    "From the first search ad",
+    "From a link in a guide on a hosted page",
+    "From a download link a helper sends"
+   ],
+   "answer": 0,
+   "why": "Fake ads have pushed fake wallet apps and browser extensions. Start from the wallet's own site that you typed or bookmarked.",
+   "source": "https://cybersecuritynews.com/malicious-google-ads-target-crypto-users/"
+  },
+  {
+   "id": "m15q9",
+   "kind": "choice",
+   "stem": "A scam ad gets reported and blocked. Is search safe again?",
+   "sim": null,
+   "options": [
+    "No, new ads go up again, sometimes within minutes",
+    "Yes, the search engine fixed it",
+    "Yes, for a week",
+    "Yes, if the ad is gone"
+   ],
+   "answer": 0,
+   "why": "Researchers saw scammers relaunch with a new ad and landing page after a block, sometimes within minutes.",
+   "source": "https://cybersecuritynews.com/malicious-google-ads-target-crypto-users/"
+  },
+  {
+   "id": "m15q10",
+   "kind": "choice",
+   "stem": "You searched by mistake and the page asks you to connect your wallet. What do you do?",
+   "sim": null,
+   "options": [
+    "Close it and open your checked bookmark",
+    "Connect only to look around",
+    "Connect your vault, it is safer",
+    "Connect and reject any popups"
+   ],
+   "answer": 0,
+   "why": "Victims in 2026 connected and approved one transaction on sites they reached through ads, and lost everything. Do not connect, sign or type words on a site you reached through search.",
+   "source": "https://cointelegraph.com/news/uniswap-fake-ads-drain-user-wallets-hayden-adams"
+  }
+ ],
+ "sources": [
+  {
+   "label": "Cointelegraph: Uniswap founder warns of fake search ads (February 2026)",
+   "url": "https://cointelegraph.com/news/uniswap-fake-ads-drain-user-wallets-hayden-adams"
+  },
+  {
+   "label": "SEAL via Cyber Security News: 356 scam ad links, $1.27 million stolen (March 2026)",
+   "url": "https://cybersecuritynews.com/malicious-google-ads-target-crypto-users/"
+  },
+  {
+   "label": "Forklog: fake Uniswap ads steal $400,000 (May 2026)",
+   "url": "https://forklog.com/en/news/fake-uniswap-ad-on-google-nets-scammers-400000"
+  },
+  {
+   "label": "crypto.news: fake Hyperliquid ad, 550,000 USDC lost (August 2026)",
+   "url": "https://crypto.news/fake-hyperliquid-google-ad-linked-to-inferno-drainer-steals-usdc/"
+  },
+  {
+   "label": "Zscaler research via Gridinsoft: fake Ledger device check (2026)",
+   "url": "https://blog.gridinsoft.com/ledger-google-ads-recovery-phrase/"
+  },
+  {
+   "label": "FBI IC3: criminals buy search ads that copy real brands",
+   "url": "https://www.ic3.gov/PSA/2022/PSA221221"
+  }
+ ]
+}
