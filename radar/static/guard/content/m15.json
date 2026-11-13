@@ -51,7 +51,7 @@
    "type": "teach",
    "title": "Drained this year",
    "body": "This is not rare. In 2026 fake search ads emptied the wallets of people looking for some of the biggest names in crypto. Each one looked like the real thing and sat at the very top of the results.",
-   "art": "m15c1",
+   "art": "coin",
    "points": [
     "Uniswap, February: a user lost a wallet worth mid six figures to a fake top result",
     "March: SEAL blocked 356 scam ad links in 18 days, with over $1.27 million stolen",
@@ -64,7 +64,7 @@
    "type": "teach",
    "title": "The address on an ad can lie",
    "body": "Researchers found a Ledger scam ad that showed google.com as its address. Others show the real brand name while a hidden frame loads the drainer. Scam pages also hide on trusted sites like sites.google.com, docs.google.com and free hosting, and they show safety checkers a harmless page. So a clean address on an ad proves nothing.",
-   "art": "m15c2",
+   "art": "mask",
    "points": [
     "The address shown on an ad can be faked",
     "A page on a big trusted site is not the brand's own site",
@@ -81,13 +81,13 @@
     "title": "Device connected. Confirm your recovery phrase",
     "words": 12
    },
-   "art": "m15c3"
+   "art": "eye"
   },
   {
    "type": "teach",
    "title": "The safe path",
    "body": "Search is fine for news. It is never the door to a mint site, a wallet or an app. Go in only through the door you checked yourself.",
-   "art": "m15c1",
+   "art": "vault",
    "points": [
     "Use your bookmark, checked on two official channels",
     "Or type the address yourself, letter by letter",
