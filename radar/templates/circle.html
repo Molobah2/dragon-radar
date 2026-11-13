@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% if data %}@{{ data.handle }} · {% endif %}Dragon Circle · {{ cfg.hub_name or "PD Tools" }}</title>
   <meta name="description" content="See the Keepers who engage with you most in Pocket Dragons posts. Free, unofficial community tool.">
-  <meta name="theme-color" content="#140c06">
+  <meta name="theme-color" content="#120a2a">
   {% include "_icons.html" %}
   <link rel="preload" href="{{ url_for('static', filename='fonts/fredoka-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="{{ url_for('static', filename='fonts/nunito-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
@@ -15,27 +15,27 @@
 <style>
 /* ===== Dragon Circle: its own night sky, its own look ===== */
 :root {
-  --ink: #fff4e2; --soft: #e7cfa4; --mute: #b9976a;
-  --gold: #f6c86a; --gold2: #e8963e; --lilac: #c9a46a; --mint: #f3d9a0; --rose: #d9774a;
-  --glass: rgba(255, 222, 160, .06); --glass2: rgba(255, 222, 160, .11); --line: rgba(240, 200, 130, .16);
+  --ink: #fff6ea; --soft: #cbbfe8; --mute: #9a8cc4;
+  --gold: #ffcf6b; --gold2: #ff9f6e; --lilac: #b9a2ff; --mint: #7ef0d0; --rose: #ff7eb6;
+  --glass: rgba(255, 255, 255, .06); --glass2: rgba(255, 255, 255, .1); --line: rgba(255, 255, 255, .12);
   --disp: "Fredoka", "Trebuchet MS", system-ui, sans-serif; --body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
   --ease: cubic-bezier(.2, .8, .2, 1); --spring: cubic-bezier(.3, 1.5, .5, 1);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; overflow-x: hidden; }
-body { background: #0b0704; color: var(--ink); font: 600 16px/1.5 var(--body); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+body { background: #0c0720; color: var(--ink); font: 600 16px/1.5 var(--body); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: inherit; }
 button, input, select { font: inherit; color: inherit; }
 ::selection { background: rgba(255, 207, 107, .35); }
 
 /* sky */
 .dc-sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
-  background: radial-gradient(120% 80% at 70% 0%, #3a2412 0%, #1c1209 45%, #0b0704 100%); }
+  background: radial-gradient(120% 80% at 70% 0%, #2a1658 0%, #170c38 45%, #0c0720 100%); }
 .dc-sky canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .aur { position: absolute; width: 70vmax; height: 70vmax; border-radius: 50%; opacity: .55; mix-blend-mode: screen; will-change: transform; }
-.aur.a1 { left: -20vmax; top: -25vmax; background: radial-gradient(closest-side, rgba(214, 140, 60, .42), transparent); animation: drift1 26s var(--ease) infinite alternate; }
-.aur.a2 { right: -25vmax; top: 10vmax; background: radial-gradient(closest-side, rgba(190, 96, 52, .34), transparent); animation: drift2 32s var(--ease) infinite alternate; }
-.aur.a3 { left: 10vmax; bottom: -35vmax; background: radial-gradient(closest-side, rgba(240, 196, 110, .22), transparent); animation: drift3 38s var(--ease) infinite alternate; }
+.aur.a1 { left: -20vmax; top: -25vmax; background: radial-gradient(closest-side, rgba(150, 90, 255, .55), transparent); animation: drift1 26s var(--ease) infinite alternate; }
+.aur.a2 { right: -25vmax; top: 10vmax; background: radial-gradient(closest-side, rgba(255, 120, 170, .38), transparent); animation: drift2 32s var(--ease) infinite alternate; }
+.aur.a3 { left: 10vmax; bottom: -35vmax; background: radial-gradient(closest-side, rgba(80, 200, 220, .28), transparent); animation: drift3 38s var(--ease) infinite alternate; }
 @keyframes drift1 { to { transform: translate(14vmax, 8vmax) scale(1.15); } }
 @keyframes drift2 { to { transform: translate(-12vmax, 10vmax) scale(.9); } }
 @keyframes drift3 { to { transform: translate(10vmax, -8vmax) scale(1.2); } }
@@ -54,7 +54,7 @@ button, input, select { font: inherit; color: inherit; }
 .pill:hover { background: var(--glass2); border-color: rgba(255,255,255,.25); transform: translateY(-1px); }
 .pill svg { width: 18px; height: 18px; }
 .pill select { appearance: none; -webkit-appearance: none; background: transparent; border: 0; outline: 0; font-weight: 800; font-size: 14px; cursor: pointer; padding-right: 2px; }
-.pill select option { color: #2a1a0c; }
+.pill select option { color: #1d1433; }
 @media (max-width: 560px) { .pill .wide { display: none; } .dc-brand span { display: none; } }
 
 .dc-main { flex: 1; width: min(1180px, 100%); margin: 0 auto; padding: 8px clamp(16px, 4vw, 40px) 40px; }
@@ -72,11 +72,11 @@ button, input, select { font: inherit; color: inherit; }
   .stats { margin-top: 8px; }
 }
 .kick { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 10px; border-radius: 999px; font: 800 12px/1 var(--body); letter-spacing: 2.4px; text-transform: uppercase;
-  color: #2b1a0b; background: linear-gradient(90deg, var(--gold), var(--gold2)); box-shadow: 0 10px 30px -12px rgba(255, 170, 90, .9); }
-.kick i { width: 8px; height: 8px; border-radius: 50%; background: #2b1a0b; box-shadow: 0 0 0 3px rgba(43,26,11,.2); animation: beat 1.8s ease-in-out infinite; }
+  color: #2a1440; background: linear-gradient(90deg, var(--gold), var(--gold2)); box-shadow: 0 10px 30px -12px rgba(255, 170, 90, .9); }
+.kick i { width: 8px; height: 8px; border-radius: 50%; background: #2a1440; box-shadow: 0 0 0 3px rgba(42,20,64,.2); animation: beat 1.8s ease-in-out infinite; }
 @keyframes beat { 50% { transform: scale(.55); opacity: .6; } }
 .handle { margin: 16px 0 6px; font: 700 clamp(40px, 7.4vw, 76px)/1 var(--disp); letter-spacing: -1px; word-break: break-all;
-  background: linear-gradient(100deg, #fff 0%, #ffe2b0 30%, #f3b877 55%, #d9a45e 75%, #fff 100%); background-size: 220% 100%;
+  background: linear-gradient(100deg, #fff 0%, #ffe2b0 30%, #ffb0d8 55%, #c8b6ff 75%, #fff 100%); background-size: 220% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 7s linear infinite; }
 @keyframes shine { to { background-position: -220% 0; } }
 .lede { margin: 6px 0 0; font-size: clamp(16px, 2vw, 19px); color: var(--soft); max-width: 30em; }
@@ -93,12 +93,12 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 /* buttons */
 .acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 .acts .btn[hidden] { display: none; }
-.vm { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 16px; background: rgba(10, 6, 2, .86); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.vm { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 16px; background: rgba(8, 4, 18, .86); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .vm[hidden] { display: none; }
 .vm-box { width: min(1100px, 100%); display: grid; gap: 14px; justify-items: center; }
-.vm-box canvas { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 20px; box-shadow: 0 30px 80px -30px #000, 0 0 0 1px rgba(255, 255, 255, .12); background: #1c1209; }
+.vm-box canvas { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 20px; box-shadow: 0 30px 80px -30px #000, 0 0 0 1px rgba(255, 255, 255, .12); background: #130b29; }
 .vm-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-.vm-msg { margin: 0; color: #ecd6b0; font-weight: 700; font-size: 14px; text-align: center; }
+.vm-msg { margin: 0; color: #d8cdf2; font-weight: 700; font-size: 14px; text-align: center; }
 @media (max-width: 860px) { .acts { justify-content: center; } }
 .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 50px; padding: 0 22px; border-radius: 999px; border: 1px solid var(--line);
   background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); font-weight: 900; font-size: 15px; text-decoration: none; cursor: pointer; overflow: hidden;
@@ -106,21 +106,21 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 .btn:hover { transform: translateY(-2px); background: var(--glass2); }
 .btn:active { transform: scale(.96); }
 .btn svg { width: 19px; height: 19px; flex: none; }
-.btn.go { color: #2b1a0b; border: 0; background: linear-gradient(100deg, var(--gold), var(--gold2) 60%, var(--rose)); box-shadow: 0 14px 34px -14px rgba(255, 150, 100, .95), inset 0 1px 0 rgba(255,255,255,.6); }
+.btn.go { color: #2a1440; border: 0; background: linear-gradient(100deg, var(--gold), var(--gold2) 60%, var(--rose)); box-shadow: 0 14px 34px -14px rgba(255, 150, 100, .95), inset 0 1px 0 rgba(255,255,255,.6); }
 .btn.go::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.55) 50%, transparent 80%); transform: translateX(-120%); animation: sweep 4.5s var(--ease) infinite 1.2s; }
 @keyframes sweep { 30%, 100% { transform: translateX(120%); } }
 .hint { margin: 16px 0 0; font-size: 13.5px; color: var(--mute); min-height: 1.4em; }
 
 /* ===== the orbit ===== */
 .orbit { position: relative; width: min(100%, 620px); aspect-ratio: 1; margin: 0 auto; transform-style: preserve-3d; transition: transform .8s var(--ease); }
-.glow { position: absolute; inset: 12%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 150, 110, .35), rgba(180, 110, 50, .2) 60%, transparent); filter: blur(6px); animation: breathe 6s ease-in-out infinite; }
+.glow { position: absolute; inset: 12%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 150, 110, .35), rgba(150, 90, 255, .18) 60%, transparent); filter: blur(6px); animation: breathe 6s ease-in-out infinite; }
 @keyframes breathe { 50% { transform: scale(1.08); opacity: .75; } }
 .track { position: absolute; left: 50%; top: 50%; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
 .track { animation: trackin 1s var(--spring) both; }
 .track.t2 { animation-delay: .15s; } .track.t0 { animation-delay: .3s; } .track.t1 { animation-delay: .45s; }
 @keyframes trackin { from { transform: translate(-50%, -50%) scale(.25); opacity: 0; } }
 .track.t0 { width: 62%; height: 62%; border: 1.5px solid rgba(255, 207, 107, .28); box-shadow: 0 0 40px rgba(255, 207, 107, .08) inset; }
-.track.t1 { width: 91%; height: 91%; border: 1.5px dashed rgba(201, 164, 106, .3); }
+.track.t1 { width: 91%; height: 91%; border: 1.5px dashed rgba(185, 162, 255, .25); }
 .track.t2 { width: 108%; height: 108%; border: 1px solid rgba(255,255,255,.05); }
 .ring { position: absolute; inset: 0; pointer-events: none; animation: spin var(--dur) linear infinite; animation-direction: var(--dir, normal); }
 .ring.r0 { --dur: 70s; }
@@ -128,7 +128,7 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 @keyframes spin { to { transform: rotate(360deg); } }
 .lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 /* the reveal: you first, then each line draws out to its Keeper and the Keeper pops in as it arrives, closest first */
-.ln { stroke: rgba(230, 196, 140, .3); stroke-width: .28; stroke-linecap: round; stroke-dasharray: 60; stroke-dashoffset: 60; animation: draw .7s var(--ease) forwards; animation-delay: calc(.6s + var(--i) * 90ms); transition: opacity .3s, stroke .3s, stroke-width .3s; }
+.ln { stroke: rgba(200, 180, 255, .28); stroke-width: .28; stroke-linecap: round; stroke-dasharray: 60; stroke-dashoffset: 60; animation: draw .7s var(--ease) forwards; animation-delay: calc(.6s + var(--i) * 90ms); transition: opacity .3s, stroke .3s, stroke-width .3s; }
 .ln.two { stroke: rgba(255, 207, 107, .6); stroke-width: .38; }
 /* energy along the lines: lilac sparks flow in from what a Keeper gave you, gold sparks flow out from what you gave them.
    Closer Keepers send more sparks, faster. */
@@ -136,7 +136,7 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
   animation: s50 3.6s linear infinite, sparkin .8s forwards; animation-delay: calc(var(--i) * -.37s), calc(1.3s + var(--i) * 90ms); stroke-dasharray: 0 50; }
 .sp.g33 { stroke-dasharray: 0 33.4; animation-name: s33, sparkin; animation-duration: 2.6s, .8s; }
 .sp.g20 { stroke-dasharray: 0 20; animation-name: s20, sparkin; animation-duration: 1.8s, .8s; }
-.sp.in { stroke: #fff0c8; } .sp.out { stroke: var(--gold); }
+.sp.in { stroke: #a8f0ff; } .sp.out { stroke: var(--gold); }
 @keyframes s50 { to { stroke-dashoffset: -50; } }
 @keyframes s33 { to { stroke-dashoffset: -33.4; } }
 @keyframes s20 { to { stroke-dashoffset: -20; } }
@@ -159,7 +159,7 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 @keyframes popin { from { opacity: 0; transform: scale(.2); } }
 .bob { position: relative; display: block; width: 100%; height: 100%; animation: bob 5s ease-in-out infinite; animation-delay: calc(var(--i) * -.7s); }
 @keyframes bob { 50% { transform: translateY(-5%); } }
-.ava { position: relative; display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: linear-gradient(140deg, #8a5a2e, #4a2c14);
+.ava { position: relative; display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: linear-gradient(140deg, #8a6bd0, #4c2f8f);
   font: 700 clamp(14px, 3.4vw, 28px)/1 var(--disp); color: #fff3dc; box-shadow: 0 0 0 3px var(--rc, var(--lilac)), 0 0 0 7px rgba(255,255,255,.06), 0 14px 30px -10px rgba(0,0,0,.8);
   transition: transform .35s var(--spring), box-shadow .35s; }
 .ava img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -169,7 +169,7 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 .orbit:hover .ring, .orbit:hover .up { animation-play-state: paused; }
 .orbit.focus .node:not(.on) .ava { filter: brightness(.5) saturate(.6); }
 .rank { position: absolute; right: -8%; top: -8%; z-index: 2; overflow: hidden; display: grid; place-items: center; width: 38%; min-width: 22px; aspect-ratio: 1; border-radius: 50%;
-  font: 700 clamp(11px, 2.3vw, 16px)/1 var(--disp); color: #2b1a0b; background: var(--medal); box-shadow: 0 0 0 2.5px #1c1108, 0 4px 12px rgba(0,0,0,.5); }
+  font: 700 clamp(11px, 2.3vw, 16px)/1 var(--disp); color: #2a1440; background: var(--medal); box-shadow: 0 0 0 2.5px #1a0f36, 0 4px 12px rgba(0,0,0,.5); }
 .rank.m1 { --medal: linear-gradient(135deg, #fff1b8, #ffc94a 55%, #e79a1c); }
 .rank.m2 { --medal: linear-gradient(135deg, #ffffff, #d4dcf0 55%, #9aa7c7); }
 .rank.m3 { --medal: linear-gradient(135deg, #ffd7b0, #e9a06a 55%, #b8693a); }
@@ -184,17 +184,17 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 @keyframes medal { 35%, 100% { transform: translateX(130%); } }
 /* a lantern you sent this week */
 .lit-b { position: absolute; left: -8%; bottom: -4%; z-index: 2; display: grid; place-items: center; width: 40%; min-width: 22px; aspect-ratio: 1; border-radius: 50%;
-  background: radial-gradient(circle at 50% 45%, #5a3418, #2a180a 70%); box-shadow: 0 0 0 2.5px #ffcf6b, 0 0 16px rgba(255, 150, 70, .9); animation: lit 2.4s ease-in-out infinite; }
+  background: radial-gradient(circle at 50% 45%, #5a2a3e, #241238 70%); box-shadow: 0 0 0 2.5px #ffcf6b, 0 0 16px rgba(255, 150, 70, .9); animation: lit 2.4s ease-in-out infinite; }
 .lit-b svg { width: 74%; height: 74%; }
 @keyframes lit { 50% { box-shadow: 0 0 0 2.5px #ffcf6b, 0 0 28px rgba(255, 170, 80, 1); } }
 .card-lit { margin: -2px 0 8px; font-size: 13px; font-weight: 800; color: var(--gold); }
-.card .btn.lantern { color: #2b1a0b; border: 0; background: linear-gradient(100deg, #ffe3a0, #ffb347); }
+.card .btn.lantern { color: #2a1440; border: 0; background: linear-gradient(100deg, #ffe3a0, #ffb347); }
 .node.two .ava { box-shadow: 0 0 0 3px var(--rc, var(--lilac)), 0 0 0 7px rgba(255, 207, 107, .16), 0 0 26px rgba(255, 207, 107, .35), 0 14px 30px -10px rgba(0,0,0,.8); }
-.two-dot-unused { position: absolute; left: -4%; bottom: 4%; z-index: 2; width: 26%; min-width: 14px; aspect-ratio: 1; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2.5px #1c1108, 0 0 14px var(--gold); }
+.two-dot-unused { position: absolute; left: -4%; bottom: 4%; z-index: 2; width: 26%; min-width: 14px; aspect-ratio: 1; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2.5px #1a0f36, 0 0 14px var(--gold); }
 
 .core { position: absolute; left: 50%; top: 50%; width: 27%; aspect-ratio: 1; transform: translate(-50%, -50%); z-index: 3; text-decoration: none; }
 .core .halo { position: absolute; inset: -9%; border-radius: 50%; background: conic-gradient(from 0deg, var(--gold), var(--rose), var(--lilac), var(--mint), var(--gold)); animation: spin 8s linear infinite; filter: blur(.5px); }
-.core .halo::after { content: ""; position: absolute; inset: 5%; border-radius: 50%; background: #1c1108; }
+.core .halo::after { content: ""; position: absolute; inset: 5%; border-radius: 50%; background: #1a0f36; }
 .core .wave { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255, 190, 130, .5); animation: wave 3.6s var(--ease) infinite; }
 .core .burst { position: absolute; inset: -4%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 236, 190, .9), rgba(255, 170, 110, .35) 60%, transparent);
   opacity: 0; pointer-events: none; animation: burst 1.2s var(--ease) .35s both; }
@@ -206,7 +206,7 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 .core:hover .ava { transform: scale(1.04); }
 
 /* hover card */
-.card { position: fixed; z-index: 40; width: 270px; padding: 16px; border-radius: 22px; background: rgba(40, 25, 12, .86); border: 1px solid rgba(255,255,255,.16);
+.card { position: fixed; z-index: 40; width: 270px; padding: 16px; border-radius: 22px; background: rgba(30, 18, 64, .82); border: 1px solid rgba(255,255,255,.16);
   backdrop-filter: blur(20px) saturate(1.3); -webkit-backdrop-filter: blur(20px) saturate(1.3); box-shadow: 0 30px 60px -20px rgba(0,0,0,.9);
   opacity: 0; transform: translateY(8px) scale(.96); pointer-events: none; transition: opacity .25s var(--ease), transform .3s var(--spring); }
 .card.show { opacity: 1; transform: none; pointer-events: auto; }
@@ -222,7 +222,7 @@ h1.big .pop { background: linear-gradient(100deg, var(--gold), var(--rose), var(
 .card-nums div { padding: 10px; border-radius: 14px; background: rgba(255,255,255,.06); }
 .card-nums b { display: block; font: 700 22px/1 var(--disp); }
 .card-nums span { font-size: 12px; color: var(--soft); font-weight: 800; }
-.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 900; color: #2b1a0b; background: linear-gradient(90deg, var(--gold), var(--gold2)); }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 900; color: #2a1440; background: linear-gradient(90deg, var(--gold), var(--gold2)); }
 .card .btn { width: 100%; height: 44px; margin-top: 10px; font-size: 14px; }
 .card-x { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); cursor: pointer; display: none; }
 @media (max-width: 640px) {
@@ -296,7 +296,6 @@ footer.dc-foot strong { color: var(--ink); font: 700 15px/1 var(--disp); }
   .sp { stroke-opacity: .7; }
 }
 .paused .ring, .paused .up { animation-play-state: paused; }
-
 /* v3: the brown gold Circle. A walnut night, brass rings and lantern gold. */
 html.v3 .dc-app .stage, html.v3 section.stage { background: none !important; border: 0 !important; box-shadow: none !important; }
 html.v3 .dc-bar a.pill[href] { display: none; }
@@ -312,6 +311,31 @@ html.v3 .dc-app .hint { background: none; }
 @media (max-width: 480px) { .panel.again .draw { flex-wrap: wrap; border-radius: 26px; } .panel.again .draw input { flex: 1 1 60%; } .panel.again .draw .btn { flex: 1 1 100%; justify-content: center; } }
 html.v3 .dc-app .draw input { background: transparent !important; box-shadow: none !important; border: 0 !important; color: var(--ink); }
 html.v3 footer.dc-foot { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+html.v3 { --ink: #fff4e2; --soft: #e7cfa4; --mute: #b9976a; --gold: #f6c86a; --gold2: #e8963e; --lilac: #c9a46a; --mint: #f3d9a0; --rose: #d9774a;
+  --glass: rgba(255, 222, 160, .06); --glass2: rgba(255, 222, 160, .11); --line: rgba(240, 200, 130, .16); }
+html.v3 .dc-sky { background: radial-gradient(120% 80% at 70% 0%, #3a2412 0%, #1c1209 45%, #0b0704 100%); }
+html.v3 .aur.a1 { background: radial-gradient(closest-side, rgba(214, 140, 60, .42), transparent); }
+html.v3 .aur.a2 { background: radial-gradient(closest-side, rgba(190, 96, 52, .34), transparent); }
+html.v3 .aur.a3 { background: radial-gradient(closest-side, rgba(240, 196, 110, .22), transparent); }
+html.v3 .pill select option { color: #2a1a0c; }
+html.v3 .kick, html.v3 .btn.go, html.v3 .rank, html.v3 .card .btn.lantern, html.v3 .chip { color: #2b1a0b; }
+html.v3 .kick i { background: #2b1a0b; box-shadow: 0 0 0 3px rgba(43, 26, 11, .2); }
+html.v3 .handle { background-image: linear-gradient(100deg, #fff 0%, #ffe2b0 30%, #f3b877 55%, #d9a45e 75%, #fff 100%); }
+html.v3 .vm { background: rgba(10, 6, 2, .86); }
+html.v3 .vm-box canvas { background: #1c1209; }
+html.v3 .vm-msg { color: #ecd6b0; }
+html.v3 .glow { background: radial-gradient(closest-side, rgba(255, 150, 110, .35), rgba(180, 110, 50, .2) 60%, transparent); }
+html.v3 .track.t1 { border-color: rgba(201, 164, 106, .3); }
+html.v3 .ln { stroke: rgba(230, 196, 140, .3); }
+html.v3 .ln.two { stroke: rgba(255, 207, 107, .6); }
+html.v3 .orbit.focus .ln.on { stroke: #fff; }
+html.v3 .sp.in { stroke: #fff0c8; }
+html.v3 .ava { background-image: linear-gradient(140deg, #8a5a2e, #4a2c14); }
+html.v3 .demo .ava { background-image: radial-gradient(circle at 30% 30%, #fff 0, var(--c3) 35%, rgba(0,0,0,.3) 100%); box-shadow: 0 0 0 3px rgba(255,255,255,.15), 0 0 30px var(--c3); }
+html.v3 .rank { box-shadow: 0 0 0 2.5px #1c1108, 0 4px 12px rgba(0,0,0,.5); }
+html.v3 .core .halo::after { background: #1c1108; }
+html.v3 .lit-b { background: radial-gradient(circle at 50% 45%, #5a3418, #2a180a 70%); }
+html.v3 .card { background: rgba(40, 25, 12, .86); }
 </style>
 {% include "_v3_head.html" %}
 </head>
@@ -348,11 +372,11 @@ html.v3 footer.dc-foot { padding-bottom: calc(110px + env(safe-area-inset-bottom
       <div class="orbit-wrap">
         <div class="orbit demo" id="orbit" aria-hidden="true">
           <i class="glow"></i><i class="track t2"></i><i class="track t0"></i><i class="track t1"></i>
-          {% set cols = ["#f6c86a", "#d9774a", "#c9a46a", "#f3d9a0", "#e8963e", "#b8734a"] %}
+          {% set cols = ["#ffcf6b", "#ff7eb6", "#b9a2ff", "#7ef0d0", "#ff9f6e", "#8fd3ff"] %}{% set cols3 = ["#f6c86a", "#d9774a", "#c9a46a", "#f3d9a0", "#e8963e", "#b8734a"] %}
           {% for ring in [0, 1] %}
           <div class="ring r{{ ring }}">
             {% for p in demo if p.ring == ring %}
-            <span class="node" style="--x:{{ p.x }}%; --y:{{ p.y }}%; --s:{{ p.size * 0.78 }}%; --i:{{ p.rank }}"><span class="up"><span class="pop-in"><span class="bob"><span class="ava" style="--c:{{ cols[p.rank % 6] }}"></span></span></span></span></span>
+            <span class="node" style="--x:{{ p.x }}%; --y:{{ p.y }}%; --s:{{ p.size * 0.78 }}%; --i:{{ p.rank }}"><span class="up"><span class="pop-in"><span class="bob"><span class="ava" style="--c:{{ cols[p.rank % 6] }}; --c3:{{ cols3[p.rank % 6] }}"></span></span></span></span></span>
             {% endfor %}
           </div>
           {% endfor %}
@@ -539,6 +563,7 @@ html.v3 footer.dc-foot { padding-bottom: calc(110px + env(safe-area-inset-bottom
   const phone = matchMedia("(max-width: 640px)").matches;
 
   /* starfield: soft twinkling stars and a shooting star now and then */
+  const V3 = document.documentElement.classList.contains("v3");
   const cv = document.getElementById("sky"), cx = cv.getContext("2d");
   let W = 0, H = 0, stars = [], shoot = null, last = 0;
   function size() {
@@ -553,7 +578,7 @@ html.v3 footer.dc-foot { padding-bottom: calc(110px + env(safe-area-inset-bottom
       last = t; cx.clearRect(0, 0, W, H);
       for (const s of stars) {
         const a = calm ? .7 : .35 + .65 * (0.5 + 0.5 * Math.sin(s.p + t / 1000 * s.s));
-        cx.globalAlpha = a; cx.fillStyle = s.h ? "#ffd58a" : "#fff1d6";
+        cx.globalAlpha = a; cx.fillStyle = s.h ? (V3 ? "#ffd58a" : "#ffe2b0") : (V3 ? "#fff1d6" : "#ffffff");
         cx.beginPath(); cx.arc(s.x, s.y, s.r, 0, 6.283); cx.fill();
       }
       if (!calm) {
