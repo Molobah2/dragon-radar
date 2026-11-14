@@ -289,3 +289,11 @@ def test_jons_test_devices_walk_the_trail_before_it_opens(cfg, monkeypatch):
     r = c.get("/api/trail/me")
     assert r.status_code == 401 and "event" not in r.get_json()            # a tester: open, no countdown
     assert not c.get("/trail/x/connect").headers.get("Location", "").endswith("/trail/")
+
+
+def test_walks_with_most_shows_x_names():
+    """15 Nov (Jon): the card names the Keepers by their X name, emoji and flags out; an unknown handle stays a handle."""
+    assert trail.clean_name("Anastasiya🐉🇺🇦") == "Anastasiya"
+    assert trail.clean_name("Sam Withers 🐉") == "Sam Withers"
+    assert trail.clean_name("  Shiv  🐉 ") == "Shiv"
+    assert trail.clean_name("🐉") == ""

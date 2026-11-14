@@ -24,6 +24,7 @@ import base64
 import hashlib
 import hmac
 import json
+import re
 import secrets
 import threading
 import time
@@ -300,6 +301,34 @@ PD_BACK_CSS = ('<style>.corner .pdt-home{height:38px;box-sizing:border-box;displ
                '</style>')
 
 
+_SYMBOLS = re.compile("[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u200D\u2B00-\u2BFF\U000E0000-\U000E007F]")
+
+
+def clean_name(name: str) -> str:
+    """An X display name ready for the card: emoji and symbols out (the card font has none), spaces tidied."""
+    return re.sub(r"\s+", " ", _SYMBOLS.sub("", name or "")).strip(" |·-")[:40]
+
+
+def walk_names(s, handles: list[str]) -> dict:
+    """lower-case handle -> X display name, from the posts pdtools collected, the Keepers list and the Book of Friends."""
+    from .db import Friend, Keeper, Post
+    keys = [h.lower() for h in handles if h]
+    if not keys:
+        return {}
+    out: dict[str, str] = {}
+    for user, name in s.execute(select(Post.author_username, Post.author_name).where(func.lower(Post.author_username).in_(keys))
+                                .order_by(Post.created_at.desc())):
+        if user and clean_name(name):
+            out.setdefault(user.lower(), clean_name(name))
+    for kp in s.scalars(select(Keeper).where(Keeper.key.in_(keys))):
+        if clean_name(kp.name):
+            out.setdefault(kp.key, clean_name(kp.name))
+    for f in s.scalars(select(Friend).where(Friend.key.in_(keys))):
+        if clean_name(f.name):
+            out.setdefault(f.key, clean_name(f.name))
+    return out
+
+
 def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
     http = requests.Session()
     inflight: set[str] = set()
@@ -440,7 +469,12 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
     def with_no(card: dict, uid: str) -> dict:
         with Session() as s:
             n, at = number(s, uid)
+            names = walk_names(s, [w[0] for w in (card.get("walks") or []) if w])
         out = dict(card)
+        # 15 Nov (Jon): Walks with most shows each Keeper's X name, not the handle. Looked up when the card is served,
+        # so cards made before this change get the names too. A handle pdtools has never seen stays a handle.
+        if out.get("walks"):
+            out["walks"] = [list(w[:3]) + [names[w[0].lower()]] if w and w[0].lower() in names else list(w) for w in out["walks"]]
         if n:
             out["no"] = n
         if at:

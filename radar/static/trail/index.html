@@ -2581,12 +2581,12 @@ const KTL = (() => {
   }
   function walks(x, w, ink) {
     const list = (card || DEMO).walks || [];
-    w.rows.forEach((row, j) => { const it = list[j]; if (!it) return; const [name, n] = it;
+    w.rows.forEach((row, j) => { const it = list[j]; if (!it) return; const [handle, n] = it, name = it[3] || handle;   // it[3]: the X name (15 Nov), else the handle
       const a = row.a.rect; if (!ink) { x.fillStyle = it[2] || WALKC[j % 3]; x.beginPath(); x.arc(a[0] + a[2] / 2, a[1] + a[3] / 2, Math.min(a[2], a[3]) / 2, 0, 7); x.fill(); }
       const ch = (name[0] || '?').toUpperCase(), cw = width(x, ch, row.a, 1);   // the letter sits in the middle of its circle
       x.font = row.a.f; const mt = x.measureText(ch), mid = (mt.actualBoundingBoxAscent - mt.actualBoundingBoxDescent) / 2;
       put(x, ch, row.a, 1, a[0] + a[2] / 2 - cw / 2, a[1] + a[3] / 2 + mid, ink);
-      const hs = '@' + name, room = row.hi - row.h.x, hw = width(x, hs, row.h, 1); put(x, hs, row.h, hw > room ? room / hw : 1, row.h.x, row.h.y, ink);
+      const hs = it[3] ? name : '@' + handle, room = row.hi - row.h.x, hw = width(x, hs, row.h, 1); put(x, hs, row.h, hw > room ? room / hw : 1, row.h.x, row.h.y, ink);
       put(x, `${n} ${+n === 1 ? 'mention' : 'mentions'}`, row.r, 1, row.r.x, row.r.y, ink); });
   }
   function coinWords(x, coins, ink) {
