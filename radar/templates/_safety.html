@@ -10,9 +10,9 @@
       {% for t in safety_tips %}<li hidden><h2 class="sfn-h"{% if loop.first %} id="sfn-h"{% endif %}>{{ t }}</h2></li>{% endfor %}
     </ol>
     <ul class="sfn-cal" aria-label="Mint calendar">
-      <li><b>Nov 13</b><span>Raffle closes</span></li>
-      <li><b>Nov 16</b><span>Community presale</span></li>
-      <li><b>Nov 30</b><span>Public auction</span></li>
+      <li data-end="2026-11-13T17:00:00Z"><b>Nov 13</b><span>Raffle closes</span></li>
+      <li data-end="2026-11-20T13:00:00Z"><b>Nov 16</b><span>Community presale</span></li>
+      <li data-end="2026-12-01T13:00:00Z"><b>Nov 30</b><span>Public auction</span></li>
     </ul>
     <p class="sfn-promise">pdtools will never post a mint link or ask for your wallet, your seed phrase or a signature.</p>
     <div class="sfn-row">
@@ -35,6 +35,7 @@
 .sfn-cal { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .sfn-cal li { display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, .55); box-shadow: inset 0 0 0 1px rgba(147, 96, 31, .35); }
 .sfn-cal b { font-size: 17px; font-weight: 900; color: #5c3608; }
+.sfn-cal li.past { opacity: .55; } .sfn-cal li.past b { white-space: nowrap; } .sfn-cal li.past b::after { content: " \2713"; font-size: .85em; }
 .sfn-cal span { font-size: 14px; font-weight: 700; line-height: 1.25; color: #5a4330; }
 .sfn-promise { margin: 0; font-size: 16px; font-weight: 800; line-height: 1.45; color: #6b2a10; }
 .sfn-row { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -69,6 +70,7 @@
   let i = Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(2026, 10, 8)) / 864e5);    // 8 Nov, the day Dragon Guard opened, is tip 1
   i = ((i % tips.length) + tips.length) % tips.length;
   const show = (k) => tips.forEach((li, j) => { li.hidden = j !== k; li.classList.toggle("on", j === k); });
+  box.querySelectorAll(".sfn-cal li[data-end]").forEach((li) => li.classList.toggle("past", Date.now() > Date.parse(li.dataset.end)));
   show(i); box.hidden = false;
   document.getElementById("sfn-next").addEventListener("click", () => { i = (i + 1) % tips.length; show(i); });
   document.getElementById("sfn-hide").addEventListener("click", () => { try { localStorage.setItem("pd:sfnHide", day); } catch (e) {} box.hidden = true; });

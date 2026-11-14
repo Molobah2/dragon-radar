@@ -65,7 +65,19 @@
   const MARK = [3974678, 11828366, 24034322].map((v) => ((v ^ 0x2A5F3) - 104729) / 7919);
   // gift days (Jon, 12 Nov): on that day every Keeper who finishes the daily goal is given that relic
   const GIFTS = [{ day: "2026-11-13", i: 1 }];   // 13 Nov 2026: the second relic, the Ember Warden
-  const giftDue = () => { const g = GIFTS.find((x) => x.day === today()); const e = g && SECRETS[g.i]; return e && !sealed(e) && goalDone() ? e : null; };
+  // a gift day's goal keeps the relic waiting if the seal was missed that day
+  function giftsOwed() {
+    const o = store.get("pd:gifts", null) || {}; let ch = false;
+    GIFTS.forEach((x) => {
+      if (o[x.day] || x.day > today() || sealed(SECRETS[x.i])) return;
+      const did = (x.day === today() && goalDone()) || (dex.g && dex.g.last === x.day)
+        || dex.log.some((l) => l.day === x.day && !SECRETS.some((e) => e.key === l.k));
+      if (did) { o[x.day] = 1; ch = true; }
+    });
+    if (ch) store.set("pd:gifts", o);
+    return o;
+  }
+  const giftDue = () => { const o = giftsOwed(); const g = GIFTS.find((x) => o[x.day] && !sealed(SECRETS[x.i])); return g ? SECRETS[g.i] : null; };
   function sealDue() { return SECRETS.find((e, i) => !sealed(e) && dex.e >= MARK[i]) || giftDue() || null; }
   const owned = (e) => ((dex.have[e.sp.id] || {})[TK[e.tier]] || 0) > 0;
   const found = () => ENTRIES.filter(owned).length;
