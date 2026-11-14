@@ -528,3 +528,10 @@ html.v3 .v3-top .side-menu { margin-left: auto; }
 html.v3 .v3-top .side-menu-btn { min-width: 0; width: auto; }
 @media (max-width: 560px) { html.v3 .v3-top .side-menu { flex: 1 1 100%; } html.v3 .v3-top .side-menu-btn { width: 100%; } html.v3 .v3-top .streak { flex: 1 1 100%; } }
 html.v3 .v3-top .side-actions { background: #241a12 !important; border: 1px solid var(--h-rim); -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* 14 Nov deformity pass: navy left over from the dark theme, and the Keepers empty note squeezed into one column */
+html.v3 .tally.is-empty { display: block; grid-template-columns: none; }
+html.v3 .tally.is-empty .tally-empty { width: 100%; box-sizing: border-box; font-size: 16px; }
+html.v3 .start-here { background: linear-gradient(135deg, rgba(74, 50, 28, .96), rgba(44, 30, 18, .96)) !important; border: 1px solid var(--h-rim); }
+html.v3 footer:not([class]) { background: rgba(26, 19, 14, .82); border: 1px solid var(--h-rim-soft); }
+html.v3 .ama-node { background: linear-gradient(160deg, #4a3220, #241810) !important; }
+html.v3 .ama-av { background: linear-gradient(160deg, #4a3220, #241810); }
