@@ -79,6 +79,7 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
       <div class="chip sun">{{ ico("sparkle", 56) }}<b id="fresh">{{ "–" if v3_open else "0" }}</b><span>new since your last visit</span></div>
     </div>
   </section>
+  {% if v3_open %}<div class="v3-top" id="v3-top"></div>{% endif %}{# v3 (14 Nov): the streak and My tools sit right under the hero, moved here before app.js runs #}
 
   {% if v2 %}<section class="start-here" id="start-here" hidden aria-labelledby="sh-title">
     <img src="{{ asset('brand/badge-96.webp') }}" alt="" width="64" height="64" class="sh-badge">
@@ -517,6 +518,7 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
   {% endif %}
   <script id="radar-data" type="application/json">{{ {"posts": items, "pinned": pinned, "newcomers": newcomers, "demo": cfg.demo_mode, "intro_ms": 5000, "updated": updated, "goal": 10 if (v2 and v21_open) else (20 if v2 else 5), "goal_rule": "mix" if (v2 and v21_open) else ("keeper" if v2 else "quiet"), "season_end": cfg.dex_season_end, "dle_start": dle_start, "guard_on": guard_open, "v2": v2, "icons": {"bulb": ("/static/v3/art/ico/bulb-96.webp" if v3_open else cfg.icon("bulb"))}} | tojson }}</script>
   <script src="{{ asset('keeper.js') }}"></script>
+  {% if v3_open %}<script>(() => { const t = document.getElementById("v3-top"); if (!t) return; ["streak", "side-menu"].forEach((id) => { const e = document.getElementById(id); if (e) t.append(e); }); })();</script>{% endif %}
   <script src="{{ asset('app.js') }}"></script>
   {% if v2 %}<script src="{{ asset('weekly2.js') }}" defer></script>{% else %}<script src="{{ asset('weekly.js') }}" defer></script>{% endif %}
   {% if v2 %}<link rel="stylesheet" href="{{ asset('fonts-cards.css') }}">
