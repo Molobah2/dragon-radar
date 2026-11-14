@@ -310,6 +310,17 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
     def allowed() -> bool:
         return cfg.trail_public or bool(has_preview and has_preview())
 
+    # 15 Nov (Jon): his unlocked test devices (the Dragon Circle lock, g.circle) walk the Trail now, before Dec 1,
+    # to check it. Everyone else still sees the countdown. The X sign in and the daily spend cap still apply.
+    def tester() -> bool:
+        return bool(getattr(g, "circle", False))
+
+    def phase(now):
+        return None if tester() else event_phase(cfg, now)
+
+    def window():
+        return None if tester() else event_json(cfg)
+
     def today() -> date:
         return datetime.now(tz).date()
 
@@ -333,6 +344,10 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             resp = Response(page, mimetype="text/html")
         else:
             resp = send_from_directory(TRAIL_DIR, "index.html", max_age=0)
+        if tester():   # Jon's test devices: no countdown, the Trail is open for them now
+            resp.direct_passthrough = False
+            page = resp.get_data(as_text=True).replace("</head>", "<script>window.KT_TESTER=1</script></head>", 1)
+            resp = Response(page, mimetype="text/html")
         resp.headers["Cache-Control"] = "private, no-cache"
         resp.headers["X-Robots-Tag"] = "noindex, nofollow"
         return resp
@@ -349,7 +364,7 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
     def trail_connect():
         if not allowed():
             abort(404)
-        if event_phase(cfg, utcnow()) in ("soon", "closed"):
+        if phase(utcnow()) in ("soon", "closed"):
             return redirect("/trail/")
         if not (cfg.x_client_id and cfg.x_client_secret):
             return redirect("/trail/?x=off")
@@ -430,7 +445,7 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             out["no"] = n
         if at:
             out["opened"] = at.strftime("%Y-%m-%dT%H:%M:%SZ")
-        ev = event_json(cfg)
+        ev = window()
         if ev:
             out["event"] = ev
         return out
@@ -440,14 +455,14 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         if not allowed():
             abort(404)
         now = utcnow()
-        ph = event_phase(cfg, now)
+        ph = phase(now)
         if ph == "soon":
-            return jsonify({"why": "soon", "event": event_json(cfg)}), 403
+            return jsonify({"why": "soon", "event": window()}), 403
         if ph == "closed":
-            return jsonify({"why": "closed", "event": event_json(cfg)}), 410
+            return jsonify({"why": "closed", "event": window()}), 410
         u = session.get("trail_user")
         if not u:
-            ev = event_json(cfg)
+            ev = window()
             return jsonify({"connected": False, **({"event": ev} if ev else {})}), 401
         with Session() as s:
             row = s.get(TrailCard, u["id"])

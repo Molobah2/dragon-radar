@@ -266,6 +266,7 @@ window.SKY_L = (() => {
   const HS = { state: 0, open: 0, close: 0, now: 0 };
   function hatchState(clk, op, shape) {   // called once per frame with the Hatchery's own opacity
     { const E = window.KT_EVT; if (E && E.opens && !(SHOT && P.get('now'))) { T_OPEN = E.opens; T_CLOSE = E.closes || T_CLOSE0; } }
+    if (window.KT_TESTER) { T_OPEN = 0; T_CLOSE = 8.64e15; }   // Jon's test devices: the door is open now
     const n = nowMs(clk), st = stateAt(n); HS.now = n; HS.state = st;
     HS.open = Math.min(1, Math.max(0, (n - T_OPEN) / 1600)); HS.close = Math.min(1, Math.max(0, (n - T_CLOSE) / 2000));
     const hb = isl.hatch, src = hb.material.uniforms;

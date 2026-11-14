@@ -274,3 +274,18 @@ def test_one_card_per_account_never_read_from_x_again(cfg, monkeypatch):
         s.commit()
     again = c.get("/api/trail/me").get_json()
     assert again["cached"] is True and len(fake.calls) == n
+
+
+def test_jons_test_devices_walk_the_trail_before_it_opens(cfg, monkeypatch):
+    """15 Nov: the devices Jon unlocked (g.circle) can check the Trail before Dec 1; everyone else sees the countdown."""
+    from flask import g
+    cfg.trail_opens = "2026-11-07T15:00:00Z"
+    app, c = make(cfg, FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}]), monkeypatch)
+    who = {"tester": False}
+    app.before_request(lambda: setattr(g, "circle", who["tester"]) if who["tester"] else None)
+    monkeypatch.setattr(trail, "utcnow", lambda: datetime(2026, 11, 7, 14, 0))
+    assert c.get("/api/trail/me").status_code == 403                       # a normal visitor: soon
+    who["tester"] = True
+    r = c.get("/api/trail/me")
+    assert r.status_code == 401 and "event" not in r.get_json()            # a tester: open, no countdown
+    assert not c.get("/trail/x/connect").headers.get("Location", "").endswith("/trail/")
