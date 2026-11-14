@@ -504,7 +504,9 @@ html.v3 .toggles .switch { white-space: normal; min-width: 0; line-height: 1.2; 
 html.v3 .toggles .switch input { flex: none; }
 /* the parchment letters: every chip in dark ink, never the night colours made for the old dark cards */
 html.v3 .post .tag.crew { color: #4a2f8f; background: rgba(110, 80, 200, .14); border-color: rgba(110, 80, 200, .32); }
-html.v3 .post .tag.tier:not(.tier-gold):not(.tier-silver) { color: #7a3f0c; }
+html.v3 .post .tag.tier.tier-gold { color: #5a3a00; background: linear-gradient(180deg, #fff0a8 0%, #f7cc45 55%, #e0a51c 100%); border-color: #c98f12; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), 0 2px 8px -3px rgba(180, 120, 0, .65); }
+html.v3 .post .tag.tier.tier-silver { color: #333b4d; background: linear-gradient(180deg, #ffffff 0%, #dde2ec 55%, #b9c1d1 100%); border-color: #9aa3b5; box-shadow: inset 0 1px 0 #fff, 0 2px 8px -3px rgba(70, 80, 105, .55); }
+html.v3 .post .tag.tier:not(.tier-gold):not(.tier-silver) { color: #fff4e6; background: linear-gradient(180deg, #e3a06a 0%, #c0743c 55%, #9a5526 100%); border-color: #8a4a1e; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 2px 8px -3px rgba(120, 60, 20, .6); }
 html.v3 .post .tag.tr-link { color: #1d5f94; }
 html.v3 .dex-next { color: #ffcf6b; }
 /* audit: on phones the language pill made the header too wide, pushing Songs off the screen in every language */
