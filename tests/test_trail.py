@@ -297,3 +297,12 @@ def test_walks_with_most_shows_x_names():
     assert trail.clean_name("Sam Withers 🐉") == "Sam Withers"
     assert trail.clean_name("  Shiv  🐉 ") == "Shiv"
     assert trail.clean_name("🐉") == ""
+
+
+def test_per_post_tile_replaces_ahead_of():
+    """15 Nov (Jon): the tile that waited for five other Keepers now shows views per dragon post, from the first card."""
+    assert trail.per_post(14_350, 10) == "1,435" and trail.per_post(250_000, 10) == "25K" and trail.per_post(0, 0) == "0"
+    import glob, json
+    for f in glob.glob(str(trail.TRAIL_DIR / "themes" / "*.json")):
+        blk = [b for b in json.load(open(f))["scene"]["back"]["live"]["blocks"] if b.get("on") == "tile" and b.get("i") == 4][0]
+        assert [s.get("k") or s.get("t") for s in blk["segs"]] == ["perPost", " ", "views"], f

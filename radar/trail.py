@@ -137,6 +137,11 @@ def add_spend(s, day: date, usd: float) -> None:
 
 
 # ---------- numbers as the card shows them ----------
+def per_post(views: int, n: int) -> str:
+    """Views per dragon post, for the tile that replaced "Ahead of" (15 Nov, Jon): 1,234 under 10K, then 12.3K."""
+    return short(round(views / n)) if n else "0"
+
+
 def short(n: int) -> str:
     if n >= 1_000_000:
         v = f"{n / 1_000_000:.1f}".rstrip("0").rstrip(".")
@@ -231,7 +236,7 @@ def compute(posts: list[dict], user: dict, today: date, others: list[int], mine:
         "first": long_date(first), "last": long_date(last), "day": str((last - first).days + 1 if days else 0),
         "bestViews": f"{bv:,}", "bestViewsDate": short_date(best_v["at"].date()) if best_v else "",
         "bestLikes": f"{mt(best_l, 'like_count'):,}" if best_l else "0", "bestLikesDate": short_date(best_l["at"].date()) if best_l else "",
-        "streak": str(streak), "weeks": str(weeks), "weeksTotal": str(total_weeks), "ahead": ahead,
+        "streak": str(streak), "weeks": str(weeks), "weeksTotal": str(total_weeks), "ahead": ahead, "perPost": per_post(views, n),
         "rhythm": rhythm, "walks": walks, "markers": markers, "n": n, "viewsN": views, "v": CARD_V,
     }
 
@@ -473,6 +478,11 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         out = dict(card)
         # 15 Nov (Jon): Walks with most shows each Keeper's X name, not the handle. Looked up when the card is served,
         # so cards made before this change get the names too. A handle pdtools has never seen stays a handle.
+        if "perPost" not in out:   # cards made before 15 Nov: worked out from what they already hold
+            try:
+                out["perPost"] = per_post(int(out.get("viewsN") or 0), int(out.get("n") or 0))
+            except (TypeError, ValueError):
+                out["perPost"] = "0"
         if out.get("walks"):
             out["walks"] = [list(w[:3]) + [names[w[0].lower()]] if w and w[0].lower() in names else list(w) for w in out["walks"]]
         if n:
