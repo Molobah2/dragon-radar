@@ -160,9 +160,9 @@ def test_no_daily_cap_one_card_per_account_is_the_limit(cfg, monkeypatch):
     assert c.get("/api/trail/me").get_json()["cached"] is True and len(fake.calls) == n
 
 
-def test_the_post_limit_is_500():
+def test_the_post_limit_is_300():
     from radar import trail
-    assert trail.MAX_POSTS == 500
+    assert trail.MAX_POSTS == 300
 
 
 def test_no_dragon_posts_says_so(cfg, monkeypatch):

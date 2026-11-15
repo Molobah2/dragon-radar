@@ -52,7 +52,7 @@ TERMS = ('(@Pocket_Dragons_ OR "pocket dragons" OR "pocket dragon" OR "ancient h
          'OR dragon OR dragons OR keeper OR keepers OR pdtools OR "ember chamber" OR PD OR #PocketDragons OR 🐉)')
 TRAIL_START = datetime(2026, 9, 8)          # the Hatchery opened on 8 September; nothing before counts
 CARD_V = 2                                  # bump when the way a card is worked out changes: saved cards are made again
-MAX_POSTS = 500                             # the most posts read for one Keeper (about $2.50 at worst; Jon, 15 Nov)
+MAX_POSTS = 300                             # the most posts read for one Keeper (about $1.50 at worst; Jon, 15 Nov)
 SPEND_KEY = "trail_spend_m"
 WALK_COLOURS = ["#6d5313", "#e0784f", "#7fa38f"]
 
@@ -620,7 +620,7 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             saved = json.loads(row.card) if row else None
             # one card per X account (9 Nov, Jon: to save X credits): once a card is made it is the Keeper's card for
             # good. It is never read from X again, on any day, even if it was cut short or an older card version.
-            # No daily cap (15 Nov, Jon): the one card per account and the 500 post limit are the limits.
+            # No daily cap (15 Nov, Jon): the one card per account and the 300 post limit are the limits.
             fresh = row is not None and saved is not None
             # others to compare with: Keepers who walked the trail, their counts also from X
             oq = select(TrailCard.posts).where(TrailCard.user_id != u["id"])
