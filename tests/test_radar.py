@@ -1791,13 +1791,14 @@ def test_my_week_card_opens_only_on_friday_utc(cfg, Session):
 def test_book_signing_card_is_ready(cfg, Session):
     c = v2_client(cfg)
     page = c.get("/friends").get_data(as_text=True)
-    assert 'id="sc-canvas"' in page and "signcard.js" in page and "Your signing card" in page
+    assert 'id="sc-stage"' in page and "signcard.js" in page and "Your page in the book" in page
     assert '<script src="/static/signcard.js' not in page   # loaded only once someone has signed
+    assert "vendor/three.min.js" in page and "book3d.js" in page   # the 3D book loads only for signers too
+    assert '<script src="/static/book3d.js' not in page
     js = c.get("/static/signcard.js").get_data(as_text=True)
-    assert "sign-cards/sign-" in js and "pdtools.xyz" in js
-    for i in range(1, 8):                                   # all 7 backgrounds are offered
-        assert f"id: {i}," in js
-    assert "avc1" in js                                     # X takes H.264 video, so that is tried first
+    assert "PDBook3D.mount" in js and "sc-image" in js
+    book = c.get("/static/book3d.js").get_data(as_text=True)
+    assert "pdtools.xyz" in book and "PD Script" in book and "window.PDBook3D" in book
     font = c.get("/static/fonts/dancing-script-latin-700-normal.woff2")
     assert font.status_code == 200 and len(font.get_data()) > 10_000
     friends = c.get("/static/friends.js").get_data(as_text=True)

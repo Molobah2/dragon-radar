@@ -292,14 +292,13 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
           <p class="bm-lead" id="bm-week"></p>
           <div class="bm-meter"><i id="bm-meter"></i></div>
           <div class="sc" id="sc" data-src="{{ asset('signcard.js') }}" hidden>
-            <h4>Your signing card</h4>
-            <p class="sheet-sub">Pick a background. Your X name is written into Blinky's book, ready to share on X.</p>
-            <div class="mw-designs sc-picks" id="sc-picks" role="group" aria-label="Card background"></div>
-            <canvas class="sc-canvas" id="sc-canvas" width="1280" height="724" role="img" aria-label="Your Book of Friends signing card"></canvas>
+            <h4>Your page in the book</h4>
+            <p class="sheet-sub">Your X name is written into Blinky's Book of Friends. Drag the book to tilt it, then save it and share it on X.</p>
+            <div class="sc-stage" id="sc-stage" data-three="{{ asset('vendor/three.min.js') }}" data-book="{{ asset('book3d.js') }}" role="img" aria-label="Your X name written in gold ink in Blinky's Book of Friends"></div>
             <div class="bm-row"><button class="btn btn-go" id="sc-share" type="button" hidden>Share</button>
-              <button class="btn btn-go" id="sc-video" type="button">Save video</button>
-              <button class="btn btn-soft" id="sc-image" type="button">Save image</button>
-              <a class="btn btn-soft" id="sc-post" href="#" target="_blank" rel="noopener">Post on X</a></div>
+              <button class="btn btn-go" id="sc-image" type="button">Save image</button>
+              <a class="btn btn-soft" id="sc-post" href="#" target="_blank" rel="noopener">Post on X</a>
+              <button class="btn btn-soft" id="sc-replay" type="button">Play again</button></div>
             <p class="kp-msg" id="sc-msg" role="status"></p>
           </div>
           <div class="bm-card" id="bm-card" hidden>
