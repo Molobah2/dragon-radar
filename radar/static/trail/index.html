@@ -5489,22 +5489,18 @@ float svor(vec2 x) { vec2 n = floor(x), f = fract(x); float m1 = 8.0, m2 = 8.0;
     if (u < 0.9) for (let i = 0; i < 14; i++) { const a = -Math.PI * (0.15 + 0.7 * hash(i + 901)), v = M * (0.05 + 0.08 * hash(i + 902)), tt = u, px = cx + Math.cos(a) * v * tt * 2 * (hash(i + 903) < 0.5 ? -1 : 1), py = y + Math.sin(a) * v * tt * 2.4 + M * 0.12 * tt * tt;
       c.fillStyle = `rgba(235,242,255,${0.85 * (1 - tt / 0.9)})`; c.beginPath(); c.arc(px, py, M * 0.0028, 0, 7); c.fill(); }
     c.restore(); }
-  // a little panda curled up asleep on the card's top edge, breathing, a few z's drifting up (Panda)
-  function msleepFx(c, w, h, t, a, r) { r = r || [w * 0.2, h * 0.3, w * 0.8, h * 0.7];
-    const s = Math.max(22, Math.min(Math.min(w, h) * 0.12, (r[1] - 6) / 1.1)), x = Math.min(w - s * 0.9, r[2] - s * 1.2), y = r[1] - s * 0.36 + (1 - Math.min(1, a)) * s * 0.3, br = Math.sin(t * 1.6) * 0.03; c.save(); c.globalAlpha = Math.min(1, a);
-    const blot = (cx, cy, rx, ry, col, rot) => { c.save(); c.translate(cx, cy); c.rotate(rot || 0); c.fillStyle = col; c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, 7); c.fill(); c.restore(); };
-    c.shadowColor = 'rgba(200,215,255,.7)'; c.shadowBlur = s * 0.4;
-    blot(x, y, s * 0.62 * (1 + br), s * 0.34 * (1 + br), '#eef1fa'); c.shadowBlur = 0;                                          // the curled body
-    blot(x + s * 0.42, y - s * 0.02, s * 0.2, s * 0.13, '#161a26', 0.2); blot(x - s * 0.1, y + s * 0.22, s * 0.3, s * 0.11, '#161a26');   // a back leg, the arms tucked in
-    blot(x - s * 0.5, y - s * 0.08, s * 0.32, s * 0.27, '#f5f7fd');                                                            // head resting on its arms
-    c.strokeStyle = 'rgba(22,26,38,.75)'; c.lineWidth = s * 0.025; c.beginPath(); c.ellipse(x - s * 0.5, y - s * 0.08, s * 0.32, s * 0.27, 0, 0, 7); c.stroke();
-    blot(x - s * 0.72, y - s * 0.3, s * 0.1, s * 0.09, '#161a26'); blot(x - s * 0.3, y - s * 0.32, s * 0.1, s * 0.09, '#161a26');   // ears
-    blot(x - s * 0.6, y - s * 0.08, s * 0.09, s * 0.07, '#161a26', 0.4); blot(x - s * 0.38, y - s * 0.08, s * 0.09, s * 0.07, '#161a26', -0.4);   // eye patches
-    c.strokeStyle = 'rgba(240,244,255,.9)'; c.lineWidth = s * 0.02; for (const ex of [-0.6, -0.38]) { c.beginPath(); c.arc(x + s * ex, y - s * 0.09, s * 0.035, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke(); }   // closed eyes
-    blot(x - s * 0.49, y + s * 0.03, s * 0.04, s * 0.028, '#161a26');                                                          // nose
-    c.strokeStyle = 'rgba(225,232,255,.85)'; c.lineWidth = s * 0.03; c.lineCap = 'round';                                     // z's drifting up
-    for (let k = 0; k < 3; k++) { const q = (t * 0.35 + k / 3) % 1, zs = s * (0.1 + 0.06 * k) * (0.6 + q * 0.4), zx = x - s * 0.7 - q * s * 0.5 + Math.sin(q * 6 + k) * s * 0.08, zy = y - s * 0.55 - q * s * 1.1;
-      c.globalAlpha = Math.min(1, a) * Math.sin(q * Math.PI) * 0.9; c.beginPath(); c.moveTo(zx - zs / 2, zy - zs / 2); c.lineTo(zx + zs / 2, zy - zs / 2); c.lineTo(zx - zs / 2, zy + zs / 2); c.lineTo(zx + zs / 2, zy + zs / 2); c.stroke(); }
+  // a little panda curled up asleep on the card's top edge, breathing, a few small z's drifting up (Panda). A painted
+  // sprite (15 Nov, Jon: smaller and more real than the drawn one), Nano Banana Pro job 629de802
+  const SLEEPY = new Image(); SLEEPY.src = (window.KT_THEME_URL || 'themes/') + 'panda-sleep.webp';
+  function msleepFx(c, w, h, t, a, r) { r = r || [w * 0.2, h * 0.3, w * 0.8, h * 0.7]; if (!SLEEPY.complete || !SLEEPY.naturalWidth) return;
+    const cw = r[2] - r[0], pw = Math.max(70, Math.min(cw * 0.15, 190)), ph = pw * SLEEPY.naturalHeight / SLEEPY.naturalWidth, br = Math.sin(t * 1.5);
+    const x = r[2] - cw * 0.08 - pw, y = r[1] - ph * 0.96 + (1 - Math.min(1, a)) * ph * 0.25; c.save(); c.globalAlpha = Math.min(1, a);
+    const sh = c.createRadialGradient(x + pw * 0.5, r[1] + ph * 0.02, 0, x + pw * 0.5, r[1] + ph * 0.02, pw * 0.55);      // a soft shadow where it lies
+    sh.addColorStop(0, 'rgba(0,0,0,.28)'); sh.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = sh; c.fillRect(x - pw * 0.1, r[1] - ph * 0.15, pw * 1.2, ph * 0.3);
+    c.translate(x + pw * 0.55, y + ph); c.scale(1 + br * 0.006, 1 + br * 0.018); c.drawImage(SLEEPY, -pw * 0.55, -ph, pw, ph); c.setTransform(1, 0, 0, 1, 0, 0);   // breathing
+    c.strokeStyle = 'rgba(225,232,255,.7)'; c.lineWidth = Math.max(1.2, pw * 0.012); c.lineCap = 'round';                   // small z's drifting up
+    for (let k = 0; k < 3; k++) { const q = (t * 0.3 + k / 3) % 1, zs = pw * (0.035 + 0.02 * k) * (0.6 + q * 0.4), zx = x + pw * 0.18 - q * pw * 0.16 + Math.sin(q * 6 + k) * pw * 0.03, zy = y + ph * 0.25 - q * ph * 0.9;
+      c.globalAlpha = Math.min(1, a) * Math.sin(q * Math.PI) * 0.75; c.beginPath(); c.moveTo(zx - zs / 2, zy - zs / 2); c.lineTo(zx + zs / 2, zy - zs / 2); c.lineTo(zx - zs / 2, zy + zs / 2); c.lineTo(zx + zs / 2, zy + zs / 2); c.stroke(); }
     c.restore(); }
 
   // ----- Speed's race, laid over each step: speed streaks and dust on the way in, the sonic boom, sand spray, the finish camera -----
