@@ -560,3 +560,23 @@ html.v3 body :is(header.v22-head .logo3d .lb, header.v22-head .logo3d .lw, .n22-
 html.v3 body .kick i { box-shadow: none; }
 /* Welcome lane headline: solid gold words instead of gradient text */
 html.v3 body .wl-copy h1 span { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: #ffc46b; }
+
+/* the daily goal at the top of the Feed (15 Nov, Jon: "I can't see where to see my daily goal and what to do") */
+html.v3 .v3-top .goal { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 16px 8px 10px; border-radius: 999px; font-size: 16px; font-weight: 700;
+  background: var(--glass-hi); border: 1px solid var(--h-gold, #ffc46b); color: var(--h-parch); box-shadow: var(--lift); cursor: pointer; }
+html.v3 .v3-top .goal::after { content: ""; width: 8px; height: 8px; margin-left: 2px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); opacity: .8; transition: transform .2s; }
+html.v3 .v3-top .goal[aria-expanded="true"]::after { transform: translateY(2px) rotate(225deg); }
+html.v3 .v3-top .goal:hover { background: rgba(255, 236, 200, .1); }
+html.v3 .v3-top .goal.done { border-color: rgba(120, 220, 140, .7); }
+html.v3 .v3-top .goal-steps { left: 0; right: auto; }
+@media (max-width: 560px) { html.v3 .v3-top .goal { flex: 1 1 100%; justify-content: center; } html.v3 .v3-top .goal-steps { left: 0; right: 0; } }
+html.v3 .v3-top .goal-steps { background: #241a10; color: var(--h-parch, #f6e7c8); border: 1px solid rgba(255, 196, 107, .35); box-shadow: 0 20px 50px -18px rgba(0, 0, 0, .8); border-radius: 18px; }
+html.v3 .v3-top .gs-pct { color: var(--h-gold, #ffc46b); }
+html.v3 .v3-top .gs-bar { background: rgba(255, 196, 107, .14); }
+html.v3 .v3-top .gs-row { border-top-color: rgba(255, 196, 107, .14); }
+html.v3 .v3-top .gs-tick { background: transparent; box-shadow: inset 0 0 0 2px rgba(255, 196, 107, .45); color: var(--h-gold, #ffc46b); }
+html.v3 .v3-top .gs-row.ok .gs-tick { background: #4fbf72; box-shadow: none; color: #fff; }
+html.v3 .v3-top .gs-t small, html.v3 .v3-top .gs-row.ok .gs-t b { color: rgba(246, 231, 200, .62); }
+html.v3 .v3-top .gs-row.skip .gs-tick { background: rgba(255, 196, 107, .1); box-shadow: none; }
+html.v3 .v3-top .gs-go { background: var(--h-gold, #ffc46b); color: #2a1c08; box-shadow: none; }
+html.v3 .v3-top .gs-row.skip { background: none; box-shadow: none; }
