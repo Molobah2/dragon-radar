@@ -535,3 +535,18 @@ html.v3 .start-here { background: linear-gradient(135deg, rgba(74, 50, 28, .96),
 html.v3 footer:not([class]) { background: rgba(26, 19, 14, .82); border: 1px solid var(--h-rim-soft); }
 html.v3 .ama-node { background: linear-gradient(160deg, #4a3220, #241810) !important; }
 html.v3 .ama-av { background: linear-gradient(160deg, #4a3220, #241810); }
+
+/* unslop polish, Feed only (15 Nov 2026, unslop by @heydamir). Keeps the Hatchery colours, art and layout;
+   takes out the leftover tells: very heavy type, uppercase spaced labels, loops that are not live, loud chrome */
+html.v3 body.page-feed :is(.btn, button, .tab, .tag, .pd-t, label.switch, .faq-link, .snd-label, .sp-label, #goal-text, #pd-me-l, .mc-song, .mc-all, .mc-title) { font-weight: 700; }
+html.v3 body.page-feed :is(b, strong, .sfn-go, .sfn-btn) { font-weight: 700; }
+html.v3 body.page-feed :is(.sfn-promise, .intro-sub) { font-weight: 600; }
+html.v3 body.page-feed .avatar.blank { font-weight: 700; }
+html.v3 body.page-feed :is(.v3-brand small, .sample-flag, .sfn-kick, .sfn-kick span) { text-transform: none; letter-spacing: .01em; }
+html.v3 body.page-feed .v3-brand small { font-size: 12px; font-weight: 700; }
+html.v3 body.page-feed .sound-pill.wait, html.v3 body.page-feed .tally .chip.sun :is(.ico, img) { animation: none; }
+/* the top right: quiet text buttons instead of four pills; the language box keeps a hairline so it reads as a choice */
+html.v3 body.page-feed .bar-right :is(.sound-pill, .song-pill) { background: transparent !important; border-color: transparent !important; }
+html.v3 body.page-feed .bar-right :is(.sound-pill, .song-pill):hover { background: rgba(255, 236, 200, .08) !important; transform: none; }
+/* safety card: one main action, the other two as quiet text */
+html.v3 body.page-feed .sfn-btn { background: transparent !important; box-shadow: none !important; border-color: transparent !important; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; padding-left: 8px; padding-right: 8px; }

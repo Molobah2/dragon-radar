@@ -12,6 +12,7 @@
   </div>
 </div>
 {% endblock %}
+{% block body_class %}page-feed{% endblock %}
 {% block header_right %}{% if cfg.demo_mode %}<span class="sample-flag">Demo data</span>{% endif %}<a class="btn btn-soft nav-keepers" href="{{ url_for('keepers_page') }}">{{ ico("shield", 20) }}<span>Keepers</span></a>{% endblock %}
 {% block main %}
 {% if v2 and v21_open %}<style>
@@ -71,7 +72,7 @@ html.theme-dark .gs-t small, html.theme-dark .gs-row.ok .gs-t b { color: #a99fc9
   </section>
   <section class="hero{% if v3_open %} room-stage room-feed{% endif %}">
     <div class="hero-main">
-      <h1 data-i18n-html="h1Feed">Something stirs<br>in the <span class="pop">Hatchery.</span></h1>
+      <h1 data-i18n-html="h1Feed">Something stirs<br>in the <span class="pop">Hatchery</span></h1>
       <p class="lede">Every whisper that calls the dragons lands here. Open one and it fades from your sight.</p>
     </div>
     <div class="tally">
