@@ -118,7 +118,7 @@ body.switching .rv-tap{opacity:.55;pointer-events:none}
 .pdlogo{height:54px;width:90px;margin:-8px 0 0 -4px;pointer-events:none;user-select:none;-webkit-user-drag:none}
 body.shot .pdlogo{display:none}
 body.home-on .homebtn,body.shot .homebtn{display:none}
-@media (max-width:600px){.pdlogo{position:fixed;top:calc(60px + env(safe-area-inset-top,0px));left:50%;margin:0;height:60px;width:100px;transform:translateX(-50%);transition:opacity .4s}body.rv-on .pdlogo{opacity:0}body.home-on .pdlogo,body.home-leaving .pdlogo{opacity:0;visibility:hidden}}
+@media (max-width:600px){body.kt-signed #home #stop{top:calc(max(5vh, 40px) + 34px + env(safe-area-inset-top,0px))}body:has(#pickpanel:not([hidden])) .pdlogo{opacity:0;visibility:hidden}.pdlogo{position:fixed;top:calc(60px + env(safe-area-inset-top,0px));left:50%;margin:0;height:60px;width:100px;transform:translateX(-50%);transition:opacity .4s}body.rv-on .pdlogo{opacity:0}body.home-on .pdlogo,body.home-leaving .pdlogo{opacity:0;visibility:hidden}}
 .home-logo{display:none}
 @media (max-width:600px){.home-kick{display:none}.home-logo[src]{display:block;height:74px;width:auto;margin:0 auto 6px;filter:drop-shadow(0 4px 14px rgba(0,0,0,.45));pointer-events:none;user-select:none;-webkit-user-drag:none}}
 .corner .lang:focus-within{outline:2px solid currentColor;outline-offset:3px}
@@ -137,6 +137,10 @@ body.home-on .homebtn,body.shot .homebtn{display:none}
 #rv-welcome{top:calc(58px + env(safe-area-inset-top,0px));font-size:22px}
 .toast{bottom:calc(110px + env(safe-area-inset-bottom,0px))}}
 @media (max-height:520px) and (max-width:700px){.rv-row{grid-template-columns:repeat(8,24px)}}
+/* phones on their side (15 Nov): the controls fold into one short strip under the card, so the card is not covered */
+@media (max-height:520px) and (min-aspect-ratio:1/1){.ui{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:6px 8px;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+.ui .btns{display:contents}.ui .hint{display:none}#rv-keep{flex-basis:100%;margin:0;font-size:12px;padding:5px 12px;text-align:center}
+.ui .btns button{padding:10px 14px;min-height:38px;font-size:11px}}
 /* the welcome line takes the top bar for a moment, then the design switch slides in under it */
 #rv-welcome{top:calc(14px + env(safe-area-inset-top,0px));left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:calc(100% - 210px);min-height:38px;display:flex;align-items:center;justify-content:center;padding:0;font-size:clamp(15px,3.4vw,24px);line-height:1.15}
 @keyframes kt-welcome{0%{opacity:0;transform:translate(-50%,8px) scale(.96)}14%{opacity:1;transform:translate(-50%,0)}74%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-6px)}}
@@ -442,6 +446,7 @@ window.KT_EVT = (function () {
     var t = two(h) + ':' + two(m) + ':' + two(s % 60); return d > 0 ? unit(d, 'day', 'long') + ' ' + t : t; };
   // 18h 42m, or 42m in the last hour
   E.short = function (left) { var m = Math.max(1, Math.ceil(left / 60000)), h = Math.floor(m / 60); m = m % 60;
+    if (h >= 48) return unit(Math.floor(h / 24), 'day', 'narrow') + ' ' + unit(h % 24, 'hour', 'narrow');   // phones (15 Nov): 3d 23h, not 95h 12m
     return h > 0 ? unit(h, 'hour', 'narrow') + ' ' + unit(m, 'minute', 'narrow') : unit(m, 'minute', 'narrow'); };
   var Q = new URLSearchParams(location.search); if (Q.get('opens') || Q.get('closes')) E.set({ opens: Q.get('opens'), closes: Q.get('closes') });
   return E;

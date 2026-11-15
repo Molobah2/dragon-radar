@@ -446,3 +446,12 @@ def test_after_the_close_a_keeper_still_opens_their_card_but_nobody_makes_one(cf
     assert r.status_code == 200 and r.get_json()["closed"] is True and r.get_json()["card"]["n"] == 1
     c.post("/trail/x/disconnect")
     assert c.get("/api/trail/me").status_code == 410
+
+
+def test_the_page_is_versioned_and_answers_not_modified(cfg, monkeypatch):
+    import hashlib
+    app, c = make(cfg, FakeX(), monkeypatch)
+    r = c.get("/trail/")
+    v = hashlib.md5((trail.TRAIL_DIR / "kt-world-nt.js").read_bytes()).hexdigest()[:8]
+    assert f"kt-world-nt.js?v={v}" in r.get_data(as_text=True)
+    assert c.get("/trail/", headers={"If-None-Match": r.headers["ETag"]}).status_code == 304

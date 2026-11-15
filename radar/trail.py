@@ -496,24 +496,38 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             abort(404)
         return redirect("/trail/")
 
+    page_cache = {}
+
+    def trail_page_text() -> str:
+        """index.html with the world script's ?v= set from the script itself (15 Nov, phone hunt: the tag was stale since
+        8 Nov, so phones could keep yesterday's script for a day after a push). Read again only when either file changes."""
+        idx, js = TRAIL_DIR / "index.html", TRAIL_DIR / "kt-world-nt.js"
+        key = (idx.stat().st_mtime_ns, js.stat().st_mtime_ns if js.exists() else 0)
+        if page_cache.get("key") != key:
+            page = idx.read_text(encoding="utf-8")
+            if js.exists():
+                v = hashlib.md5(js.read_bytes()).hexdigest()[:8]
+                page = re.sub(r"kt-world-nt\.js\?v=[0-9a-f]+", f"kt-world-nt.js?v={v}", page)
+            page_cache.update(key=key, page=page)
+        return page_cache["page"]
+
     @app.get("/trail/")
     def trail_page():
         if not allowed():
             abort(404)
         if not (TRAIL_DIR / "index.html").exists():
             abort(404)
+        page = trail_page_text()
         if (v3_ok() if v3_ok else getattr(cfg, "v3_public", False)):
             # v3: a way back to the rest of pdtools from the Trail (the Create section, where its card lives)
-            page = (TRAIL_DIR / "index.html").read_text(encoding="utf-8")
             page = page.replace('<div class="corner l">', '<div class="corner l">' + PD_BACK, 1).replace("</head>", PD_BACK_CSS + "<script>window.PD_V3=1</script></head>", 1)
             page = page.replace("</body>", PD_BACK.replace('class="pdt-home"', 'class="pdt-home pdt-float"', 1) + "</body>", 1)
-            resp = Response(page, mimetype="text/html")
-        else:
-            resp = send_from_directory(TRAIL_DIR, "index.html", max_age=0)
         if tester():   # Jon's test devices: no countdown, the Trail is open for them now
-            resp.direct_passthrough = False
-            page = resp.get_data(as_text=True).replace("</head>", "<script>window.KT_TESTER=1</script></head>", 1)
-            resp = Response(page, mimetype="text/html")
+            page = page.replace("</head>", "<script>window.KT_TESTER=1</script></head>", 1)
+        resp = Response(page, mimetype="text/html")
+        # a phone that already has this exact page gets a tiny "not changed" answer instead of the whole 8 MB again
+        resp.set_etag(hashlib.md5(page.encode("utf-8")).hexdigest())
+        resp = resp.make_conditional(request)
         resp.headers["Cache-Control"] = "private, no-cache"
         resp.headers["X-Robots-Tag"] = "noindex, nofollow"
         return resp
