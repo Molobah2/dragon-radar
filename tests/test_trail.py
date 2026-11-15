@@ -149,12 +149,20 @@ def test_a_second_visit_the_same_day_costs_nothing(cfg, monkeypatch):
     assert again["cached"] is True and len(fake.calls) == n
 
 
-def test_the_daily_cap_stops_new_lookups_but_not_saved_cards(cfg, monkeypatch):
-    cfg.trail_daily_cap_usd = 0.5
-    app, c = make(cfg, FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}]), monkeypatch)
+def test_no_daily_cap_one_card_per_account_is_the_limit(cfg, monkeypatch):
+    cfg.trail_daily_cap_usd = 0.0
+    fake = FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}])
+    app, c = make(cfg, fake, monkeypatch)
     sign_in(c)
     r = c.get("/api/trail/me")
-    assert r.status_code == 429 and r.get_json()["why"] == "cap"
+    assert r.status_code == 200 and r.get_json()["cached"] is False
+    n = len(fake.calls)
+    assert c.get("/api/trail/me").get_json()["cached"] is True and len(fake.calls) == n
+
+
+def test_the_post_limit_is_500():
+    from radar import trail
+    assert trail.MAX_POSTS == 500
 
 
 def test_no_dragon_posts_says_so(cfg, monkeypatch):

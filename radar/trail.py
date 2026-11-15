@@ -52,7 +52,7 @@ TERMS = ('(@Pocket_Dragons_ OR "pocket dragons" OR "pocket dragon" OR "ancient h
          'OR dragon OR dragons OR keeper OR keepers OR pdtools OR "ember chamber" OR PD OR #PocketDragons OR 🐉)')
 TRAIL_START = datetime(2026, 9, 8)          # the Hatchery opened on 8 September; nothing before counts
 CARD_V = 2                                  # bump when the way a card is worked out changes: saved cards are made again
-MAX_POSTS = 1000                            # the most posts read for one Keeper (about $5 at worst)
+MAX_POSTS = 500                             # the most posts read for one Keeper (about $2.50 at worst; Jon, 15 Nov)
 SPEND_KEY = "trail_spend_m"
 WALK_COLOURS = ["#6d5313", "#e0784f", "#7fa38f"]
 
@@ -513,18 +513,14 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             saved = json.loads(row.card) if row else None
             # one card per X account (9 Nov, Jon: to save X credits): once a card is made it is the Keeper's card for
             # good. It is never read from X again, on any day, even if it was cut short or an older card version.
+            # No daily cap (15 Nov, Jon): the one card per account and the 500 post limit are the limits.
             fresh = row is not None and saved is not None
-            left = cfg.trail_daily_cap_usd - spent_today(s, today())
             # others to compare with: Keepers who walked the trail, their counts also from X
             others = [] if fresh else list(s.scalars(select(TrailCard.posts).where(TrailCard.user_id != u["id"])))
         if fresh:
             return jsonify({"card": with_no(saved, u["id"]), "cached": True})
         if not cfg.x_bearer_token:
             return jsonify({"why": "x", "handle": "@" + u["username"]}), 503
-        if left < 0.6:          # not enough left today for even a small trail
-            if saved:
-                return jsonify({"card": with_no(saved, u["id"]), "cached": True, "stale": True})
-            return jsonify({"why": "cap", "handle": "@" + u["username"]}), 429
         with lock:
             if u["id"] in inflight:
                 return jsonify({"wait": True}), 202
@@ -532,7 +528,7 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         try:
             # no database connection is held while X answers (the pool is small)
             try:
-                posts, cost, source, partial = search_posts(http, cfg.x_bearer_token, u["username"], left, cfg.cost_per_post_usd)
+                posts, cost, source, partial = search_posts(http, cfg.x_bearer_token, u["username"], (MAX_POSTS + 100) * cfg.cost_per_post_usd, cfg.cost_per_post_usd)
             except (XError, requests.RequestException, ValueError) as e:
                 app.logger.warning("trail search failed for %s: %s", u["username"], e)
                 if saved:
