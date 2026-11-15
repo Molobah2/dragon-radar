@@ -101,9 +101,13 @@ def _num(v) -> int:
         return 0
 
 
-def lock_in_hall(s, row: "TrailCard", http: requests.Session) -> bool:
-    """Puts one card in the Hall if it is not there yet. Returns True if it was added."""
+def lock_in_hall(s, row: "TrailCard", http: requests.Session, since: datetime | None = None) -> bool:
+    """Puts one card in the Hall if it is not there yet. Returns True if it was added. Only cards made once the Trail
+    opens count (15 Nov, Jon): test cards made before the opening never go in."""
     if row is None or s.get(TrailHall, row.user_id) is not None:
+        return False
+    made = row.opened_at or row.fetched_at
+    if since is None or made is None or made < since:
         return False
     try:
         card = json.loads(row.card or "{}")
@@ -524,7 +528,7 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
                 done = set(s.scalars(select(TrailHall.user_id)))
                 for row in s.scalars(select(TrailCard)).all():
                     if row.user_id not in done:
-                        lock_in_hall(s, row, http)
+                        lock_in_hall(s, row, http, event_window(cfg)[0])
         except Exception as e:
             app.logger.warning("hall backfill failed: %s", e)
 
@@ -540,6 +544,17 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         return jsonify({"ok": True})
 
     # ---------- the card ----------
+    def live_since() -> datetime | None:
+        """The opening, once it has passed. Cards made before it are test cards (15 Nov, Jon): they are wiped the first
+        time their Keeper comes back after the opening, and never count for numbers, comparisons or the Hall."""
+        opens = event_window(cfg)[0]
+        return opens if opens and utcnow() >= opens else None
+
+    def is_test(row) -> bool:
+        opens = live_since()
+        made = row.opened_at or row.fetched_at if row is not None else None
+        return bool(opens and made and made < opens)
+
     def number(s, uid: str) -> tuple[int | None, datetime | None]:
         """The Keeper's card number and the day they opened it, given once, the first time their card is made, and never changed."""
         row = s.get(TrailCard, uid)
@@ -547,7 +562,10 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             return None, None
         if row.no is None or row.opened_at is None:
             if row.no is None:
-                row.no = (s.scalar(select(func.max(TrailCard.no))) or 0) + 1
+                q, opens = select(func.max(TrailCard.no)), live_since()
+                if opens:       # once the Trail opens, numbering starts again at No. 1: test cards don't count
+                    q = q.where(TrailCard.opened_at >= opens)
+                row.no = (s.scalar(q) or 0) + 1
             if row.opened_at is None:
                 row.opened_at = utcnow()
             s.commit()
@@ -558,7 +576,7 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             n, at = number(s, uid)
             names = walk_names(s, [w[0] for w in (card.get("walks") or []) if w])
             try:
-                lock_in_hall(s, s.get(TrailCard, uid), http)
+                lock_in_hall(s, s.get(TrailCard, uid), http, event_window(cfg)[0])
             except Exception as e:      # the Hall must never stop a Keeper seeing their card
                 s.rollback()
                 app.logger.warning("hall lock failed for %s: %s", uid, e)
@@ -597,13 +615,18 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             return jsonify({"connected": False, **({"event": ev} if ev else {})}), 401
         with Session() as s:
             row = s.get(TrailCard, u["id"])
+            if is_test(row):    # a test card from before the opening: this Keeper makes their real card now
+                row = None
             saved = json.loads(row.card) if row else None
             # one card per X account (9 Nov, Jon: to save X credits): once a card is made it is the Keeper's card for
             # good. It is never read from X again, on any day, even if it was cut short or an older card version.
             # No daily cap (15 Nov, Jon): the one card per account and the 500 post limit are the limits.
             fresh = row is not None and saved is not None
             # others to compare with: Keepers who walked the trail, their counts also from X
-            others = [] if fresh else list(s.scalars(select(TrailCard.posts).where(TrailCard.user_id != u["id"])))
+            oq = select(TrailCard.posts).where(TrailCard.user_id != u["id"])
+            if live_since():
+                oq = oq.where(TrailCard.opened_at >= live_since())
+            others = [] if fresh else list(s.scalars(oq))
         if fresh:
             return jsonify({"card": with_no(saved, u["id"]), "cached": True})
         if not cfg.x_bearer_token:
@@ -629,6 +652,8 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
                 blob, views = json.dumps(card), min(card["viewsN"], 2**31 - 1)
                 row = s.get(TrailCard, u["id"])
                 if row:
+                    if is_test(row):     # the test card is wiped: a new number and opening date are given below
+                        row.no, row.opened_at = None, None
                     row.username, row.card, row.posts, row.views, row.source, row.partial, row.cost_usd, row.fetched_at = \
                         u["username"], blob, card["n"], views, source, partial, cost, now
                 else:

@@ -206,7 +206,7 @@ window.SKY_L = (() => {
   // ---- piece 3: the Hatchery's one window. Sealed before it (S0) with the time left glowing in the island's rock,
   // open during it (S1), and closed for good after it (S2), stone and moss over the door. The states come from fixed UTC
   // instants and the server's clock (the Date of the page response), never from the visitor's own clock.
-  const T_OPEN0 = Date.UTC(2026, 10, 25, 0, 0, 0), T_CLOSE0 = Date.UTC(2026, 11, 6, 0, 0, 0); let T_OPEN = T_OPEN0, T_CLOSE = T_CLOSE0;   // pdtools' window (KT_EVT) wins when the page has it
+  const T_OPEN0 = Date.UTC(2026, 11, 2, 0, 0, 0), T_CLOSE0 = Date.UTC(2026, 11, 6, 0, 0, 0); let T_OPEN = T_OPEN0, T_CLOSE = T_CLOSE0;   // pdtools' window (KT_EVT) wins when the page has it
   let srvOff = 0; if (!SHOT) fetch(location.href, { method: 'HEAD', cache: 'no-store' }).then((r) => { const d = Date.parse(r.headers.get('date')); if (d) srvOff = d - Date.now(); }).catch(() => {});
   const NOW0 = P.get('now') ? Date.parse(P.get('now')) : null;
   const nowMs = (clk) => SHOT && NOW0 != null ? NOW0 + (clk - 20) * 1000 : Date.now() + srvOff;   // test mode: now is the override at clock 20 s, and runs with the clock

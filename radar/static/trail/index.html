@@ -461,8 +461,8 @@ window.KT_EVT = (function () {
   var FIRST = null; try { if (localStorage.getItem('kt-seen2') !== '1') FIRST = 'twilight'; } catch (e) { FIRST = 'twilight'; }
   window.KT_FIRST = FIRST;
   var API = window.KT_TRAIL_API, BASE = window.KT_TRAIL_BASE || '/trail', EV = window.KT_EVT;
-  // Jon's window: open 25 Nov 2026 00:00 UTC, closed for good from 6 Dec 2026 00:00 UTC (all of 5 Dec is open). A preview may try others with ?opens=&closes=.
-  if (EV && !window.KT_TESTER && !P.get('opens') && !P.get('closes')) EV.set({ opens: '2026-11-25T00:00:00Z', closes: '2026-12-06T00:00:00Z' });
+  // Jon's window: open 2 Dec 2026 00:00 UTC, closed for good from 6 Dec 2026 00:00 UTC (all of 5 Dec is open). A preview may try others with ?opens=&closes=.
+  if (EV && !window.KT_TESTER && !P.get('opens') && !P.get('closes')) EV.set({ opens: '2026-12-02T00:00:00Z', closes: '2026-12-06T00:00:00Z' });
   var T = window.KT_TRAIL = { gate: API ? 'checking' : 'open', label: null, go: function () {} };
   var L = function (k, d) { var v = window.KT_L ? window.KT_L(k) : d; return v && v !== k ? v : d; };
   function label() { T.label = T.gate === 'connect' ? L('hSignX', 'Sign in with X') : T.gate === 'open' ? L('hWalkIn', 'Walk into the Hatchery') : null; }

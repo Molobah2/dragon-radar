@@ -317,6 +317,7 @@ def test_per_post_tile_replaces_ahead_of():
 
 
 def test_a_made_card_is_locked_in_the_hall_once(cfg, monkeypatch):
+    cfg.trail_opens, cfg.trail_closes = "2026-01-01T00:00:00Z", "2099-01-01T00:00:00Z"
     fake = FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}])
     app, c = make(cfg, fake, monkeypatch)
     sign_in(c)
@@ -333,3 +334,40 @@ def test_a_made_card_is_locked_in_the_hall_once(cfg, monkeypatch):
     with S() as s:
         rows = s.scalars(trail.select(trail.TrailHall)).all()
         assert len(rows) == 1 and rows[0].design == "panda"
+
+
+def test_cards_made_before_the_trail_opens_never_go_in_the_hall(cfg, monkeypatch):
+    fake = FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}])
+    app, c = make(cfg, fake, monkeypatch)          # no opening set: nothing goes in
+    sign_in(c)
+    assert c.get("/api/trail/me").status_code == 200
+    from radar.db import make_session_factory
+    S = make_session_factory(cfg.database_url)
+    with S() as s:
+        assert s.scalars(trail.select(trail.TrailHall)).all() == []
+        row = s.scalars(trail.select(trail.TrailCard)).first()
+        assert trail.lock_in_hall(s, row, fake, trail._at("2099-12-02T00:00:00Z")) is False   # made before the opening
+        assert trail.lock_in_hall(s, row, fake, trail._at("2026-01-01T00:00:00Z")) is True
+
+
+def test_test_cards_from_before_the_opening_are_remade_and_numbering_restarts(cfg, monkeypatch):
+    fake = FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}, {"data": [tw("1", "2026-09-08"), tw("2", "2026-09-09")], "meta": {}}])
+    app, c = make(cfg, fake, monkeypatch)
+    sign_in(c)
+    first = c.get("/api/trail/me").get_json()                    # a test card, before any opening is set
+    assert first["cached"] is False
+    from radar.db import make_session_factory
+    S = make_session_factory(cfg.database_url)
+    with S() as s:                                               # someone else's test card took No. 1 earlier
+        row = s.scalars(trail.select(trail.TrailCard)).first(); row.no = 7; s.commit()
+    cfg.trail_opens, cfg.trail_closes = "2026-11-15T00:00:00Z", "2099-01-01T00:00:00Z"
+    with S() as s:
+        row = s.scalars(trail.select(trail.TrailCard)).first()
+        row.opened_at = trail._at("2026-11-10T00:00:00Z"); s.commit()       # made before the opening
+    n = len(fake.calls)
+    r = c.get("/api/trail/me"); again = r.get_json()
+    assert again.get("cached") is False and len(fake.calls) > n, (r.status_code, again)       # made again from X
+    assert again["card"]["no"] == 1                               # the first real card
+    with S() as s:
+        assert len(s.scalars(trail.select(trail.TrailHall)).all()) == 1
+    assert c.get("/api/trail/me").get_json()["cached"] is True
