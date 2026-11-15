@@ -105,6 +105,11 @@ def create_app(cfg: Config | None = None) -> Flask:
     Session = make_session_factory(cfg.database_url)
     tz = ZoneInfo(cfg.timezone)
     app.extensions["radar"] = {"cfg": cfg, "Session": Session}
+    # Set up every table mapping now, before any background thread or request touches the database (15 Nov bug hunt):
+    # SQLAlchemy does this lazily on the first query, and two threads doing it at once can leave a mapping half
+    # built ("AttributeError: strategy"), after which every avatar and Book of Friends request failed until a restart.
+    from sqlalchemy.orm import configure_mappers
+    configure_mappers()
     from . import scheduler
     scheduler.start(cfg, Session)
 

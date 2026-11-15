@@ -613,7 +613,8 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         return jsonify({"ok": True})
 
     def backfill_hall() -> None:
-        """Cards made before the Hall existed go in once, when the app starts."""
+        """Cards made before the Hall existed go in once, a little after the app starts."""
+        time.sleep(20)       # never in the same moments as the first requests
         try:
             with Session() as s:
                 done = set(s.scalars(select(TrailHall.user_id)))
