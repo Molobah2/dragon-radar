@@ -35,7 +35,7 @@ from urllib.parse import urlencode
 
 import requests
 from flask import Response, abort, g, jsonify, redirect, request, send_from_directory, session
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, func, select
+from sqlalchemy import Boolean, DateTime, Float, Integer, LargeBinary, String, Text, func, select
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base, DailyCount, utcnow
@@ -71,6 +71,57 @@ class TrailCard(Base):
     fetched_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
     no: Mapped[int | None] = mapped_column(Integer, nullable=True)   # the order Keepers first walked the trail: card No. 1, 2, 3...
     opened_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)   # when they first opened it: the date stamped on the card
+
+
+class TrailHall(Base):
+    """The Hall of the Trail (15 Nov, Jon): every Keeper who made a card, locked in for good. Written once, the moment the card
+    is made, with its own copy of the card and of the X picture as it was that day, so the Hall still shows them if they later
+    change their name or picture. Never updated after that, except the design they last chose. Removed only on request."""
+    __tablename__ = "trail_hall"
+    user_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    no: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)      # their card number: the order they walked in
+    username: Mapped[str] = mapped_column(String(32), default="")
+    name: Mapped[str] = mapped_column(String(100), default="")
+    avatar_url: Mapped[str] = mapped_column(String(400), default="")
+    avatar: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)        # the picture itself, kept
+    avatar_type: Mapped[str] = mapped_column(String(40), default="")
+    posts: Mapped[int] = mapped_column(Integer, default=0)
+    views: Mapped[int] = mapped_column(Integer, default=0)
+    followers: Mapped[int] = mapped_column(Integer, default=0)
+    card: Mapped[str] = mapped_column(Text, default="{}")                           # the whole card as it was made
+    design: Mapped[str] = mapped_column(String(24), default="")                     # the design they last chose
+    made_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)       # when the card was first opened
+    locked_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+def _num(v) -> int:
+    try:
+        return int(str(v).replace(",", "")) if v not in (None, "") else 0
+    except (TypeError, ValueError):
+        return 0
+
+
+def lock_in_hall(s, row: "TrailCard", http: requests.Session) -> bool:
+    """Puts one card in the Hall if it is not there yet. Returns True if it was added."""
+    if row is None or s.get(TrailHall, row.user_id) is not None:
+        return False
+    try:
+        card = json.loads(row.card or "{}")
+    except ValueError:
+        card = {}
+    url, pic, kind = str(card.get("avatar") or ""), None, ""
+    if url.startswith("https://pbs.twimg.com/"):
+        try:
+            r = http.get(url, timeout=8)
+            if r.status_code == 200 and r.headers.get("Content-Type", "").startswith("image/") and len(r.content) < 2_000_000:
+                pic, kind = r.content, r.headers["Content-Type"][:40]
+        except requests.RequestException:
+            pass
+    s.add(TrailHall(user_id=row.user_id, no=row.no, username=row.username, name=str(card.get("name") or "")[:100], avatar_url=url[:400],
+                    avatar=pic, avatar_type=kind, posts=row.posts, views=row.views, followers=_num(card.get("followers")),
+                    card=row.card, made_at=row.opened_at or row.fetched_at))
+    s.commit()
+    return True
 
 
 # ---------- the one day the Trail is open ----------
@@ -450,6 +501,37 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         session.permanent = True
         return redirect("/trail/?x=ok")
 
+    @app.post("/api/trail/design")
+    def trail_design():
+        """The design a Keeper picked, kept on their Hall entry."""
+        if not allowed():
+            abort(404)
+        u = session.get("trail_user")
+        k = str((request.get_json(silent=True) or {}).get("k", ""))[:24]
+        if not u or not re.fullmatch(r"[a-z0-9]{1,24}", k):
+            return jsonify({"ok": False}), 400
+        with Session() as s:
+            row = s.get(TrailHall, u["id"])
+            if row is not None and row.design != k:
+                row.design = k
+                s.commit()
+        return jsonify({"ok": True})
+
+    def backfill_hall() -> None:
+        """Cards made before the Hall existed go in once, when the app starts."""
+        try:
+            with Session() as s:
+                done = set(s.scalars(select(TrailHall.user_id)))
+                for row in s.scalars(select(TrailCard)).all():
+                    if row.user_id not in done:
+                        lock_in_hall(s, row, http)
+        except Exception as e:
+            app.logger.warning("hall backfill failed: %s", e)
+
+    if not app.config.get("TESTING"):
+        threading.Thread(target=backfill_hall, daemon=True).start()
+    app.extensions["trail_backfill_hall"] = backfill_hall
+
     @app.post("/trail/x/disconnect")
     def trail_disconnect():
         if not allowed():
@@ -475,6 +557,11 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         with Session() as s:
             n, at = number(s, uid)
             names = walk_names(s, [w[0] for w in (card.get("walks") or []) if w])
+            try:
+                lock_in_hall(s, s.get(TrailCard, uid), http)
+            except Exception as e:      # the Hall must never stop a Keeper seeing their card
+                s.rollback()
+                app.logger.warning("hall lock failed for %s: %s", uid, e)
         out = dict(card)
         # 15 Nov (Jon): Walks with most shows each Keeper's X name, not the handle. Looked up when the card is served,
         # so cards made before this change get the names too. A handle pdtools has never seen stays a handle.

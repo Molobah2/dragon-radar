@@ -314,3 +314,22 @@ def test_per_post_tile_replaces_ahead_of():
     for f in glob.glob(str(trail.TRAIL_DIR / "themes" / "*.json")):
         blk = [b for b in json.load(open(f))["scene"]["back"]["live"]["blocks"] if b.get("on") == "tile" and b.get("i") == 4][0]
         assert [s.get("k") or s.get("t") for s in blk["segs"]] == ["perPost", " ", "views"], f
+
+
+def test_a_made_card_is_locked_in_the_hall_once(cfg, monkeypatch):
+    fake = FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}])
+    app, c = make(cfg, fake, monkeypatch)
+    sign_in(c)
+    assert c.get("/api/trail/me").status_code == 200
+    from radar.db import make_session_factory
+    S = make_session_factory(cfg.database_url)
+    with S() as s:
+        rows = s.scalars(trail.select(trail.TrailHall)).all()
+        assert len(rows) == 1 and rows[0].username == "keeper_one" and rows[0].no == 1 and rows[0].posts == 1
+        assert json.loads(rows[0].card)["n"] == 1
+    c.get("/api/trail/me")
+    assert c.post("/api/trail/design", json={"k": "panda"}).get_json()["ok"] is True
+    assert c.post("/api/trail/design", json={"k": "../x"}).status_code == 400
+    with S() as s:
+        rows = s.scalars(trail.select(trail.TrailHall)).all()
+        assert len(rows) == 1 and rows[0].design == "panda"

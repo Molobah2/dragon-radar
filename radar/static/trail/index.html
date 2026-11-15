@@ -3401,6 +3401,7 @@ function setTheme(k) {
   want = k;
   document.querySelectorAll('[data-pick]').forEach(b => b.setAttribute('aria-pressed', b.dataset.pick === k ? 'true' : 'false'));
   try { localStorage.setItem('kt-theme', k); } catch (e) {}
+  if (!SHOT && window.KT_CARD && !window.KT_DEMO) { clearTimeout(setTheme.tm); setTheme.tm = setTimeout(() => { try { fetch('/api/trail/design', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k }), credentials: 'same-origin', keepalive: true }); } catch (e) {} }, 1500); }   // the Hall keeps the design they chose
   if (window.KT_SND && window.KT_SND.need) window.KT_SND.need(k);       // the design's own sounds start arriving now
   if (CARDS[k] && !CARDS[k].pending) { apply(k); return; }
   document.body.classList.add('switching');
