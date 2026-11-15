@@ -433,8 +433,13 @@ PD_BACK_CSS = ('<style>.corner .pdt-home{height:38px;box-sizing:border-box;displ
                'font:800 13px/1 system-ui;color:#fff;background:rgba(20,14,24,.78);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 8px 24px rgba(0,0,0,.18)}'
                '.pdt-float img{width:22px;height:22px;border-radius:7px}'
                'body.rv-on .pdt-float,body.shot .pdt-float{display:none}'
+               # only one PD Tools pill at a time (15 Nov, Jon: the two copies stacked into a blurred double on the card):
+               # the floating one over the sky world, the corner one beside Home and the language on the card
+               '#home.gone~.pdt-float{display:none}'
+               # signed in, the X badge sits beside the floating pill instead of under it
+               'body.kt-signed #home #who{left:calc(max(16px,env(safe-area-inset-left,0px)) + 142px)}'
                # small phones: the Trail's own caption runs across the top, so the pill keeps to the badge and the arrow
-               '@media (max-width:420px){.pdt-home span{display:none}.pdt-float{padding:0 12px 0 10px}}'
+               '@media (max-width:420px){.pdt-home span{display:none}.pdt-float{padding:0 12px 0 10px}body.kt-signed #home #who{left:calc(max(16px,env(safe-area-inset-left,0px)) + 76px)}}'
                '</style>')
 
 
