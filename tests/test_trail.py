@@ -55,6 +55,9 @@ class FakeX:
         if url.endswith("/tweets"):
             ids = (params or {}).get("ids", "").split(",")
             return R(200, {"data": [tw(i, "2026-09-20", views=500) for i in ids if i]})
+        if url.endswith("/tweets/counts/all"):
+            return R(200, {"data": [{"start": "2026-09-08T00:00:00.000Z", "tweet_count": 3}, {"start": "2026-09-09T00:00:00.000Z", "tweet_count": 0},
+                                    {"start": "2026-11-01T00:00:00.000Z", "tweet_count": 2}], "meta": {}})
         if url.startswith("https://pbs.twimg.com/"):
             return R(200, ctype="image/jpeg", content=b"\xff\xd8jpg")
         return R(404)
@@ -327,6 +330,7 @@ def test_a_made_card_is_locked_in_the_hall_once(cfg, monkeypatch):
     with S() as s:
         rows = s.scalars(trail.select(trail.TrailHall)).all()
         assert len(rows) == 1 and rows[0].username == "keeper_one" and rows[0].no == 1 and rows[0].posts == 1
+        assert rows[0].avatar == b"\xff\xd8jpg" and rows[0].avatar_url.endswith("a_400x400.jpg")      # the picture itself is kept
         assert json.loads(rows[0].card)["n"] == 1
     c.get("/api/trail/me")
     assert c.post("/api/trail/design", json={"k": "panda"}).get_json()["ok"] is True
@@ -381,3 +385,48 @@ def test_gate_watcher_opens_for_week_one_keepers_with_ten_weeks():
     assert gate(weekly(9, 10)) == ["gate", "Gate Watcher", "Here since week one", 1]
     assert gate(weekly(9, 9)) == ["gate", "Gate Watcher", "9 of 10 weeks", 0]
     assert gate(weekly(15, 12)) == ["gate", "Gate Watcher", "Week one Keepers", 0]
+
+
+def test_a_keeper_with_more_posts_than_the_card_reads_keeps_true_dates_and_counts():
+    from datetime import date, datetime, timedelta
+    u = {"username": "k", "name": "K"}
+    newest = [{"id": str(i), "at": datetime(2026, 11, 10) + timedelta(hours=i), "m": {"impression_count": 10}} for i in range(5)]
+    counts = {date(2026, 9, 8) + timedelta(days=i): 4 for i in range(70)}           # every day since week one
+    card = trail.compute(newest, u, date(2026, 12, 2), [], day_counts=counts)
+    assert card["posts"] == "280" and card["n"] == 280
+    assert card["first"] == "8 Sep 2026" and card["streak"] == "70"
+    assert card["markers"][3][3] == 1 and card["perPost"] == "10"
+
+
+def test_search_marks_a_card_cut_at_the_post_limit_as_partial(monkeypatch):
+    monkeypatch.setattr(trail, "MAX_POSTS", 2)
+    pages = [{"data": [tw("1", "2026-11-01"), tw("2", "2026-11-02")], "meta": {"next_token": "t"}}]
+    fake = FakeX(pages=pages)
+    posts, cost, src, partial = trail.search_posts(fake, "b", "k", 100.0, 0.005, sleep=lambda s: None)
+    assert len(posts) == 2 and partial is True
+
+
+def test_a_card_cut_at_the_limit_counts_every_post_by_day(cfg, monkeypatch):
+    monkeypatch.setattr(trail, "MAX_POSTS", 2)
+    fake = FakeX(pages=[{"data": [tw("1", "2026-11-01"), tw("2", "2026-11-01")], "meta": {"next_token": "t"}}])
+    app, c = make(cfg, fake, monkeypatch)
+    sign_in(c)
+    card = c.get("/api/trail/me").get_json()["card"]
+    assert card["posts"] == "5" and card["first"] == "8 Sep 2026"
+    assert any(u.endswith("/tweets/counts/all") for _, u, _ in fake.calls)
+
+
+def test_x_busy_makes_the_page_wait_instead_of_failing(cfg, monkeypatch):
+    fake = FakeX()
+    app, c = make(cfg, fake, monkeypatch)
+    sign_in(c)
+    real = fake.get
+    def busy(url, **k):
+        if url.endswith("/tweets/search/all"):
+            fake.calls.append(("GET", url, k.get("params") or {}))
+            return R(429, {"title": "Too Many Requests"})
+        return real(url, **k)
+    fake.get = busy
+    r = c.get("/api/trail/me")
+    assert r.status_code == 202 and r.get_json()["wait"] is True
+    assert sum(1 for _, u, _ in fake.calls if u.endswith("/tweets/search/all")) == 3      # tried again before giving way

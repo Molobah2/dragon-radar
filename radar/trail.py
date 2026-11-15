@@ -102,7 +102,7 @@ def _num(v) -> int:
         return 0
 
 
-def lock_in_hall(s, row: "TrailCard", http: requests.Session, since: datetime | None = None) -> bool:
+def lock_in_hall(s, row: "TrailCard", http: requests.Session, since: datetime | None = None, pic_url: str = "") -> bool:
     """Puts one card in the Hall if it is not there yet. Returns True if it was added. Only cards made once the Trail
     opens count (15 Nov, Jon): test cards made before the opening never go in."""
     if row is None or s.get(TrailHall, row.user_id) is not None:
@@ -114,7 +114,8 @@ def lock_in_hall(s, row: "TrailCard", http: requests.Session, since: datetime | 
         card = json.loads(row.card or "{}")
     except ValueError:
         card = {}
-    url, pic, kind = str(card.get("avatar") or ""), None, ""
+    # the card itself points at /api/trail/avatar; the real X picture address comes from the signed in Keeper
+    url, pic, kind = pic_url or str(card.get("avatar") or ""), None, ""
     if url.startswith("https://pbs.twimg.com/"):
         try:
             r = http.get(url, timeout=8)
@@ -174,6 +175,36 @@ class XError(Exception):
         self.status, self.body = status, body
 
 
+class XBusy(XError):
+    """X's rate limit: too many cards being made at once. The page waits and asks again."""
+
+
+# X's full archive search takes one request a second for the whole app, so every Keeper's reads share one pace
+# (15 Nov, bug hunt: at the opening rush, parallel reads would hit the limit and Keepers would get an error)
+_pace_lock, _pace_last = threading.Lock(), [0.0]
+
+
+def x_get(http, url, params, headers, sleep=None, now=None):
+    sleep, now = sleep or time.sleep, now or time.monotonic
+    for attempt in range(3):
+        with _pace_lock:
+            wait = _pace_last[0] + 1.05 - now()
+            if wait > 0:
+                sleep(wait)
+            _pace_last[0] = now()
+        r = http.get(url, params=params, headers=headers, timeout=20)
+        if r.status_code != 429:
+            return r
+        try:
+            reset = int((getattr(r, "headers", None) or {}).get("x-rate-limit-reset", "0")) - int(time.time())
+        except (TypeError, ValueError):
+            reset = 0
+        if reset > 15 or attempt == 2:
+            raise XBusy(429, r.text)
+        sleep(max(1.5, reset + 0.5))
+    raise XBusy(429, "")
+
+
 # ---------- money ----------
 def spent_today(s, day: date) -> float:
     row = s.get(DailyCount, (day, SPEND_KEY))
@@ -220,16 +251,20 @@ def initials(name: str) -> str:
     return "".join(w[0] for w in name.split() if w)[:2].upper()
 
 
-def compute(posts: list[dict], user: dict, today: date, others: list[int], mine: int | None = None) -> dict:
-    """The card from a Keeper's posts. posts: [{id, at (datetime), m (public_metrics), mentions: [handles]}]."""
+def compute(posts: list[dict], user: dict, today: date, others: list[int], mine: int | None = None,
+            day_counts: dict | None = None) -> dict:
+    """The card from a Keeper's posts. posts: [{id, at (datetime), m (public_metrics), mentions: [handles]}].
+    day_counts: {date: posts that day} from X's counts, for a Keeper with more posts than the card reads (15 Nov):
+    then the post count, first post, streak, weeks, rhythm and markers come from every post, not just the newest read."""
     posts = sorted(posts, key=lambda p: p["at"])
     n = len(posts)
+    total = max(n, sum(day_counts.values())) if day_counts else n
     mt = lambda p, k: int((p.get("m") or {}).get(k) or 0)
     views = sum(mt(p, "impression_count") for p in posts)
     replies = sum(mt(p, "reply_count") for p in posts)
     reposts = sum(mt(p, "retweet_count") + mt(p, "quote_count") for p in posts)
     likes = sum(mt(p, "like_count") for p in posts)
-    days = sorted({p["at"].date() for p in posts})
+    days = sorted({p["at"].date() for p in posts} | {d for d, c in (day_counts or {}).items() if c > 0})
     first, last = (days[0], days[-1]) if days else (today, today)
     best_v = max(posts, key=lambda p: mt(p, "impression_count")) if posts else None
     best_l = max(posts, key=lambda p: mt(p, "like_count")) if posts else None
@@ -244,7 +279,7 @@ def compute(posts: list[dict], user: dict, today: date, others: list[int], mine:
     total_weeks = ((monday(today) - monday(first)).days // 7 + 1) if days else 0
     weeks = len({monday(d) for d in days})
     # posting rhythm: the last 8 weeks, Monday to Sunday, today outlined
-    per_day = Counter(p["at"].date() for p in posts)
+    per_day = Counter(day_counts) if day_counts else Counter(p["at"].date() for p in posts)
     start = monday(today) - timedelta(weeks=7)
     rhythm = []
     for i in range(56):
@@ -270,7 +305,7 @@ def compute(posts: list[dict], user: dict, today: date, others: list[int], mine:
     walks = [[shown[k], str(c), WALK_COLOURS[i % 3]] for i, (k, c) in enumerate(names.most_common(3))]
     # ahead of: share of the other Keepers on the trail (their counts also straight from X) with fewer dragon posts.
     # Until five others have walked it there is nobody fair to compare with, and the tile shows a dash.
-    me_n = n if mine is None else mine
+    me_n = total if mine is None else mine
     if len(others) >= 5 and me_n > 0:
         ahead = round(100 * sum(1 for o in others if o < me_n) / len(others))
         ahead = str(max(1, min(99, ahead)))
@@ -296,13 +331,13 @@ def compute(posts: list[dict], user: dict, today: date, others: list[int], mine:
     return {
         "name": name, "handle": "@" + (user.get("username") or ""), "initials": initials(name),
         "avatar": "/api/trail/avatar" if user.get("avatar") else "",
-        "posts": f"{n:,}", "views": short(views), "replies": f"{replies:,}", "reposts": f"{reposts:,}", "likes": f"{likes:,}",
+        "posts": f"{total:,}", "views": short(views), "replies": f"{replies:,}", "reposts": f"{reposts:,}", "likes": f"{likes:,}",
         "followers": f"{int(user.get('followers') or 0):,}",
         "first": long_date(first), "last": long_date(last), "day": str((last - first).days + 1 if days else 0),
         "bestViews": f"{bv:,}", "bestViewsDate": short_date(best_v["at"].date()) if best_v else "",
         "bestLikes": f"{mt(best_l, 'like_count'):,}" if best_l else "0", "bestLikesDate": short_date(best_l["at"].date()) if best_l else "",
         "streak": str(streak), "weeks": str(weeks), "weeksTotal": str(total_weeks), "ahead": ahead, "perPost": per_post(views, n),
-        "rhythm": rhythm, "walks": walks, "markers": markers, "n": n, "viewsN": views, "v": CARD_V,
+        "rhythm": rhythm, "walks": walks, "markers": markers, "n": total, "viewsN": views, "v": CARD_V,
     }
 
 
@@ -314,9 +349,10 @@ def _post(p: dict) -> dict:
 
 
 def search_posts(http: requests.Session, bearer: str, username: str, budget: float, cost_post: float,
-                 sleep=time.sleep) -> tuple[list[dict], float, str, bool]:
+                 sleep=None) -> tuple[list[dict], float, str, bool]:
     """Every post the Keeper wrote about the dragons since the Hatchery opened, straight from X's full archive
     search. Nothing comes from pdtools' own collection."""
+    sleep = sleep or time.sleep
     h = {"Authorization": f"Bearer {bearer}", "User-Agent": "pdtools-trail/1.0"}
     q = f"from:{username} {TERMS} -is:retweet -is:reply"
     fields = {"tweet.fields": "created_at,public_metrics,entities", "max_results": 100}
@@ -332,7 +368,7 @@ def search_posts(http: requests.Session, bearer: str, username: str, budget: flo
             params = {"query": q, "start_time": start.strftime("%Y-%m-%dT%H:%M:%SZ"), **fields}
             if token:
                 params["next_token"] = token
-            r = http.get(f"{API}{path}", params=params, headers=h, timeout=20)
+            r = x_get(http, f"{API}{path}", params, h, sleep=sleep)
             if r.status_code >= 400:
                 raise XError(r.status_code, r.text)
             j = r.json()
@@ -343,10 +379,41 @@ def search_posts(http: requests.Session, bearer: str, username: str, budget: flo
             token = (j.get("meta") or {}).get("next_token")
             if not token:
                 return
-            sleep(1.1)        # full archive search allows one request a second
+            if len(out) >= MAX_POSTS:
+                partial = True       # more posts than the card reads: the newest are read, every post is counted below
+                return
+            # the shared pace in x_get keeps to X's one request a second
 
     pages("/tweets/search/all", TRAIL_START)
     return list(out.values()), cost, "all", partial
+
+
+def day_counts(http: requests.Session, bearer: str, username: str, sleep=None) -> tuple[dict, float]:
+    """How many dragon posts a Keeper made on each day since the Hatchery opened, from X's counts (about $0.01 a request,
+    31 days a request). Only used when they have more posts than the card reads."""
+    sleep = sleep or time.sleep
+    h = {"Authorization": f"Bearer {bearer}", "User-Agent": "pdtools-trail/1.0"}
+    params = {"query": f"from:{username} {TERMS} -is:retweet -is:reply", "granularity": "day",
+              "start_time": TRAIL_START.strftime("%Y-%m-%dT%H:%M:%SZ")}
+    out, cost, token = {}, 0.0, None
+    for _ in range(8):
+        if token:
+            params["next_token"] = token
+        r = x_get(http, f"{API}/tweets/counts/all", params, h, sleep=sleep)
+        cost += 0.01
+        if r.status_code >= 400:
+            raise XError(r.status_code, r.text)
+        j = r.json()
+        for b in j.get("data") or []:
+            c = int(b.get("tweet_count") or 0)
+            if c:
+                d = datetime.strptime(b["start"][:10], "%Y-%m-%d").date()
+                out[d] = out.get(d, 0) + c
+        token = (j.get("meta") or {}).get("next_token")
+        if not token:
+            break
+        pass                 # the shared pace in x_get keeps to one request a second
+    return out, cost
 
 
 PD_BACK = ('<a class="pdt-home" href="/create" aria-label="Back to PD Tools" title="Back to PD Tools">'
@@ -554,6 +621,8 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         return jsonify({"ok": True})
 
     # ---------- the card ----------
+    numlock = threading.Lock()
+
     def live_since() -> datetime | None:
         """The opening, once it has passed. Cards made before it are test cards (15 Nov, Jon): they are wiped the first
         time their Keeper comes back after the opening, and never count for numbers, comparisons or the Hall."""
@@ -571,14 +640,16 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         if row is None:
             return None, None
         if row.no is None or row.opened_at is None:
-            if row.no is None:
-                q, opens = select(func.max(TrailCard.no)), live_since()
-                if opens:       # once the Trail opens, numbering starts again at No. 1: test cards don't count
-                    q = q.where(TrailCard.opened_at >= opens)
-                row.no = (s.scalar(q) or 0) + 1
-            if row.opened_at is None:
-                row.opened_at = utcnow()
-            s.commit()
+            with numlock:       # one number per Keeper even when many open their cards in the same moment (15 Nov)
+                s.refresh(row)
+                if row.no is None:
+                    q, opens = select(func.max(TrailCard.no)), live_since()
+                    if opens:       # once the Trail opens, numbering starts again at No. 1: test cards don't count
+                        q = q.where(TrailCard.opened_at >= opens)
+                    row.no = (s.scalar(q) or 0) + 1
+                if row.opened_at is None:
+                    row.opened_at = utcnow()
+                s.commit()
         return row.no, row.opened_at
 
     def with_no(card: dict, uid: str) -> dict:
@@ -586,7 +657,8 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             n, at = number(s, uid)
             names = walk_names(s, [w[0] for w in (card.get("walks") or []) if w])
             try:
-                lock_in_hall(s, s.get(TrailCard, uid), http, event_window(cfg)[0])
+                me = session.get("trail_user") or {}
+                lock_in_hall(s, s.get(TrailCard, uid), http, event_window(cfg)[0], me.get("avatar", "") if me.get("id") == uid else "")
             except Exception as e:      # the Hall must never stop a Keeper seeing their card
                 s.rollback()
                 app.logger.warning("hall lock failed for %s: %s", uid, e)
@@ -649,16 +721,25 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             # no database connection is held while X answers (the pool is small)
             try:
                 posts, cost, source, partial = search_posts(http, cfg.x_bearer_token, u["username"], (MAX_POSTS + 100) * cfg.cost_per_post_usd, cfg.cost_per_post_usd)
+            except XBusy:
+                return jsonify({"wait": True, "busy": True}), 202      # X is busy: the page asks again in a moment
             except (XError, requests.RequestException, ValueError) as e:
                 app.logger.warning("trail search failed for %s: %s", u["username"], e)
                 if saved:
                     return jsonify({"card": with_no(saved, u["id"]), "cached": True, "stale": True})
                 return jsonify({"why": "x", "handle": "@" + u["username"]}), 503
+            counts = None
+            if partial:          # more posts than the card reads: count every one by day, so dates and markers stay true
+                try:
+                    counts, c2 = day_counts(http, cfg.x_bearer_token, u["username"])
+                    cost += c2
+                except (XError, requests.RequestException, ValueError, KeyError) as e:
+                    app.logger.warning("trail counts failed for %s: %s", u["username"], e)
             with Session() as s:
                 add_spend(s, today(), cost)
                 if not posts:
                     return jsonify({"why": "none", "handle": "@" + u["username"]}), 200
-                card = compute(posts, u, today(), others)
+                card = compute(posts, u, today(), others, day_counts=counts)
                 blob, views = json.dumps(card), min(card["viewsN"], 2**31 - 1)
                 row = s.get(TrailCard, u["id"])
                 if row:
