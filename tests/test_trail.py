@@ -371,3 +371,13 @@ def test_test_cards_from_before_the_opening_are_remade_and_numbering_restarts(cf
     with S() as s:
         assert len(s.scalars(trail.select(trail.TrailHall)).all()) == 1
     assert c.get("/api/trail/me").get_json()["cached"] is True
+
+
+def test_gate_watcher_opens_for_week_one_keepers_with_ten_weeks():
+    from datetime import date, datetime, timedelta
+    u = {"username": "k", "name": "K"}
+    weekly = lambda start, k: [{"id": str(i), "at": datetime(2026, 9, start) + timedelta(weeks=i), "m": {}} for i in range(k)]
+    gate = lambda posts: trail.compute(posts, u, date(2026, 12, 2), [])["markers"][3]
+    assert gate(weekly(9, 10)) == ["gate", "Gate Watcher", "Here since week one", 1]
+    assert gate(weekly(9, 9)) == ["gate", "Gate Watcher", "9 of 10 weeks", 0]
+    assert gate(weekly(15, 12)) == ["gate", "Gate Watcher", "Week one Keepers", 0]

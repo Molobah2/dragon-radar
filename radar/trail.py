@@ -52,6 +52,7 @@ TERMS = ('(@Pocket_Dragons_ OR "pocket dragons" OR "pocket dragon" OR "ancient h
          'OR dragon OR dragons OR keeper OR keepers OR pdtools OR "ember chamber" OR PD OR #PocketDragons OR 🐉)')
 TRAIL_START = datetime(2026, 9, 8)          # the Hatchery opened on 8 September; nothing before counts
 CARD_V = 2                                  # bump when the way a card is worked out changes: saved cards are made again
+GATE_WEEKS = 10                             # Gate Watcher: weeks with a dragon post, for Keepers here since week one
 MAX_POSTS = 300                             # the most posts read for one Keeper (about $1.50 at worst; Jon, 15 Nov)
 SPEND_KEY = "trail_spend_m"
 WALK_COLOURS = ["#6d5313", "#e0784f", "#7fa38f"]
@@ -276,11 +277,20 @@ def compute(posts: list[dict], user: dict, today: date, others: list[int], mine:
     else:
         ahead = "—"
     bv = mt(best_v, "impression_count") if best_v else 0
+    # Gate Watcher (15 Nov, Jon): here since the gate opened. A first dragon post in the Hatchery's first week
+    # (8 to 14 Sep) and dragon posts in at least 10 different weeks since.
+    week_one = bool(days) and first < TRAIL_START.date() + timedelta(days=7)
+    if week_one and weeks >= GATE_WEEKS:
+        gate = ["gate", "Gate Watcher", "Here since week one", 1]
+    elif week_one:
+        gate = ["gate", "Gate Watcher", f"{weeks} of {GATE_WEEKS} weeks", 0]
+    else:
+        gate = ["gate", "Gate Watcher", "Week one Keepers", 0]
     markers = [
         ["star", "First Spark", short_date(first) if days else "Not yet", 1 if days else 0],
         ["lantern", "Lantern Lit", "10K view post" if bv >= 10_000 else f"{short(bv)} best so far", 1 if bv >= 10_000 else 0],
         ["flame", "Seven Day Flame", f"{streak} days running" if streak >= 7 else f"{streak} of 7 days", 1 if streak >= 7 else 0],
-        ["gate", "Gate Watcher", "Still locked", 0],
+        gate,
     ]
     name = user.get("name") or user.get("username") or ""
     return {
