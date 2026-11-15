@@ -256,9 +256,12 @@ def test_the_trail_is_open_for_one_day_only(cfg, monkeypatch):
     assert card["opened"] == "2026-11-07T16:30:00Z" and card["event"]["opens"] == "2026-11-07T15:00:00Z"
     clock["now"] = datetime(2026, 11, 8, 9, 0)
     assert c.get("/api/trail/me").get_json()["card"]["opened"] == "2026-11-07T16:30:00Z"     # the stamp never moves
-    # 24 hours later it is closed for everyone
+    # 24 hours later it is closed: no new cards, but this Keeper still opens theirs (15 Nov, Jon)
     clock["now"] = datetime(2026, 11, 8, 15, 0)
     r = c.get("/api/trail/me")
+    assert r.status_code == 200 and r.get_json()["closed"] is True
+    c2 = app.test_client()
+    r = c2.get("/api/trail/me")
     assert r.status_code == 410 and r.get_json()["why"] == "closed"
 
 
@@ -430,3 +433,16 @@ def test_x_busy_makes_the_page_wait_instead_of_failing(cfg, monkeypatch):
     r = c.get("/api/trail/me")
     assert r.status_code == 202 and r.get_json()["wait"] is True
     assert sum(1 for _, u, _ in fake.calls if u.endswith("/tweets/search/all")) == 3      # tried again before giving way
+
+
+def test_after_the_close_a_keeper_still_opens_their_card_but_nobody_makes_one(cfg, monkeypatch):
+    cfg.trail_opens, cfg.trail_closes = "2026-01-01T00:00:00Z", "2099-01-01T00:00:00Z"
+    fake = FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}])
+    app, c = make(cfg, fake, monkeypatch)
+    sign_in(c)
+    assert c.get("/api/trail/me").status_code == 200
+    cfg.trail_closes = "2026-02-01T00:00:00Z"                     # now closed
+    r = c.get("/api/trail/me")
+    assert r.status_code == 200 and r.get_json()["closed"] is True and r.get_json()["card"]["n"] == 1
+    c.post("/trail/x/disconnect")
+    assert c.get("/api/trail/me").status_code == 410

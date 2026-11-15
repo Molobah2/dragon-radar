@@ -690,6 +690,14 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         if ph == "soon":
             return jsonify({"why": "soon", "event": window()}), 403
         if ph == "closed":
+            # after the close (15 Nov, Jon): no new cards, but a Keeper who made one can still open, save and share it
+            u = session.get("trail_user")
+            if u:
+                with Session() as s:
+                    row = s.get(TrailCard, u["id"])
+                    saved = json.loads(row.card) if row and not is_test(row) else None
+                if saved:
+                    return jsonify({"card": with_no(saved, u["id"]), "cached": True, "closed": True})
             return jsonify({"why": "closed", "event": window()}), 410
         u = session.get("trail_user")
         if not u:
