@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>The Keeper's forge · PD Tools</title>
+<style>
+  @font-face { font-family: "PD Cinzel"; src: url(/static/fonts/cinzel-latin-700-normal.woff2) format("woff2"); font-weight: 700; }
+  @font-face { font-family: "Fredoka"; src: url(/static/fonts/fredoka-latin-wght-normal.woff2) format("woff2"); font-weight: 300 700; }
+  html, body { margin: 0; height: 100%; background: #07050a; color: #f6e7c8; font-family: "Fredoka", system-ui, sans-serif; overflow: hidden; }
+  #forge { position: fixed; inset: 0; }
+  #forge canvas { display: block; width: 100%; height: 100%; }
+  .vig { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0, 0, 0, .55)); }
+  .fade { position: fixed; inset: 0; background: #07050a; pointer-events: none; transition: opacity 1.4s ease-out; }
+  .fade.off { opacity: 0; }
+  .gate { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(7, 5, 10, .55); z-index: 5; cursor: pointer; }
+  .gate b { font: 700 clamp(18px, 3.4vw, 26px) "PD Cinzel", Georgia, serif; letter-spacing: .04em; }
+  .gate span { display: block; margin-top: 10px; opacity: .7; font-size: 15px; text-align: center; }
+  .gate[hidden] { display: none; }
+  .end { position: fixed; left: 0; right: 0; bottom: max(28px, env(safe-area-inset-bottom)); display: grid; justify-items: center; gap: 14px; opacity: 0; transform: translateY(10px); transition: opacity .8s ease-out, transform .8s ease-out; pointer-events: none; }
+  .end.on { opacity: 1; transform: none; pointer-events: auto; }
+  .end h1 { margin: 0; font: 700 clamp(22px, 4vw, 34px) "PD Cinzel", Georgia, serif; text-shadow: 0 2px 18px rgba(0, 0, 0, .8); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .btn { min-height: 46px; padding: 0 22px; border-radius: 999px; border: 1px solid rgba(255, 196, 107, .5); background: rgba(20, 12, 6, .7); color: #f6e7c8; font: 600 16px "Fredoka", sans-serif; cursor: pointer; }
+  .btn.go { background: #ffc46b; color: #2a1c08; border-color: #ffc46b; }
+  .mute { position: fixed; top: max(14px, env(safe-area-inset-top)); right: 14px; z-index: 6; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .2); background: rgba(0, 0, 0, .35); color: #f6e7c8; font: 500 14px "Fredoka", sans-serif; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="forge"></div>
+<div class="vig"></div>
+<div class="fade" id="fade"></div>
+<button class="mute" id="mute" type="button">Sound on</button>
+<div class="gate" id="gate" role="button" tabindex="0"><div><b>Enter the forge</b><span>Tap to watch your card being made</span></div></div>
+<div class="end" id="end">
+  <h1>Your card is forged</h1>
+  <div class="row"><button class="btn go" id="pick" type="button">Choose your egg</button><button class="btn" id="again" type="button">Watch again</button></div>
+</div>
+<script src="/static/vendor/three.min.js"></script>
+<link rel="stylesheet" href="fonts.css">
+<script src="three-extras.js"></script>
+<script src="ktl.js"></script>
+<script src="forge.js"></script>
+<script>
+(() => {
+  const qs = new URLSearchParams(location.search), $ = (id) => document.getElementById(id);
+  let F = null, muted = false;
+  const begin = () => {
+    if (F) return;
+    $("gate").hidden = true;
+    F = ForgeReveal.start({ onDone: () => $("end").classList.add("on") });
+    F.unlock();
+    F.ready.then(() => $("fade").classList.add("off"));
+  };
+  if (qs.has("t") || qs.has("auto")) begin();
+  $("gate").addEventListener("click", begin);
+  $("gate").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") begin(); });
+  $("again").addEventListener("click", () => { $("end").classList.remove("on"); F && F.replay(); });
+  $("pick").addEventListener("click", () => { location.href = "/trail/"; });
+  $("mute").addEventListener("click", () => { muted = !muted; $("mute").textContent = muted ? "Sound off" : "Sound on"; F && F.mute(muted); });
+})();
+</script>
+</body>
+</html>
