@@ -3619,6 +3619,9 @@ def test_shiv_videos_page_lists_every_video_with_a_quiz(cfg, Session):
     c = create_app(cfg).test_client()
     page = c.get("/shiv").get_data(as_text=True)
     assert all(f'data-play="{v[0]}"' in page for v in VIDEOS)
+    # Watch opens the video on YouTube itself, so every watch counts as a view for Shiv (embedded autoplay does not)
+    assert all(f'href="https://www.youtube.com/watch?v={v[0]}"' in page for v in VIDEOS)
+    assert "iframe_api" not in page and "youtube-nocookie" not in page
     assert "youtube.com/@KeeperShiv" in page and "x.com/Shivo222" in page and 'id="sv-data"' in page
     assert "not official Pocket Dragons news" in page
     app, c2 = _v21_client(cfg)

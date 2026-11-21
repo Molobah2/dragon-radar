@@ -9,7 +9,7 @@
   <div class="sv-hero-main sv-rise">
     <p class="sv-kick"><span class="sv-dot" aria-hidden="true"></span>Made by a Keeper</p>
     <h1>Shiv's <span class="pop">videos</span></h1>
-    <p class="lede">Every Pocket Dragons video from Keeper Shiv in one place. Watch one, then answer three quick questions to see what stuck.</p>
+    <p class="lede">Every Pocket Dragons video from Keeper Shiv in one place. Watch one on YouTube, then come back for three quick questions to see what stuck.</p>
     <div class="sv-meta">
       <span class="sv-tag"><b>{{ videos | length }}</b> videos</span>
       <span class="sv-tag"><b>{{ total_min // 60 }} hours{% if total_min % 60 %} {{ total_min % 60 }} min{% endif %}</b> of watching</span>
@@ -29,17 +29,17 @@
 
 {% if start %}
 <article class="sv-start sv-rise" style="--d: .2s" data-id="{{ start.id }}">
-  <button class="sv-thumb" type="button" data-play="{{ start.id }}" aria-label="Play: {{ start.title }}">
+  <a class="sv-thumb" href="https://www.youtube.com/watch?v={{ start.id }}" target="_blank" rel="noopener" data-play="{{ start.id }}" aria-label="Watch on YouTube: {{ start.title }}">
     <img src="{{ asset('shiv/' ~ start.id ~ '.webp') }}" alt="" width="640" height="360" loading="lazy">
     <span class="sv-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
     <span class="sv-dur">{{ start.dur }}</span>
-  </button>
+  </a>
   <div class="sv-start-body">
     <span class="sv-pill sv-pill-new">New here? Start with this one</span>
     <h2>{{ start.title }}</h2>
     <p>{{ start.line }}</p>
     <div class="sv-acts">
-      <button class="sv-btn sv-btn-go" type="button" data-play="{{ start.id }}">Watch</button>
+      <a class="sv-btn sv-btn-go" href="https://www.youtube.com/watch?v={{ start.id }}" target="_blank" rel="noopener" data-play="{{ start.id }}">Watch on YouTube</a>
       <button class="sv-btn" type="button" data-quiz="{{ start.id }}">Take the quiz</button>
       <span class="sv-done" data-done="{{ start.id }}" hidden></span>
     </div>
@@ -55,12 +55,12 @@
 <ul class="sv-grid" id="sv-grid">
   {% for v in videos %}
   <li class="sv-card" data-kind="{{ v.kind }}" data-id="{{ v.id }}" style="--i: {{ loop.index0 }}">
-    <button class="sv-thumb" type="button" data-play="{{ v.id }}" aria-label="Play: {{ v.title }}">
+    <a class="sv-thumb" href="https://www.youtube.com/watch?v={{ v.id }}" target="_blank" rel="noopener" data-play="{{ v.id }}" aria-label="Watch on YouTube: {{ v.title }}">
       <img src="{{ asset('shiv/' ~ v.id ~ '.webp') }}" alt="" width="640" height="360" loading="lazy" decoding="async">
       <span class="sv-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
       <span class="sv-dur">{{ v.dur }}</span>
       {% if loop.first %}<span class="sv-pill sv-pill-new sv-on-thumb">Newest</span>{% endif %}
-    </button>
+    </a>
     <div class="sv-body">
       <div class="sv-top"><span class="sv-pill">{{ v.kind_name }}</span><span class="sv-date" data-day="{{ v.day }}">{{ v.day }}</span></div>
       <h3>{{ v.title }}</h3>
@@ -75,15 +75,16 @@
 </ul>
 <p class="sv-foot">Shiv's channel is a Keeper's own and not official Pocket Dragons news. Plans can change after a video is made, so the newest AMA is always the latest word.</p>
 
-{# the theatre: the video plays here, and the quiz pops up when it ends #}
+{# the quiz pops up when a Keeper comes back from watching on YouTube (only views on YouTube itself count for Shiv) #}
 <dialog class="sv-sheet" id="sv-sheet" aria-labelledby="sv-sheet-title">
   <div class="sv-sheet-in">
     <button class="sv-x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
-    <div class="sv-screen" id="sv-screen"></div>
     <div class="sv-under" id="sv-under">
+      <img class="sv-back-thumb" id="sv-back-thumb" src="" alt="" width="640" height="360">
+      <p class="sv-q-of">Welcome back</p>
       <h2 id="sv-sheet-title"></h2>
-      <div class="sv-acts"><button class="sv-btn sv-btn-go" type="button" id="sv-quiz-now">Take the quiz</button><a class="sv-btn" id="sv-yt" href="#" target="_blank" rel="noopener">Open on YouTube</a></div>
-      <p class="sv-hint">The quiz pops up by itself when the video ends.</p>
+      <p class="sv-hint">Ready for three quick questions about it?</p>
+      <div class="sv-acts"><button class="sv-btn sv-btn-go" type="button" id="sv-quiz-now">Start the quiz</button><button class="sv-btn" type="button" data-close>Not now</button></div>
     </div>
     <div class="sv-quiz" id="sv-quiz" hidden>
       <div class="sv-q-top"><span class="sv-q-of" id="sv-q-of"></span><span class="sv-q-dots" id="sv-q-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
@@ -96,7 +97,7 @@
     <div class="sv-end" id="sv-end" hidden>
       <p class="sv-score" id="sv-score"></p>
       <p class="sv-end-line" id="sv-end-line"></p>
-      <div class="sv-acts sv-acts-c"><button class="sv-btn sv-btn-go" type="button" id="sv-again">Try again</button><button class="sv-btn" type="button" id="sv-nextvid">Next video</button></div>
+      <div class="sv-acts sv-acts-c"><button class="sv-btn sv-btn-go" type="button" id="sv-again">Try again</button><a class="sv-btn" id="sv-nextvid" href="#" target="_blank" rel="noopener">Watch the next video</a></div>
     </div>
   </div>
 </dialog>
@@ -182,9 +183,7 @@
   .sv-sheet-in { position: relative; border-radius: 26px; overflow: auto; max-height: calc(100dvh - 24px); background: var(--glass-strong, #fff); }
   .sv-x { position: absolute; right: 10px; top: 10px; z-index: 3; width: 44px; height: 44px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
     color: #fff; background: rgba(0, 0, 0, .6); }
-  .sv-screen { aspect-ratio: 16 / 9; background: #000; }
-  .sv-screen:empty { display: none; }
-  .sv-screen iframe, .sv-screen > div { width: 100%; height: 100%; border: 0; display: block; }
+  .sv-back-thumb { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 16px; margin-bottom: 4px; }
   .sv-under { padding: 18px 22px 22px; display: grid; gap: 10px; }
   .sv-under h2 { margin: 0; padding-right: 40px; font: 700 clamp(19px, 2.6vw, 24px)/1.2 var(--font-display); }
   .sv-hint { margin: 0; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
@@ -254,7 +253,7 @@
   const DATA = JSON.parse(document.getElementById("sv-data").textContent);
   const byId = Object.fromEntries(DATA.map((v) => [v.id, v]));
   const $ = (id) => document.getElementById(id);
-  const sheet = $("sv-sheet"), screen = $("sv-screen");
+  const sheet = $("sv-sheet");
   const KEY = "pd-shiv-quiz";
   const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { return {}; } };
   const save = (o) => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) { /* private mode: fine */ } };
@@ -282,41 +281,32 @@
     document.querySelectorAll(".sv-card").forEach((card) => { card.hidden = b.dataset.kind !== "all" && card.dataset.kind !== b.dataset.kind; });
   }));
 
-  // the YouTube player API loads only when someone presses play
-  let apiP = null, player = null, cur = null;
-  function api() {
-    if (apiP) return apiP;
-    apiP = new Promise((res) => {
-      if (window.YT && window.YT.Player) return res(window.YT);
-      const prev = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => { prev && prev(); res(window.YT); };
-      const s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; s.async = true;
-      s.onerror = () => res(null); document.head.appendChild(s);
-    });
-    return apiP;
-  }
-  function stopVideo() { try { player && player.destroy(); } catch (e) { /* fine */ } player = null; screen.innerHTML = ""; }
+  // Watch opens the video on YouTube, so every watch counts as a view for Shiv. When the Keeper comes back
+  // to this tab after a while, the quiz for that video pops up.
+  let cur = null, away = null;
+  const AWAY_MS = 20000;
   function show(part) { $("sv-under").hidden = part !== "under"; $("sv-quiz").hidden = part !== "quiz"; $("sv-end").hidden = part !== "end"; }
   function openSheet() { if (!sheet.open) { try { sheet.showModal(); } catch (e) { sheet.setAttribute("open", ""); } } }
-
   function play(id) {
-    const v = byId[id]; if (!v) return;
-    cur = v; stopVideo();
-    $("sv-sheet-title").textContent = v.title;
-    $("sv-yt").href = "https://www.youtube.com/watch?v=" + id;
-    show("under"); openSheet(); track("play", id);
-    const box = document.createElement("div"); screen.appendChild(box);
-    const plain = () => { screen.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1" title="' + v.title.replace(/"/g, "&quot;") + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>'; };
-    api().then((YT) => {
-      if (cur !== v || !sheet.open) return;
-      if (!YT) return plain();
-      player = new YT.Player(box, {
-        host: "https://www.youtube-nocookie.com", videoId: id, width: "100%", height: "100%",
-        playerVars: { autoplay: 1, rel: 0, playsinline: 1, modestbranding: 1 },
-        events: { onStateChange: (e) => { if (e.data === 0 && cur === v) { stopVideo(); quiz(id); } } }
-      });
-    });
+    if (!byId[id]) return;
+    away = { id, t: Date.now() };
+    try { sessionStorage.setItem("pd-shiv-away", JSON.stringify(away)); } catch (e) { /* fine */ }
+    track("play", id);
   }
+  function cameBack() {
+    if (document.visibilityState === "hidden") return;
+    let w = away;
+    if (!w) { try { w = JSON.parse(sessionStorage.getItem("pd-shiv-away") || "null"); } catch (e) { w = null; } }
+    if (!w || Date.now() - w.t < AWAY_MS || !byId[w.id]) return;
+    away = null; try { sessionStorage.removeItem("pd-shiv-away"); } catch (e) { /* fine */ }
+    const v = byId[w.id]; cur = v;
+    $("sv-sheet-title").textContent = v.title;
+    $("sv-back-thumb").src = (document.querySelector('[data-id="' + v.id + '"] img') || {}).src || "";
+    show("under"); openSheet();
+  }
+  document.addEventListener("visibilitychange", cameBack);
+  addEventListener("focus", cameBack);
+  addEventListener("pageshow", cameBack);
 
   // the quiz: three questions, one at a time, the answer and why straight after each tap
   let qi = 0, right = 0;
@@ -357,20 +347,19 @@
     $("sv-score").textContent = right + " of 3";
     $("sv-end-line").textContent = right === 3 ? "Every one right. You really watched it!" : right === 2 ? "So close. One more watch and it is yours." : "Give it another watch, then try again.";
     const i = DATA.indexOf(cur), nx = DATA[i + 1] || DATA[0];
-    $("sv-nextvid").dataset.id = nx.id;
+    $("sv-nextvid").dataset.play = nx.id; $("sv-nextvid").href = "https://www.youtube.com/watch?v=" + nx.id;
     show("end");
   }
   $("sv-again").addEventListener("click", () => quiz(cur.id));
-  $("sv-nextvid").addEventListener("click", (e) => play(e.currentTarget.dataset.id));
-  $("sv-quiz-now").addEventListener("click", () => { stopVideo(); quiz(cur.id); });
+  $("sv-nextvid").addEventListener("click", () => sheet.close());
+  $("sv-quiz-now").addEventListener("click", () => quiz(cur.id));
 
   document.addEventListener("click", (e) => {
     const p = e.target.closest("[data-play]"); if (p) { play(p.dataset.play); return; }
     const q = e.target.closest("[data-quiz]"); if (q) { quiz(q.dataset.quiz); }
   });
-  sheet.querySelector("[data-close]").addEventListener("click", () => sheet.close());
+  sheet.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => sheet.close()));
   sheet.addEventListener("click", (e) => { if (e.target === sheet) sheet.close(); });
-  sheet.addEventListener("close", stopVideo);
 })();
 </script>
 {% endblock %}
