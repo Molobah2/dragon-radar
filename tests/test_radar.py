@@ -3629,3 +3629,19 @@ def test_shiv_videos_page_lists_every_video_with_a_quiz(cfg, Session):
     assert "not official Pocket Dragons news" in page
     app, c2 = _v21_client(cfg)
     assert "<b>Shiv&#39;s videos</b>" in c2.get("/community").get_data(as_text=True) or "<b>Shiv's videos</b>" in c2.get("/community").get_data(as_text=True)
+
+
+def test_tool_pages_are_counted_apart_from_visitors(cfg, Session):
+    """Every tool page counts people per tool per day (tool:<name>), without changing the visitor numbers."""
+    from datetime import date
+    from radar.db import DailyCount, Visitor
+    from radar.visits import record
+    vid, today = "a" * 32, date(2026, 11, 21)
+    with Session() as s:
+        assert record(s, vid, "/shiv", "", "Mozilla/5.0", today, "pdtools.xyz")
+        assert not record(s, vid, "/shiv", "", "Mozilla/5.0", today, "pdtools.xyz")   # same browser, same day
+        assert record(s, vid, "/quiz", "", "Mozilla/5.0", today, "pdtools.xyz")
+        assert not record(s, vid, "/nope", "", "Mozilla/5.0", today, "pdtools.xyz")
+        s.commit()
+        assert s.get(DailyCount, (today, "tool:shiv")).count == 1 and s.get(DailyCount, (today, "tool:quiz")).count == 1
+        assert s.get(Visitor, vid) is None   # tool pages never touch the visitor numbers

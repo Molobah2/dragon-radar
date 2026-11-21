@@ -16,6 +16,12 @@ VID = re.compile(r"^[a-f0-9]{16,32}$")
 BOTS = re.compile(r"bot|crawl|spider|slurp|preview|facebookexternalhit|embed|headless|lighthouse|monitor|curl|python",
                   re.I)
 PAGES = {"/": "home", "/friends": "friends", "/friends/keepers": "keepers"}
+# The other tool pages are counted apart, as people per tool per day ("tool:<name>"), so the visitor numbers above
+# keep meaning what they always meant. Added 21 Nov 2026 to see which tools Keepers really use after the mint.
+TOOLS = {"/welcome": "welcome", "/creator": "creator", "/cheers": "cheers", "/circle": "circle", "/quiz": "quiz",
+         "/stickers": "stickers", "/canvas": "canvas", "/wrapped": "wrapped", "/wallpaper": "wallpaper", "/art": "art",
+         "/friends/ama": "ama", "/help": "help", "/shiv": "shiv", "/community": "sec-community", "/learn": "sec-learn",
+         "/create": "sec-create"}
 
 
 def device_of(ua: str) -> str:
@@ -58,8 +64,17 @@ def bump(s, day: date, key: str) -> None:
 
 def record(s, vid: str, path: str, ref: str, ua: str, today: date, own_host: str) -> bool:
     """Count one page view. Returns False when the hit is ignored (bad id, bot, unknown page)."""
-    if not VID.match(vid or "") or BOTS.search(ua or "") or path not in PAGES:
+    if not VID.match(vid or "") or BOTS.search(ua or ""):
         return False
+    if path not in PAGES:
+        name = TOOLS.get(path)
+        if not name:
+            return False
+        from .events import record as event
+        if not event(s, today, vid, "tool", name):   # once per browser per tool per day
+            return False
+        bump(s, today, "tool:" + name)
+        return True
     now = utcnow()
     v = s.get(Visitor, vid)
     first_today = s.get(VisitDay, (today, vid)) is None
@@ -111,6 +126,7 @@ def summary(s, today: date) -> dict:
         "phone_pct": round(100 * devices.get("phone", 0) / total) if total else 0,
         "sources": sorted(counts(week, "src:").items(), key=lambda kv: -kv[1])[:8],
         "pages": sorted(counts(week, "page:").items(), key=lambda kv: -kv[1]),
+        "tools": sorted(counts(week, "tool:").items(), key=lambda kv: -kv[1]),   # people per tool per day, summed
         "days": days, "peak": peak,
     }
 
