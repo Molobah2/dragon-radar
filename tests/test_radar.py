@@ -3622,6 +3622,9 @@ def test_shiv_videos_page_lists_every_video_with_a_quiz(cfg, Session):
     # Watch opens the video on YouTube itself, so every watch counts as a view for Shiv (embedded autoplay does not)
     assert all(f'href="https://www.youtube.com/watch?v={v[0]}"' in page for v in VIDEOS)
     assert "iframe_api" not in page and "youtube-nocookie" not in page
+    # the pinned scroll note about full watches and sharing, on the real scroll art
+    assert 'id="sv-pin"' in page and 'id="sv-note"' in page and "Why every full watch matters" in page and "scroll-paper-s.webp" in page
+    assert ">Weeklys<" not in page
     assert "youtube.com/@KeeperShiv" in page and "x.com/Shivo222" in page and 'id="sv-data"' in page
     assert "not official Pocket Dragons news" in page
     app, c2 = _v21_client(cfg)

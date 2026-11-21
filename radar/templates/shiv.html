@@ -5,6 +5,13 @@
 {% block header_right %}<a class="btn btn-soft" href="/community"><span class="wide-only">Back to </span>Community</a>{% endblock %}
 {% block main %}
 {% set start = videos | selectattr("id", "equalto", start_id) | first %}
+{# the pinned scroll: opens the note about full watches and sharing; it also unrolls by itself after the first scroll on a first visit #}
+<button class="sv-pin sv-rise" type="button" id="sv-pin" aria-haspopup="dialog">
+  <span class="sv-pin-roll" aria-hidden="true"><img src="{{ url_for('static', filename='v3/art/') }}scroll-top-s.webp" alt="" width="609" height="269" decoding="async"></span>
+  <span class="sv-pin-text"><b>A note from the Keepers</b><span>Why full watches and shares matter</span></span>
+  <span class="sv-pin-open">Read</span>
+</button>
+
 <section class="sv-hero">
   <div class="sv-hero-main sv-rise">
     <p class="sv-kick"><span class="sv-dot" aria-hidden="true"></span>Made by a Keeper</p>
@@ -49,7 +56,7 @@
 
 <div class="sv-filters" role="group" aria-label="Show videos">
   <button type="button" class="on" data-kind="all" aria-pressed="true">All</button>
-  {% for k, name in kinds.items() %}{% if videos | selectattr("kind", "equalto", k) | list %}<button type="button" data-kind="{{ k }}" aria-pressed="false">{{ name }}{{ "s" if k != "talk" }}</button>{% endif %}{% endfor %}
+  {% for k, name in kinds.items() %}{% if videos | selectattr("kind", "equalto", k) | list %}<button type="button" data-kind="{{ k }}" aria-pressed="false">{{ name }}{{ "s" if k in ("guide", "deep") }}</button>{% endif %}{% endfor %}
 </div>
 
 <ul class="sv-grid" id="sv-grid">
@@ -99,6 +106,24 @@
       <p class="sv-end-line" id="sv-end-line"></p>
       <div class="sv-acts sv-acts-c"><button class="sv-btn sv-btn-go" type="button" id="sv-again">Try again</button><a class="sv-btn" id="sv-nextvid" href="#" target="_blank" rel="noopener">Watch the next video</a></div>
     </div>
+  </div>
+</dialog>
+<dialog class="sv-note" id="sv-note" aria-labelledby="sv-note-h">
+  <div class="ss" id="ss">
+    <picture><source type="image/avif" srcset="{{ url_for('static', filename='v3/art/') }}scroll-top-s.avif 620w, {{ url_for('static', filename='v3/art/') }}scroll-top-l.avif 1240w" sizes="(max-width:600px) 92vw, 460px"><img class="ss-top" src="{{ url_for('static', filename='v3/art/') }}scroll-top-s.webp" srcset="{{ url_for('static', filename='v3/art/') }}scroll-top-s.webp 620w, {{ url_for('static', filename='v3/art/') }}scroll-top-l.webp 1240w" sizes="(max-width:600px) 92vw, 460px" alt="" decoding="async" draggable="false"></picture>
+    <div class="ss-paper" id="ss-paper">
+      <div class="ss-words">
+        <p class="ss-tag">A note from the Keepers</p>
+        <h2 class="ss-h" id="sv-note-h">Why every full watch matters</h2>
+        <p class="ss-ln">Watching Shiv's videos <b>all the way to the end on YouTube</b> shows YouTube that people enjoy them, so it suggests them to people who have never met Pocket Dragons.</p>
+        <p class="ss-ln">Every <b>share</b> to a friend, a group chat, X or Discord brings someone new into the hatchery. Keepers telling the story is how a brand grows.</p>
+        <p class="ss-ln">The more people who meet Blinky, Pinky and Speed, the stronger the <b>Pocket Dragons IP</b> grows, and that is good for every Keeper.</p>
+        <ul class="ss-steps"><li>Watch to the end</li><li>Like and subscribe</li><li>Share it with a friend</li></ul>
+        <p class="ss-motto">Watch it. Share it. Grow the hatchery together.</p>
+        <button class="ss-ok" type="button" id="ss-ok">I will help</button>
+      </div>
+    </div>
+    <picture><source type="image/avif" srcset="{{ url_for('static', filename='v3/art/') }}scroll-bottom-s.avif 620w, {{ url_for('static', filename='v3/art/') }}scroll-bottom-l.avif 1240w" sizes="(max-width:600px) 92vw, 460px"><img class="ss-bot" src="{{ url_for('static', filename='v3/art/') }}scroll-bottom-s.webp" srcset="{{ url_for('static', filename='v3/art/') }}scroll-bottom-s.webp 620w, {{ url_for('static', filename='v3/art/') }}scroll-bottom-l.webp 1240w" sizes="(max-width:600px) 92vw, 460px" alt="" decoding="async" draggable="false"></picture>
   </div>
 </dialog>
 <script type="application/json" id="sv-data">{{ quiz | tojson }}</script>
@@ -212,6 +237,41 @@
   .sv-end { text-align: center; justify-items: center; padding-block: 34px 30px; }
   .sv-score { margin: 0; font: 700 clamp(40px, 8vw, 64px)/1 var(--font-display); background: linear-gradient(160deg, var(--sv-acc2, #ffb347), var(--sv-acc, #e0312b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .sv-end-line { margin: 0; font-weight: 700; font-size: 17px; max-width: 36ch; }
+
+  /* the pinned scroll and the note on a real scroll (the Dragon Guard scroll art) */
+  .sv-pin { display: flex; align-items: center; gap: 14px; width: 100%; margin: 26px 0 0; padding: 10px 16px 10px 10px; border: 0; border-radius: 20px; cursor: pointer; text-align: left;
+    color: var(--ink); background: var(--glass); box-shadow: inset 0 0 0 1px rgba(240, 185, 74, .45), 0 18px 34px -24px rgba(0, 0, 0, .7); transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+  .sv-pin:hover { transform: translateY(-2px); }
+  .sv-pin-roll { flex: none; width: 92px; height: 52px; display: grid; place-items: center; overflow: hidden; }
+  .sv-pin-roll img { width: 92px; height: auto; transform-origin: 50% 30%; animation: svSway 4.5s ease-in-out infinite; }
+  @keyframes svSway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg) translateY(-2px); } }
+  .sv-pin-text { flex: 1; display: grid; gap: 2px; }
+  .sv-pin-text b { font: 700 17px/1.15 var(--font-display); }
+  .sv-pin-text span { font-weight: 700; font-size: 13.5px; color: var(--ink-soft); }
+  .sv-pin-open { flex: none; min-height: 40px; padding: 0 16px; border-radius: 999px; display: grid; place-items: center; font: 800 14px var(--font-body); color: #2e1206; background: linear-gradient(180deg, #ffc061, #e9952f); }
+  .sv-note { padding: 0; margin: auto; border: 0; background: transparent; max-width: 100vw; max-height: 100dvh; overflow: auto; overscroll-behavior: contain; }
+  .sv-note::backdrop { background: radial-gradient(70% 50% at 50% 30%, rgba(255, 171, 61, .14), transparent 70%), rgba(14, 10, 7, .86); }
+  .ss { --w: min(460px, 92vw); position: relative; display: flow-root; width: var(--w); margin: 12px auto; -webkit-user-select: none; user-select: none; }
+  .ss picture { display: contents; }
+  .ss-top { position: absolute; z-index: 3; left: calc(var(--w) * 9 / 1238); top: calc(var(--w) * 3 / 1238); width: calc(var(--w) * 1217 / 1238); height: auto; pointer-events: none; }
+  .ss-paper { position: relative; z-index: 1; overflow: hidden; margin: calc(var(--w) * 192 / 1238) 0 0 calc(var(--w) * 49 / 1238); width: calc(var(--w) * 1177 / 1238);
+    background: url("{{ url_for('static', filename='v3/art/') }}scroll-paper-s.webp") center / 100% 100% no-repeat; }
+  .ss-words { display: grid; gap: 10px; text-align: center; color: #3a2412; padding: calc(var(--w) * 498 / 1238) calc(var(--w) * 216 / 1238) calc(var(--w) * 90 / 1238) calc(var(--w) * 186 / 1238);
+    min-height: calc(var(--w) * 1876 / 1238); box-sizing: border-box; align-content: start; -webkit-user-select: text; user-select: text; }
+  .ss-bot { position: relative; z-index: 2; display: block; margin: calc(var(--w) * -6 / 1238) 0 0 calc(var(--w) * 11 / 1238); width: calc(var(--w) * 1219 / 1238); height: auto; pointer-events: none; }
+  .ss-tag { margin: 0; font: 700 13px/1.2 Nunito, system-ui, sans-serif; color: #7a4a16; }
+  .ss-h { margin: 0; font: 700 clamp(24px, 6.6vw, 31px)/1.05 Fredoka, Nunito, system-ui, sans-serif; color: #6e1f14; }
+  .ss-ln { margin: 0; font: 600 15px/1.5 Nunito, system-ui, sans-serif; color: #3f2a18; }
+  .ss-ln b { font-weight: 800; color: #2b1a0d; }
+  .ss-steps { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .ss-steps li { padding: 5px 12px; border-radius: 999px; font: 800 13.5px/1.2 Nunito, system-ui, sans-serif; color: #5a2a10; background: rgba(122, 74, 22, .12); box-shadow: inset 0 0 0 1px rgba(122, 74, 22, .3); }
+  .ss-motto { margin: 2px 0 0; font: 700 17px/1.3 Fredoka, Nunito, system-ui, sans-serif; color: #6e1f14; }
+  .ss-ok { justify-self: center; min-height: 48px; padding: 0 24px; border-radius: 10px; cursor: pointer; font: 800 16px/1 Nunito, system-ui, sans-serif; color: #2e1206;
+    background: linear-gradient(180deg, #ffc061, #e9952f); border: 1px solid #ffd27a; box-shadow: 0 3px 0 #8a4f16, inset 0 1px 0 rgba(255, 255, 255, .45); }
+  .ss-ok:active { transform: translateY(2px); box-shadow: 0 1px 0 #8a4f16; }
+  .ss-ok:focus-visible { outline: 3px solid #6e1f14; outline-offset: 3px; }
+  @media (max-width: 640px) { .ss-ln { font-size: 14.5px; line-height: 1.42; } .ss-words { gap: 8px; } .ss-steps li { font-size: 12.5px; padding: 4px 10px; } .sv-pin { margin-top: 16px; } .sv-pin-roll { width: 70px; } .sv-pin-roll img { width: 70px; } .sv-pin-text span { font-size: 12.5px; } }
+  @media (prefers-reduced-motion: reduce) { .sv-pin-roll img { animation: none; } }
 
   .sv-rise { opacity: 0; transform: translateY(18px); animation: svRise .9s cubic-bezier(.2, .8, .2, 1) var(--d, 0s) forwards; }
   @keyframes svRise { to { opacity: 1; transform: none; } }
@@ -354,6 +414,34 @@
   $("sv-nextvid").addEventListener("click", () => sheet.close());
   $("sv-quiz-now").addEventListener("click", () => quiz(cur.id));
 
+
+  // the note on a scroll: unrolls once by itself after a first visitor's first scroll, and any time from the pinned scroll
+  const note = $("sv-note"), paperEl = $("ss-paper"), NOTE = "pd-shiv-note";
+  const reduceMo = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function openNote() {
+    if (note.open) return;
+    try { note.showModal(); } catch (e) { note.setAttribute("open", ""); }
+    note.scrollTop = 0;
+    // the whole scroll fits the screen: shrink it a little on short screens (never below 82%, then the sheet scrolls)
+    const ss = $("ss"); ss.style.zoom = "";
+    const k = Math.min(1, (innerHeight - 24) / ss.offsetHeight);
+    if (k < 1) ss.style.zoom = Math.max(.82, k).toFixed(3);
+    if (!reduceMo && paperEl.animate) {
+      const h = paperEl.scrollHeight;
+      paperEl.animate([{ height: "0px" }, { height: h + "px" }], { duration: 1300, easing: "cubic-bezier(.3, .7, .2, 1)" });
+      $("ss").animate([{ transform: "translateY(-30px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 450, easing: "ease-out" });
+    }
+    try { localStorage.setItem(NOTE, "1"); } catch (e) { /* fine */ }
+    track("note", "open");
+  }
+  $("sv-pin").addEventListener("click", openNote);
+  $("ss-ok").addEventListener("click", () => note.close());
+  note.addEventListener("click", (e) => { if (e.target === note) note.close(); });
+  let seen = false; try { seen = localStorage.getItem(NOTE) === "1"; } catch (e) { seen = true; }
+  if (!seen) {
+    const first = () => { if (scrollY < 120 || note.open || sheet.open) return; removeEventListener("scroll", first); setTimeout(openNote, 250); };
+    addEventListener("scroll", first, { passive: true });
+  }
   document.addEventListener("click", (e) => {
     const p = e.target.closest("[data-play]"); if (p) { play(p.dataset.play); return; }
     const q = e.target.closest("[data-quiz]"); if (q) { quiz(q.dataset.quiz); }
