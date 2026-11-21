@@ -87,8 +87,7 @@
       <div class="sv-acts"><button class="sv-btn sv-btn-go" type="button" id="sv-quiz-now">Start the quiz</button><button class="sv-btn" type="button" data-close>Not now</button></div>
     </div>
     <div class="sv-quiz" id="sv-quiz" hidden>
-      <div class="sv-q-top"><span class="sv-q-of" id="sv-q-of"></span><span class="sv-q-dots" id="sv-q-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
-      <p class="sv-q-vid" id="sv-q-vid"></p>
+      <div class="sv-q-head"><img class="sv-q-thumb" id="sv-q-thumb" src="" alt="" width="640" height="360"><div><p class="sv-q-of" id="sv-q-of"></p><p class="sv-q-vid" id="sv-q-vid"></p></div></div>
       <p class="sv-q" id="sv-q"></p>
       <div class="sv-ans" id="sv-ans"></div>
       <p class="sv-why" id="sv-why" hidden aria-live="polite"></p>
@@ -199,9 +198,6 @@
   .sv-quiz:not([hidden]), .sv-end:not([hidden]) { animation: svPop .25s cubic-bezier(.2, .8, .2, 1); }
   .sv-q-top { display: flex; align-items: center; justify-content: space-between; padding-right: 48px; }
   .sv-q-of { margin: 0; font: 700 14px var(--font-body); color: var(--ink-soft); }
-  .sv-q-dots { display: flex; gap: 6px; }
-  .sv-q-dots i { width: 28px; height: 6px; border-radius: 3px; background: rgba(127, 127, 127, .3); }
-  .sv-q-dots i.ok { background: #22a36a; } .sv-q-dots i.no { background: #e5484d; } .sv-q-dots i.now { background: var(--sv-acc, #e0312b); }
   .sv-q-vid { margin: -6px 0 0; font-weight: 700; font-size: 13.5px; color: var(--ink-soft); }
   .sv-q { margin: 0; font: 700 clamp(20px, 3vw, 26px)/1.25 var(--font-display); }
   .sv-ans { display: grid; gap: 10px; }
@@ -252,6 +248,53 @@
   .ss-ok:active { transform: translateY(2px); box-shadow: 0 1px 0 #8a4f16; }
   .ss-ok:focus-visible { outline: 3px solid #6e1f14; outline-offset: 3px; }
   @media (max-width: 640px) { .ss-ln { font-size: 14.5px; line-height: 1.42; } .ss-words { gap: 8px; } .ss-steps li { font-size: 12.5px; padding: 4px 10px; } .sv-pin { margin-top: 16px; } .sv-pin-roll { width: 70px; } .sv-pin-roll img { width: 70px; } .sv-pin-text span { font-size: 12.5px; } }
+
+  /* the quiz and the welcome back card on parchment with oak answer tiles, like the Dragon Guard course */
+  .sv-sheet { width: min(600px, calc(100vw - 24px)); }
+  .sv-sheet .sv-sheet-in, html.v3 .sv-sheet .sv-sheet-in, html.theme-dark .sv-sheet .sv-sheet-in {
+    background: none; box-shadow: none; border-radius: 0; backdrop-filter: none; -webkit-backdrop-filter: none; color: #2b1d12;
+    border: 26px solid transparent; border-image: url("{{ url_for('static', filename='v3/art/') }}card-l.webp") 90 fill / 26px stretch; filter: drop-shadow(0 16px 28px rgba(0, 0, 0, .55)); }
+  .sv-sheet .sv-x { right: -6px; top: -6px; width: 44px; height: 44px; color: #5a3a1e; background: none; }
+  .sv-sheet .sv-x:hover { color: #2b1d12; }
+  .sv-sheet .sv-under, .sv-sheet .sv-quiz, .sv-sheet .sv-end { padding: 4px 8px 8px; }
+  .sv-sheet .sv-quiz { gap: 16px; }
+  .sv-q-head { display: flex; align-items: center; gap: 12px; padding-right: 36px; }
+  .sv-q-thumb { flex: none; width: 88px; height: 50px; object-fit: cover; border-radius: 6px; box-shadow: 0 0 0 1px rgba(60, 36, 16, .25); }
+  .sv-q-head > div { min-width: 0; display: grid; gap: 2px; }
+  .sv-sheet .sv-q-of { margin: 0; font: 700 13px/1.2 var(--font-body); color: #7a4a16; }
+  .sv-sheet .sv-q-vid { margin: 0; font: 600 14px/1.3 var(--font-body); color: #4a3220; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sv-sheet .sv-q { font: 600 clamp(20px, 2.6vw, 24px)/1.25 var(--font-display); color: #2b1d12; }
+  .sv-sheet .sv-ans { gap: 10px; }
+  .sv-sheet .sv-ans button, html.theme-dark .sv-sheet .sv-ans button:not(.ok):not(.no) {
+    position: relative; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 10px; border-radius: 4px; text-align: left;
+    font: 700 15.5px/1.3 var(--font-body); color: #2a1708; background: none; box-shadow: none;
+    border: 9px solid transparent; border-image: url("{{ url_for('static', filename='v3/art/') }}tile-l.webp") 22 fill / 9px stretch;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .3)); transition: filter .15s ease-out, transform .12s ease-out; }
+  .sv-sheet .sv-ans button:hover:not(:disabled) { box-shadow: none; filter: drop-shadow(0 5px 8px rgba(0, 0, 0, .35)) brightness(1.04); }
+  .sv-sheet .sv-ans button:active:not(:disabled) { transform: translateY(1px); }
+  .sv-ans .k { flex: none; width: 28px; height: 28px; border-radius: 5px; display: grid; place-items: center; font: 800 13px/1 var(--font-body); color: #ffd27a; background: rgba(46, 18, 6, .82); }
+  .sv-sheet .sv-ans button.ok, .sv-sheet .sv-ans button.no { color: #2a1708; background: none; }
+  .sv-sheet .sv-ans button::after { content: ""; position: absolute; inset: -3px; border-radius: 3px; pointer-events: none; }
+  .sv-sheet .sv-ans button.ok::after { background: rgba(31, 122, 90, .3); box-shadow: inset 0 0 0 3px #1f7a5a; }
+  .sv-sheet .sv-ans button.no::after { background: rgba(166, 58, 40, .28); box-shadow: inset 0 0 0 3px #a63a28; }
+  .sv-sheet .sv-ans button.ok .k { background: #1f7a5a; color: #fff; }
+  .sv-sheet .sv-ans button.no .k { background: #a63a28; color: #fff; }
+  .sv-sheet .sv-ans button.dim { opacity: .6; }
+  .sv-sheet .sv-why { padding: 2px 0 2px 12px; border-radius: 0; background: none; border-left: 3px solid #7a4a16; color: #3f2a18; font-weight: 600; }
+  .sv-sheet .sv-why b { color: #2b1d12; font-weight: 800; }
+  .sv-sheet .sv-btn { color: #2e1206; background: rgba(122, 74, 22, .1); box-shadow: inset 0 0 0 1px rgba(122, 74, 22, .35); }
+  .sv-sheet .sv-btn-go, html.theme-dark .sv-sheet .sv-btn-go { background: linear-gradient(180deg, #ffc061, #e9952f); border: 1px solid #ffd27a; box-shadow: 0 3px 0 #8a4f16, inset 0 1px 0 rgba(255, 255, 255, .45); border-radius: 10px; }
+  .sv-sheet .sv-btn-go:active { transform: translateY(2px); box-shadow: 0 1px 0 #8a4f16; }
+  html.theme-dark .sv-sheet .sv-btn:not(.sv-btn-go) { background: rgba(122, 74, 22, .1); }
+  .sv-sheet .sv-under h2 { color: #2b1d12; }
+  .sv-sheet .sv-hint, .sv-sheet .sv-end-line { color: #4a3220; }
+  .sv-sheet .sv-score { color: #6e1f14; }
+  .sv-sheet .sv-back-thumb { border-radius: 8px; }
+  @media (max-width: 640px) {
+    .sv-sheet .sv-sheet-in, html.v3 .sv-sheet .sv-sheet-in, html.theme-dark .sv-sheet .sv-sheet-in { border-width: 20px; border-image-width: 20px; }
+    .sv-sheet .sv-under, .sv-sheet .sv-quiz { padding: 0 2px 4px; }
+    .sv-sheet .sv-ans button { font-size: 15px; }
+  }
 
   .sv-rise { opacity: 0; transform: translateY(8px); animation: svRise .4s cubic-bezier(.2, .8, .2, 1) forwards; }
   @keyframes svRise { to { opacity: 1; transform: none; } }
@@ -349,19 +392,20 @@
     const v = byId[id]; if (!v) return;
     cur = v; qi = 0; right = 0;
     $("sv-sheet-title").textContent = v.title;
-    document.querySelectorAll("#sv-q-dots i").forEach((d) => (d.className = ""));
-    $("sv-q-vid").textContent = "From: " + v.title;
+    $("sv-q-vid").textContent = v.title;
+    $("sv-q-thumb").src = (document.querySelector('[data-id="' + v.id + '"] img') || {}).src || "";
     openSheet(); show("quiz"); ask(); track("quiz", id);
   }
   function ask() {
-    const q = cur.qs[qi], dots = document.querySelectorAll("#sv-q-dots i");
-    dots[qi].className = "now";
+    const q = cur.qs[qi];
     $("sv-q-of").textContent = "Question " + (qi + 1) + " of 3";
     $("sv-q").textContent = q.q;
     $("sv-why").hidden = true; $("sv-next").hidden = true;
     const box = $("sv-ans"); box.innerHTML = "";
     q.a.forEach((txt, i) => {
-      const b = document.createElement("button"); b.type = "button"; b.textContent = txt;
+      const b = document.createElement("button"); b.type = "button";
+      const k = document.createElement("span"); k.className = "k"; k.textContent = "ABC"[i]; k.setAttribute("aria-hidden", "true");
+      const t = document.createElement("span"); t.textContent = txt; b.append(k, t);
       b.addEventListener("click", () => pick(i));
       box.appendChild(b);
     });
@@ -371,7 +415,6 @@
     const q = cur.qs[qi], btns = [...$("sv-ans").children], good = i === q.ok;
     btns.forEach((b, j) => { b.disabled = true; if (j === q.ok) b.classList.add("ok"); else if (j === i) b.classList.add("no"); else b.classList.add("dim"); });
     if (good) right++;
-    document.querySelectorAll("#sv-q-dots i")[qi].className = good ? "ok" : "no";
     const why = $("sv-why"); why.innerHTML = ""; const b = document.createElement("b"); b.textContent = good ? "Right. " : "Not quite. ";
     why.append(b, document.createTextNode(q.why)); why.hidden = false;
     const next = $("sv-next"); next.textContent = qi < 2 ? "Next question" : "See my score"; next.hidden = false; next.focus({ preventScroll: true });
