@@ -6,7 +6,7 @@
 {% block main %}
 {% set start = videos | selectattr("id", "equalto", start_id) | first %}
 {# the pinned scroll: opens the note about full watches and sharing; it also unrolls by itself after the first scroll on a first visit #}
-<button class="sv-pin sv-rise" type="button" id="sv-pin" aria-haspopup="dialog">
+<button class="sv-pin" type="button" id="sv-pin" aria-haspopup="dialog">
   <span class="sv-pin-roll" aria-hidden="true"><img src="{{ url_for('static', filename='v3/art/') }}scroll-top-s.webp" alt="" width="609" height="269" decoding="async"></span>
   <span class="sv-pin-text"><b>A note from the Keepers</b><span>Why full watches and shares matter</span></span>
   <span class="sv-pin-open">Read</span>
@@ -14,14 +14,10 @@
 
 <section class="sv-hero">
   <div class="sv-hero-main sv-rise">
-    <p class="sv-kick"><span class="sv-dot" aria-hidden="true"></span>Made by a Keeper</p>
-    <h1>Shiv's <span class="pop">videos</span></h1>
+    <p class="sv-kick">Made by a Keeper</p>
+    <h1>Shiv's videos</h1>
     <p class="lede">Every Pocket Dragons video from Keeper Shiv in one place. Watch one on YouTube, then come back for three quick questions to see what stuck.</p>
-    <div class="sv-meta">
-      <span class="sv-tag"><b>{{ videos | length }}</b> videos</span>
-      <span class="sv-tag"><b>{{ total_min // 60 }} hours{% if total_min % 60 %} {{ total_min % 60 }} min{% endif %}</b> of watching</span>
-      <span class="sv-tag sv-tag-hot"><b>3 questions</b> after each one</span>
-    </div>
+    <p class="sv-meta">{{ videos | length }} videos · {{ total_min // 60 }} hours{% if total_min % 60 %} {{ total_min % 60 }} min{% endif %} of watching · 3 questions after each one</p>
     <div class="sv-links">
       <a class="sv-btn sv-btn-go" href="{{ channel }}?sub_confirmation=1" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M21.6 7.2a2.6 2.6 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4a2.6 2.6 0 0 0-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8a2.6 2.6 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.6 2.6 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3z" fill="currentColor"/></svg>
@@ -29,30 +25,28 @@
       <a class="sv-btn" href="https://x.com/{{ x_handle }}" target="_blank" rel="noopener">@{{ x_handle }} on X</a>
     </div>
   </div>
-  <div class="sv-stack sv-rise" style="--d: .12s" aria-hidden="true">
-    {% for v in videos[:3] %}<img src="{{ asset('shiv/' ~ v.id ~ '.webp') }}" alt="" width="640" height="360" style="--k: {{ loop.index0 }}" {% if loop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}>{% endfor %}
-  </div>
+{% if start %}
+  <article class="sv-start" data-id="{{ start.id }}">
+    <a class="sv-thumb" href="https://www.youtube.com/watch?v={{ start.id }}" target="_blank" rel="noopener" data-play="{{ start.id }}" aria-label="Watch on YouTube: {{ start.title }}">
+      <img src="{{ asset('shiv/' ~ start.id ~ '.webp') }}" alt="" width="640" height="360" loading="lazy">
+      <span class="sv-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
+      <span class="sv-dur">{{ start.dur }}</span>
+    </a>
+    <div class="sv-start-body">
+      <span class="sv-label">New here? Start with this one</span>
+      <h2>{{ start.title }}</h2>
+      <p>{{ start.line }}</p>
+      <div class="sv-acts">
+        <a class="sv-btn sv-btn-go" href="https://www.youtube.com/watch?v={{ start.id }}" target="_blank" rel="noopener" data-play="{{ start.id }}">Watch on YouTube</a>
+        <button class="sv-btn" type="button" data-quiz="{{ start.id }}">Take the quiz</button>
+        <span class="sv-done" data-done="{{ start.id }}" hidden></span>
+      </div>
+    </div>
+  </article>
+  {% endif %}
 </section>
 
-{% if start %}
-<article class="sv-start sv-rise" style="--d: .2s" data-id="{{ start.id }}">
-  <a class="sv-thumb" href="https://www.youtube.com/watch?v={{ start.id }}" target="_blank" rel="noopener" data-play="{{ start.id }}" aria-label="Watch on YouTube: {{ start.title }}">
-    <img src="{{ asset('shiv/' ~ start.id ~ '.webp') }}" alt="" width="640" height="360" loading="lazy">
-    <span class="sv-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
-    <span class="sv-dur">{{ start.dur }}</span>
-  </a>
-  <div class="sv-start-body">
-    <span class="sv-pill sv-pill-new">New here? Start with this one</span>
-    <h2>{{ start.title }}</h2>
-    <p>{{ start.line }}</p>
-    <div class="sv-acts">
-      <a class="sv-btn sv-btn-go" href="https://www.youtube.com/watch?v={{ start.id }}" target="_blank" rel="noopener" data-play="{{ start.id }}">Watch on YouTube</a>
-      <button class="sv-btn" type="button" data-quiz="{{ start.id }}">Take the quiz</button>
-      <span class="sv-done" data-done="{{ start.id }}" hidden></span>
-    </div>
-  </div>
-</article>
-{% endif %}
+
 
 <div class="sv-filters" role="group" aria-label="Show videos">
   <button type="button" class="on" data-kind="all" aria-pressed="true">All</button>
@@ -66,10 +60,9 @@
       <img src="{{ asset('shiv/' ~ v.id ~ '.webp') }}" alt="" width="640" height="360" loading="lazy" decoding="async">
       <span class="sv-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
       <span class="sv-dur">{{ v.dur }}</span>
-      {% if loop.first %}<span class="sv-pill sv-pill-new sv-on-thumb">Newest</span>{% endif %}
-    </a>
+          </a>
     <div class="sv-body">
-      <div class="sv-top"><span class="sv-pill">{{ v.kind_name }}</span><span class="sv-date" data-day="{{ v.day }}">{{ v.day }}</span></div>
+      <div class="sv-top"><span class="sv-kind">{{ v.kind_name }}{% if loop.first %} · newest{% endif %}</span><span class="sv-date" data-day="{{ v.day }}">{{ v.day }}</span></div>
       <h3>{{ v.title }}</h3>
       <p>{{ v.line }}</p>
       <div class="sv-acts">
@@ -132,52 +125,41 @@
   .sv-hero, .sv-start, .sv-grid, .sv-filters, .sv-foot { --sv-acc: var(--coral, #ff7a59); --sv-acc2: #ffb347; --sv-ok: #22a36a; --sv-no: #e5484d; }
   html.v3 { --sv-acc: var(--h-torch); --sv-acc2: var(--h-gold); }
   html.v3[data-room="shiv"] { --h-bg: #1a1410; --pan: #2b2219; --glow-a: rgba(255, 70, 60, .14); --glow-b: rgba(255, 171, 61, .12); }
-  .sv-hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 22px; align-items: center; padding-block: 40px 18px; }
+  .sv-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: stretch; padding-block: 24px 24px; }
+  .sv-hero-main { display: flex; flex-direction: column; justify-content: center; }
+  .sv-hero .lede { max-width: 52ch; }
   .sv-hero-main, .sv-start, .sv-card, .sv-sheet-in { background: var(--glass); backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3);
     border: 1px solid rgba(255, 255, 255, .55); box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 30px 60px -34px rgba(27, 33, 48, .55); }
-  .sv-hero-main { padding: 34px; border-radius: 32px; }
-  .sv-kick { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 10px; font: 800 13px var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--sv-acc); }
-  .sv-dot { width: 9px; height: 9px; border-radius: 50%; background: #ff3b30; box-shadow: 0 0 0 0 rgba(255, 59, 48, .6); animation: svPing 2.2s ease-out infinite; }
-  @keyframes svPing { 0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, .6); } 70%, 100% { box-shadow: 0 0 0 12px rgba(255, 59, 48, 0); } }
-  .sv-hero h1 { margin: 0 0 12px; font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 6vw, 68px); line-height: .98; letter-spacing: -.02em; }
-  .sv-hero .lede { margin: 0; max-width: 46ch; }
-  .sv-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
-  .sv-tag { padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: 14px; color: var(--ink-soft); background: rgba(255, 255, 255, .6); box-shadow: inset 0 0 0 1px var(--line); }
-  .sv-tag b { color: var(--ink); font-weight: 900; }
-  .sv-tag-hot { color: #fff; background: linear-gradient(135deg, var(--sv-acc), var(--sv-acc2)); }
-  .sv-tag-hot b { color: #fff; }
+  .sv-hero-main { padding: 32px; border-radius: 24px; }
+  .sv-kick { margin: 0 0 8px; font: 700 14px var(--font-body); color: var(--ink-soft); }
+  .sv-hero h1 { margin: 0 0 12px; font-family: var(--font-display); font-weight: 600; font-size: clamp(36px, 5vw, 56px); line-height: 1.04; letter-spacing: -.01em; }
+  .sv-hero .lede { margin: 0; }
+  .sv-meta { margin: 16px 0 0; font-weight: 600; font-size: 14px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
   .sv-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 
   .sv-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 20px; border-radius: 999px; border: 0; cursor: pointer;
     font: 800 15px var(--font-body); text-decoration: none; color: var(--ink); background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1px var(--line);
-    transition: transform .25s cubic-bezier(.2, .8, .2, 1), box-shadow .25s; -webkit-tap-highlight-color: transparent; }
-  .sv-btn:hover { transform: translateY(-2px); }
+    transition: transform .15s ease-out, filter .15s ease-out; -webkit-tap-highlight-color: transparent; }
+  .sv-btn:hover { filter: brightness(1.06); }
   .sv-btn:active { transform: scale(.97); }
-  .sv-btn-go { color: #fff; background: linear-gradient(180deg, #ff5a4e, #e0312b); box-shadow: 0 14px 26px -14px rgba(224, 49, 43, .9); }
+  .sv-btn-go { color: #fff; background: #d92f27; box-shadow: none; }
   .sv-btn-sm { min-height: 44px; padding: 0 16px; font-size: 14px; }
 
-  .sv-stack { position: relative; aspect-ratio: 16 / 11; }
-  .sv-stack img { position: absolute; width: 74%; height: auto; border-radius: 18px; box-shadow: 0 24px 40px -20px rgba(0, 0, 0, .7), 0 0 0 3px rgba(255, 255, 255, .8);
-    left: calc(var(--k) * 13%); top: calc(var(--k) * 15%); transform: rotate(calc((var(--k) - 1) * 4deg)); z-index: calc(3 - var(--k));
-    animation: svFloat 7s ease-in-out calc(var(--k) * -2.3s) infinite; }
-  @keyframes svFloat { 50% { translate: 0 -8px; } }
 
-  .sv-start { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 0; margin: 6px 0 26px; border-radius: 30px; overflow: hidden; }
+  .sv-start { display: grid; grid-template-columns: 1fr; gap: 0; margin: 0; border-radius: 24px; overflow: hidden; }
   .sv-start .sv-thumb { border-radius: 0; }
-  .sv-start-body { padding: 26px 28px; display: grid; align-content: center; gap: 10px; justify-items: start; }
-  .sv-start h2 { margin: 0; font: 700 clamp(24px, 3vw, 32px)/1.1 var(--font-display); }
+  .sv-start-body { padding: 20px 24px 24px; display: grid; align-content: center; gap: 10px; justify-items: start; }
+  .sv-start h2 { margin: 0; font: 600 clamp(20px, 2.2vw, 24px)/1.15 var(--font-display); }
   .sv-start p { margin: 0; font-weight: 600; color: var(--ink-soft); line-height: 1.45; }
 
   .sv-thumb { position: relative; display: block; width: 100%; padding: 0; border: 0; cursor: pointer; aspect-ratio: 16 / 9; overflow: hidden; background: #1b1410; border-radius: 22px 22px 0 0; }
-  .sv-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .7s cubic-bezier(.2, .8, .2, 1); }
-  .sv-thumb:hover img { transform: scale(1.05); }
+  .sv-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter .2s ease-out; }
+  .sv-thumb:hover img { filter: brightness(1.08); }
   .sv-play { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; display: grid; place-items: center; color: #fff;
-    background: rgba(224, 49, 43, .92); box-shadow: 0 10px 24px -8px rgba(0, 0, 0, .7), 0 0 0 0 rgba(255, 90, 78, .5); transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+    background: rgba(20, 14, 10, .72); box-shadow: 0 6px 16px -6px rgba(0, 0, 0, .6); transition: background .15s ease-out; }
   .sv-play svg { margin-left: 3px; }
-  .sv-thumb:hover .sv-play { transform: scale(1.1); animation: svPing2 1.4s ease-out infinite; }
-  @keyframes svPing2 { 0% { box-shadow: 0 10px 24px -8px rgba(0, 0, 0, .7), 0 0 0 0 rgba(255, 90, 78, .55); } 100% { box-shadow: 0 10px 24px -8px rgba(0, 0, 0, .7), 0 0 0 16px rgba(255, 90, 78, 0); } }
+  .sv-thumb:hover .sv-play { background: #d92f27; }
   .sv-dur { position: absolute; right: 10px; bottom: 10px; padding: 3px 8px; border-radius: 8px; font: 800 12.5px var(--font-body); color: #fff; background: rgba(0, 0, 0, .78); }
-  .sv-on-thumb { position: absolute; left: 10px; top: 10px; }
 
   .sv-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
   .sv-filters button { min-height: 44px; padding: 0 18px; border-radius: 999px; border: 0; cursor: pointer; font: 800 14px var(--font-body); color: var(--ink);
@@ -186,13 +168,14 @@
 
   .sv-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 18px; }
   .sv-card { display: grid; grid-template-rows: auto 1fr; border-radius: 24px; overflow: hidden;
-    opacity: 0; transform: translateY(18px); animation: svRise .7s cubic-bezier(.2, .8, .2, 1) calc(min(var(--i), 8) * .05s + .25s) forwards; }
+  }
   .sv-card[hidden] { display: none; }
   .sv-body { display: grid; gap: 8px; align-content: start; padding: 16px 18px 18px; }
   .sv-top { display: flex; align-items: center; gap: 8px; }
-  .sv-pill { padding: 4px 11px; border-radius: 999px; font: 800 11.5px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: #fff; background: var(--ink); }
-  .sv-pill-new { background: linear-gradient(90deg, var(--sv-acc2), var(--sv-acc)); color: #2a1206; }
-  .sv-date { font-weight: 800; color: var(--ink-soft); font-size: 13.5px; }
+  .sv-kind { font-weight: 700; font-size: 13.5px; color: var(--ink); }
+  .sv-label { font-weight: 700; font-size: 14px; color: var(--sv-acc); }
+  .sv-date { font-weight: 600; color: var(--ink-soft); font-size: 13.5px; }
+  .sv-kind + .sv-date::before { content: "·"; margin-right: 8px; }
   .sv-card h3 { margin: 0; font: 700 19px/1.2 var(--font-display); }
   .sv-card p { margin: 0; font-weight: 600; font-size: 14.5px; color: var(--ink-soft); line-height: 1.45; }
   .sv-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; }
@@ -203,8 +186,8 @@
   /* the theatre and the quiz */
   .sv-sheet { padding: 0; border: 0; background: transparent; width: min(880px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: visible; color: var(--ink); }
   .sv-sheet::backdrop { background: rgba(8, 6, 4, .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-  .sv-sheet[open] .sv-sheet-in { animation: svPop .45s cubic-bezier(.2, .9, .25, 1.15); }
-  @keyframes svPop { from { opacity: 0; transform: translateY(24px) scale(.96); } }
+  .sv-sheet[open] .sv-sheet-in { animation: svPop .3s cubic-bezier(.2, .8, .2, 1); }
+  @keyframes svPop { from { opacity: 0; transform: translateY(12px); } }
   .sv-sheet-in { position: relative; border-radius: 26px; overflow: auto; max-height: calc(100dvh - 24px); background: var(--glass-strong, #fff); }
   .sv-x { position: absolute; right: 10px; top: 10px; z-index: 3; width: 44px; height: 44px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
     color: #fff; background: rgba(0, 0, 0, .6); }
@@ -213,9 +196,9 @@
   .sv-under h2 { margin: 0; padding-right: 40px; font: 700 clamp(19px, 2.6vw, 24px)/1.2 var(--font-display); }
   .sv-hint { margin: 0; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
   .sv-quiz, .sv-end { padding: 22px 22px 24px; display: grid; gap: 14px; }
-  .sv-quiz:not([hidden]), .sv-end:not([hidden]) { animation: svPop .4s cubic-bezier(.2, .9, .25, 1.1); }
+  .sv-quiz:not([hidden]), .sv-end:not([hidden]) { animation: svPop .25s cubic-bezier(.2, .8, .2, 1); }
   .sv-q-top { display: flex; align-items: center; justify-content: space-between; padding-right: 48px; }
-  .sv-q-of { font: 800 13px var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--sv-acc, #e0312b); }
+  .sv-q-of { margin: 0; font: 700 14px var(--font-body); color: var(--ink-soft); }
   .sv-q-dots { display: flex; gap: 6px; }
   .sv-q-dots i { width: 28px; height: 6px; border-radius: 3px; background: rgba(127, 127, 127, .3); }
   .sv-q-dots i.ok { background: #22a36a; } .sv-q-dots i.no { background: #e5484d; } .sv-q-dots i.now { background: var(--sv-acc, #e0312b); }
@@ -223,34 +206,32 @@
   .sv-q { margin: 0; font: 700 clamp(20px, 3vw, 26px)/1.25 var(--font-display); }
   .sv-ans { display: grid; gap: 10px; }
   .sv-ans button { min-height: 54px; padding: 12px 16px; border-radius: 16px; border: 0; cursor: pointer; text-align: left; font: 700 16px/1.3 var(--font-body); color: var(--ink);
-    background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1.5px var(--line); transition: transform .2s, background .25s, box-shadow .25s; }
-  .sv-ans button:hover:not(:disabled) { transform: translateX(3px); box-shadow: inset 0 0 0 2px var(--sv-acc, #e0312b); }
+    background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1.5px var(--line); transition: background .15s ease-out, box-shadow .15s ease-out; }
+  .sv-ans button:hover:not(:disabled) { box-shadow: inset 0 0 0 2px var(--sv-acc, #e0312b); }
   .sv-ans button:disabled { cursor: default; }
-  .sv-ans button.ok { color: #fff; background: #22a36a; box-shadow: none; animation: svYes .5s cubic-bezier(.2, .9, .25, 1.3); }
+  .sv-ans button.ok { color: #fff; background: #22a36a; box-shadow: none; }
   .sv-ans button.no { color: #fff; background: #e5484d; box-shadow: none; animation: svShake .4s; }
   .sv-ans button.dim { opacity: .5; }
-  @keyframes svYes { 40% { transform: scale(1.03); } }
   @keyframes svShake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
   .sv-why { margin: 0; padding: 12px 14px; border-radius: 14px; font-weight: 600; line-height: 1.45; background: rgba(127, 127, 127, .12); }
   .sv-why b { font-weight: 900; }
   .sv-next { justify-self: start; }
   .sv-end { text-align: center; justify-items: center; padding-block: 34px 30px; }
-  .sv-score { margin: 0; font: 700 clamp(40px, 8vw, 64px)/1 var(--font-display); background: linear-gradient(160deg, var(--sv-acc2, #ffb347), var(--sv-acc, #e0312b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sv-score { margin: 0; font: 600 clamp(40px, 8vw, 56px)/1 var(--font-display); color: var(--ink); font-variant-numeric: tabular-nums; }
   .sv-end-line { margin: 0; font-weight: 700; font-size: 17px; max-width: 36ch; }
 
   /* the pinned scroll and the note on a real scroll (the Dragon Guard scroll art) */
   .sv-pin { display: flex; align-items: center; gap: 14px; width: 100%; margin: 26px 0 0; padding: 10px 16px 10px 10px; border: 0; border-radius: 20px; cursor: pointer; text-align: left;
-    color: var(--ink); background: var(--glass); box-shadow: inset 0 0 0 1px rgba(240, 185, 74, .45), 0 18px 34px -24px rgba(0, 0, 0, .7); transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
-  .sv-pin:hover { transform: translateY(-2px); }
+    color: var(--ink); background: var(--glass); box-shadow: inset 0 0 0 1px rgba(240, 185, 74, .45), 0 18px 34px -24px rgba(0, 0, 0, .7); transition: filter .15s ease-out; }
+  .sv-pin:hover { filter: brightness(1.05); }
   .sv-pin-roll { flex: none; width: 92px; height: 52px; display: grid; place-items: center; overflow: hidden; }
-  .sv-pin-roll img { width: 92px; height: auto; transform-origin: 50% 30%; animation: svSway 4.5s ease-in-out infinite; }
-  @keyframes svSway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg) translateY(-2px); } }
+  .sv-pin-roll img { width: 92px; height: auto; }
   .sv-pin-text { flex: 1; display: grid; gap: 2px; }
   .sv-pin-text b { font: 700 17px/1.15 var(--font-display); }
   .sv-pin-text span { font-weight: 700; font-size: 13.5px; color: var(--ink-soft); }
-  .sv-pin-open { flex: none; min-height: 40px; padding: 0 16px; border-radius: 999px; display: grid; place-items: center; font: 800 14px var(--font-body); color: #2e1206; background: linear-gradient(180deg, #ffc061, #e9952f); }
+  .sv-pin-open { flex: none; min-height: 40px; padding: 0 16px; border-radius: 999px; display: grid; place-items: center; font: 800 14px var(--font-body); color: #2e1206; background: #f0a43a; }
   .sv-note { padding: 0; margin: auto; border: 0; background: transparent; max-width: 100vw; max-height: 100dvh; overflow: auto; overscroll-behavior: contain; }
-  .sv-note::backdrop { background: radial-gradient(70% 50% at 50% 30%, rgba(255, 171, 61, .14), transparent 70%), rgba(14, 10, 7, .86); }
+  .sv-note::backdrop { background: rgba(14, 10, 7, .86); }
   .ss { --w: min(460px, 92vw); position: relative; display: flow-root; width: var(--w); margin: 12px auto; -webkit-user-select: none; user-select: none; }
   .ss picture { display: contents; }
   .ss-top { position: absolute; z-index: 3; left: calc(var(--w) * 9 / 1238); top: calc(var(--w) * 3 / 1238); width: calc(var(--w) * 1217 / 1238); height: auto; pointer-events: none; }
@@ -271,26 +252,21 @@
   .ss-ok:active { transform: translateY(2px); box-shadow: 0 1px 0 #8a4f16; }
   .ss-ok:focus-visible { outline: 3px solid #6e1f14; outline-offset: 3px; }
   @media (max-width: 640px) { .ss-ln { font-size: 14.5px; line-height: 1.42; } .ss-words { gap: 8px; } .ss-steps li { font-size: 12.5px; padding: 4px 10px; } .sv-pin { margin-top: 16px; } .sv-pin-roll { width: 70px; } .sv-pin-roll img { width: 70px; } .sv-pin-text span { font-size: 12.5px; } }
-  @media (prefers-reduced-motion: reduce) { .sv-pin-roll img { animation: none; } }
 
-  .sv-rise { opacity: 0; transform: translateY(18px); animation: svRise .9s cubic-bezier(.2, .8, .2, 1) var(--d, 0s) forwards; }
+  .sv-rise { opacity: 0; transform: translateY(8px); animation: svRise .4s cubic-bezier(.2, .8, .2, 1) forwards; }
   @keyframes svRise { to { opacity: 1; transform: none; } }
 
   html.theme-dark .sv-hero-main, html.theme-dark .sv-start, html.theme-dark .sv-card, html.theme-dark .sv-sheet-in { border-color: rgba(255, 255, 255, .1); box-shadow: 0 30px 60px -34px rgba(0, 0, 0, .8); }
-  html.theme-dark .sv-tag:not(.sv-tag-hot), html.theme-dark .sv-btn:not(.sv-btn-go), html.theme-dark .sv-filters button:not(.on), html.theme-dark .sv-ans button:not(.ok):not(.no) { background: rgba(255, 255, 255, .08); }
-  html.theme-dark .sv-pill:not(.sv-pill-new) { background: #f2f4ff; color: #141726; }
+  html.theme-dark .sv-btn:not(.sv-btn-go), html.theme-dark .sv-filters button:not(.on), html.theme-dark .sv-ans button:not(.ok):not(.no) { background: rgba(255, 255, 255, .08); }
   html.theme-dark .sv-filters button.on { background: #f2f4ff; color: #141726; }
   html.theme-dark .sv-done { color: #8ff0bf; }
-  html.theme-dark .sv-stack img { box-shadow: 0 24px 40px -20px rgba(0, 0, 0, .8), 0 0 0 3px rgba(255, 255, 255, .12); }
   html.v3 .sv-hero-main, html.v3 .sv-start, html.v3 .sv-card, html.v3 .sv-sheet-in { background: var(--glass-hi); box-shadow: var(--rim), var(--lift); border: 0; }
-  html.v3 .sv-filters button.on, html.v3 .sv-pill:not(.sv-pill-new) { background: rgba(255, 210, 122, .14); color: var(--h-gold); box-shadow: inset 0 0 0 1px var(--h-rim); }
-  html.v3 .sv-stack img { box-shadow: 0 24px 40px -20px rgba(0, 0, 0, .85), 0 0 0 2px rgba(240, 185, 74, .45); }
+  html.v3 .sv-filters button.on { background: rgba(255, 210, 122, .14); color: var(--h-gold); box-shadow: inset 0 0 0 1px var(--h-rim); }
 
   @media (max-width: 860px) {
     .sv-hero { grid-template-columns: 1fr; padding-block: 24px 8px; }
     .sv-hero-main { padding: 24px; border-radius: 26px; }
-    .sv-stack { display: none; }
-    .sv-start { grid-template-columns: 1fr; }
+    .sv-hero { grid-template-columns: 1fr; }
     .sv-start-body { padding: 18px 18px 20px; }
   }
   @media (max-width: 640px) {
@@ -304,7 +280,6 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .sv-rise, .sv-card, .sv-sheet-in, .sv-quiz, .sv-end, .sv-ans button { animation: none !important; opacity: 1 !important; transform: none !important; }
-    .sv-dot, .sv-stack img { animation: none !important; }
   }
 </style>
 <script>
@@ -397,7 +372,7 @@
     btns.forEach((b, j) => { b.disabled = true; if (j === q.ok) b.classList.add("ok"); else if (j === i) b.classList.add("no"); else b.classList.add("dim"); });
     if (good) right++;
     document.querySelectorAll("#sv-q-dots i")[qi].className = good ? "ok" : "no";
-    const why = $("sv-why"); why.innerHTML = ""; const b = document.createElement("b"); b.textContent = good ? "Right! " : "Not quite. ";
+    const why = $("sv-why"); why.innerHTML = ""; const b = document.createElement("b"); b.textContent = good ? "Right. " : "Not quite. ";
     why.append(b, document.createTextNode(q.why)); why.hidden = false;
     const next = $("sv-next"); next.textContent = qi < 2 ? "Next question" : "See my score"; next.hidden = false; next.focus({ preventScroll: true });
   }
@@ -405,7 +380,7 @@
   function finish() {
     const s = load(); s[cur.id] = Math.max(right, s[cur.id] || 0); save(s); paintDone(); track("score" + right, cur.id);
     $("sv-score").textContent = right + " of 3";
-    $("sv-end-line").textContent = right === 3 ? "Every one right. You really watched it!" : right === 2 ? "So close. One more watch and it is yours." : "Give it another watch, then try again.";
+    $("sv-end-line").textContent = right === 3 ? "Every one right. You really watched it" : right === 2 ? "So close. One more watch and it is yours." : "Give it another watch, then try again.";
     const i = DATA.indexOf(cur), nx = DATA[i + 1] || DATA[0];
     $("sv-nextvid").dataset.play = nx.id; $("sv-nextvid").href = "https://www.youtube.com/watch?v=" + nx.id;
     show("end");
