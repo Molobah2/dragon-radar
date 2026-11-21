@@ -2260,6 +2260,16 @@ def create_app(cfg: Config | None = None) -> Flask:
                                og_desc="Decorate a sky island with Blinky, Pinky, your dragons and more, then save it as a card.")
 
     # ---------- follow directory ----------
+    @app.get("/shiv")
+    def shiv_page():
+        from .shiv import CHANNEL, KINDS, START_HERE, X_HANDLE, videos
+        vids = videos()
+        total = sum(int(m) * 60 + int(sec) for m, sec in (v["dur"].split(":") for v in vids)) // 60
+        quiz = [{"id": v["id"], "title": v["title"], "qs": v["qs"]} for v in vids]
+        return render_template("shiv.html", cfg=cfg, videos=vids, quiz=quiz, kinds=KINDS, start_id=START_HERE, channel=CHANNEL,
+                               x_handle=X_HANDLE, total_min=total, og_title="Shiv's videos · pdtools",
+                               og_desc="Every Pocket Dragons video from Keeper Shiv in one place, with a short quiz after each one.")
+
     @app.get("/friends/ama")
     def ama_page():
         from .ama import AMAS, PEAK, PEAK_SHOWN

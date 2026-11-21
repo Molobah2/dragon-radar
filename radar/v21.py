@@ -415,6 +415,7 @@ SECTIONS = [
         ("creator", "Creator of the week", "/creator", "v21", "Pinky spotlights one Keeper who made the hatchery brighter.", "v21/creator-bg-s.jpg", "v21/pinky-frame.webp"),
         ("cheers", "Cheers", "/cheers", "v21", "Send a thank you lantern to a fellow Keeper.", "v21/cheers-a-s.jpg", "v21/blinky-skylantern.webp"),
         ("circle", "Dragon Circle", "/circle", "circle", "The Keepers you are closest to in dragon posts.", "", "v21/pinky-heart.webp"),
+        ("shiv", "Shiv's videos", "/shiv", "", "Every Pocket Dragons video from Keeper Shiv, with a short quiz after each one.", "shiv/card.webp", ""),
     ]),
     ("learn", "Learn", "/learn", "Learn the hatchery: the daily quiz, every AMA and the guides.", [
         ("guard", "Dragon Guard", "/guard", "guard", "One short safety lesson a day. Spot the scams before they reach your dragons.", "guard/art/m1c0-640.webp", ""),

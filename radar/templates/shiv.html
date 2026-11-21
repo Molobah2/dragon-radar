@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+{% block crumb_label %}Shiv's videos{% endblock %}
+{% block title %}Shiv's videos · {{ cfg.site_name }}{% endblock %}
+{% block body_class %}ready static-page{% endblock %}
+{% block header_right %}<a class="btn btn-soft" href="/community"><span class="wide-only">Back to </span>Community</a>{% endblock %}
+{% block main %}
+{% set start = videos | selectattr("id", "equalto", start_id) | first %}
+<section class="sv-hero">
+  <div class="sv-hero-main sv-rise">
+    <p class="sv-kick"><span class="sv-dot" aria-hidden="true"></span>Made by a Keeper</p>
+    <h1>Shiv's <span class="pop">videos</span></h1>
+    <p class="lede">Every Pocket Dragons video from Keeper Shiv in one place. Watch one, then answer three quick questions to see what stuck.</p>
+    <div class="sv-meta">
+      <span class="sv-tag"><b>{{ videos | length }}</b> videos</span>
+      <span class="sv-tag"><b>{{ total_min // 60 }} hours{% if total_min % 60 %} {{ total_min % 60 }} min{% endif %}</b> of watching</span>
+      <span class="sv-tag sv-tag-hot"><b>3 questions</b> after each one</span>
+    </div>
+    <div class="sv-links">
+      <a class="sv-btn sv-btn-go" href="{{ channel }}?sub_confirmation=1" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M21.6 7.2a2.6 2.6 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4a2.6 2.6 0 0 0-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8a2.6 2.6 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.6 2.6 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3z" fill="currentColor"/></svg>
+        Subscribe on YouTube</a>
+      <a class="sv-btn" href="https://x.com/{{ x_handle }}" target="_blank" rel="noopener">@{{ x_handle }} on X</a>
+    </div>
+  </div>
+  <div class="sv-stack sv-rise" style="--d: .12s" aria-hidden="true">
+    {% for v in videos[:3] %}<img src="{{ asset('shiv/' ~ v.id ~ '.webp') }}" alt="" width="640" height="360" style="--k: {{ loop.index0 }}" {% if loop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}>{% endfor %}
+  </div>
+</section>
+
+{% if start %}
+<article class="sv-start sv-rise" style="--d: .2s" data-id="{{ start.id }}">
+  <button class="sv-thumb" type="button" data-play="{{ start.id }}" aria-label="Play: {{ start.title }}">
+    <img src="{{ asset('shiv/' ~ start.id ~ '.webp') }}" alt="" width="640" height="360" loading="lazy">
+    <span class="sv-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
+    <span class="sv-dur">{{ start.dur }}</span>
+  </button>
+  <div class="sv-start-body">
+    <span class="sv-pill sv-pill-new">New here? Start with this one</span>
+    <h2>{{ start.title }}</h2>
+    <p>{{ start.line }}</p>
+    <div class="sv-acts">
+      <button class="sv-btn sv-btn-go" type="button" data-play="{{ start.id }}">Watch</button>
+      <button class="sv-btn" type="button" data-quiz="{{ start.id }}">Take the quiz</button>
+      <span class="sv-done" data-done="{{ start.id }}" hidden></span>
+    </div>
+  </div>
+</article>
+{% endif %}
+
+<div class="sv-filters" role="group" aria-label="Show videos">
+  <button type="button" class="on" data-kind="all" aria-pressed="true">All</button>
+  {% for k, name in kinds.items() %}{% if videos | selectattr("kind", "equalto", k) | list %}<button type="button" data-kind="{{ k }}" aria-pressed="false">{{ name }}{{ "s" if k != "talk" }}</button>{% endif %}{% endfor %}
+</div>
+
+<ul class="sv-grid" id="sv-grid">
+  {% for v in videos %}
+  <li class="sv-card" data-kind="{{ v.kind }}" data-id="{{ v.id }}" style="--i: {{ loop.index0 }}">
+    <button class="sv-thumb" type="button" data-play="{{ v.id }}" aria-label="Play: {{ v.title }}">
+      <img src="{{ asset('shiv/' ~ v.id ~ '.webp') }}" alt="" width="640" height="360" loading="lazy" decoding="async">
+      <span class="sv-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
+      <span class="sv-dur">{{ v.dur }}</span>
+      {% if loop.first %}<span class="sv-pill sv-pill-new sv-on-thumb">Newest</span>{% endif %}
+    </button>
+    <div class="sv-body">
+      <div class="sv-top"><span class="sv-pill">{{ v.kind_name }}</span><span class="sv-date" data-day="{{ v.day }}">{{ v.day }}</span></div>
+      <h3>{{ v.title }}</h3>
+      <p>{{ v.line }}</p>
+      <div class="sv-acts">
+        <button class="sv-btn sv-btn-sm" type="button" data-quiz="{{ v.id }}">Take the quiz</button>
+        <span class="sv-done" data-done="{{ v.id }}" hidden></span>
+      </div>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+<p class="sv-foot">Shiv's channel is a Keeper's own and not official Pocket Dragons news. Plans can change after a video is made, so the newest AMA is always the latest word.</p>
+
+{# the theatre: the video plays here, and the quiz pops up when it ends #}
+<dialog class="sv-sheet" id="sv-sheet" aria-labelledby="sv-sheet-title">
+  <div class="sv-sheet-in">
+    <button class="sv-x" type="button" data-close aria-label="Close"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+    <div class="sv-screen" id="sv-screen"></div>
+    <div class="sv-under" id="sv-under">
+      <h2 id="sv-sheet-title"></h2>
+      <div class="sv-acts"><button class="sv-btn sv-btn-go" type="button" id="sv-quiz-now">Take the quiz</button><a class="sv-btn" id="sv-yt" href="#" target="_blank" rel="noopener">Open on YouTube</a></div>
+      <p class="sv-hint">The quiz pops up by itself when the video ends.</p>
+    </div>
+    <div class="sv-quiz" id="sv-quiz" hidden>
+      <div class="sv-q-top"><span class="sv-q-of" id="sv-q-of"></span><span class="sv-q-dots" id="sv-q-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <p class="sv-q-vid" id="sv-q-vid"></p>
+      <p class="sv-q" id="sv-q"></p>
+      <div class="sv-ans" id="sv-ans"></div>
+      <p class="sv-why" id="sv-why" hidden aria-live="polite"></p>
+      <button class="sv-btn sv-btn-go sv-next" type="button" id="sv-next" hidden>Next question</button>
+    </div>
+    <div class="sv-end" id="sv-end" hidden>
+      <p class="sv-score" id="sv-score"></p>
+      <p class="sv-end-line" id="sv-end-line"></p>
+      <div class="sv-acts sv-acts-c"><button class="sv-btn sv-btn-go" type="button" id="sv-again">Try again</button><button class="sv-btn" type="button" id="sv-nextvid">Next video</button></div>
+    </div>
+  </div>
+</dialog>
+<script type="application/json" id="sv-data">{{ quiz | tojson }}</script>
+
+<style>
+  .sv-hero, .sv-start, .sv-grid, .sv-filters, .sv-foot { --sv-acc: var(--coral, #ff7a59); --sv-acc2: #ffb347; --sv-ok: #22a36a; --sv-no: #e5484d; }
+  html.v3 { --sv-acc: var(--h-torch); --sv-acc2: var(--h-gold); }
+  html.v3[data-room="shiv"] { --h-bg: #1a1410; --pan: #2b2219; --glow-a: rgba(255, 70, 60, .14); --glow-b: rgba(255, 171, 61, .12); }
+  .sv-hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 22px; align-items: center; padding-block: 40px 18px; }
+  .sv-hero-main, .sv-start, .sv-card, .sv-sheet-in { background: var(--glass); backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3);
+    border: 1px solid rgba(255, 255, 255, .55); box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 30px 60px -34px rgba(27, 33, 48, .55); }
+  .sv-hero-main { padding: 34px; border-radius: 32px; }
+  .sv-kick { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 10px; font: 800 13px var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--sv-acc); }
+  .sv-dot { width: 9px; height: 9px; border-radius: 50%; background: #ff3b30; box-shadow: 0 0 0 0 rgba(255, 59, 48, .6); animation: svPing 2.2s ease-out infinite; }
+  @keyframes svPing { 0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, .6); } 70%, 100% { box-shadow: 0 0 0 12px rgba(255, 59, 48, 0); } }
+  .sv-hero h1 { margin: 0 0 12px; font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 6vw, 68px); line-height: .98; letter-spacing: -.02em; }
+  .sv-hero .lede { margin: 0; max-width: 46ch; }
+  .sv-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .sv-tag { padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: 14px; color: var(--ink-soft); background: rgba(255, 255, 255, .6); box-shadow: inset 0 0 0 1px var(--line); }
+  .sv-tag b { color: var(--ink); font-weight: 900; }
+  .sv-tag-hot { color: #fff; background: linear-gradient(135deg, var(--sv-acc), var(--sv-acc2)); }
+  .sv-tag-hot b { color: #fff; }
+  .sv-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+
+  .sv-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 20px; border-radius: 999px; border: 0; cursor: pointer;
+    font: 800 15px var(--font-body); text-decoration: none; color: var(--ink); background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1px var(--line);
+    transition: transform .25s cubic-bezier(.2, .8, .2, 1), box-shadow .25s; -webkit-tap-highlight-color: transparent; }
+  .sv-btn:hover { transform: translateY(-2px); }
+  .sv-btn:active { transform: scale(.97); }
+  .sv-btn-go { color: #fff; background: linear-gradient(180deg, #ff5a4e, #e0312b); box-shadow: 0 14px 26px -14px rgba(224, 49, 43, .9); }
+  .sv-btn-sm { min-height: 44px; padding: 0 16px; font-size: 14px; }
+
+  .sv-stack { position: relative; aspect-ratio: 16 / 11; }
+  .sv-stack img { position: absolute; width: 74%; height: auto; border-radius: 18px; box-shadow: 0 24px 40px -20px rgba(0, 0, 0, .7), 0 0 0 3px rgba(255, 255, 255, .8);
+    left: calc(var(--k) * 13%); top: calc(var(--k) * 15%); transform: rotate(calc((var(--k) - 1) * 4deg)); z-index: calc(3 - var(--k));
+    animation: svFloat 7s ease-in-out calc(var(--k) * -2.3s) infinite; }
+  @keyframes svFloat { 50% { translate: 0 -8px; } }
+
+  .sv-start { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 0; margin: 6px 0 26px; border-radius: 30px; overflow: hidden; }
+  .sv-start .sv-thumb { border-radius: 0; }
+  .sv-start-body { padding: 26px 28px; display: grid; align-content: center; gap: 10px; justify-items: start; }
+  .sv-start h2 { margin: 0; font: 700 clamp(24px, 3vw, 32px)/1.1 var(--font-display); }
+  .sv-start p { margin: 0; font-weight: 600; color: var(--ink-soft); line-height: 1.45; }
+
+  .sv-thumb { position: relative; display: block; width: 100%; padding: 0; border: 0; cursor: pointer; aspect-ratio: 16 / 9; overflow: hidden; background: #1b1410; border-radius: 22px 22px 0 0; }
+  .sv-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .7s cubic-bezier(.2, .8, .2, 1); }
+  .sv-thumb:hover img { transform: scale(1.05); }
+  .sv-play { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+    background: rgba(224, 49, 43, .92); box-shadow: 0 10px 24px -8px rgba(0, 0, 0, .7), 0 0 0 0 rgba(255, 90, 78, .5); transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+  .sv-play svg { margin-left: 3px; }
+  .sv-thumb:hover .sv-play { transform: scale(1.1); animation: svPing2 1.4s ease-out infinite; }
+  @keyframes svPing2 { 0% { box-shadow: 0 10px 24px -8px rgba(0, 0, 0, .7), 0 0 0 0 rgba(255, 90, 78, .55); } 100% { box-shadow: 0 10px 24px -8px rgba(0, 0, 0, .7), 0 0 0 16px rgba(255, 90, 78, 0); } }
+  .sv-dur { position: absolute; right: 10px; bottom: 10px; padding: 3px 8px; border-radius: 8px; font: 800 12.5px var(--font-body); color: #fff; background: rgba(0, 0, 0, .78); }
+  .sv-on-thumb { position: absolute; left: 10px; top: 10px; }
+
+  .sv-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+  .sv-filters button { min-height: 44px; padding: 0 18px; border-radius: 999px; border: 0; cursor: pointer; font: 800 14px var(--font-body); color: var(--ink);
+    background: rgba(255, 255, 255, .6); box-shadow: inset 0 0 0 1px var(--line); }
+  .sv-filters button.on { color: #fff; background: var(--ink); box-shadow: none; }
+
+  .sv-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 18px; }
+  .sv-card { display: grid; grid-template-rows: auto 1fr; border-radius: 24px; overflow: hidden;
+    opacity: 0; transform: translateY(18px); animation: svRise .7s cubic-bezier(.2, .8, .2, 1) calc(min(var(--i), 8) * .05s + .25s) forwards; }
+  .sv-card[hidden] { display: none; }
+  .sv-body { display: grid; gap: 8px; align-content: start; padding: 16px 18px 18px; }
+  .sv-top { display: flex; align-items: center; gap: 8px; }
+  .sv-pill { padding: 4px 11px; border-radius: 999px; font: 800 11.5px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: #fff; background: var(--ink); }
+  .sv-pill-new { background: linear-gradient(90deg, var(--sv-acc2), var(--sv-acc)); color: #2a1206; }
+  .sv-date { font-weight: 800; color: var(--ink-soft); font-size: 13.5px; }
+  .sv-card h3 { margin: 0; font: 700 19px/1.2 var(--font-display); }
+  .sv-card p { margin: 0; font-weight: 600; font-size: 14.5px; color: var(--ink-soft); line-height: 1.45; }
+  .sv-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; }
+  .sv-acts-c { justify-content: center; }
+  .sv-done { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font: 800 13px var(--font-body); color: #0f6b43; background: rgba(34, 163, 106, .15); box-shadow: inset 0 0 0 1px rgba(34, 163, 106, .35); }
+  .sv-foot { margin: 26px 0 40px; text-align: center; font-weight: 700; font-size: 13.5px; color: var(--on-sky-soft, rgba(29, 36, 51, .7)); }
+
+  /* the theatre and the quiz */
+  .sv-sheet { padding: 0; border: 0; background: transparent; width: min(880px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: visible; color: var(--ink); }
+  .sv-sheet::backdrop { background: rgba(8, 6, 4, .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .sv-sheet[open] .sv-sheet-in { animation: svPop .45s cubic-bezier(.2, .9, .25, 1.15); }
+  @keyframes svPop { from { opacity: 0; transform: translateY(24px) scale(.96); } }
+  .sv-sheet-in { position: relative; border-radius: 26px; overflow: auto; max-height: calc(100dvh - 24px); background: var(--glass-strong, #fff); }
+  .sv-x { position: absolute; right: 10px; top: 10px; z-index: 3; width: 44px; height: 44px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+    color: #fff; background: rgba(0, 0, 0, .6); }
+  .sv-screen { aspect-ratio: 16 / 9; background: #000; }
+  .sv-screen:empty { display: none; }
+  .sv-screen iframe, .sv-screen > div { width: 100%; height: 100%; border: 0; display: block; }
+  .sv-under { padding: 18px 22px 22px; display: grid; gap: 10px; }
+  .sv-under h2 { margin: 0; padding-right: 40px; font: 700 clamp(19px, 2.6vw, 24px)/1.2 var(--font-display); }
+  .sv-hint { margin: 0; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+  .sv-quiz, .sv-end { padding: 22px 22px 24px; display: grid; gap: 14px; }
+  .sv-quiz:not([hidden]), .sv-end:not([hidden]) { animation: svPop .4s cubic-bezier(.2, .9, .25, 1.1); }
+  .sv-q-top { display: flex; align-items: center; justify-content: space-between; padding-right: 48px; }
+  .sv-q-of { font: 800 13px var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--sv-acc, #e0312b); }
+  .sv-q-dots { display: flex; gap: 6px; }
+  .sv-q-dots i { width: 28px; height: 6px; border-radius: 3px; background: rgba(127, 127, 127, .3); }
+  .sv-q-dots i.ok { background: #22a36a; } .sv-q-dots i.no { background: #e5484d; } .sv-q-dots i.now { background: var(--sv-acc, #e0312b); }
+  .sv-q-vid { margin: -6px 0 0; font-weight: 700; font-size: 13.5px; color: var(--ink-soft); }
+  .sv-q { margin: 0; font: 700 clamp(20px, 3vw, 26px)/1.25 var(--font-display); }
+  .sv-ans { display: grid; gap: 10px; }
+  .sv-ans button { min-height: 54px; padding: 12px 16px; border-radius: 16px; border: 0; cursor: pointer; text-align: left; font: 700 16px/1.3 var(--font-body); color: var(--ink);
+    background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1.5px var(--line); transition: transform .2s, background .25s, box-shadow .25s; }
+  .sv-ans button:hover:not(:disabled) { transform: translateX(3px); box-shadow: inset 0 0 0 2px var(--sv-acc, #e0312b); }
+  .sv-ans button:disabled { cursor: default; }
+  .sv-ans button.ok { color: #fff; background: #22a36a; box-shadow: none; animation: svYes .5s cubic-bezier(.2, .9, .25, 1.3); }
+  .sv-ans button.no { color: #fff; background: #e5484d; box-shadow: none; animation: svShake .4s; }
+  .sv-ans button.dim { opacity: .5; }
+  @keyframes svYes { 40% { transform: scale(1.03); } }
+  @keyframes svShake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+  .sv-why { margin: 0; padding: 12px 14px; border-radius: 14px; font-weight: 600; line-height: 1.45; background: rgba(127, 127, 127, .12); }
+  .sv-why b { font-weight: 900; }
+  .sv-next { justify-self: start; }
+  .sv-end { text-align: center; justify-items: center; padding-block: 34px 30px; }
+  .sv-score { margin: 0; font: 700 clamp(40px, 8vw, 64px)/1 var(--font-display); background: linear-gradient(160deg, var(--sv-acc2, #ffb347), var(--sv-acc, #e0312b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sv-end-line { margin: 0; font-weight: 700; font-size: 17px; max-width: 36ch; }
+
+  .sv-rise { opacity: 0; transform: translateY(18px); animation: svRise .9s cubic-bezier(.2, .8, .2, 1) var(--d, 0s) forwards; }
+  @keyframes svRise { to { opacity: 1; transform: none; } }
+
+  html.theme-dark .sv-hero-main, html.theme-dark .sv-start, html.theme-dark .sv-card, html.theme-dark .sv-sheet-in { border-color: rgba(255, 255, 255, .1); box-shadow: 0 30px 60px -34px rgba(0, 0, 0, .8); }
+  html.theme-dark .sv-tag:not(.sv-tag-hot), html.theme-dark .sv-btn:not(.sv-btn-go), html.theme-dark .sv-filters button:not(.on), html.theme-dark .sv-ans button:not(.ok):not(.no) { background: rgba(255, 255, 255, .08); }
+  html.theme-dark .sv-pill:not(.sv-pill-new) { background: #f2f4ff; color: #141726; }
+  html.theme-dark .sv-filters button.on { background: #f2f4ff; color: #141726; }
+  html.theme-dark .sv-done { color: #8ff0bf; }
+  html.theme-dark .sv-stack img { box-shadow: 0 24px 40px -20px rgba(0, 0, 0, .8), 0 0 0 3px rgba(255, 255, 255, .12); }
+  html.v3 .sv-hero-main, html.v3 .sv-start, html.v3 .sv-card, html.v3 .sv-sheet-in { background: var(--glass-hi); box-shadow: var(--rim), var(--lift); border: 0; }
+  html.v3 .sv-filters button.on, html.v3 .sv-pill:not(.sv-pill-new) { background: rgba(255, 210, 122, .14); color: var(--h-gold); box-shadow: inset 0 0 0 1px var(--h-rim); }
+  html.v3 .sv-stack img { box-shadow: 0 24px 40px -20px rgba(0, 0, 0, .85), 0 0 0 2px rgba(240, 185, 74, .45); }
+
+  @media (max-width: 860px) {
+    .sv-hero { grid-template-columns: 1fr; padding-block: 24px 8px; }
+    .sv-hero-main { padding: 24px; border-radius: 26px; }
+    .sv-stack { display: none; }
+    .sv-start { grid-template-columns: 1fr; }
+    .sv-start-body { padding: 18px 18px 20px; }
+  }
+  @media (max-width: 640px) {
+    .sv-links .sv-btn { flex: 1 1 100%; }
+    .sv-filters { flex-wrap: nowrap; overflow-x: auto; margin-inline: -16px; padding-inline: 16px; scrollbar-width: none; }
+    .sv-filters button { flex: none; }
+    .sv-sheet { width: 100vw; max-width: 100vw; max-height: 100dvh; margin: auto 0 0; }
+    .sv-sheet-in { border-radius: 24px 24px 0 0; max-height: 92dvh; padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .sv-under, .sv-quiz { padding: 16px 16px 20px; }
+    .sv-ans button { font-size: 15.5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sv-rise, .sv-card, .sv-sheet-in, .sv-quiz, .sv-end, .sv-ans button { animation: none !important; opacity: 1 !important; transform: none !important; }
+    .sv-dot, .sv-stack img { animation: none !important; }
+  }
+</style>
+<script>
+(() => {
+  "use strict";
+  const DATA = JSON.parse(document.getElementById("sv-data").textContent);
+  const byId = Object.fromEntries(DATA.map((v) => [v.id, v]));
+  const $ = (id) => document.getElementById(id);
+  const sheet = $("sv-sheet"), screen = $("sv-screen");
+  const KEY = "pd-shiv-quiz";
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { return {}; } };
+  const save = (o) => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) { /* private mode: fine */ } };
+  const track = (what, id) => { try { window.pdTrack && window.pdTrack("shiv", what + ":" + id); } catch (e) { /* fine */ } };
+
+  // dates read as "2 Nov" in the visitor's own language
+  document.querySelectorAll(".sv-date[data-day]").forEach((el) => {
+    try { el.textContent = new Date(el.dataset.day + "T12:00:00Z").toLocaleDateString(undefined, { day: "numeric", month: "short" }); } catch (e) { /* keep the ISO day */ }
+  });
+
+  function paintDone() {
+    const s = load();
+    document.querySelectorAll("[data-done]").forEach((el) => {
+      const r = s[el.dataset.done];
+      el.hidden = r == null;
+      if (r != null) el.textContent = "Quiz " + r + " of 3";
+    });
+  }
+  paintDone();
+
+  // filters
+  const chips = document.querySelectorAll(".sv-filters button");
+  chips.forEach((b) => b.addEventListener("click", () => {
+    chips.forEach((c) => { c.classList.toggle("on", c === b); c.setAttribute("aria-pressed", c === b); });
+    document.querySelectorAll(".sv-card").forEach((card) => { card.hidden = b.dataset.kind !== "all" && card.dataset.kind !== b.dataset.kind; });
+  }));
+
+  // the YouTube player API loads only when someone presses play
+  let apiP = null, player = null, cur = null;
+  function api() {
+    if (apiP) return apiP;
+    apiP = new Promise((res) => {
+      if (window.YT && window.YT.Player) return res(window.YT);
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { prev && prev(); res(window.YT); };
+      const s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; s.async = true;
+      s.onerror = () => res(null); document.head.appendChild(s);
+    });
+    return apiP;
+  }
+  function stopVideo() { try { player && player.destroy(); } catch (e) { /* fine */ } player = null; screen.innerHTML = ""; }
+  function show(part) { $("sv-under").hidden = part !== "under"; $("sv-quiz").hidden = part !== "quiz"; $("sv-end").hidden = part !== "end"; }
+  function openSheet() { if (!sheet.open) { try { sheet.showModal(); } catch (e) { sheet.setAttribute("open", ""); } } }
+
+  function play(id) {
+    const v = byId[id]; if (!v) return;
+    cur = v; stopVideo();
+    $("sv-sheet-title").textContent = v.title;
+    $("sv-yt").href = "https://www.youtube.com/watch?v=" + id;
+    show("under"); openSheet(); track("play", id);
+    const box = document.createElement("div"); screen.appendChild(box);
+    const plain = () => { screen.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1" title="' + v.title.replace(/"/g, "&quot;") + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>'; };
+    api().then((YT) => {
+      if (cur !== v || !sheet.open) return;
+      if (!YT) return plain();
+      player = new YT.Player(box, {
+        host: "https://www.youtube-nocookie.com", videoId: id, width: "100%", height: "100%",
+        playerVars: { autoplay: 1, rel: 0, playsinline: 1, modestbranding: 1 },
+        events: { onStateChange: (e) => { if (e.data === 0 && cur === v) { stopVideo(); quiz(id); } } }
+      });
+    });
+  }
+
+  // the quiz: three questions, one at a time, the answer and why straight after each tap
+  let qi = 0, right = 0;
+  function quiz(id) {
+    const v = byId[id]; if (!v) return;
+    cur = v; qi = 0; right = 0;
+    $("sv-sheet-title").textContent = v.title;
+    document.querySelectorAll("#sv-q-dots i").forEach((d) => (d.className = ""));
+    $("sv-q-vid").textContent = "From: " + v.title;
+    openSheet(); show("quiz"); ask(); track("quiz", id);
+  }
+  function ask() {
+    const q = cur.qs[qi], dots = document.querySelectorAll("#sv-q-dots i");
+    dots[qi].className = "now";
+    $("sv-q-of").textContent = "Question " + (qi + 1) + " of 3";
+    $("sv-q").textContent = q.q;
+    $("sv-why").hidden = true; $("sv-next").hidden = true;
+    const box = $("sv-ans"); box.innerHTML = "";
+    q.a.forEach((txt, i) => {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = txt;
+      b.addEventListener("click", () => pick(i));
+      box.appendChild(b);
+    });
+    box.firstChild && box.firstChild.focus({ preventScroll: true });
+  }
+  function pick(i) {
+    const q = cur.qs[qi], btns = [...$("sv-ans").children], good = i === q.ok;
+    btns.forEach((b, j) => { b.disabled = true; if (j === q.ok) b.classList.add("ok"); else if (j === i) b.classList.add("no"); else b.classList.add("dim"); });
+    if (good) right++;
+    document.querySelectorAll("#sv-q-dots i")[qi].className = good ? "ok" : "no";
+    const why = $("sv-why"); why.innerHTML = ""; const b = document.createElement("b"); b.textContent = good ? "Right! " : "Not quite. ";
+    why.append(b, document.createTextNode(q.why)); why.hidden = false;
+    const next = $("sv-next"); next.textContent = qi < 2 ? "Next question" : "See my score"; next.hidden = false; next.focus({ preventScroll: true });
+  }
+  $("sv-next").addEventListener("click", () => { if (qi < 2) { qi++; ask(); } else finish(); });
+  function finish() {
+    const s = load(); s[cur.id] = Math.max(right, s[cur.id] || 0); save(s); paintDone(); track("score" + right, cur.id);
+    $("sv-score").textContent = right + " of 3";
+    $("sv-end-line").textContent = right === 3 ? "Every one right. You really watched it!" : right === 2 ? "So close. One more watch and it is yours." : "Give it another watch, then try again.";
+    const i = DATA.indexOf(cur), nx = DATA[i + 1] || DATA[0];
+    $("sv-nextvid").dataset.id = nx.id;
+    show("end");
+  }
+  $("sv-again").addEventListener("click", () => quiz(cur.id));
+  $("sv-nextvid").addEventListener("click", (e) => play(e.currentTarget.dataset.id));
+  $("sv-quiz-now").addEventListener("click", () => { stopVideo(); quiz(cur.id); });
+
+  document.addEventListener("click", (e) => {
+    const p = e.target.closest("[data-play]"); if (p) { play(p.dataset.play); return; }
+    const q = e.target.closest("[data-quiz]"); if (q) { quiz(q.dataset.quiz); }
+  });
+  sheet.querySelector("[data-close]").addEventListener("click", () => sheet.close());
+  sheet.addEventListener("click", (e) => { if (e.target === sheet) sheet.close(); });
+  sheet.addEventListener("close", stopVideo);
+})();
+</script>
+{% endblock %}

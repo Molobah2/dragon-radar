@@ -2947,7 +2947,7 @@ def test_four_sections_group_the_tools_with_one_dock_everywhere(cfg, Session):
     assert "circle" not in [t["key"] for s in nav_for("/", True, False)["sections"] for t in s["tabs"]]
     # without v2.1 only the tools that already exist show
     old = nav_for("/", False, False)
-    assert all(t["key"] in ("friends", "progress", "keepers", "ama", "help") for s in old["sections"] for t in s["tabs"])
+    assert all(t["key"] in ("friends", "progress", "keepers", "ama", "help", "shiv") for s in old["sections"] for t in s["tabs"])
     for path, names in (("/community", ["Keepers", "Welcome lane", "Creator of the week", "Cheers", "Dragon Circle"]),
                         ("/learn", ["Dragon Quiz", "AMA Library", "Help and guides"]),
                         ("/create", ["Sticker shelf", "Hatchery canvas", "Hatchery Wrapped", "My Hatchery wallpaper"])):
@@ -3599,3 +3599,27 @@ def test_mixed_and_holo_swaps_keep_their_kind_across_devices(cfg, Session):
     assert back[0].get("r") == 1 and back[1].get("m") == "ccr" and "m" not in back[2]
     js = (Path(__file__).parent.parent / "radar" / "static" / "dragons.js").read_text()
     assert 'doSwap("mix")' in js and "k = TK[entry.tier]" in js and "giveTier(x, i)" in js
+
+
+def test_shiv_videos_page_lists_every_video_with_a_quiz(cfg, Session):
+    """Shiv's videos: every video newest first, a self hosted thumbnail each, three questions with one right answer, no dashes."""
+    import re
+    from radar.shiv import VIDEOS, START_HERE, videos
+    vids = videos()
+    assert [v["day"] for v in vids] == sorted((v["day"] for v in vids), reverse=True)
+    assert START_HERE in [v["id"] for v in vids]
+    for v in vids:
+        assert Path(f"radar/static/shiv/{v['id']}.webp").exists(), v["id"]
+        assert len(v["qs"]) == 3
+        for q in v["qs"]:
+            assert len(q["a"]) == 3 and 0 <= q["ok"] < 3 and len(set(q["a"])) == 3
+            for t in [q["q"], q["why"], *q["a"]]:
+                assert not re.search(r"[–—]| - ", t), t
+    assert len({q["ok"] for v in vids for q in v["qs"]}) == 3   # the right answer is not always in the same spot
+    c = create_app(cfg).test_client()
+    page = c.get("/shiv").get_data(as_text=True)
+    assert all(f'data-play="{v[0]}"' in page for v in VIDEOS)
+    assert "youtube.com/@KeeperShiv" in page and "x.com/Shivo222" in page and 'id="sv-data"' in page
+    assert "not official Pocket Dragons news" in page
+    app, c2 = _v21_client(cfg)
+    assert "<b>Shiv&#39;s videos</b>" in c2.get("/community").get_data(as_text=True) or "<b>Shiv's videos</b>" in c2.get("/community").get_data(as_text=True)
