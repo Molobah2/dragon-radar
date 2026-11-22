@@ -580,3 +580,22 @@ html.v3 .v3-top .gs-t small, html.v3 .v3-top .gs-row.ok .gs-t b { color: rgba(24
 html.v3 .v3-top .gs-row.skip .gs-tick { background: rgba(255, 196, 107, .1); box-shadow: none; }
 html.v3 .v3-top .gs-go { background: var(--h-gold, #ffc46b); color: #2a1c08; box-shadow: none; }
 html.v3 .v3-top .gs-row.skip { background: none; box-shadow: none; }
+
+/* phones: the sound and songs pills in the home header are at least 40 px to tap (v3 audit, 22 Nov) */
+@media (pointer: coarse) { html.v3 .hdr-right :is(.sound-pill, .song-pill) { min-width: 40px; min-height: 40px; } }
+/* 320 px phones: the home header's language pill used to run off the right edge (v3 audit, 22 Nov) */
+@media (max-width: 360px) {
+  html.v3 header.v22-head .hdr-right { gap: 4px; }
+  html.v3 header.v22-head .lang-pick { padding: 6px 8px; gap: 4px; }
+  html.v3 header.v22-head .lang-pick select { max-width: 3.4em !important; }
+  html.v3 header.v22-head .lang-pick .ico { display: none; }
+  html.v3 header.v22-head .logo3d .lw { display: none; }   /* the badge alone; the link keeps its "PD Tools" label */
+  html.v3 header.v22-head .lang-pick select { max-width: 5em !important; }
+}
+/* phones: each footer music credit row is a comfortable tap, not a 21 px line (v3 audit, 22 Nov) */
+@media (pointer: coarse) {
+  html.v3 .music-credits { gap: 0; }
+  html.v3 .music-credits .mc-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: 6px; min-height: 44px; }
+  html.v3 .music-credits :is(.mc-title, .mc-song, a) { padding: 10px 2px; }
+  html.v3 .music-credits .mc-all { padding: 8px 12px; }
+}

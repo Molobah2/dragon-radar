@@ -5,8 +5,8 @@
 "use strict";
 const CFG = Object.assign({
   dates: {1:"2026-11-08",2:"2026-11-08",3:"2026-11-09",4:"2026-11-10",5:"2026-11-11",6:"2026-11-12",7:"2026-11-14",8:"2026-11-15",9:"2026-11-17",10:"2026-11-18",11:"2026-11-19",12:"2026-11-20",13:"2026-11-21",14:"2026-11-22",15:"2026-11-23"},
-  drills: {"2026-11-13":"Raffle closes and the top 500 snapshot is taken today at 5 PM UTC.","2026-11-16":"The community presale opens today at 1 PM UTC.","2026-11-30":"The public auction runs today from 1 PM UTC for 24 hours."},
-  events: [["2026-11-13","Raffle closes · snapshot"],["2026-11-16","Community presale"],["2026-11-30","Public auction"]],
+  drills: {"2026-11-13":"Raffle closes and the top 500 snapshot is taken today at 5 PM UTC.","2026-11-16":"The community presale opens today at 1 PM UTC.","2026-11-30":"The public mint opens today at 4 PM UTC for 2 hours, only on the official site."},
+  events: [["2026-11-13","Raffle closes · snapshot"],["2026-11-16","Community presale"],["2026-11-30","Public mint"]],
   official: [], serverNow: 0, now: "", tally: "/api/guard/tally", ver: "1", base: "/guard/"
 }, window.GUARD || {});
 const N = 14, $ = (s, r = document) => r.querySelector(s), main = $("#main");
@@ -187,7 +187,7 @@ function home() {
   const dailyHtml = oc ? `<div class="panel check" id="dailycard"><h3>${esc(T("dailyT", "Today's guard questions"))}</h3><p>${esc(T("dailyWhy", "Three quick questions from the lessons you have opened. Any Dragon Guard quiz you finish today fills the Dragon Guard step of your daily goal on pdtools."))}</p>${qdone ? `<p class="chip good">${esc(T("drillDone", "Done for today"))}</p>` : `<a class="btn main" href="#daily">${esc(T("dailyBtn", "Answer 3 questions"))}</a>`}</div>` : "";
   const checkHtml = checkDue() ? `<div class="panel check" id="checkday"><h3>${esc(T("checkDay", "Check Day"))}</h3><p>${esc(T("checkWhy", "Look at what your wallet has approved. You can search by your address on revoke.cash without connecting anything. Revoke only the approvals you do not use or do not recognise. Each revoke costs a small gas fee."))}</p><div class="btn-row"><a class="btn main" href="https://revoke.cash/" target="_blank" rel="noopener noreferrer">${esc(T("openRevoke", "Open revoke.cash"))}</a><a class="btn ghost" href="#check">${esc(T("howCheck", "How to check"))}</a><button class="btn ghost" type="button" id="checked">${esc(T("iChecked", "I checked"))}</button></div></div>` : "";
   const inAppHtml = inApp ? `<div class="panel small">${esc(T("inapp", "You are inside an app's browser. Open pdtools.xyz/guard in your phone's own browser so your progress is kept."))}</div>` : "";
-  const cal = CFG.events.map(([d, l]) => { const ms = Date.parse(d + (d === "2026-11-13" ? "T17:00:00Z" : "T13:00:00Z")) /* the snapshot was 17:00 UTC (presale page), the rest start 13:00 */, soon = ms > now() && ms - now() < 4 * 864e5, past = now() > ms + (d === "2026-11-16" ? 4 : d === "2026-11-13" ? 0 : 1) * 864e5 /* presale runs 4 days, the auction 24 hours */; return `<div class="${soon ? "soon" : past ? "past" : ""}"><b>${esc(fmtDate(ms, { day: "numeric", month: "short" }))}</b>${esc(T("ev_" + d, l))}</div>`; }).join("");
+  const cal = CFG.events.map(([d, l]) => { const ms = Date.parse(d + (d === "2026-11-13" ? "T17:00:00Z" : d === "2026-11-30" ? "T16:00:00Z" : "T13:00:00Z")) /* the snapshot was 17:00 UTC (presale page), the public mint starts 16:00 UTC (20 Nov post), the presale 13:00 */, soon = ms > now() && ms - now() < 4 * 864e5, past = now() > ms + (d === "2026-11-16" ? 4 * 864e5 : d === "2026-11-13" ? 0 : 2 * 36e5) /* presale runs 4 days, the public mint 2 hours */; return `<div class="${soon ? "soon" : past ? "past" : ""}"><b>${esc(fmtDate(ms, { day: "numeric", month: "short" }))}</b>${esc(T("ev_" + d, l))}</div>`; }).join("");
   let path = "";
   for (let m = 1; m <= N; m++) {
     const s = st(m), open = isOpen(m);
