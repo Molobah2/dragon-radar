@@ -78,8 +78,9 @@
   function card(k, isTeam) {
     const done = !!followed[k.username.toLowerCase()], asking = !done && !!pending[k.username.toLowerCase()];
     const url = `https://x.com/${k.username}`;
-    const av = k.avatar ? el("img", { class: "avatar", src: k.avatar, alt: "", loading: "lazy" })
-      : el("span", { class: "avatar blank" }, (k.name || "?").slice(0, 1));
+    const blank = () => el("span", { class: "avatar blank" }, (k.name || "?").slice(0, 1));
+    const av = k.avatar ? el("img", { class: "avatar", src: k.avatar, alt: "", loading: "lazy" }) : blank();
+    if (k.avatar) av.onerror = () => av.replaceWith(blank());
     const n = fanOf(k);
     const meta = isTeam ? el("span", { class: "tag team" }, k.role)
       : n ? el("span", { class: "kp-when fan" }, n === 1 ? "You opened 1 of their posts" : `You opened ${n} of their posts`)

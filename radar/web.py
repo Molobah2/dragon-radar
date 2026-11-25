@@ -1233,6 +1233,8 @@ def create_app(cfg: Config | None = None) -> Flask:
 
     avatar_big: dict[str, tuple[float, bytes, str]] = {}
 
+    avatar_slots = threading.BoundedSemaphore(3)
+
     def avatar_bytes(handle, big=False):
         """A Keeper's X picture (bytes, type), fetched from X's image host only and kept for a day, or None.
         X gives every new profile picture a new address and the old one stops working, so this tries every
@@ -1274,6 +1276,18 @@ def create_app(cfg: Config | None = None) -> Flask:
             return hit[1], hit[2]
         if now_ts - avatar_miss.get(key, 0) < 900:
             return None
+        # Looking a picture up can take seconds. Keep most threads free for pages and the health check:
+        # only a few lookups run at once, and the rest get "no picture" now and try again on a later visit.
+        if not avatar_slots.acquire(timeout=1.5):
+            return None
+        try:
+            return _avatar_lookup(handle, key, now_ts)
+        finally:
+            avatar_slots.release()
+
+    def _avatar_lookup(handle, key, now_ts):
+        import json
+        import requests
         urls = []
         with Session() as s:
             c = s.get(AuthorCheck, key)
@@ -1295,7 +1309,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             if not url or not url.startswith("https://pbs.twimg.com/"):
                 return None
             try:
-                r = requests.get(url, timeout=8, allow_redirects=False)   # X's image host only, never a hop elsewhere
+                r = requests.get(url, timeout=4, allow_redirects=False)   # X's image host only, never a hop elsewhere
             except requests.RequestException:
                 return None
             if r.status_code != 200 or len(r.content) > 500_000:
