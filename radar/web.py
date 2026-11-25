@@ -2308,7 +2308,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         now = utcnow()
         with Session() as s:
             team = json.loads(get_setting(s, "team_profiles") or "[]")
-            rows = s.scalars(select(Keeper).where(Keeper.tagged.is_(True), Keeper.verified.is_(True),
+            rows = s.scalars(select(Keeper).where(Keeper.tagged.is_(True),
                                                   Keeper.last_checked >= now - timedelta(days=45))).all()
         team_keys = {t["username"].lower() for t in team}
         if not team:  # before the first refresh, still pin the accounts by handle
@@ -2353,7 +2353,7 @@ def create_app(cfg: Config | None = None) -> Flask:
         with Session() as s:
             k = s.get(Keeper, key)
             # Already listed: answer for free. Only re-check X once the listing is a month old.
-            if k and k.tagged and k.verified and now - k.last_checked < timedelta(days=30):
+            if k and k.tagged and now - k.last_checked < timedelta(days=30):
                 return {"ok": True, "message": f"@{k.username} is already in the directory."}
             # A recent "not yet" is remembered only briefly: people fix their name or get the tick and try again.
             last_no = get_setting(s, f"dirno:{key}")
@@ -2373,10 +2373,7 @@ def create_app(cfg: Config | None = None) -> Flask:
             return {"ok": False, "message": f"@{handle} is being checked right now. Give it a second."}
 
         def missing_for(profile):
-            need = [] if profile.get("verified") and profile.get("verified_type") == "blue" else ["a blue tick"]
-            if not has_dragon_tag(profile.get("name")):
-                need.append("the \U0001F409 in the display name")
-            return " and ".join(need)
+            return "" if has_dragon_tag(profile.get("name")) else "the \U0001F409 in the display name"   # the dragon is all it takes (25 Nov)
 
         def answer(profile, paid: bool):
             with Session() as s:
@@ -2388,7 +2385,7 @@ def create_app(cfg: Config | None = None) -> Flask:
                     s.commit()
                     return {"ok": False, "message": f"@{handle} does not seem to exist on X."}
                 k = note_user(s, profile, "added", now=now)
-                if k is None or not (k.tagged and k.verified):
+                if k is None or not k.tagged:
                     why = missing_for(profile)
                     set_setting(s, f"dirno:{key}", f"{now.isoformat()}|{why}")
                     s.commit()

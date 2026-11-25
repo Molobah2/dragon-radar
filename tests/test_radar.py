@@ -484,7 +484,8 @@ def test_keeper_lookup_respects_daily_budget(cfg, Session):
     assert got["found"] is False and "resting" in got["note"]
 
 
-def test_directory_lists_only_verified_dragon_names_and_pins_team(cfg, Session):
+def test_directory_lists_dragon_names_blue_tick_or_not_and_pins_team(cfg, Session):
+    """Since 25 Nov 2026 (Jon) the dragon in the display name is all it takes; the blue tick is no longer needed."""
     now = utcnow()
     created = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
     page = {"data": [post("21", author="1", created=created), post("22", author="2", created=created),
@@ -502,7 +503,7 @@ def test_directory_lists_only_verified_dragon_names_and_pins_team(cfg, Session):
         run_collection(s, client, cfg, now=now)
     c = create_app(cfg).test_client()
     data = c.get("/api/keepers").get_json()
-    assert [k["username"] for k in data["keepers"]] == ["ann"]
+    assert sorted(k["username"] for k in data["keepers"]) == ["ann", "bob"]   # Cat has no dragon; Eli wears a different one
     assert data["team"][0]["username"] == "Pocket_Dragons_" and data["team"][0]["role"] == "Official"
     assert len(data["team"]) == 5
     # Ann removes the dragon from her name: she drops off on the next post we see
@@ -510,7 +511,7 @@ def test_directory_lists_only_verified_dragon_names_and_pins_team(cfg, Session):
              "includes": {"users": [{"id": "1", "username": "ann", "name": "Ann", "verified": True, "verified_type": "blue"}]}, "meta": {"newest_id": "24"}}
     with Session() as s:
         run_collection(s, FakeClient([page2]), cfg, now=now + timedelta(minutes=30))
-    assert c.get("/api/keepers").get_json()["keepers"] == []
+    assert [k["username"] for k in c.get("/api/keepers").get_json()["keepers"]] == ["bob"]
 
 
 def test_directory_add_checks_name_and_limits(cfg, Session, monkeypatch):
@@ -3645,3 +3646,36 @@ def test_tool_pages_are_counted_apart_from_visitors(cfg, Session):
         s.commit()
         assert s.get(DailyCount, (today, "tool:shiv")).count == 1 and s.get(DailyCount, (today, "tool:quiz")).count == 1
         assert s.get(Visitor, vid) is None   # tool pages never touch the visitor numbers
+
+
+def test_directory_add_needs_only_the_dragon_not_a_blue_tick(cfg, Session, monkeypatch):
+    """25 Nov 2026 (Jon): anyone wearing the dragon in their X name can add themselves, blue tick or not."""
+    from radar import fxpic
+    monkeypatch.setattr(fxpic, "profile", lambda u, http, timeout=8: {"id": "8", "username": u, "name": "Kofi \U0001F409",
+                                                                       "profile_image_url": "", "verified": False})
+    c = create_app(cfg).test_client()
+    got = c.post("/api/keepers/add", json={"handle": "kofi"}).get_json()
+    assert got["ok"] is True and "kofi" in got["message"]
+    assert [k["username"] for k in c.get("/api/keepers").get_json()["keepers"]] == ["kofi"]
+    page = c.get("/friends/keepers").get_data(as_text=True)
+    assert "Blue tick Keepers" not in page and "keep your blue tick" not in page and "Have a blue tick" not in page
+
+
+def test_dragon_wearers_left_out_for_no_tick_join_for_free(cfg, Session):
+    """Accounts already checked that wear the dragon without a blue tick join the directory on the next pass, with no lookup."""
+    from radar.db import AuthorCheck, Keeper
+    from radar.fxpic import refresh_authors
+    now = utcnow()
+
+    class NoNet:
+        def get(self, *a, **k): raise AssertionError("no lookup should be needed")
+        def close(self): pass
+    with Session() as s:
+        s.add(AuthorCheck(key="ama", username="Ama", name="Ama \U0001F409", verified=False, avatar="https://pic/a", checked_at=now - timedelta(days=3)))
+        s.add(AuthorCheck(key="old", username="Old", name="Old \U0001F409", verified=False, checked_at=now - timedelta(days=90)))
+        s.add(AuthorCheck(key="plain", username="Plain", name="Plain", verified=False, checked_at=now - timedelta(days=1)))
+        s.commit()
+        refresh_authors(s, cfg, now, http=NoNet())
+        s.commit()
+        assert s.get(Keeper, "ama") is not None and s.get(Keeper, "ama").tagged
+        assert s.get(Keeper, "old") is None and s.get(Keeper, "plain") is None

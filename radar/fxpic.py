@@ -60,8 +60,18 @@ def known_avatar(s, username: str) -> str | None:
 
 def refresh_authors(s, cfg, now: datetime, http=None, limit: int = 40) -> dict:
     """One pass per collection: look up authors of recent posts we have not checked lately,
-    fill missing pictures, and add blue tick dragon wearers to the Keepers directory."""
+    fill missing pictures, and add dragon wearers to the Keepers directory."""
     from .directory import has_dragon_tag, note_user
+    from .db import Keeper
+
+    # Free first: accounts we already looked at that wear the dragon but were left out for having no blue tick
+    # (the tick stopped being needed on 25 Nov 2026). They join from what we already know, no lookup needed.
+    listed = select(Keeper.key)
+    for c in s.scalars(select(AuthorCheck).where(AuthorCheck.name.like("%\U0001F409%"), AuthorCheck.key.not_in(listed),
+                                                 AuthorCheck.checked_at >= now - timedelta(days=45))).all():
+        if has_dragon_tag(c.name) and c.username:
+            note_user(s, {"id": c.user_id, "username": c.username, "name": c.name, "profile_image_url": c.avatar,
+                          "verified": c.verified}, "discord", now=c.checked_at)
 
     since = now - timedelta(days=cfg.feed_days)
     rows = s.execute(select(Post.author_username, func.max(Post.created_at), func.max(Post.author_name),
@@ -77,7 +87,7 @@ def refresh_authors(s, cfg, now: datetime, http=None, limit: int = 40) -> dict:
     for handle, last, name, missing in rows:
         c = known.get(handle.lower())
         fresh = c is not None and now - c.checked_at < timedelta(days=RECHECK_DAYS)
-        if fresh and has_dragon_tag(name) and not (c.verified and has_dragon_tag(c.name)):
+        if fresh and has_dragon_tag(name) and not has_dragon_tag(c.name):
             # they wear the dragon in their posts now: look again if they put it on after our last look,
             # or after a day if the blue tick was what was missing (people get Premium to join)
             if not has_dragon_tag(c.name) or now - c.checked_at >= timedelta(days=1):

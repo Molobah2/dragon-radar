@@ -410,7 +410,7 @@ SECTIONS = [
         ("progress", "My progress", "/friends#progress", "", "", "", ""),
     ]),
     ("community", "Community", "/community", "Find Keepers, welcome new ones and thank the ones who help.", [
-        ("keepers", "Keepers", "/friends/keepers", "", "Find verified Keepers to follow and talk with.", "keeper-bg.jpg", "blinky-avatar.jpg"),
+        ("keepers", "Keepers", "/friends/keepers", "", "Find Keepers to follow and talk with.", "keeper-bg.jpg", "blinky-avatar.jpg"),
         ("welcome", "Welcome lane", "/welcome", "v21", "Say hi to Keepers who just joined the Ancient Hatchery.", "v21/welcome-bg-s.jpg", "v21/blinky-lantern.webp"),
         ("creator", "Creator of the week", "/creator", "v21", "Pinky spotlights one Keeper who made the hatchery brighter.", "v21/creator-bg-s.jpg", "v21/pinky-frame.webp"),
         ("cheers", "Cheers", "/cheers", "v21", "Send a thank you lantern to a fellow Keeper.", "v21/cheers-a-s.jpg", "v21/blinky-skylantern.webp"),

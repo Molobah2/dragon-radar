@@ -1,4 +1,4 @@
-"""Keeper directory: verified accounts that wear the dragon in their display name.
+"""Keeper directory: accounts that wear the dragon in their display name (no blue tick needed since 25 Nov 2026, Jon).
 
 Filled for free from data we already read (authors of collected posts, Keeper card
 lookups). The only paid parts are the weekly refresh of the team profiles (5 user
@@ -23,7 +23,7 @@ def big_avatar(url: str | None) -> str | None:
 
 def note_user(s: Session, user: dict, source: str, post_time: datetime | None = None,
               about_dragons: bool = False, now: datetime | None = None) -> Keeper | None:
-    """Record what we just learned about an account. Only tagged, verified accounts are added;
+    """Record what we just learned about an account. Only accounts wearing the dragon are added;
     an account already listed is updated (and drops off if the tag was removed)."""
     if not user or not user.get("username"):
         return None
@@ -31,10 +31,10 @@ def note_user(s: Session, user: dict, source: str, post_time: datetime | None = 
     key = user["username"].lower()
     k = s.get(Keeper, key)
     tagged = has_dragon_tag(user.get("name"))
-    # Blue tick only (X Premium). Gold business and grey government checks do not count.
+    # Kept for reference only: the blue tick is no longer needed to join (25 Nov 2026, Jon).
     verified = bool(user.get("verified")) and user.get("verified_type") == "blue"
     if k is None:
-        if not (tagged and verified):
+        if not tagged:
             return None
         k = Keeper(key=key, username=user["username"], first_seen=now, source=source)
         s.add(k)

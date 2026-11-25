@@ -129,7 +129,7 @@
     $("k-empty").hidden = list.length > 0;
     // the whole list is always on one page: say so at the bottom, so nobody thinks there is a page 2
     const end = $("k-end");
-    if (end) { const all = show === "all" && !query && !hide && list.length > 0; end.hidden = !all; if (all) end.textContent = `That is everyone, all ${list.length} Keepers. New ones appear here on their own when they wear the 🐉 with a blue tick.`; }
+    if (end) { const all = show === "all" && !query && !hide && list.length > 0; end.hidden = !all; if (all) end.textContent = `That is everyone, all ${list.length} Keepers. New ones appear here on their own when they wear the 🐉.`; }
     $("k-count").textContent = keepers.length;
     const tl = document.querySelector(".keepers-hero .tally");
     if (tl) tl.classList.toggle("is-empty", !keepers.length);   // no zeros on the first screen: a written line takes their place
