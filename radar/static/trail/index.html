@@ -538,7 +538,7 @@ window.KT_EVT = (function () {
   }
   T.go = function () { if (T.gate === 'connect') { location.href = BASE + '/x/connect'; return; }
     if (T.gate === 'pay') { if (window.KT_PAY) return window.KT_PAY.open();
-      var sc = document.createElement('script'); sc.src = BASE + '/pay.js?v=1'; sc.onload = function () { window.KT_PAY.open(); }; document.body.appendChild(sc); return; }
+      var sc = document.createElement('script'); sc.src = BASE + '/pay.js?v=2'; sc.onload = function () { window.KT_PAY.open(); }; document.body.appendChild(sc); return; }
     if (T.gate === 'open') walk(); };
   // back to the journey from the card (the Home button, or the phone's back gesture): the sky starts again from the top
   var home = function () { location.href = location.pathname + '?at=hatch'; };   // back from the card: straight to the Hatchery, not the start
