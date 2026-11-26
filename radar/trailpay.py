@@ -157,12 +157,14 @@ def verify(http: requests.Session, chain: str, tx_hash: str, wallet: str, price_
 
     paid = {}            # token -> amount, to the wallet only
     payer = ""
+    selfpay = False
     tokens = {a.lower(): (s, d) for s, (a, d) in c["tokens"].items()}
     for lg in rec.get("logs") or []:
         t = lg.get("topics") or []
         if len(t) < 3 or t[0].lower() != TRANSFER or _addr(t[2]) != wallet:
             continue
         if _addr(t[1]) in (wallet, BOOTLOADER):     # the wallet paying itself, or Abstract handing back unused gas: not a payment
+            selfpay = selfpay or _addr(t[1]) == wallet
             continue
         a = (lg.get("address") or "").lower()
         if a in tokens:
@@ -178,6 +180,8 @@ def verify(http: requests.Session, chain: str, tx_hash: str, wallet: str, price_
         if (tx.get("to") or "").lower() == wallet and (tx.get("from") or "").lower() != wallet and int(tx.get("value") or "0x0", 16) > 0:
             paid[c["coin"]] = int(tx["value"], 16) / 1e18
             payer = (tx.get("from") or "").lower()
+    if not paid and (selfpay or (tx_from := (_rpc(http, chain, "eth_getTransactionByHash", [tx_hash]) or {}).get("from", "")).lower() == wallet):
+        raise PayError("self", "That payment was sent from the pdtools wallet to itself, so it does not count. Pay from a different wallet.")
     if not paid:
         raise PayError("wallet", "That transaction did not pay the pdtools wallet. Check the address you sent to.")
 

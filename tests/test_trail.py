@@ -549,7 +549,7 @@ def test_old_payments_and_gas_refunds_do_not_count(monkeypatch):
     fake_chain(monkeypatch, {H2: (refund, {"to": "0x" + "33" * 20, "from": WALLET, "value": "0x0"})})
     with pytest.raises(trailpay.PayError) as e:
         trailpay.verify(None, "abstract", H2, WALLET, 0.5)
-    assert e.value.code == "wallet"
+    assert e.value.code in ("wallet", "self")
 
 
 def test_coin_payments_are_valued_at_todays_price(monkeypatch):
@@ -572,3 +572,10 @@ def test_without_a_wallet_cards_stay_free(cfg, monkeypatch):
     sign_in(c)
     assert c.get("/api/trail/me").status_code == 200
     assert c.get("/api/trail/pay/quote").status_code == 404
+
+
+def test_the_wallet_paying_itself_says_so(monkeypatch):
+    fake_chain(monkeypatch, {H1: usdc_tx(frm=WALLET)})
+    with pytest.raises(trailpay.PayError) as e:
+        trailpay.verify(None, "base", H1, WALLET, 0.5)
+    assert e.value.code == "self" and "itself" in str(e.value)
