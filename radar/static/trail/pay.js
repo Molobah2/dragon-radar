@@ -7,7 +7,7 @@
   var Q = null, chain = null, token = null, busy = false, box = null;
   var ART = '/static/v3/art/';
   var css = '#ktpay{position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center;background:rgba(14,9,4,.58);font:15px/1.45 system-ui,sans-serif;color:#3b2a14;-webkit-tap-highlight-color:transparent}' +
-    '#ktpay .sh{position:relative;width:100%;max-width:440px;max-height:94svh;overflow:auto;box-sizing:border-box;padding:12px 8px calc(8px + env(safe-area-inset-bottom));border:22px solid transparent;border-image:url(' + ART + 'card-l.webp) 90 fill / 22px stretch;filter:drop-shadow(0 -8px 28px rgba(0,0,0,.45));animation:ktpin .28s cubic-bezier(.2,.8,.2,1)}' +
+    '#ktpay .sh{position:relative;width:100%;max-width:440px;max-height:94svh;overflow-x:hidden;overflow-y:auto;box-sizing:border-box;padding:12px 8px calc(8px + env(safe-area-inset-bottom));border:22px solid transparent;border-image:url(' + ART + 'card-l.webp) 90 fill / 22px stretch;filter:drop-shadow(0 -8px 28px rgba(0,0,0,.45));animation:ktpin .28s cubic-bezier(.2,.8,.2,1)}' +
     '@keyframes ktpin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){#ktpay .sh{animation:none}}' +
     '@media (min-width:600px){#ktpay{align-items:center}}' +
     '#ktpay .hd{display:flex;gap:12px;align-items:center;padding-right:32px}#ktpay .coin{width:56px;height:56px;flex:none;filter:drop-shadow(0 3px 4px rgba(60,40,10,.35))}' +
