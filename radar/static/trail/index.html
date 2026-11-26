@@ -470,7 +470,8 @@ window.KT_EVT = (function () {
   if (EV && !window.KT_TESTER && !P.get('opens') && !P.get('closes')) EV.set({ opens: '2026-12-02T00:00:00Z', closes: '2026-12-06T00:00:00Z' });
   var T = window.KT_TRAIL = { gate: API ? 'checking' : 'open', label: null, go: function () {} };
   var L = function (k, d) { var v = window.KT_L ? window.KT_L(k) : d; return v && v !== k ? v : d; };
-  function label() { T.label = T.gate === 'connect' ? L('hSignX', 'Sign in with X') : T.gate === 'open' ? L('hWalkIn', 'Walk into the Hatchery') : null; }
+  function label() { T.label = T.gate === 'connect' ? L('hSignX', 'Sign in with X') : T.gate === 'open' ? L('hWalkIn', 'Walk into the Hatchery')
+    : T.gate === 'pay' ? L('hPay', 'Get your card for $' + ((window.KT_PAYINFO || {}).price || '0.50')) : null; }
   // a Keeper who has opened their card on this device before gets a short glide to the Hatchery (?journey=1 shows it all again)
   var seenBefore = false; try { seenBefore = localStorage.getItem('kt-seen2') === '1'; } catch (e) {}
   window.KT_QUICK = seenBefore && !P.get('journey') && !P.get('opens') && !P.get('now');
@@ -481,12 +482,16 @@ window.KT_EVT = (function () {
     var ask = function () { return fetch(API, { credentials: 'same-origin', headers: { Accept: 'application/json' } }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) { return { s: r.status, j: j }; }); })
       .then(function (o) { return o.s === 202 ? new Promise(function (ok) { setTimeout(function () { ok(ask()); }, 2500); }) : o; }); };   // another tab is reading X: wait for it
-    ask().then(function (o) {
+    var handle = function (o) {
       var ev = o.j && (o.j.event || (o.j.card && o.j.card.event)); if (ev && EV && !P.get('opens') && !P.get('closes')) EV.set(ev);   // pdtools holds the real window
       if (o.s === 401) { T.gate = 'connect'; label(); return; }
+      if (o.s === 402) { window.KT_PAYINFO = o.j; T.gate = 'pay'; label(); return; }   // signed in, card not paid for yet (26 Nov, Jon: $0.50 on chain)
       if (o.j && o.j.card) { window.KT_CARD = o.j.card; T.gate = 'open'; label(); who(o.j.card); resolve(o.j.card); prefetch(o.j.card); if (atGate || nearWait) boot(); if (back === 'ok') arrive(); return; }
       T.gate = 'stop'; label();
-    }).catch(function () { T.gate = 'stop'; label(); });
+    };
+    ask().then(handle).catch(function () { T.gate = 'stop'; label(); });
+    // paid: ask again, and the card is made from the Keeper's posts now
+    window.KT_TRAIL_RECHECK = function () { T.gate = 'checking'; T.label = L('hPrepPaid', 'Making your card'); ask().then(handle).catch(function () { T.gate = 'stop'; label(); }); };
   });
   label();
   // signed in: the Keeper's X name sits in the top corner of the journey the whole way
@@ -531,7 +536,10 @@ window.KT_EVT = (function () {
     try { history.pushState({ kt: 'card' }, ''); } catch (e) {}
     window.KT_BOOT_NOW(); try { if (window.KT_SND && window.KT_SND.fx) window.KT_SND.fx('door', 0.75, 1.3); } catch (e) {}   // the swell peaks as the doorway's light fills the view
   }
-  T.go = function () { if (T.gate === 'connect') { location.href = BASE + '/x/connect'; return; } if (T.gate === 'open') walk(); };
+  T.go = function () { if (T.gate === 'connect') { location.href = BASE + '/x/connect'; return; }
+    if (T.gate === 'pay') { if (window.KT_PAY) return window.KT_PAY.open();
+      var sc = document.createElement('script'); sc.src = BASE + '/pay.js?v=1'; sc.onload = function () { window.KT_PAY.open(); }; document.body.appendChild(sc); return; }
+    if (T.gate === 'open') walk(); };
   // back to the journey from the card (the Home button, or the phone's back gesture): the sky starts again from the top
   var home = function () { location.href = location.pathname + '?at=hatch'; };   // back from the card: straight to the Hatchery, not the start
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#homebtn')) { e.preventDefault(); home(); } });

@@ -90,6 +90,10 @@ class Config:
     # TRAIL_CLOSES_AT says otherwise. Neither set: always open, as before.
     trail_opens: str = field(default_factory=lambda: os.environ.get("TRAIL_OPENS_AT", "").strip())
     trail_closes: str = field(default_factory=lambda: os.environ.get("TRAIL_CLOSES_AT", "").strip())
+    # Pay to make a Trail card (26 Nov 2026, Jon): $0.50 on chain, in USDC, USDT or the chain's own coin, sent to this wallet.
+    # With no wallet set, cards stay free.
+    trail_pay_wallet: str = field(default_factory=lambda: os.environ.get("TRAIL_PAY_WALLET", "").strip())
+    trail_price_usd: float = field(default_factory=lambda: float(os.environ.get("TRAIL_PRICE_USD", "0.5")))
     database_url: str = field(default_factory=lambda: _db_url(os.environ.get("DATABASE_URL", "sqlite:///radar.db")))
     search_query: str = field(default_factory=lambda: os.environ.get("SEARCH_QUERY", DEFAULT_QUERY))
     team_handle: str = field(default_factory=lambda: os.environ.get("TEAM_HANDLE", "Pocket_Dragons_"))

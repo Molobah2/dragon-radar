@@ -658,7 +658,7 @@ window.SKY_L = (() => {
         if (wide) { sb.style.left = Math.round(r.right + 14) + 'px'; sb.style.top = Math.round(r.top + (r.height - 44) / 2) + 'px'; sb.style.setProperty('--sx', '0'); }
         else { sb.style.left = '50%'; sb.style.top = Math.round(r.bottom + 10) + 'px'; sb.style.setProperty('--sx', '-50%'); } }
       if (sb) { if (show && sb.textContent !== H_.label) sb.textContent = H_.label; sb.classList.toggle('on', show); sb.tabIndex = show ? 0 : -1; sb.setAttribute('aria-hidden', String(!show)); } }   // the one way in, at the Hatchery on its open day
-    { const dh = $('doorhit'), H_ = window.KT_TRAIL, ready = !!(dh && H_ && (H_.gate === 'open' || H_.gate === 'connect') && H_.label && near && at === 3 && HS.state === 1 && DOOR.r < 0);   // open day: the doorway glows and is the button (not signed in yet: it signs in with X, then walks you in)
+    { const dh = $('doorhit'), H_ = window.KT_TRAIL, ready = !!(dh && H_ && (H_.gate === 'open' || H_.gate === 'connect' || H_.gate === 'pay') && H_.label && near && at === 3 && HS.state === 1 && DOOR.r < 0);   // open day: the doorway glows and is the button (not signed in yet: it signs in with X, then walks you in)
       if (ready) { const hb2 = isl.hatch; hb2.updateMatrixWorld(); const pts = [[522, 415], [626, 415], [626, 640], [522, 640]].map(([x, y]) => new THREE.Vector3(x / HW - .5, .5 - y / HH, 0).applyMatrix4(hb2.matrixWorld).project(camera));
         const xs = pts.map((p) => (p.x + 1) / 2 * innerWidth), ys = pts.map((p) => (1 - p.y) / 2 * innerHeight), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
         const w = Math.max(56, (x1 - x0) * 1.5), h = Math.max(72, (y1 - y0) * 1.15), cx = (x0 + x1) / 2;   // never smaller than a finger

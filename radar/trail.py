@@ -12,6 +12,11 @@ Money
   Every paid read is counted (DailyCount "trail_spend_m", in tenths of a cent). Once the day's spend reaches
   TRAIL_DAILY_CAP_USD, new lookups wait for tomorrow; cards already made still open.
 
+Paying for a card (26 Nov 2026, Jon)
+  With TRAIL_PAY_WALLET set, a card costs TRAIL_PRICE_USD ($0.50), paid on chain in USDC, USDT or the chain's own coin
+  (see trailpay.py). /api/trail/me answers 402 until the signed in Keeper has a payment; /api/trail/pay checks one.
+  The 300 post limit stays (Jon): a Keeper with many posts can cost more in X reads than the price.
+
 Hidden until launch
   The page and its API answer only on devices with the pdtools preview turned on, until TRAIL_PUBLIC=1.
 
@@ -39,6 +44,8 @@ from sqlalchemy import Boolean, DateTime, Float, Integer, LargeBinary, String, T
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base, DailyCount, utcnow
+from . import trailpay   # defines the payments table before the database is opened
+from .trailpay import PayError, TrailPayment
 
 TRAIL_DIR = Path(__file__).parent / "static" / "trail"
 AUTH_URL = "https://x.com/i/oauth2/authorize"
@@ -640,6 +647,70 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         session.pop("trail_user", None)
         return jsonify({"ok": True})
 
+    # ---------- paying for the card ----------
+    pay_hits: dict[str, list[float]] = {}
+
+    def pay_on() -> bool:
+        return bool(re.fullmatch(r"0x[0-9a-fA-F]{40}", cfg.trail_pay_wallet or ""))
+
+    def has_paid(s, uid: str) -> bool:
+        return s.scalar(select(TrailPayment.tx).where(TrailPayment.user_id == uid).limit(1)) is not None
+
+    def pay_info() -> dict:
+        return {"why": "pay", "price": f"{cfg.trail_price_usd:.2f}", "wallet": cfg.trail_pay_wallet}
+
+    @app.get("/api/trail/pay/quote")
+    def trail_pay_quote():
+        if not allowed() or not pay_on():
+            abort(404)
+        out = trailpay.quote(http, cfg.trail_price_usd)
+        out["wallet"] = cfg.trail_pay_wallet
+        resp = jsonify(out)
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+
+    @app.post("/api/trail/pay")
+    def trail_pay():
+        """The Keeper says which transaction paid for their card; pdtools reads it from the chain."""
+        if not allowed() or not pay_on():
+            abort(404)
+        u = session.get("trail_user")
+        if not u:
+            return jsonify({"ok": False, "why": "connect", "msg": "Sign in with X first."}), 401
+        if phase(utcnow()) in ("soon", "closed"):
+            return jsonify({"ok": False, "why": "shut", "msg": "The Trail is not open right now, so nothing was checked."}), 403
+        t_now = time.time()
+        hits = [t for t in pay_hits.get(u["id"], []) if t > t_now - 600]
+        if len(hits) >= 12:
+            return jsonify({"ok": False, "why": "slow", "msg": "Too many tries. Wait a few minutes, then try again."}), 429
+        pay_hits[u["id"]] = hits + [t_now]
+        if len(pay_hits) > 5000:
+            pay_hits.clear()
+        body = request.get_json(silent=True) or {}
+        chain, txh = str(body.get("chain", ""))[:16], str(body.get("tx", ""))[:300]
+        with Session() as s:
+            if has_paid(s, u["id"]):
+                return jsonify({"ok": True, "already": True})
+        try:
+            got = trailpay.verify(http, chain, txh, cfg.trail_pay_wallet, cfg.trail_price_usd)
+        except PayError as e:
+            return jsonify({"ok": False, "why": e.code, "msg": str(e)}), 400
+        with Session() as s:
+            old = s.get(TrailPayment, got["tx"])
+            if old is not None and old.user_id != u["id"]:
+                return jsonify({"ok": False, "why": "used", "msg": "That payment already made a card for another Keeper. Each payment makes one card."}), 409
+            if old is None:
+                s.add(TrailPayment(tx=got["tx"], user_id=u["id"], username=u.get("username", ""), chain=got["chain"], token=got["token"],
+                                   amount=got["amount"], usd=got["usd"], payer=got["payer"], paid_at=got["paid_at"]))
+                try:
+                    s.commit()
+                except Exception:      # the same payment sent twice at once: the first one won
+                    s.rollback()
+                    if (s.get(TrailPayment, got["tx"]) or TrailPayment(user_id="")).user_id != u["id"]:
+                        return jsonify({"ok": False, "why": "used", "msg": "That payment already made a card for another Keeper."}), 409
+        app.logger.info("trail paid: @%s %s %s ($%s)", u.get("username"), got["chain"], got["token"], got["usd"])
+        return jsonify({"ok": True, "token": got["token"], "usd": got["usd"], "link": got["link"]})
+
     # ---------- the card ----------
     numlock = threading.Lock()
 
@@ -739,6 +810,11 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             others = [] if fresh else list(s.scalars(oq))
         if fresh:
             return jsonify({"card": with_no(saved, u["id"]), "cached": True})
+        if pay_on():
+            with Session() as s:
+                paid = has_paid(s, u["id"])
+            if not paid:      # nothing is read from X until the card is paid for
+                return jsonify({**pay_info(), "handle": "@" + u["username"]}), 402
         if not cfg.x_bearer_token:
             return jsonify({"why": "x", "handle": "@" + u["username"]}), 503
         with lock:

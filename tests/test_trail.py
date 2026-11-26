@@ -455,3 +455,120 @@ def test_the_page_is_versioned_and_answers_not_modified(cfg, monkeypatch):
     v = hashlib.md5((trail.TRAIL_DIR / "kt-world-nt.js").read_bytes()).hexdigest()[:8]
     assert f"kt-world-nt.js?v={v}" in r.get_data(as_text=True)
     assert c.get("/trail/", headers={"If-None-Match": r.headers["ETag"]}).status_code == 304
+
+
+# ---------- paying for the card on chain (26 Nov 2026, Jon: $0.50 a card) ----------
+from radar import trailpay
+
+WALLET = "0x" + "ab" * 20
+PAYER = "0x" + "12" * 20
+
+
+def _topic(addr):
+    return "0x" + "0" * 24 + addr[2:].lower()
+
+
+def fake_chain(monkeypatch, txs, now_ts=None, head=1000):
+    """Stands in for the chain nodes: txs maps hash -> (receipt, tx)."""
+    import time as _t
+    ts = int(now_ts or _t.time()) - 60
+
+    def rpc(http, chain, method, params):
+        if method == "eth_blockNumber":
+            return hex(head)
+        if method == "eth_getBlockByNumber":
+            return {"timestamp": hex(ts)}
+        h = params[0]
+        if h not in txs:
+            return None
+        return txs[h][0] if method == "eth_getTransactionReceipt" else txs[h][1]
+    monkeypatch.setattr(trailpay, "_rpc", rpc)
+    monkeypatch.setattr(trailpay, "prices", lambda http: {"ETH": 2000.0, "BNB": 600.0, "POL": 0.2})
+
+
+def usdc_tx(to=WALLET, units=500000, frm=PAYER, chain="base", status="0x1"):
+    tok = trailpay.CHAINS[chain]["tokens"]["USDC"][0]
+    rec = {"status": status, "blockNumber": hex(990), "logs": [{"address": tok, "topics": [trailpay.TRANSFER, _topic(frm), _topic(to)], "data": hex(units)}]}
+    return rec, {"to": tok, "from": frm, "value": "0x0"}
+
+
+def paid_app(cfg, monkeypatch, txs, pages=None):
+    cfg.trail_pay_wallet = WALLET
+    fake_chain(monkeypatch, txs)
+    page = pages or {"data": [tw("1", "2026-09-08"), tw("2", "2026-09-09")], "meta": {}}
+    fake = FakeX(pages=[page])
+    app, c = make(cfg, fake, monkeypatch)
+    return app, c, fake
+
+
+H1, H2, H3 = "0x" + "a1" * 32, "0x" + "b2" * 32, "0x" + "c3" * 32
+
+
+def test_with_a_wallet_set_the_card_waits_for_payment_and_reads_nothing_from_x(cfg, monkeypatch):
+    app, c, fake = paid_app(cfg, monkeypatch, {})
+    sign_in(c)
+    r = c.get("/api/trail/me")
+    assert r.status_code == 402 and r.get_json()["why"] == "pay" and r.get_json()["price"] == "0.50" and r.get_json()["wallet"] == WALLET
+    assert not [u for _, u, _ in fake.calls if "/tweets/search" in u]
+
+
+def test_a_usdc_payment_unlocks_the_card_once(cfg, monkeypatch):
+    app, c, fake = paid_app(cfg, monkeypatch, {H1: usdc_tx()})
+    sign_in(c)
+    r = c.post("/api/trail/pay", json={"chain": "base", "tx": f"https://basescan.org/tx/{H1}"})
+    assert r.status_code == 200 and r.get_json()["ok"] and r.get_json()["token"] == "USDC"
+    r = c.get("/api/trail/me")
+    assert r.status_code == 200 and r.get_json()["card"]["posts"] == "2"
+    # the same payment can not make a card for someone else
+    c2 = app.test_client()
+    fake.me = {"id": "77", "username": "other", "name": "Other", "public_metrics": {}, "profile_image_url": ""}
+    sign_in(c2)
+    r = c2.post("/api/trail/pay", json={"chain": "base", "tx": H1})
+    assert r.status_code == 409 and r.get_json()["why"] == "used"
+    assert c2.get("/api/trail/me").status_code == 402
+
+
+def test_payments_that_do_not_count(cfg, monkeypatch):
+    other = "0x" + "99" * 20
+    txs = {H1: usdc_tx(to=other), H2: usdc_tx(units=100000), H3: usdc_tx(status="0x0")}
+    app, c, _ = paid_app(cfg, monkeypatch, txs)
+    sign_in(c)
+    why = lambda h, chain="base": c.post("/api/trail/pay", json={"chain": chain, "tx": h}).get_json()["why"]
+    assert why(H1) == "wallet" and why(H2) == "short" and why(H3) == "failed"
+    assert why("0x" + "dd" * 32) == "pending" and why("hello") == "hash" and why(H1, "dogechain") == "chain"
+
+
+def test_old_payments_and_gas_refunds_do_not_count(monkeypatch):
+    import time as _t
+    rec, tx = usdc_tx()
+    fake_chain(monkeypatch, {H1: (rec, tx)}, now_ts=_t.time() - 5 * 86400)
+    with pytest.raises(trailpay.PayError) as e:
+        trailpay.verify(None, "base", H1, WALLET, 0.5)
+    assert e.value.code == "old"
+    refund = {"status": "0x1", "blockNumber": hex(990), "logs": [{"address": trailpay.ZK_COIN, "topics": [trailpay.TRANSFER, _topic(trailpay.BOOTLOADER), _topic(WALLET)], "data": hex(10**18)}]}
+    fake_chain(monkeypatch, {H2: (refund, {"to": "0x" + "33" * 20, "from": WALLET, "value": "0x0"})})
+    with pytest.raises(trailpay.PayError) as e:
+        trailpay.verify(None, "abstract", H2, WALLET, 0.5)
+    assert e.value.code == "wallet"
+
+
+def test_coin_payments_are_valued_at_todays_price(monkeypatch):
+    rec = {"status": "0x1", "blockNumber": hex(990), "logs": []}
+    fake_chain(monkeypatch, {H1: (rec, {"to": WALLET, "from": PAYER, "value": hex(int(0.00026 * 10**18))}),
+                             H2: (rec, {"to": WALLET, "from": PAYER, "value": hex(int(0.0001 * 10**18))})})
+    got = trailpay.verify(None, "arbitrum", H1, WALLET, 0.5)
+    assert got["token"] == "ETH" and abs(got["usd"] - 0.52) < 0.01 and got["payer"] == PAYER
+    with pytest.raises(trailpay.PayError) as e:
+        trailpay.verify(None, "arbitrum", H2, WALLET, 0.5)
+    assert e.value.code == "short"
+    zk = {"status": "0x1", "blockNumber": hex(990), "logs": [{"address": trailpay.ZK_COIN, "topics": [trailpay.TRANSFER, _topic(PAYER), _topic(WALLET)], "data": hex(int(0.0003 * 10**18))}]}
+    fake_chain(monkeypatch, {H3: (zk, {"to": "0x" + "44" * 20, "from": PAYER, "value": "0x0"})})
+    assert trailpay.verify(None, "abstract", H3, WALLET, 0.5)["token"] == "ETH"
+
+
+def test_without_a_wallet_cards_stay_free(cfg, monkeypatch):
+    fake = FakeX(pages=[{"data": [tw("1", "2026-09-08")], "meta": {}}])
+    app, c = make(cfg, fake, monkeypatch)
+    sign_in(c)
+    assert c.get("/api/trail/me").status_code == 200
+    assert c.get("/api/trail/pay/quote").status_code == 404
