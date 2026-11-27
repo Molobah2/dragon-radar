@@ -605,3 +605,32 @@ def test_waiting_for_the_chain_does_not_use_up_tries(cfg, monkeypatch):
     for _ in range(20):
         r = c.post("/api/trail/pay", json={"chain": "base", "tx": "0x" + "ee" * 32})
         assert r.get_json()["why"] == "pending"
+
+
+def test_a_keeper_who_paid_before_the_close_still_gets_their_card(cfg, monkeypatch):
+    cfg.trail_opens, cfg.trail_closes = "2026-01-01T00:00:00Z", "2099-01-01T00:00:00Z"
+    app, c, fake = paid_app(cfg, monkeypatch, {H1: usdc_tx()})
+    sign_in(c)
+    assert c.post("/api/trail/pay", json={"chain": "base", "tx": H1}).get_json()["ok"]
+    cfg.trail_closes = "2026-02-01T00:00:00Z"                     # closed before the card was made
+    r = c.get("/api/trail/me")
+    assert r.status_code == 200 and r.get_json()["card"]["posts"] == "2"
+
+
+def test_no_posts_is_checked_again_after_half_an_hour(cfg, monkeypatch):
+    app, c, fake = paid_app(cfg, monkeypatch, {})
+    sign_in(c)
+    orig = fake.get
+    state = {"n": 0}
+
+    def counts(url, params=None, headers=None, timeout=None):
+        if url.endswith("/tweets/counts/all"):
+            return R(200, {"data": [], "meta": {"total_tweet_count": state["n"]}})
+        return orig(url, params=params, headers=headers, timeout=timeout)
+    fake.get = counts
+    assert c.get("/api/trail/me").get_json()["why"] == "none"
+    state["n"] = 1                                  # they post about their dragons
+    assert c.get("/api/trail/me").get_json()["why"] == "none"      # remembered for a while
+    with c.session_transaction() as sess:           # half an hour later
+        h = dict(sess["trail_has"]); h["t"] -= 1801; sess["trail_has"] = h
+    assert c.get("/api/trail/me").status_code == 402

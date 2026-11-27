@@ -130,7 +130,7 @@
     document.body.appendChild(box); document.addEventListener('keydown', esc); sh.style.outline = 'none'; sh.focus();
   }
 
-  window.KT_PAY = { note: note, open: function () {
+  window.KT_PAY = { note: note, close: function () { close(true); }, open: function () {
     if (!document.getElementById('ktpay-css')) document.head.appendChild(el('style', { id: 'ktpay-css', text: css }));
     var go = function () { draw(); document.addEventListener('keydown', esc); var d = box.querySelector('.sh'); d.tabIndex = -1; d.style.outline = 'none'; d.focus(); };
     if (Q) return go();

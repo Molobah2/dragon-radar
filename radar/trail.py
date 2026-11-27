@@ -815,7 +815,12 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
                     saved = json.loads(row.card) if row and not is_test(row) else None
                 if saved:
                     return jsonify({"card": with_no(saved, u["id"]), "cached": True, "closed": True})
-            return jsonify({"why": "closed", "event": window()}), 410
+                with Session() as s:     # paid before the close but the card was not made yet (X slow, closed mid-way): still make it
+                    late = pay_on() and has_paid(s, u["id"])
+                if not late:
+                    return jsonify({"why": "closed", "event": window()}), 410
+            else:
+                return jsonify({"why": "closed", "event": window()}), 410
         u = session.get("trail_user")
         if not u:
             ev = window()
@@ -842,12 +847,13 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             if not paid:      # nothing is read from X until the card is paid for
                 # ...except one cheap count first: a Keeper with no dragon posts is told so and never asked to pay
                 has = session.get("trail_has")
-                if has is None or has.get("id") != u["id"]:
+                # kept 30 minutes: a Keeper told "no posts yet" who then posts about their dragons can pay soon after
+                if has is None or has.get("id") != u["id"] or time.time() - has.get("t", 0) > 1800:
                     try:
                         found, c = has_dragon_posts(http, cfg.x_bearer_token, u["username"])
                         with Session() as s:
                             add_spend(s, today(), c)
-                        session["trail_has"] = has = {"id": u["id"], "n": bool(found)}
+                        session["trail_has"] = has = {"id": u["id"], "n": bool(found), "t": int(time.time())}
                     except XBusy:
                         return jsonify({"wait": True, "busy": True}), 202
                     except (XError, requests.RequestException, ValueError) as e:

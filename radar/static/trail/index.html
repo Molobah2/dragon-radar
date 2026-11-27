@@ -495,7 +495,12 @@ window.KT_EVT = (function () {
     };
     ask().then(handle).catch(function () { window.KT_NOTE = { t: L('nNetT', 'Connection lost'), x: L('nNet', 'The Trail could not reach pdtools. Check your connection and try again.'), retry: true }; T.gate = 'note'; label(); });
     // paid: ask again, and the card is made from the Keeper's posts now
-    window.KT_TRAIL_RECHECK = function () { T.gate = 'checking'; T.label = L('hPrepPaid', 'Making your card'); ask().then(handle).catch(function () { T.gate = 'stop'; label(); }); };
+    // 27 Nov (audit): after paying, the card takes a few seconds to read from X; a note says so instead of a dark door
+    window.KT_TRAIL_RECHECK = function () { T.gate = 'checking'; T.label = L('hPrepPaid', 'Making your card');
+      if (window.KT_PAY) window.KT_PAY.note({ t: L('hPrepPaid', 'Making your card'), x: L('nMaking', 'Reading your posts about Pocket Dragons from X. This takes a few seconds.') });
+      var shut = function () { if (window.KT_PAY && window.KT_PAY.close) window.KT_PAY.close(); };
+      ask().then(function (o) { shut(); handle(o); if (T.gate === 'note' && window.KT_PAY) window.KT_PAY.note(window.KT_NOTE || {}); if (T.gate === 'open') T.go(); })
+        .catch(function () { shut(); window.KT_NOTE = { t: L('nNetT', 'Connection lost'), x: L('nNet', 'The Trail could not reach pdtools. Check your connection and try again.'), retry: true }; T.gate = 'note'; label(); if (window.KT_PAY) window.KT_PAY.note(window.KT_NOTE); }); };
   });
   label();
   // signed in: the Keeper's X name sits in the top corner of the journey the whole way
@@ -543,7 +548,7 @@ window.KT_EVT = (function () {
   T.go = function () { if (T.gate === 'connect') { location.href = BASE + '/x/connect'; return; }
     if (T.gate === 'pay' || T.gate === 'note') { var go = function () { if (T.gate === 'note') window.KT_PAY.note(window.KT_NOTE || {}); else window.KT_PAY.open(); };
       if (window.KT_PAY) return go();
-      var sc = document.createElement('script'); sc.src = BASE + '/pay.js?v=4'; sc.onload = go; document.body.appendChild(sc); return; }
+      var sc = document.createElement('script'); sc.src = BASE + '/pay.js?v=5'; sc.onload = go; document.body.appendChild(sc); return; }
     if (T.gate === 'open') walk(); };
   // back to the journey from the card (the Home button, or the phone's back gesture): the sky starts again from the top
   var home = function () { location.href = location.pathname + '?at=hatch'; };   // back from the card: straight to the Hatchery, not the start
