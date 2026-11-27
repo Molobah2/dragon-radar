@@ -6044,7 +6044,17 @@ window.KT_RV = RV;
 })();
 async function shareCard() {
   if (exporting) return; const L = window.KT_L || ((k) => k), no = typeof KTL !== 'undefined' && KTL.card && KTL.card.no;
-  const text = (no ? L('shareNo').replace('{n}', no) + ' ' : '') + L('shareText');
+  let text = (no ? L('shareNo').replace('{n}', no) + ' ' : '') + L('shareText');
+  // 27 Nov (Jon): the Keeper picks one of ten captions about their road to the mint, filled with their own numbers
+  const card = (typeof KTL !== 'undefined' && KTL.card) || window.KT_CARD;
+  if (card && card.posts) {
+    try {
+      if (!window.KT_CAPTIONS) await new Promise((ok, no2) => { const sc = document.createElement('script'); sc.src = (window.KT_TRAIL_BASE || '/trail') + '/captions.js?v=1'; sc.onload = ok; sc.onerror = no2; document.body.appendChild(sc); });
+      const picked = await window.KT_CAPTIONS.pick(card);
+      if (picked == null) return;
+      text = picked;
+    } catch (e) { console.warn(e); }
+  }
   let made = null;
   try { exporting = true; busy(true, L('mkImg')); freeze(); made = await makeImage(); }
   catch (e) { console.warn(e); } finally { exporting = false; restoreView(); renderFrame(); thaw(); busy(false); }
