@@ -579,3 +579,29 @@ def test_the_wallet_paying_itself_says_so(monkeypatch):
     with pytest.raises(trailpay.PayError) as e:
         trailpay.verify(None, "base", H1, WALLET, 0.5)
     assert e.value.code == "self" and "itself" in str(e.value)
+
+
+def test_a_keeper_with_no_dragon_posts_is_told_before_paying(cfg, monkeypatch):
+    app, c, fake = paid_app(cfg, monkeypatch, {})
+    orig = fake.get
+
+    def none_counts(url, params=None, headers=None, timeout=None):
+        if url.endswith("/tweets/counts/all"):
+            fake.calls.append(("GET", url, params or {}))
+            return R(200, {"data": [{"start": "2026-09-08T00:00:00.000Z", "tweet_count": 0}], "meta": {"total_tweet_count": 0}})
+        return orig(url, params=params, headers=headers, timeout=timeout)
+    fake.get = none_counts
+    sign_in(c)
+    r = c.get("/api/trail/me")
+    assert r.status_code == 200 and r.get_json()["why"] == "none"
+    n = len([1 for _, u, _ in fake.calls if u.endswith("/tweets/counts/all")])
+    c.get("/api/trail/me")            # asked once per sign in, not on every visit
+    assert len([1 for _, u, _ in fake.calls if u.endswith("/tweets/counts/all")]) == n
+
+
+def test_waiting_for_the_chain_does_not_use_up_tries(cfg, monkeypatch):
+    app, c, _ = paid_app(cfg, monkeypatch, {})
+    sign_in(c)
+    for _ in range(20):
+        r = c.post("/api/trail/pay", json={"chain": "base", "tx": "0x" + "ee" * 32})
+        assert r.get_json()["why"] == "pending"

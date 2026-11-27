@@ -117,7 +117,20 @@
   function close(done) { if (busy && !done) return; busy = false; if (box) box.remove(); box = null; document.removeEventListener('keydown', esc); }
   function esc(e) { if (e.key === 'Escape') close(); }
 
-  window.KT_PAY = { open: function () {
+  // a short note on the same parchment: no dragon posts, X not answering, no connection (27 Nov audit)
+  function note(n) {
+    if (!document.getElementById('ktpay-css')) document.head.appendChild(el('style', { id: 'ktpay-css', text: css }));
+    var sh = el('div', { class: 'sh', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'ktpay-h', tabindex: '-1' }, [
+      el('button', { class: 'x', type: 'button', 'aria-label': L('payClose', 'Close'), text: '\u00d7', onclick: function () { close(); } }),
+      el('h2', { id: 'ktpay-h', text: n.t || '' }), el('p', { class: 'sub', text: n.x || '' }),
+      n.retry ? el('button', { class: 'go', type: 'button', text: L('nRetry', 'Try again'), onclick: function () { close(); if (window.KT_TRAIL_RECHECK) window.KT_TRAIL_RECHECK(); } }) : null]);
+    if (box) box.remove();
+    box = el('div', { id: 'ktpay' }, [sh]);
+    box.addEventListener('click', function (e) { if (e.target === box) close(); });
+    document.body.appendChild(box); document.addEventListener('keydown', esc); sh.style.outline = 'none'; sh.focus();
+  }
+
+  window.KT_PAY = { note: note, open: function () {
     if (!document.getElementById('ktpay-css')) document.head.appendChild(el('style', { id: 'ktpay-css', text: css }));
     var go = function () { draw(); document.addEventListener('keydown', esc); var d = box.querySelector('.sh'); d.tabIndex = -1; d.style.outline = 'none'; d.focus(); };
     if (Q) return go();

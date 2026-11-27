@@ -423,6 +423,30 @@ def day_counts(http: requests.Session, bearer: str, username: str, sleep=None) -
     return out, cost
 
 
+def has_dragon_posts(http: requests.Session, bearer: str, username: str, sleep=None) -> tuple[bool, float]:
+    """Whether a Keeper has any dragon posts at all, from X's counts (about $0.01 a request), stopping at the first one found.
+    Asked before a Keeper pays (27 Nov 2026), so nobody pays $0.50 for a card that has nothing to show."""
+    sleep = sleep or time.sleep
+    h = {"Authorization": f"Bearer {bearer}", "User-Agent": "pdtools-trail/1.0"}
+    params = {"query": f"from:{username} {TERMS} -is:retweet -is:reply", "granularity": "day",
+              "start_time": TRAIL_START.strftime("%Y-%m-%dT%H:%M:%SZ")}
+    cost, token = 0.0, None
+    for _ in range(8):
+        if token:
+            params["next_token"] = token
+        r = x_get(http, f"{API}/tweets/counts/all", params, h, sleep=sleep)
+        cost += 0.01
+        if r.status_code >= 400:
+            raise XError(r.status_code, r.text)
+        j = r.json()
+        if int((j.get("meta") or {}).get("total_tweet_count") or 0) or any(int(b.get("tweet_count") or 0) for b in j.get("data") or []):
+            return True, cost
+        token = (j.get("meta") or {}).get("next_token")
+        if not token:
+            break
+    return False, cost
+
+
 PD_BACK = ('<a class="pdt-home" href="/create" aria-label="Back to PD Tools" title="Back to PD Tools">'
            '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" '
            'stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>'
@@ -694,6 +718,8 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
         try:
             got = trailpay.verify(http, chain, txh, cfg.trail_pay_wallet, cfg.trail_price_usd)
         except PayError as e:
+            if e.code in ("pending", "node"):     # the page asks again while the chain catches up: those asks are free
+                pay_hits[u["id"]] = hits
             return jsonify({"ok": False, "why": e.code, "msg": str(e)}), 400
         with Session() as s:
             old = s.get(TrailPayment, got["tx"])
@@ -814,6 +840,21 @@ def register(app, cfg, Session, tz, has_preview=None, v3_ok=None) -> None:
             with Session() as s:
                 paid = has_paid(s, u["id"])
             if not paid:      # nothing is read from X until the card is paid for
+                # ...except one cheap count first: a Keeper with no dragon posts is told so and never asked to pay
+                has = session.get("trail_has")
+                if has is None or has.get("id") != u["id"]:
+                    try:
+                        found, c = has_dragon_posts(http, cfg.x_bearer_token, u["username"])
+                        with Session() as s:
+                            add_spend(s, today(), c)
+                        session["trail_has"] = has = {"id": u["id"], "n": bool(found)}
+                    except XBusy:
+                        return jsonify({"wait": True, "busy": True}), 202
+                    except (XError, requests.RequestException, ValueError) as e:
+                        app.logger.warning("trail count before pay failed for %s: %s", u["username"], e)
+                        has = {"id": u["id"], "n": True}       # X is not answering: do not block paying on it
+                if not has["n"]:
+                    return jsonify({"why": "none", "handle": "@" + u["username"]}), 200
                 return jsonify({**pay_info(), "handle": "@" + u["username"]}), 402
         if not cfg.x_bearer_token:
             return jsonify({"why": "x", "handle": "@" + u["username"]}), 503
